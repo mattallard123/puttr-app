@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- puttr-app-2: what the Android plugins need. Merged into the app's manifest. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" tools:targetApi="s" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <application>
+        <!-- Profile photo: the system photo picker, from a see-through activity of our own. -->
+        <activity android:name="co.puttr.app2.PuttrPhotoActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:exported="false" />
+        <!-- Sharing a file from the cache (a Player's data export). -->
+        <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.puttrfiles" android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/puttr_files" />
+        </provider>
+        <!-- Paying for a lesson: Stripe's PaymentSheet over a see-through activity (PuttrPayActivity). -->
+        <activity android:name="co.puttr.app2.PuttrPayActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:exported="false" />
+
+        <!-- Pushes that arrive while the app is open (PuttrMessagingService). -->
+        <service android:name="co.puttr.app2.PuttrMessagingService" android:exported="false">
+            <intent-filter><action android:name="com.google.firebase.MESSAGING_EVENT" /></intent-filter>
+        </service>
+
+        <!-- Deep and universal links, merged onto Unity's own activity: puttr://..., and the https paths
+             puttr-app's AndroidManifest verifies (assetlinks on api.puttr.co and app.puttr.co; trk.puttr.co by Klaviyo). -->
+        <activity android:name="com.unity3d.player.UnityPlayerActivity" android:launchMode="singleTask" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="puttr" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="api.puttr.co" android:pathPrefix="/w/" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="app.puttr.co" android:pathPrefix="/game/" />
+                <data android:scheme="https" android:host="app.puttr.co" android:pathPrefix="/w/" />
+                <data android:scheme="https" android:host="app.puttr.co" android:pathPrefix="/tournament/" />
+                <data android:scheme="https" android:host="app.puttr.co" android:pathPrefix="/play/" />
+                <data android:scheme="https" android:host="app.puttr.co" android:path="/improve" />
+                <data android:scheme="https" android:host="app.puttr.co" android:path="/league" />
+                <data android:scheme="https" android:host="app.puttr.co" android:path="/versus" />
+                <data android:scheme="https" android:host="app.puttr.co" android:path="/play" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="trk.puttr.co" android:pathPrefix="/u/" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

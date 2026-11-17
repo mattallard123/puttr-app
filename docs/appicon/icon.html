@@ -1,0 +1,59 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+/* puttr-app-2 app icon: the official vector mark (marketing/assets/logo.svg), big and sharp, with a slight inner glow. */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100vw;height:100vh;overflow:hidden;background:#020503}
+.fill{position:absolute;inset:0}
+#flame{background:
+  radial-gradient(58% 46% at 50% 46%,rgba(122,212,70,.30) 0%,rgba(45,140,60,.16) 45%,rgba(0,0,0,0) 100%),
+  linear-gradient(160deg,#0c2a14 0%,#06150b 45%,#020503 100%)}
+#flame:before{content:"";position:absolute;inset:-20%;background:repeating-linear-gradient(104deg,rgba(255,255,255,0) 0 9vh,rgba(122,212,70,.07) 9vh 9.6vh,rgba(255,255,255,0) 9.6vh 21vh)}
+#flame:after{content:"";position:absolute;inset:0;background:radial-gradient(85% 85% at 50% 45%,rgba(0,0,0,0) 55%,rgba(0,0,0,.7) 100%)}
+#mark{position:absolute;left:50%;top:50%;width:var(--size,76vh);height:var(--size,76vh);transform:translate(-50%,-50%);color:#2D8C3C}
+</style></head><body>
+<div id="flame" class="fill"></div>
+<svg id="mark" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <!-- Inner glow: light green just inside every edge, fading inward. -->
+  <filter id="inner" x="-5%" y="-5%" width="110%" height="110%">
+    <feComponentTransfer in="SourceAlpha" result="inv"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
+    <feGaussianBlur in="inv" stdDeviation="9" result="blur"/>
+    <feComposite in="blur" in2="SourceAlpha" operator="in" result="edge"/>
+    <feFlood flood-color="#9BE86A" flood-opacity="0.75"/>
+    <feComposite in2="edge" operator="in" result="glow"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="glow"/></feMerge>
+  </filter>
+  <style>.st2{fill:currentColor}</style>
+</defs>
+<g filter="url(#inner)">
+<g>
+	<g>
+		<path class="st2" d="M410.8,183.5h-21.4c-2,0-3.5-1.6-3.5-3.5V42.3c0-2,1.6-3.5,3.5-3.5h21.4c2,0,3.5,1.6,3.5,3.5v137.6
+			C414.3,181.9,412.8,183.5,410.8,183.5z"/>
+		<path class="st2" d="M471,105.3v29.1c115.7,31.2,200.8,136.9,200.8,262.4c0,150.1-121.7,271.8-271.8,271.8S128.2,547,128.2,396.8
+			c0-125.4,84.9-230.9,200.3-262.3v-29.1C197.3,137.5,100,255.8,100,396.8c0,165.7,134.3,300,300,300s300-134.3,300-300
+			C700,255.6,602.4,137.2,471,105.3z"/>
+		<g>
+			<path class="st2" d="M553.9,555c-22.3,22.3-38.1,29.7-38.1,29.7c-10.7,5.2-23.5,2.8-32.1-12.6c-8.6-15.4-22.2-51.6-24.9-61.2
+				c-2.7-9.6,0.5-16.8,9.1-25.1c5-5,8.4-8.4,8.4-8.4s3.5-3.5,8.4-8.4c8.3-8.6,15.5-11.8,25.1-9.1s45.8,16.4,61.2,24.9
+				s17.8,21.4,12.6,32.1C583.6,516.9,576.4,532.5,553.9,555z"/>
+			<path class="st2" d="M246.3,247.5c-22.3,22.3-29.7,38.1-29.7,38.1c-5.2,10.7-2.8,23.5,12.6,32.1s51.6,22.2,61.2,24.9
+				c9.6,2.7,16.8-0.5,25.1-9.1c5-5,8.4-8.4,8.4-8.4s3.5-3.5,8.4-8.4c8.6-8.3,11.8-15.5,9.1-25.1c-2.7-9.6-16.4-45.8-24.9-61.2
+				c-8.6-15.4-21.4-17.8-32.1-12.6C284.5,217.8,268.8,225,246.3,247.5z"/>
+			<path class="st2" d="M553.7,247.1c22.3,22.3,29.7,38.1,29.7,38.1c5.2,10.7,2.8,23.5-12.6,32.1c-15.4,8.6-51.6,22.2-61.2,24.9
+				c-9.6,2.7-16.8-0.5-25.1-9.1c-5-5-8.4-8.4-8.4-8.4s-3.5-3.5-8.4-8.4c-8.6-8.3-11.8-15.5-9.1-25.1c2.7-9.6,16.4-45.8,24.9-61.2
+				c8.6-15.4,21.4-17.8,32.1-12.6C515.5,217.4,531.2,224.6,553.7,247.1z"/>
+			<path class="st2" d="M246.1,554.6c22.3,22.3,38.1,29.7,38.1,29.7c10.7,5.2,23.5,2.8,32.1-12.6c8.6-15.4,22.2-51.6,24.9-61.2
+				c2.7-9.6-0.5-16.8-9.1-25.1c-5-5-8.4-8.4-8.4-8.4s-3.5-3.5-8.4-8.4c-8.3-8.6-15.5-11.8-25.1-9.1s-45.8,16.4-61.2,24.9
+				s-17.8,21.4-12.6,32.1C216.4,516.5,223.6,532.1,246.1,554.6z"/>
+		</g>
+		<circle class="st2" cx="400" cy="401.1" r="70.9"/>
+	</g>
+</g>
+<g id="Layer_3">
+</g>
+
+</g>
+</svg>
+<script>const s=new URLSearchParams(location.search).get('size');if(s)document.getElementById('mark').style.setProperty('--size',s+'vh');</script>
+</body></html>

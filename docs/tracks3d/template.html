@@ -1,0 +1,516 @@
+<title>Tracks 3D: St Andrews</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: a broadcast frame first (the live hole), then the options and the interface ideas as a working brief. One dark look on purpose: it is the app's own. */
+:root {
+  --ink: #090b0d; --panel: #131619; --panel-2: #1b1f23; --line: #262b30;
+  --fg: #f2f4f2; --muted: #9aa3a0; --faint: #6b6c6d;
+  --green: #2d8c3c; --bright: #7ad446; --amber: #ffb300; --red: #ff5252; --sky: #5687ff;
+  --ui: "Montserrat", system-ui, -apple-system, Segoe UI, sans-serif;
+  --tv: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--fg); font-family: var(--ui); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+h1 { font-family: var(--tv); font-weight: 700; font-size: clamp(34px, 6vw, 58px); letter-spacing: .5px; line-height: 1; text-transform: uppercase; }
+h2 { font-family: var(--tv); font-weight: 700; font-size: 32px; text-transform: uppercase; letter-spacing: .5px; }
+h3 { font-size: 16px; font-weight: 700; }
+p { margin: 0; color: var(--muted); max-width: 68ch; }
+.kick { font-size: 11px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; color: var(--bright); }
+header.top { padding-block: 28px 18px; display: grid; gap: 10px; }
+header.top p { font-size: 16px; }
+
+/* The stage */
+.stage { position: relative; width: 100%; height: min(72vh, 680px); min-height: 440px; border-radius: 18px; overflow: hidden; background: #8fb7d6; border: 1px solid var(--line); }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.hud { position: absolute; inset: 0; pointer-events: none; font-family: var(--tv); }
+.hud > * { pointer-events: auto; }
+.holecard { position: absolute; left: 14px; top: 14px; display: flex; align-items: stretch; border-radius: 10px; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+.holecard .num { background: var(--green); color: #fff; font-size: 42px; font-weight: 700; padding: 2px 14px; display: grid; place-items: center; }
+.holecard .meta { background: rgba(9,11,13,.88); padding: 6px 14px; display: grid; align-content: center; }
+.holecard .meta b { font-size: 22px; letter-spacing: .5px; text-transform: uppercase; }
+.holecard .meta span { font-size: 15px; color: var(--muted); letter-spacing: .5px; }
+.wind { position: absolute; right: 14px; top: 14px; background: rgba(9,11,13,.88); border-radius: 10px; padding: 8px 12px; display: flex; gap: 10px; align-items: center; font-size: 18px; }
+.wind .arrow { width: 26px; height: 26px; border-radius: 50%; background: var(--panel-2); display: grid; place-items: center; color: var(--bright); font-family: var(--ui); }
+.cams { position: absolute; right: 14px; top: 64px; display: grid; gap: 6px; }
+.cams button, .holes button, .shotbtn, .chip-btn { font-family: var(--ui); }
+.cams button { background: rgba(9,11,13,.82); color: var(--fg); border: 1px solid transparent; border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600; text-align: left; cursor: pointer; }
+.cams button[aria-pressed="true"] { border-color: var(--bright); color: var(--bright); }
+.shotbar { position: absolute; left: 14px; right: 14px; bottom: 14px; display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; }
+.club { background: rgba(9,11,13,.9); border-radius: 12px; padding: 10px 14px; display: grid; gap: 2px; min-width: 0; }
+.club .k { font-family: var(--ui); font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.club .v { font-size: 28px; font-weight: 700; line-height: 1; text-transform: uppercase; }
+.club .s { font-family: var(--ui); font-size: 12px; color: var(--muted); }
+.matmap { flex: 1 1 260px; background: rgba(9,11,13,.9); border-radius: 12px; padding: 10px 14px; display: grid; gap: 6px; min-width: 0; }
+.matmap .row { display: flex; align-items: center; gap: 10px; }
+.mat { position: relative; flex: 1; height: 16px; border-radius: 8px; background: linear-gradient(90deg, #10301c, #184326); border: 1px solid #2a6a3f; }
+.mat i { position: absolute; top: 50%; width: 2px; height: 10px; margin-top: -5px; background: rgba(255,255,255,.25); }
+.mat .ball { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px rgba(122,212,70,.45); transition: left .5s; }
+.mat .cup { position: absolute; right: 4px; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%; background: #020503; border: 1px solid rgba(255,255,255,.5); }
+.matmap .k { font-family: var(--ui); font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.matmap .words { font-family: var(--ui); font-size: 12px; color: var(--fg); }
+.shotbtn { background: var(--green); color: #fff; border: 0; border-radius: 12px; padding: 0 22px; font-size: 15px; font-weight: 700; cursor: pointer; min-height: 56px; }
+.shotbtn:hover { background: #33a046; }
+.shotbtn:focus-visible, .cams button:focus-visible, .holes button:focus-visible { outline: 2px solid var(--bright); outline-offset: 2px; }
+.lower { position: absolute; left: 14px; bottom: 96px; max-width: min(520px, calc(100% - 28px)); background: rgba(9,11,13,.9); border-left: 4px solid var(--bright); border-radius: 0 10px 10px 0; padding: 8px 14px; font-family: var(--ui); font-size: 13px; opacity: 0; transform: translateY(6px); transition: opacity .35s, transform .35s; }
+.lower.on { opacity: 1; transform: none; }
+.lower b { font-family: var(--tv); font-size: 18px; letter-spacing: .4px; text-transform: uppercase; display: block; color: var(--bright); }
+.holes { display: flex; gap: 6px; overflow-x: auto; padding-block: 12px; scrollbar-width: thin; }
+.holes button { flex: 0 0 auto; background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; cursor: pointer; display: grid; gap: 0; text-align: left; min-width: 74px; }
+.holes button b { font-family: var(--tv); font-size: 20px; line-height: 1.1; }
+.holes button span { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.holes button[aria-pressed="true"] { border-color: var(--bright); background: #16251a; }
+.note { font-size: 12px; color: var(--faint); }
+
+/* The brief */
+section { padding-block: 40px 8px; display: grid; gap: 18px; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.opt { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.opt.pick { border-color: var(--green); background: #121c15; }
+.opt .tag { justify-self: start; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; background: var(--panel-2); color: var(--muted); }
+.opt.pick .tag { background: #1b2b17; color: var(--bright); }
+.opt ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; display: grid; gap: 4px; }
+.opt .cost { font-size: 12px; color: var(--fg); border-top: 1px solid var(--line); padding-top: 8px; }
+.ideas { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.idea { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.mock { background: var(--panel-2); border-radius: 10px; padding: 12px; display: grid; gap: 8px; font-size: 13px; }
+.ladder { display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+.ladder div { display: grid; grid-template-columns: 54px 1fr 64px; gap: 8px; align-items: center; font-size: 12px; }
+.ladder .bar { height: 6px; border-radius: 3px; background: var(--line); position: relative; overflow: hidden; }
+.ladder .bar i { position: absolute; inset: 0 auto 0 0; background: var(--green); border-radius: 3px; }
+.ladder .on { color: var(--bright); font-weight: 700; }
+.scorecard { display: grid; grid-template-columns: 52px repeat(9, 1fr); gap: 2px; font-family: var(--tv); font-size: 15px; text-align: center; font-variant-numeric: tabular-nums; }
+.scorecard div { background: #101316; padding: 4px 0; }
+.scorecard .h { color: var(--muted); font-size: 12px; }
+.scorecard .b { background: #12301a; color: var(--bright); border-radius: 50%; }
+.scorecard .bo { outline: 1px solid var(--amber); color: var(--amber); }
+.slope { position: relative; height: 120px; border-radius: 50%; background: radial-gradient(circle at 46% 52%, #6dbb4f, #4f9a3a 70%, #3b7c2e); overflow: hidden; }
+.slope i { position: absolute; width: 22px; height: 2px; background: rgba(255,255,255,.8); transform-origin: left center; }
+.slope i::after { content: ""; position: absolute; right: -2px; top: -3px; border: 4px solid transparent; border-left-color: rgba(255,255,255,.8); }
+.slope .pin { position: absolute; left: 58%; top: 34%; width: 8px; height: 8px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px rgba(255,82,82,.7); }
+.slope .ballm { position: absolute; left: 30%; top: 70%; width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+.caption { display: flex; gap: 10px; align-items: flex-start; }
+.caption .who { flex: 0 0 auto; font-family: var(--tv); font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: var(--amber); padding-top: 2px; }
+.steps { display: grid; gap: 10px; counter-reset: s; }
+.steps li { list-style: none; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; }
+.steps { padding: 0; margin: 0; }
+.steps li b { font-size: 14px; }
+.steps li span { color: var(--muted); font-size: 13px; }
+footer { padding-block: 32px 40px; }
+@media (max-width: 640px) {
+  .holecard .num { font-size: 32px; padding: 2px 10px; }
+  .holecard .meta b { font-size: 18px; }
+  .cams { top: 76px; left: 14px; right: 14px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .cams button { padding: 6px 9px; font-size: 11px; }
+  .wind { display: none; }
+  .lower { bottom: auto; top: 118px; }
+  .club .v { font-size: 22px; }
+}
+@media (prefers-reduced-motion: reduce) { .lower, .mat .ball { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="kick">Tracks in Unity · concept</div>
+    <h1>The Old Course, in 3D</h1>
+    <p>A live hole built from the course's real shapes: every fairway, green, bunker and the Swilcan Burn come from the OpenStreetMap data Tracks already ships. Pick a hole, change the camera, and hit a shot. The putt you make on the mat still picks the club.</p>
+  </header>
+
+  <div class="stage" id="stage">
+    <canvas id="view" aria-label="3D view of the hole"></canvas>
+    <div class="hud">
+      <div class="holecard"><div class="num" id="hNum">17</div><div class="meta"><b id="hName">Road</b><span id="hMeta">Par 4 · 495 yds</span></div></div>
+      <div class="wind"><div class="arrow" id="windArrow">&#8593;</div><div><div style="font-size:12px;color:var(--muted);font-family:var(--ui);font-weight:700;letter-spacing:1.2px">WIND</div><b id="windTxt">12 mph</b></div></div>
+      <div class="cams" role="group" aria-label="Camera">
+        <button type="button" id="cam-tv" aria-pressed="true">Broadcast</button>
+        <button type="button" id="cam-follow" aria-pressed="false">Ball follow</button>
+        <button type="button" id="cam-top" aria-pressed="false">Overhead plan</button>
+        <button type="button" id="cam-green" aria-pressed="false">Green read</button>
+      </div>
+      <div class="lower" id="lower"><b id="lowerT">Off the tee</b><span id="lowerS"></span></div>
+      <div class="shotbar">
+        <div class="club"><div class="k">Caddie club</div><div class="v" id="clubName">Driver</div><div class="s" id="clubYds">300 yds carry</div></div>
+        <div class="matmap">
+          <div class="k">Your mat putt</div>
+          <div class="row"><div class="mat" id="mat"><i style="left:8%"></i><i style="left:30%"></i><i style="left:52%"></i><i style="left:74%"></i><div class="cup"></div><div class="ball" id="matBall" style="left:10%"></div></div></div>
+          <div class="words" id="matWords">Putt from 11 ft. Pace sets the distance, line sets the direction.</div>
+        </div>
+        <button type="button" class="shotbtn" id="hit">Hit the putt</button>
+      </div>
+    </div>
+  </div>
+  <div class="holes" id="holes" role="group" aria-label="Hole"></div>
+  <div class="note">Course shapes: Map data &copy; OpenStreetMap contributors, ODbL. Heights are a sketch (links-style dunes from the lie), not survey data. Drag to look around; pinch or scroll to zoom.</div>
+
+  <section>
+    <div class="kick">The choice</div>
+    <h2>Four ways Tracks can look in Unity</h2>
+    <p>The game underneath stays the same: one mat putt per shot, the putt's length picks the club, pace sets how far and line sets where. What changes is how much of the course you see and feel.</p>
+    <div class="opts">
+      <div class="opt"><span class="tag">A · closest to today</span><h3>Overhead, now with depth</h3><p>The arcade map you have, drawn as a lit 3D model seen from above. Shadows, dunes and the burn read at a glance; the ball arcs up toward the camera.</p><ul><li>Same reading of a hole as the RN app</li><li>Cheap to run on any phone</li><li>Still feels like a minimap</li></ul><div class="cost">Effort: low. The Overhead plan camera above.</div></div>
+      <div class="opt pick"><span class="tag">Recommended</span><h3>Broadcast golf</h3><p>Plan from above, then cut to a TV camera behind the ball for the shot: tracer, hang time, a follow camera on the bounce, and a green camera for the putt.</p><ul><li>Every shot becomes a moment worth watching</li><li>The booth commentary already exists to sit on it</li><li>Fits the arcade's stage and lighting work</li></ul><div class="cost">Effort: medium. This page's Broadcast and Ball follow cameras.</div></div>
+      <div class="opt"><span class="tag">C · most immersive</span><h3>Player's eye</h3><p>Stand on the tee looking down the hole, like a simulator. Strong on a TV or iPad on a stand; harder to plan a shot from on a phone.</p><ul><li>Big wow on the TV app</li><li>Needs real terrain and trees to convince</li><li>Line of sight hides hazards</li></ul><div class="cost">Effort: high. Wants real elevation and art.</div></div>
+      <div class="opt"><span class="tag">D · data-heavy</span><h3>Real-world terrain</h3><p>Swap the sketched dunes for survey heights. Scotland and much of the US publish 1 m lidar; satellite imagery could texture the ground.</p><ul><li>The real Road Hole bunker, the real Valley of Sin</li><li>Licensing and size per course to work through</li><li>Pairs with B or C</li></ul><div class="cost">Effort: per course. A pipeline, then automatic.</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="kick">The interface</div>
+    <h2>What gets better on screen</h2>
+    <div class="ideas">
+      <div class="idea"><h3>The putt is the swing</h3><p>The mat strip in the shot bar shows exactly what you are about to putt and what it buys you, so the link between the mat and the course is never a mystery.</p>
+        <div class="mock ladder" id="ladder"></div></div>
+      <div class="idea"><h3>Read the green in 3D</h3><p>On the green the camera drops low and slope arrows run across the surface. Pro and Major levels can hide them for a real read.</p>
+        <div class="mock"><div class="slope" id="slope"><span class="pin"></span><span class="ballm"></span></div><div style="font-size:12px;color:var(--muted)">14 ft, breaking left to right. Your mat putt: 3.5 ft from the right tee.</div></div></div>
+      <div class="idea"><h3>A scorecard that stays with you</h3><p>A thin strip under the hole card, filled in hole by hole, with birdies circled and bogeys boxed the way a real card is marked.</p>
+        <div class="mock"><div class="scorecard" id="card"></div></div></div>
+      <div class="idea"><h3>The booth, in captions</h3><p>The two-voice commentary Tracks already plays, shown as a lower third so it lands with the sound off too.</p>
+        <div class="mock"><div class="caption"><span class="who">Booth</span><span>Into the wind on the Road Hole. He'll want to keep that left of the hotel.</span></div><div class="caption"><span class="who">Booth</span><span>Lovely. That's found the fairway.</span></div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="kick">How we would build it</div>
+    <h2>A path in four steps</h2>
+    <ol class="steps">
+      <li><b>Course to mesh at load</b><span>Raster the same OSM shapes into a ground texture and a height field in Unity, as this page does in the browser. No art per course, so all 67 tracks work on day one.</span></li>
+      <li><b>Broadcast cameras on the arcade stage</b><span>Reuse the arcade's lighting, sky and ball physics. Plan view, tee camera, follow camera, green camera, with the tracer.</span></li>
+      <li><b>Interface pass</b><span>Hole card, wind, caddie club with the mat strip, scorecard strip, booth captions. Landscape on tablets puts the shot bar beside the hole.</span></li>
+      <li><b>Real terrain, course by course</b><span>Start with St Andrews: lidar heights and the famous holes first (1, 17, 18), then decide if it is worth the pipeline.</span></li>
+    </ol>
+  </section>
+  <footer class="note">Concept for Puttr 2 · built from the Tracks St Andrews course file (Old Course, 18 holes).</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const COURSE = /*DATA*/null;
+(function () {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const canvas = document.getElementById('view');
+  const stage = document.getElementById('stage');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x9cc2de);
+  scene.fog = new THREE.Fog(0xb9d3e6, 260, 900);
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.5, 4000);
+  const controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.49; controls.minDistance = 10; controls.maxDistance = 900;
+  scene.add(new THREE.HemisphereLight(0xdfefff, 0x3b5d2a, 0.75));
+  const sun = new THREE.DirectionalLight(0xfff1d6, 0.95); sun.position.set(-300, 400, 200); scene.add(sun);
+
+  // ── Deterministic noise ──
+  function hash(x, y) { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); }
+  function vnoise(x, y) { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi; const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+    const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; }
+  function fbm(x, y) { let s = 0, a = 0.5, f = 1; for (let i = 0; i < 4; i++) { s += a * vnoise(x * f, y * f); f *= 2.03; a *= 0.5; } return s; }
+
+  // Lie ids, drawn in this order (later wins). Colours are the ground texture.
+  const LIES = [
+    { k: 'sand', id: 1, col: '#d8c893', h: -0.4, amp: 1.2 },
+    { k: 'scrub', id: 2, col: '#3e4f22', h: 1.4, amp: 3.2 },
+    { k: 'wood', id: 3, col: '#2f4421', h: 1.8, amp: 3.4 },
+    { k: 'rough', id: 4, col: '#53742f', h: 0.2, amp: 1.8 },
+    { k: 'fairway', id: 5, col: '#6faf45', h: 0, amp: 0.8 },
+    { k: 'tee', id: 6, col: '#79bb4c', h: 0.35, amp: 0.1 },
+    { k: 'green', id: 7, col: '#82c654', h: 0.1, amp: 0.25 },
+    { k: 'bunker', id: 8, col: '#e8dcb2', h: -1.3, amp: 0.15 },
+    { k: 'water', id: 9, col: '#3b6f98', h: -1.0, amp: 0 },
+  ];
+  const BASE = { id: 0, col: '#4e6e2c', h: 0.4, amp: 2.3 };
+  const byId = [BASE]; LIES.forEach(l => byId[l.id] = l);
+
+  let ground, extras = new THREE.Group(); scene.add(extras);
+  let field = null; // { x0, z0, w, d, n, heights, ids }
+
+  function polyPath(ctx, poly, tx) { ctx.beginPath(); poly.forEach((p, i) => { const [x, y] = tx(p); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.closePath(); }
+
+  function buildHole(hole) {
+    // The hole's box: tee to pin plus a margin, in yards (x east, z = data y).
+    const pts = hole.line.concat([hole.pin, hole.tee]);
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    pts.forEach(p => { minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]); minZ = Math.min(minZ, p[1]); maxZ = Math.max(maxZ, p[1]); });
+    const m = 110; minX -= m; maxX += m; minZ -= m; maxZ += m;
+    const w = maxX - minX, d = maxZ - minZ;
+    // Texture and lie id rasters.
+    const ppy = 3, tw = Math.min(2048, Math.ceil(w * ppy)), th = Math.min(2048, Math.ceil(d * ppy));
+    const tex = document.createElement('canvas'); tex.width = tw; tex.height = th;
+    const ids = document.createElement('canvas'); ids.width = Math.ceil(w); ids.height = Math.ceil(d);
+    const t = tex.getContext('2d'), q = ids.getContext('2d');
+    const tT = p => [(p[0] - minX) / w * tw, (p[1] - minZ) / d * th], tQ = p => [p[0] - minX, p[1] - minZ];
+    t.fillStyle = BASE.col; t.fillRect(0, 0, tw, th); q.fillStyle = 'rgb(0,0,0)'; q.fillRect(0, 0, ids.width, ids.height);
+    q.imageSmoothingEnabled = false;
+    LIES.forEach(l => {
+      (COURSE.features[l.k] || []).forEach(poly => {
+        if (poly.length < 3) return;
+        polyPath(t, poly, tT); t.fillStyle = l.col; t.fill();
+        polyPath(q, poly, tQ); q.fillStyle = 'rgb(' + l.id * 20 + ',0,0)'; q.fill();
+      });
+    });
+    // Paths and roads as lines; the Old Course's road along 17 matters.
+    t.lineCap = 'round';
+    [['road', '#8d8f8a', 6], ['cartpath', '#b9b39c', 2.4]].forEach(([k, col, wid]) => {
+      (COURSE.features[k] || []).forEach(line => { t.beginPath(); line.forEach((p, i) => { const [x, y] = tT(p); i ? t.lineTo(x, y) : t.moveTo(x, y); }); t.strokeStyle = col; t.lineWidth = wid * ppy; t.stroke(); });
+    });
+    // Mowing stripes across the fairways and greens, along the hole.
+    const ang = Math.atan2(hole.pin[1] - hole.tee[1], hole.pin[0] - hole.tee[0]);
+    const img = t.getImageData(0, 0, tw, th), px = img.data, qd = q.getImageData(0, 0, ids.width, ids.height).data;
+    const ca = Math.cos(ang), sa = Math.sin(ang);
+    for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) {
+      const wx = minX + x / ppy, wz = minZ + y / ppy;
+      const qi = (Math.min(ids.height - 1, Math.floor(wz - minZ)) * ids.width + Math.min(ids.width - 1, Math.floor(wx - minX))) * 4;
+      const id = Math.round(qd[qi] / 20);
+      const o = (y * tw + x) * 4;
+      let k = 0;
+      if (id === 5 || id === 7 || id === 6) { const along = wx * ca + wz * sa; k = (Math.floor(along / (id === 7 ? 3 : 9)) % 2 ? 9 : -6); }
+      else if (id === 0 || id === 4 || id === 2 || id === 3) k = (hash(x, y) - 0.5) * 34 + (fbm(wx / 6, wz / 6) - 0.5) * 30;
+      else if (id === 8 || id === 1) k = (hash(x, y) - 0.5) * 14;
+      px[o] = Math.max(0, Math.min(255, px[o] + k)); px[o + 1] = Math.max(0, Math.min(255, px[o + 1] + k)); px[o + 2] = Math.max(0, Math.min(255, px[o + 2] + k * 0.6));
+    }
+    t.putImageData(img, 0, 0);
+
+    // Heights on a 1.5 yd grid from the lie, then smoothed so bunkers dish and greens roll.
+    const cell = 1.5, nx = Math.ceil(w / cell) + 1, nz = Math.ceil(d / cell) + 1;
+    const H = new Float32Array(nx * nz), I = new Uint8Array(nx * nz);
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+      const wx = minX + i * cell, wz = minZ + j * cell;
+      const qi = (Math.min(ids.height - 1, Math.floor(j * cell)) * ids.width + Math.min(ids.width - 1, Math.floor(i * cell))) * 4;
+      const id = Math.round(qd[qi] / 20), lie = byId[id] || BASE;
+      I[j * nx + i] = id;
+      const swell = (fbm(wx / 70, wz / 70) - 0.5) * 7;         // the links' long swells
+      const hum = (fbm(wx / 14 + 9, wz / 14) - 0.5) * lie.amp * 2; // humps and hollows by lie
+      H[j * nx + i] = swell + lie.h + hum;
+    }
+    for (let pass = 0; pass < 3; pass++) {
+      const C = H.slice();
+      for (let j = 1; j < nz - 1; j++) for (let i = 1; i < nx - 1; i++) {
+        const o = j * nx + i, id = I[o];
+        if (id === 8 && pass > 1) continue; // keep bunker lips sharp
+        H[o] = (C[o] * 4 + C[o - 1] + C[o + 1] + C[o - nx] + C[o + nx]) / 8;
+      }
+    }
+    field = { x0: minX, z0: minZ, cell, nx, nz, H, I };
+
+    if (ground) { scene.remove(ground); ground.geometry.dispose(); ground.material.map.dispose(); ground.material.dispose(); }
+    const geo = new THREE.PlaneGeometry(w, d, nx - 1, nz - 1); geo.rotateX(-Math.PI / 2);
+    const pos = geo.attributes.position;
+    for (let k = 0; k < pos.count; k++) {
+      const x = pos.getX(k) + w / 2, z = pos.getZ(k) + d / 2;
+      const i = Math.round(x / cell), j = Math.round(z / cell);
+      pos.setY(k, H[Math.min(nz - 1, j) * nx + Math.min(nx - 1, i)]);
+    }
+    geo.computeVertexNormals();
+    const map = new THREE.CanvasTexture(tex); map.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    ground = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map }));
+    ground.position.set(minX + w / 2, 0, minZ + d / 2);
+    scene.add(ground);
+    // A wide sea-and-land skirt so the horizon is not a cliff.
+    if (!scene.getObjectByName('skirt')) { const s = new THREE.Mesh(new THREE.CircleGeometry(3000, 48), new THREE.MeshLambertMaterial({ color: 0x4a6a2b })); s.rotateX(-Math.PI / 2); s.position.y = -2.5; s.name = 'skirt'; scene.add(s); }
+  }
+
+  function heightAt(x, z) {
+    if (!field) return 0;
+    const i = Math.max(0, Math.min(field.nx - 1, Math.round((x - field.x0) / field.cell))), j = Math.max(0, Math.min(field.nz - 1, Math.round((z - field.z0) / field.cell)));
+    return field.H[j * field.nx + i];
+  }
+  function lieAt(x, z) {
+    if (!field) return 0;
+    const i = Math.max(0, Math.min(field.nx - 1, Math.round((x - field.x0) / field.cell))), j = Math.max(0, Math.min(field.nz - 1, Math.round((z - field.z0) / field.cell)));
+    return field.I[j * field.nx + i];
+  }
+
+  // ── Flag, tee markers, ball, tracer, gorse ──
+  function v3(p, lift) { return new THREE.Vector3(p[0], heightAt(p[0], p[1]) + (lift || 0), p[1]); }
+  let ball, tracer, flag, slopeArrows;
+  function dressHole(hole) {
+    scene.remove(extras); extras = new THREE.Group(); scene.add(extras);
+    // Flag on the pin.
+    const pin = v3(hole.pin);
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 7, 6), new THREE.MeshLambertMaterial({ color: 0xf2f2f2 }));
+    pole.position.copy(pin).add(new THREE.Vector3(0, 3.5, 0));
+    const cloth = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.5), new THREE.MeshLambertMaterial({ color: 0xff3b30, side: THREE.DoubleSide }));
+    cloth.position.copy(pin).add(new THREE.Vector3(1.2, 6.2, 0));
+    const cup = new THREE.Mesh(new THREE.CircleGeometry(0.35, 16), new THREE.MeshBasicMaterial({ color: 0x050505 })); cup.rotateX(-Math.PI / 2); cup.position.copy(pin).add(new THREE.Vector3(0, 0.05, 0));
+    flag = new THREE.Group(); flag.add(pole, cloth, cup); extras.add(flag);
+    // Tee markers.
+    const dir = new THREE.Vector2(hole.line[1][0] - hole.tee[0], hole.line[1][1] - hole.tee[1]).normalize();
+    [-1, 1].forEach(s => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.45, 12, 8), new THREE.MeshLambertMaterial({ color: 0xffffff })); m.position.copy(v3([hole.tee[0] - dir.y * 4 * s, hole.tee[1] + dir.x * 4 * s], 0.4)); extras.add(m); });
+    // Gorse and pines as instanced blobs on the scrub and wood lies near the hole.
+    const blob = new THREE.SphereGeometry(1, 7, 5), gorse = new THREE.MeshLambertMaterial({ color: 0x324a1c }), flower = new THREE.MeshLambertMaterial({ color: 0x8d8d2a });
+    const spots = [];
+    for (let j = 0; j < field.nz; j += 2) for (let i = 0; i < field.nx; i += 2) {
+      const id = field.I[j * field.nx + i]; if (id !== 2 && id !== 3) continue;
+      if (hash(i, j) > 0.35) continue;
+      spots.push([field.x0 + i * field.cell + (hash(j, i) - 0.5) * 2, field.z0 + j * field.cell + (hash(i + 3, j) - 0.5) * 2, id]);
+    }
+    const inst = new THREE.InstancedMesh(blob, gorse, spots.length), inst2 = new THREE.InstancedMesh(blob, flower, Math.ceil(spots.length / 5));
+    const M = new THREE.Matrix4(), S = new THREE.Vector3(), Q = new THREE.Quaternion(), P = new THREE.Vector3();
+    spots.forEach(([x, z, id], k) => { const s = id === 3 ? 2.6 + hash(x, z) * 2 : 1.2 + hash(x, z) * 1.4; S.set(s * 1.2, s * (id === 3 ? 1.6 : 0.8), s); P.set(x, heightAt(x, z) + s * 0.5, z); M.compose(P, Q, S); inst.setMatrixAt(k, M); if (k % 5 === 0) { S.multiplyScalar(0.5); P.y += s * 0.4; M.compose(P, Q, S); inst2.setMatrixAt(k / 5, M); } });
+    extras.add(inst, inst2);
+    // The ball and its tracer.
+    ball = new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    extras.add(ball);
+    tracer = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xff8a3d, linewidth: 2 }));
+    extras.add(tracer);
+    // Slope arrows on the green (shown by the Green read camera).
+    slopeArrows = new THREE.Group(); slopeArrows.visible = false; extras.add(slopeArrows);
+    const am = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+    for (let a = 0; a < 40; a++) {
+      const r = Math.sqrt(hash(a, 7)) * hole.greenR * 0.9, th = hash(a, 11) * Math.PI * 2;
+      const x = hole.pin[0] + Math.cos(th) * r, z = hole.pin[1] + Math.sin(th) * r;
+      if (lieAt(x, z) !== 7) continue;
+      const gx = heightAt(x + 1.5, z) - heightAt(x - 1.5, z), gz = heightAt(x, z + 1.5) - heightAt(x, z - 1.5);
+      const mag = Math.hypot(gx, gz); if (mag < 0.01) continue;
+      const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.35, 1.4, 6), am);
+      arrow.position.set(x, heightAt(x, z) + 0.3, z);
+      arrow.rotation.z = -Math.PI / 2; arrow.rotation.y = Math.atan2(gz, -gx) ; // points downhill
+      arrow.scale.setScalar(0.6 + Math.min(1.4, mag * 3));
+      slopeArrows.add(arrow);
+    }
+  }
+
+  // ── Shots ──
+  const CLUBS = [
+    { n: 'Driver', yds: 300, ft: 11 }, { n: '3 Wood', yds: 250, ft: 10 }, { n: '5 Iron', yds: 200, ft: 9 }, { n: '7 Iron', yds: 165, ft: 8 },
+    { n: '9 Iron', yds: 135, ft: 7 }, { n: 'Wedge', yds: 105, ft: 6 }, { n: 'Sand Wedge', yds: 75, ft: 5 }, { n: 'Chip', yds: 40, ft: 4 }, { n: 'Putter', yds: 0, ft: 3 },
+  ];
+  let hole, ballPos, shots = 0, flying = null, camMode = 'tv', windDeg = 0;
+  function remaining() { return Math.hypot(hole.pin[0] - ballPos[0], hole.pin[1] - ballPos[1]); }
+  function pickClub() {
+    const left = remaining();
+    if (lieAt(ballPos[0], ballPos[1]) === 7 || left < 22) return CLUBS[8];
+    if (hole.par === 3 && shots === 0) return CLUBS.find(c => c.yds <= left + 15) || CLUBS[7];
+    if (shots === 0) return CLUBS[0];
+    return CLUBS.find(c => c.yds <= left + 10) || CLUBS[7];
+  }
+  function showClub() {
+    const c = pickClub(), left = remaining();
+    document.getElementById('clubName').textContent = c.n;
+    if (c.yds === 0) {
+      const feet = Math.round(left * 3);
+      document.getElementById('clubYds').textContent = feet + ' ft to the hole';
+      document.getElementById('matWords').textContent = 'On the green: ' + feet + ' ft plays as a ' + Math.max(3, Math.min(11, Math.round(feet / 4))) + ' ft putt on the mat.';
+      document.getElementById('matBall').style.left = (10 + (11 - Math.max(3, Math.min(11, Math.round(feet / 4)))) * 9) + '%';
+      document.getElementById('hit').textContent = 'Putt it';
+    } else {
+      document.getElementById('clubYds').textContent = c.yds + ' yds carry · ' + Math.round(left) + ' to the pin';
+      document.getElementById('matWords').textContent = 'Putt from ' + c.ft + ' ft. Pace sets the distance, line sets the direction.';
+      document.getElementById('matBall').style.left = (10 + (11 - c.ft) * 9) + '%';
+      document.getElementById('hit').textContent = 'Hit the putt';
+    }
+  }
+  function lower(title, sub) {
+    const el = document.getElementById('lower');
+    document.getElementById('lowerT').textContent = title; document.getElementById('lowerS').textContent = sub;
+    el.classList.add('on'); clearTimeout(lower.t); lower.t = setTimeout(() => el.classList.remove('on'), 3200);
+  }
+  const LIE_WORDS = { 0: 'in the rough', 1: 'on the beach', 2: 'in the gorse', 3: 'in the trees', 4: 'in the rough', 5: 'on the fairway', 6: 'on the tee', 7: 'on the green', 8: 'in a pot bunker', 9: 'in the burn' };
+  function hit() {
+    if (flying) return;
+    const c = pickClub(), left = remaining();
+    const from = ballPos.slice();
+    let to;
+    if (c.yds === 0) { to = hole.pin.slice(); }
+    else {
+      // The caddie's line: toward the pin, or the next bend of the hole off the tee.
+      const aim = shots === 0 && hole.line.length > 2 && c.yds < Math.hypot(hole.line[2][0] - from[0], hole.line[2][1] - from[1]) ? hole.line[1] : hole.pin;
+      const ax = aim[0] - from[0], az = aim[1] - from[1], al = Math.hypot(ax, az);
+      const pace = 0.9 + hash(shots + hole.n, 3) * 0.14, off = (hash(hole.n, shots + 5) - 0.5) * 0.12;
+      const dist = Math.min(c.yds * pace, left + 12);
+      const ux = ax / al, uz = az / al;
+      to = [from[0] + (ux - uz * off) * dist, from[1] + (uz + ux * off) * dist];
+    }
+    shots++;
+    const putting = c.yds === 0;
+    const apex = putting ? 0.1 : Math.max(8, Math.hypot(to[0] - from[0], to[1] - from[1]) * 0.16);
+    flying = { from, to, apex, t: 0, dur: putting ? 1.6 : 2.6 + Math.min(1.6, apex / 30), putting, pts: [] };
+    if (!putting) lower(c.n, 'Mat putt ' + c.ft + ' ft · ' + (camMode === 'top' ? 'tracking on the plan' : 'tracer on'));
+  }
+  function land() {
+    const f = flying; flying = null;
+    ballPos = f.to;
+    if (f.putting) { lower('In the hole', shots + ' strokes · ' + (shots - hole.par === 0 ? 'par' : shots - hole.par < 0 ? (shots - hole.par) + ' under' : '+' + (shots - hole.par))); setTimeout(() => { shots = 0; ballPos = hole.tee.slice(); showClub(); placeBall(); setCam(camMode, true); }, 2600); return; }
+    const lie = lieAt(ballPos[0], ballPos[1]);
+    lower('Shot ' + shots, Math.round(remaining()) + ' yds to go, ' + (LIE_WORDS[lie] || 'in play'));
+    showClub();
+    if (lie === 7 && camMode !== 'top') setCam('green');
+  }
+  function placeBall() { ball.position.copy(v3(ballPos, 0.55)); }
+
+  // ── Cameras ──
+  let camGoal = null;
+  function setCam(mode, snap) {
+    camMode = mode;
+    ['tv', 'follow', 'top', 'green'].forEach(m => document.getElementById('cam-' + m).setAttribute('aria-pressed', String(m === mode)));
+    slopeArrows.visible = mode === 'green';
+    const b = new THREE.Vector3(ballPos[0], heightAt(ballPos[0], ballPos[1]), ballPos[1]);
+    const p = v3(hole.pin);
+    const dir = new THREE.Vector3(p.x - b.x, 0, p.z - b.z).normalize();
+    let pos, look;
+    if (mode === 'tv') { pos = b.clone().addScaledVector(dir, -38).add(new THREE.Vector3(0, 22, 0)); look = b.clone().addScaledVector(dir, Math.min(180, b.distanceTo(p) * 0.6)); }
+    else if (mode === 'follow') { pos = b.clone().addScaledVector(dir, -9).add(new THREE.Vector3(0, 4, 0)); look = b.clone().addScaledVector(dir, 60); }
+    else if (mode === 'top') { const mid = new THREE.Vector3().addVectors(v3(hole.tee), p).multiplyScalar(0.5); const span = v3(hole.tee).distanceTo(p); pos = mid.clone().add(new THREE.Vector3(0.01, span * 1.15 + 60, 0.01)); look = mid; }
+    else { const side = new THREE.Vector3(-dir.z, 0, dir.x); pos = p.clone().addScaledVector(dir, -22).addScaledVector(side, 6).add(new THREE.Vector3(0, 6, 0)); look = p.clone(); }
+    camGoal = { pos, look, k: snap || reduce ? 1 : 0.06 };
+  }
+
+  function selectHole(n) {
+    hole = COURSE.holes[n - 1];
+    document.getElementById('hNum').textContent = hole.n;
+    document.getElementById('hName').textContent = hole.name;
+    document.getElementById('hMeta').textContent = 'Par ' + hole.par + ' · ' + hole.yds + ' yds';
+    windDeg = Math.round(hash(n, 2) * 360);
+    document.getElementById('windArrow').style.transform = 'rotate(' + windDeg + 'deg)';
+    document.getElementById('windTxt').textContent = Math.round(6 + hash(n, 9) * 16) + ' mph';
+    document.querySelectorAll('#holes button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.n === n)));
+    buildHole(hole); dressHole(hole);
+    shots = 0; ballPos = hole.tee.slice(); flying = null; tracer.geometry.setFromPoints([]);
+    placeBall(); showClub(); setCam(camMode === 'green' ? 'tv' : camMode, true);
+    lower(hole.name, 'Hole ' + hole.n + ' · Par ' + hole.par + ' · ' + hole.yds + ' yards');
+  }
+
+  // Hole strip.
+  const strip = document.getElementById('holes');
+  COURSE.holes.forEach(h => { const b = document.createElement('button'); b.type = 'button'; b.dataset.n = h.n; b.setAttribute('aria-pressed', 'false'); b.innerHTML = '<b>' + h.n + '</b><span>' + h.name + ' · ' + h.par + '</span>'; b.onclick = () => selectHole(h.n); strip.appendChild(b); });
+  ['tv', 'follow', 'top', 'green'].forEach(m => document.getElementById('cam-' + m).onclick = () => setCam(m));
+  document.getElementById('hit').onclick = hit;
+
+  // Small mocks in the brief.
+  document.getElementById('ladder').innerHTML = CLUBS.slice(0, 8).map((c, i) => '<div class="' + (i === 0 ? 'on' : '') + '"><span>' + c.ft + ' ft</span><span class="bar"><i style="width:' + (c.yds / 3) + '%"></i></span><span>' + c.n + '</span></div>').join('');
+  const slope = document.getElementById('slope');
+  for (let a = 0; a < 26; a++) { const i = document.createElement('i'); i.style.left = (10 + hash(a, 1) * 75) + '%'; i.style.top = (12 + hash(a, 2) * 70) + '%'; i.style.transform = 'rotate(' + (20 + hash(a, 3) * 40) + 'deg)'; slope.appendChild(i); }
+  const pars = COURSE.holes.slice(0, 9).map(h => h.par), mine = [4, 5, 4, 4, 4, 4, 3, 3, 4];
+  document.getElementById('card').innerHTML = '<div class="h">Hole</div>' + pars.map((p, i) => '<div class="h">' + (i + 1) + '</div>').join('') + '<div class="h">Par</div>' + pars.map(p => '<div class="h">' + p + '</div>').join('') + '<div class="h">You</div>' + mine.map((s, i) => '<div class="' + (s < pars[i] ? 'b' : s > pars[i] ? 'bo' : '') + '">' + s + '</div>').join('');
+
+  function resize() { const r = stage.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); camera.aspect = r.width / r.height; camera.updateProjectionMatrix(); }
+  addEventListener('resize', resize); resize();
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (flying) {
+      const f = flying; f.t = Math.min(1, f.t + dt / f.dur);
+      const e = f.putting ? 1 - Math.pow(1 - f.t, 2.2) : f.t;
+      const x = f.from[0] + (f.to[0] - f.from[0]) * e, z = f.from[1] + (f.to[1] - f.from[1]) * e;
+      const y = heightAt(x, z) + 0.55 + (f.putting ? 0 : 4 * f.apex * e * (1 - e));
+      ball.position.set(x, y, z);
+      if (!f.putting) { f.pts.push(ball.position.clone()); tracer.geometry.setFromPoints(f.pts); }
+      if (camMode === 'follow' || camMode === 'tv') { const dir = new THREE.Vector3(f.to[0] - f.from[0], 0, f.to[1] - f.from[1]).normalize(); camGoal = { pos: ball.position.clone().addScaledVector(dir, camMode === 'tv' ? -45 : -14).add(new THREE.Vector3(0, camMode === 'tv' ? 18 : 6, 0)), look: ball.position.clone().addScaledVector(dir, 25), k: 0.08 }; }
+      if (f.t >= 1) land();
+    }
+    if (camGoal) { camera.position.lerp(camGoal.pos, camGoal.k); controls.target.lerp(camGoal.look, camGoal.k); if (camera.position.distanceTo(camGoal.pos) < 0.5 && !flying) camGoal = null; }
+    if (flag) flag.children[1].rotation.y = Math.sin(now / 400) * 0.25;
+    controls.update(); renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+  controls.addEventListener('start', () => { if (!flying) camGoal = null; });
+  selectHole(17);
+  requestAnimationFrame(frame);
+})();
+</script>

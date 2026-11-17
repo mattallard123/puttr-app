@@ -1,0 +1,47 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+@font-face{font-family:M;src:url(../screenshots/Montserrat-Bold.ttf);font-weight:700}
+@font-face{font-family:M;src:url(../screenshots/Montserrat-Medium.ttf);font-weight:500}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100vw;height:100vh;overflow:hidden;background:transparent;font-family:M;color:#fff}
+.fill{position:absolute;inset:0}
+/* ── back: strips of the games, slanted, darkened to the middle ── */
+#strips{display:flex;left:-8vw;right:-8vw;transform:skewX(-14deg)}
+#strips div{flex:1;overflow:hidden;position:relative;border-right:.35vh solid #000}
+#strips div i{position:absolute;inset:0 -9vh;background-size:cover;background-position:center;transform:skewX(14deg)}
+#shade{background:radial-gradient(46% 105% at 50% 50%,rgba(0,0,0,.93) 0%,rgba(0,0,0,.82) 48%,rgba(0,0,0,.12) 100%)}
+body.tv #shade{background:radial-gradient(62% 80% at 50% 50%,rgba(0,0,0,.9) 0%,rgba(0,0,0,.78) 55%,rgba(0,0,0,.25) 100%)}
+body.icon #shade{background:radial-gradient(75% 75% at 50% 46%,rgba(0,0,0,.2) 0%,rgba(0,0,0,.55) 60%,rgba(0,0,0,.9) 100%)}
+#flame{background:
+  radial-gradient(58% 46% at 50% 40%,rgba(122,212,70,.34) 0%,rgba(45,140,60,.2) 45%,rgba(0,0,0,0) 100%),
+  linear-gradient(160deg,#0c2a14 0%,#06150b 45%,#020503 100%)}
+/* slanted light bars behind the mark */
+#flame:before{content:"";position:absolute;inset:-20%;background:repeating-linear-gradient(104deg,rgba(255,255,255,0) 0 9vh,rgba(122,212,70,.07) 9vh 9.6vh,rgba(255,255,255,0) 9.6vh 21vh)}
+#flame:after{content:"";position:absolute;inset:0;background:radial-gradient(85% 85% at 50% 45%,rgba(0,0,0,0) 55%,rgba(0,0,0,.7) 100%)}
+/* ── front: the lockup ── */
+#lock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--gap,3vh)}
+#lock img{height:var(--logo,17vh);filter:drop-shadow(0 1vh 3vh rgba(0,0,0,.8))}
+#word{font-weight:700;font-size:var(--word,26vh);line-height:.82;letter-spacing:-.03em;transform:skewX(-9deg);-webkit-text-stroke:.02em #fff;text-shadow:0 1vh 4vh rgba(0,0,0,.8)}
+#bar{display:flex;gap:1.4vh;height:1.6vh;width:var(--bar,46vh);transform:skewX(-24deg)}
+#bar i{flex:1;background:#7ad446}#bar i+i{flex:.16}#bar i+i+i{flex:.07}
+#tag{text-transform:uppercase;font-weight:700;font-size:3.6vh;letter-spacing:.42em;color:#7ad446;text-indent:.42em}
+body.icon #lock{--logo:40vh;--word:17.5vh;--gap:4.2vh;--bar:40vh;padding-top:2vh}
+body.icon #lock img{filter:drop-shadow(0 0 5vh rgba(122,212,70,.55)) drop-shadow(0 1vh 2vh rgba(0,0,0,.8))}
+body.icon #tag{display:none}
+body.tv #lock{--logo:22vh;--word:25vh;--gap:3.6vh;--bar:60vh} body.tv #tag{display:none}
+/* puttr-app-2: the app icon, the glowing mark alone (no ARCADE wordmark) */
+body.solo #word,body.solo #bar{display:none}
+body.solo #lock{--logo:58vh;padding-top:0}
+body.solo #lock img{filter:drop-shadow(0 0 7vh rgba(122,212,70,.6)) drop-shadow(0 0 2vh rgba(122,212,70,.45)) drop-shadow(0 1vh 2vh rgba(0,0,0,.8))}
+body.noback #strips,body.noback #shade,body.noback #flame{display:none}
+body.nofront #lock{display:none}
+body:not(.icon) #flame{display:none} body.icon #strips{display:none}
+</style></head><body>
+<div id="flame" class="fill"></div><div id="strips" class="fill"></div><div id="shade" class="fill"></div>
+<div id="lock" class="fill"><img id="logo"><div id="word">ARCADE</div><div id="bar"><i></i><i></i><i></i></div><div id="tag"></div></div>
+<script>
+const q=new URLSearchParams(location.search);document.body.className=q.get('c')||'';
+logo.src=document.body.classList.contains('icon')?'src/LogoMark.png':'src/LogoHeader.png';
+tag.textContent=q.get('tag')||'';if(!q.get('tag'))tag.style.display='none';
+(q.get('imgs')||'').split(',').filter(Boolean).forEach(u=>{const d=document.createElement('div'),i=document.createElement('i');const[p,pos]=u.split('@');i.style.backgroundImage=`url("${p}")`;if(pos)i.style.backgroundPosition=pos.replace('_',' ');d.appendChild(i);strips.appendChild(d)});
+</script></body></html>

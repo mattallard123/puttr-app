@@ -1,0 +1,11 @@
+{
+  "name": "PuttrApp",
+  "rootNamespace": "PuttrApp",
+  "references": [
+    "Puttr.Runtime",
+    "PuttrArcade",
+    "Unity.InputSystem",
+    "UnityEngine.UI"
+  ],
+  "autoReferenced": true
+}

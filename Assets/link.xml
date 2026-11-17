@@ -1,0 +1,4 @@
+<!-- The rule games' 3D scenes are made by name (PuttrApp RuleSceneList), so the stripper must keep them. -->
+<linker>
+  <assembly fullname="PuttrArcade" preserve="all"/>
+</linker>

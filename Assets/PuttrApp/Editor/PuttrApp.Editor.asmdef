@@ -1,0 +1,7 @@
+{
+  "name": "PuttrApp.Editor",
+  "rootNamespace": "PuttrApp.EditorTools",
+  "references": ["PuttrApp", "Puttr.Runtime"],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": false
+}

@@ -1,0 +1,12 @@
+{
+  "name": "PuttrArcade.Editor",
+  "rootNamespace": "PuttrArcade.EditorTools",
+  "references": [
+    "Puttr.Runtime",
+    "PuttrArcade",
+    "Unity.RenderPipelines.Core.Runtime",
+    "Unity.RenderPipelines.Universal.Runtime"
+  ],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": false
+}

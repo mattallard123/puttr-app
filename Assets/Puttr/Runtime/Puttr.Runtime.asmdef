@@ -1,0 +1,6 @@
+{
+  "name": "Puttr.Runtime",
+  "rootNamespace": "Puttr",
+  "references": [],
+  "autoReferenced": true
+}

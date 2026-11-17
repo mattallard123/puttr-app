@@ -1,0 +1,48 @@
+// puttr-app-2: the app's own Android code (Bluetooth for the green, the camera and recording,
+// body pose, Google sign-in). Its own module so its libraries come with it.
+apply plugin: 'com.android.library'
+
+android {
+    namespace "co.puttr.app2"
+    compileSdk 36
+    buildToolsVersion "36.0.0"
+    defaultConfig {
+        minSdk 26
+        targetSdk 36
+        consumerProguardFiles 'proguard.txt'
+    }
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src']
+            res.srcDirs = ['res']
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    lint { abortOnError false }
+}
+
+dependencies {
+    // The same Agora build puttr-app ships (react-native-agora 4.5.3), for recorded rounds and 3D sessions.
+    implementation 'io.agora.rtc:agora-special-full:4.5.3.70'
+    // The framing check's body pose (BlazePose, as puttr-app's detector).
+    implementation 'com.google.mlkit:pose-detection:18.0.0-beta5'
+    // Firebase Auth, as the React Native app (firebase-bom 33.1.2), so its session carries over.
+    implementation platform('com.google.firebase:firebase-bom:33.1.2')
+    implementation 'com.google.firebase:firebase-auth'
+    // Push: the FCM token, and pushes that arrive while the app is open.
+    implementation 'com.google.firebase:firebase-messaging'
+    // Puttr Club subscriptions: the same IAPHUB SDK react-native-iaphub uses.
+    implementation 'com.iaphub:iaphub-android-sdk:5.2.0'
+    // Google sign-in through Credential Manager.
+    implementation 'androidx.credentials:credentials:1.3.0'
+    implementation 'androidx.credentials:credentials-play-services-auth:1.3.0'
+    implementation 'com.google.android.libraries.identity.googleid:googleid:1.1.1'
+    // Paying for lessons: Stripe's PaymentSheet, the version puttr-app's stripe-react-native 0.70 uses.
+    implementation 'com.stripe:stripe-android:23.12.0'
+    // Sharing a file through a FileProvider (a Player's data export).
+    implementation 'androidx.core:core:1.13.1'
+}
