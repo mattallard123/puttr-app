@@ -277,7 +277,7 @@ namespace PuttrArcade
         void BuildMenuButton()
         {
             if (Kind == Device.Tv) return; // the remote's Menu button does this
-            float size = Sized(56f, 76f);
+            float size = _menuBuilt = Sized(56f, 76f);
             Image button = Panel("Menu", _root, new Color(0.02f, 0.022f, 0.024f, 0.74f));
             Place(button.rectTransform, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-40, -32), new Vector2(size, size));
             Image edge = Panel("Edge", button.transform, new Color(1f, 1f, 1f, 0.12f));
@@ -294,8 +294,33 @@ namespace PuttrArcade
             _menuButton.SetActive(false);
         }
 
+        // puttr-app-2 (walk, 2026-11-23): upright, in a game, a soft dark shade lies behind the logo row and the top of the
+        // scoreboard, so the game's name can be read over a bright set (Balloon Pop's awning, Putt Star's lights, Putt-ball's
+        // marquee). It is on whenever the pause button is.
+        RawImage _topShade;
+        bool _inGame;
+        void ShowTopShade()
+        {
+            if (_topShade == null)
+            {
+                var tex = new Texture2D(1, 32, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+                for (int y = 0; y < 32; y++) tex.SetPixel(0, y, new Color(1f, 1f, 1f, Mathf.Pow(y / 31f, 0.6f)));
+                tex.Apply();
+                _topShade = Raw("Top shade", _root, tex);
+                _topShade.color = new Color(0f, 0f, 0f, 0.8f);
+                RectTransform rt = _topShade.rectTransform;
+                rt.anchorMin = new Vector2(0, 1); rt.anchorMax = new Vector2(1, 1); rt.pivot = new Vector2(0.5f, 1f);
+                rt.anchoredPosition = new Vector2(0, 140f);            // up over the island and the status bar
+                rt.sizeDelta = new Vector2(400f, 140f + 230f);         // wider than the safe area, down past the logo row
+                _topShade.transform.SetAsFirstSibling();
+            }
+            _topShade.gameObject.SetActive(_inGame && Upright);
+        }
+
         public void SetMenuButton(bool visible)
         {
+            _inGame = visible;
+            ShowTopShade();
             if (_menuButton == null) return;
             _menuButton.SetActive(visible);
             if (visible) _menuButton.transform.SetAsLastSibling();
@@ -396,22 +421,34 @@ namespace PuttrArcade
         Text _tee;
 
         // A big sign for games that move the Player round the mat: the distance large enough to
-        // read across the room, and the three tees with the one to use lit.
+        // read across the room, and the three tees as the Player sees the mat with a golf ball on
+        // the one to putt from.
+        // puttr-app-2: the dots were 24 unit squares beside the words "LEFT TEE". They are now the app's tee marker
+        // (Frame.TeeMarker): three 64 unit circles, the ball on the active one and the other two empty rings, and
+        // no words, so the picture is the instruction.
         GameObject _teeSign;
-        Text _teeSignFeet, _teeSignWord;
-        readonly Image[] _teeSignDot = new Image[3];
+        Text _teeSignFeet;
+        readonly Image[] _teeSignRing = new Image[3], _teeSignFill = new Image[3], _teeSignBall = new Image[3];
+        Sprite _teeDisc, _teeRing;
+        static readonly Color TeeEmpty = new Color(0.43f, 0.45f, 0.46f, 1f), TeeFill = new Color(0.18f, 0.196f, 0.208f, 1f), TeeOn = Color.white; // the tee to putt from: white, as the app's TeeMarker (Matt, 2026-11-22)
 
         /// <summary>Show the big where-to-putt-from sign: feet, and tee 1 left, 2 center, 3 right.
-        /// feet 0 or less hides it.</summary>
-        public void SetTeeSign(int feet, int tee)
+        /// feet 0 or less hides it. low puts it bottom left (puttr-app-2: Major League, across from its hit wheel).</summary>
+        public void SetTeeSign(int feet, int tee, bool low = false)
         {
-            if (feet <= 0) { if (_teeSign != null) _teeSign.SetActive(false); if (_aimCard != null) _aimCard.SetActive(false); return; }
+            _teeFeet = feet; _teeTee = tee;
+            if (feet <= 0) { if (_teeSign != null) _teeSign.SetActive(false); if (_teeChip != null) _teeChip.SetActive(false); if (_aimCard != null) _aimCard.SetActive(false); return; }
+            ShowTeeChip();
             if (_teeSign == null)
             {
+                const float spot = 64f, gap = 26f, left = 30f, top = -170f;
+                // Circles of their own: the panels' sprite has 14 unit corners, which is a rounded square at this size.
+                _teeDisc = Make.RoundedSprite(64);
+                _teeRing = Make.RoundedSprite(64, true, 9f);
                 Image card = Card("Tee sign", _root);
                 _teeSign = card.gameObject;
                 var tl = new Vector2(0, 1);
-                Place(card.rectTransform, tl, tl, new Vector2(48, -128), new Vector2(330, 214));
+                Place(card.rectTransform, tl, tl, new Vector2(48, -128), new Vector2(330, 260));
                 Text caption = Label("Caption", card.transform, "PUTT FROM", _bold, 16, Make.Bright, TextAnchor.MiddleLeft);
                 Place(caption.rectTransform, tl, tl, new Vector2(28, -18), new Vector2(250, 24));
                 _teeSignFeet = Label("Feet", card.transform, "", _bold, 112, Fg1, TextAnchor.LowerLeft);
@@ -421,21 +458,122 @@ namespace PuttrArcade
                 Place(unit.rectTransform, tl, tl, new Vector2(150, -93), new Vector2(120, 38)); // baseline with the number: lower-aligned boxes sit each size's descender (about a quarter of it) above their bottoms
                 for (int i = 0; i < 3; i++)
                 {
-                    _teeSignDot[i] = Panel("Tee " + (i + 1), card.transform, Color.white);
-                    Place(_teeSignDot[i].rectTransform, tl, tl, new Vector2(28 + i * 34, -170), new Vector2(24, 24));
+                    var at = new Vector2(left + i * (spot + gap), top);
+                    // Solid colours only (the project is linear colour): a filled disc for the active tee, a ring round every tee, the ball on top.
+                    _teeSignFill[i] = Solid("Tee " + (i + 1) + " fill", card.transform, TeeFill);
+                    _teeSignFill[i].sprite = _teeDisc;
+                    _teeSignFill[i].type = Image.Type.Sliced;
+                    Place(_teeSignFill[i].rectTransform, tl, tl, at, new Vector2(spot, spot));
+                    _teeSignRing[i] = Solid("Tee " + (i + 1), card.transform, TeeEmpty);
+                    _teeSignRing[i].sprite = _teeRing;
+                    _teeSignRing[i].type = Image.Type.Sliced;
+                    Place(_teeSignRing[i].rectTransform, tl, tl, at, new Vector2(spot, spot));
+                    _teeSignBall[i] = Solid("Tee " + (i + 1) + " ball", card.transform, Color.white);
+                    _teeSignBall[i].sprite = _teeDisc;
+                    _teeSignBall[i].type = Image.Type.Sliced;
+                    Place(_teeSignBall[i].rectTransform, tl, tl, at + new Vector2(spot * 0.2f, -spot * 0.2f), new Vector2(spot * 0.6f, spot * 0.6f));
                 }
-                _teeSignWord = Label("Tee", card.transform, "", _bold, 26, Fg1, TextAnchor.MiddleLeft);
-                _teeSignWord.horizontalOverflow = HorizontalWrapMode.Overflow;
-                Place(_teeSignWord.rectTransform, tl, tl, new Vector2(140, -164), new Vector2(180, 36));
             }
-            _teeSign.SetActive(true);
+            // puttr-app-2: top left, or bottom left for a game whose own panel is bottom right (Matt, 2026-11-21).
+            var corner = low ? Vector2.zero : new Vector2(0, 1);
+            Place((RectTransform)_teeSign.transform, corner, corner, low ? new Vector2(48, 48) : new Vector2(48, -128), new Vector2(330, 260));
+            _teeSign.SetActive(!Upright);
             _teeSign.transform.SetAsLastSibling();
             _teeSignFeet.text = feet.ToString();
             // Two digits are wider: the word moves along with them.
             ((RectTransform)_teeSignFeet.transform.parent.Find("Unit")).anchoredPosition = new Vector2(feet >= 10 ? 172 : 104, -93);
             int t = Mathf.Clamp(tee, 1, 3);
-            for (int i = 0; i < 3; i++) _teeSignDot[i].color = i == t - 1 ? Make.Bright : new Color(1f, 1f, 1f, 0.18f);
-            _teeSignWord.text = (t == 1 ? "LEFT" : t == 2 ? "CENTER" : "RIGHT") + " TEE";
+            for (int i = 0; i < 3; i++)
+            {
+                bool on = i == t - 1;
+                _teeSignFill[i].enabled = on;
+                _teeSignBall[i].enabled = on;
+                _teeSignRing[i].color = on ? TeeOn : TeeEmpty;
+            }
+        }
+
+        // puttr-app-2: a phone held upright. The sign above is a third of the screen there and sat over the scoreboard,
+        // the scene and the putt's replay. Upright it is a band centered low on the screen, above the last putt's
+        // card (where the "PUTT FROM" line was): the three tees as circles, the one to putt from solid, and the
+        // distance large.
+        int _teeFeet, _teeTee;
+        GameObject _teeChip;
+        Text _teeChipFeet;
+        readonly Image[] _teeChipDot = new Image[3], _teeChipRing = new Image[3];
+
+        void ShowTeeChip()
+        {
+            if (_teeChip == null)
+            {
+                const float dot = 38f, gap = 14f;
+                Sprite disc = Make.RoundedSprite(38), ring = Make.RoundedSprite(38, true, 6f);
+                Image card = Card("Tee chip", _root);
+                _teeChip = card.gameObject;
+                var tl = new Vector2(0, 1);
+                Place(card.rectTransform, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 232), new Vector2(320, 76));
+                for (int i = 0; i < 3; i++)
+                {
+                    var at = new Vector2(24 + i * (dot + gap), -19);
+                    _teeChipRing[i] = Solid("Tee " + (i + 1), card.transform, TeeEmpty);
+                    _teeChipRing[i].sprite = ring;
+                    _teeChipRing[i].type = Image.Type.Sliced;
+                    Place(_teeChipRing[i].rectTransform, tl, tl, at, new Vector2(dot, dot));
+                    _teeChipDot[i] = Solid("Tee " + (i + 1) + " on", card.transform, TeeOn);
+                    _teeChipDot[i].sprite = disc;
+                    _teeChipDot[i].type = Image.Type.Sliced;
+                    Place(_teeChipDot[i].rectTransform, tl, tl, at, new Vector2(dot, dot));
+                }
+                _teeChipFeet = Label("Feet", card.transform, "", _bold, 46, Fg1, TextAnchor.MiddleLeft);
+                _teeChipFeet.horizontalOverflow = HorizontalWrapMode.Overflow;
+                Place(_teeChipFeet.rectTransform, tl, tl, new Vector2(24 + 3 * (dot + gap) + 10, -10), new Vector2(140, 56));
+            }
+            _teeChip.SetActive(Upright && _teeFeet > 0);
+            if (_teeFeet <= 0) return;
+            _teeChip.transform.SetAsLastSibling();
+            _teeChipFeet.text = _teeFeet + " ft";
+            ((RectTransform)_teeChip.transform).sizeDelta = new Vector2(24 + 3 * 52f + 10 + _teeChipFeet.preferredWidth + 26, 76);
+            int t = Mathf.Clamp(_teeTee, 1, 3);
+            for (int i = 0; i < 3; i++) { _teeChipDot[i].enabled = i == t - 1; _teeChipRing[i].enabled = i != t - 1; }
+        }
+
+        /// <summary>puttr-app-2, upright: how far down the top stack ends (the logo row, then the scoreboard), from the top of the safe area.</summary>
+        float UnderScore()
+        {
+            float y = -84f;
+            if (_scoreRoot != null && _scoreRoot.gameObject.activeInHierarchy)
+            {
+                var corners = new Vector3[4];
+                _scoreRoot.GetWorldCorners(corners);
+                y = Mathf.Min(y, _root.InverseTransformPoint(corners[0]).y - _root.rect.yMax - 10f);
+            }
+            if (StatusBelowPx > 0f)
+            {
+                float k = _canvas != null && _canvas.scaleFactor > 0f ? _canvas.scaleFactor : 1f;
+                y = Mathf.Min(y, -StatusBelowPx / k - 10f);
+            }
+            return y;
+        }
+
+        // Upright, every frame (a game builds its scoreboard whenever it likes): the scoreboard under the logo row and
+        // no wider than the screen, and the putt's replay smaller under it on the right.
+        void StackUpright()
+        {
+            if (_scoreRoot != null)
+            {
+                float fit = Upright ? Mathf.Min(1f, (UprightWide - 24f) / Mathf.Max(1f, _scoreRoot.sizeDelta.x)) : 1f;
+                _scoreRoot.localScale = Vector3.one * fit;
+                _scoreRoot.anchoredPosition = new Vector2(_scoreRoot.anchoredPosition.x, Upright ? -84f : -28f);
+            }
+            if (_teeSign != null && _teeSign.activeSelf && Upright) _teeSign.SetActive(false);
+            if (_teeChip != null && !Upright && _teeChip.activeSelf) { _teeChip.SetActive(false); if (_teeSign != null && _teeFeet > 0) _teeSign.SetActive(true); }
+            if (_teeChip != null && Upright && !_teeChip.activeSelf && _teeFeet > 0 && _teeSign != null) ShowTeeChip();
+            float under = Upright ? UnderScore() : 0f;
+            if (_aimCard != null)
+            {
+                var aim = (RectTransform)_aimCard.transform;
+                aim.localScale = Vector3.one * (Upright ? 0.62f : 1f);
+                aim.anchoredPosition = Upright ? new Vector2(-20f, under) : new Vector2(-48f, -128f);
+            }
         }
 
         // ── The ideal putt (AimView) ────────────────────────────────────────
@@ -447,6 +585,19 @@ namespace PuttrArcade
         Text _aimWords, _aimPaceWords, _aimCaption;
         GameObject _aimPace;
         RectTransform _aimPaceZone, _aimPaceNeedle;
+
+        /// <summary>puttr-app-2: where the ideal putt card is on the screen, in pixels from the bottom left; empty when
+        /// it is not up. The app lays its own cards out under it.</summary>
+        public Rect AimCardPx
+        {
+            get
+            {
+                if (_aimCard == null || !_aimCard.activeInHierarchy) return Rect.zero;
+                var corners = new Vector3[4];
+                ((RectTransform)_aimCard.transform).GetWorldCorners(corners);
+                return Rect.MinMaxRect(corners[0].x, corners[0].y, corners[2].x, corners[2].y);
+            }
+        }
 
         /// <summary>The ramp picture and its line of words. paceLow/paceHigh (0 to 1 along the bar):
         /// the pace that counts, for games where the pace is the point (Send It); paceNow, where the
@@ -511,6 +662,8 @@ namespace PuttrArcade
         public void SetTee(string text)
         {
             bool show = !string.IsNullOrEmpty(text) && _promptCard.activeSelf;
+            // puttr-app-2: with the big tee sign up, this line would say the same distance and tee a second time, in words.
+            if ((_teeSign != null && _teeSign.activeSelf) || (_teeChip != null && _teeChip.activeSelf)) show = false;
             _teeCard.SetActive(show);
             if (!show) return;
             _tee.text = "PUTT FROM   " + text.ToUpperInvariant();
@@ -1024,10 +1177,30 @@ namespace PuttrArcade
         public void SetScoreVisible(bool visible)
         {
             if (_scoreRoot != null) _scoreRoot.gameObject.SetActive(visible);
+            PlaceStatus();
         }
 
         /// <summary>The name beside the logo, top left.</summary>
-        public void SetGameName(string spaced) => _gameName.text = spaced;
+        public void SetGameName(string spaced) { _gameName.text = spaced; FitGameName(); }
+
+        // puttr-app-2 (2026-11-23): a long name ("FULL WORKOUT", "AROUND THE CLOCK") ran on under the pause button. The
+        // name is drawn smaller until it ends short of the button; never under 13.
+        string _nameFitFor;
+        void FitGameName()
+        {
+            if (_gameName == null || _brand == null || _root == null) return;
+            // Only when the name or the room for it has changed (this is asked every frame: the screen's width is not known
+            // when the name is first set).
+            string key = _gameName.text + "|" + _root.rect.width.ToString("0") + "|" + _brand.localScale.x.ToString("0.00") + "|" + (_menuRect != null ? _menuRect.localScale.x.ToString("0.00") : "");
+            if (key == _nameFitFor) return;
+            _nameFitFor = key;
+            _gameName.fontSize = 26;
+            float scale = Mathf.Max(0.01f, _brand.localScale.x);
+            float menu = _menuRect != null && _menuButton != null ? _menuBuilt * _menuRect.localScale.x - _menuRect.anchoredPosition.x + 14f : 20f;
+            float room = (_root.rect.width - _brand.anchoredPosition.x - menu) / scale - _gameName.rectTransform.anchoredPosition.x;
+            float wide = _gameName.preferredWidth;
+            if (room > 40f && wide > room) _gameName.fontSize = Mathf.Max(13, Mathf.FloorToInt(26f * room / wide));
+        }
 
         // ── Home ────────────────────────────────────────────────────────────
 
@@ -1749,6 +1922,7 @@ namespace PuttrArcade
         public void SetStatus(string text, Color dot)
         {
             _status.SetActive(!string.IsNullOrEmpty(text));
+            StatusUp = !string.IsNullOrEmpty(text);
             _statusText.text = text ?? "";
             _statusDot.color = dot;
             // As wide as what it says, so it keeps clear of a scoreboard across the top.
@@ -1757,7 +1931,7 @@ namespace PuttrArcade
                 var card = (RectTransform)_status.transform;
                 card.sizeDelta = new Vector2(Mathf.Clamp(_statusText.preferredWidth + 66f, 200f, Upright ? UprightWide - 40f : 640f), card.sizeDelta.y);
             }
-            if (_status.activeSelf) _status.transform.SetAsLastSibling();
+            if (_status.activeSelf) { _status.transform.SetAsLastSibling(); PlaceStatus(); }
         }
 
         public void SetPrompt(string text)
@@ -1865,25 +2039,112 @@ namespace PuttrArcade
         // the unit: fine for a TV, unreadable upright. Upright it is 600 across instead, which
         // makes a unit about two thirds of a point on a phone, and the pieces that sat side by
         // side are stacked. Nothing in the game frame is then smaller than 17 units, 11 points.
-        const float UprightWide = 600f;
+        // puttr-app-2 (walk, 2026-11-23): a tablet upright is squarer than a phone, so 600 across left it only 860 units
+        // tall and the pieces stacked for a phone's 1300 ran into each other (the banner over the tee and the putt card,
+        // the scoreboard over the game). A tablet is laid out as wide as makes it 1300 tall (about 900 on an iPad), which
+        // also brings everything down from twice a phone's size to about a third larger.
+        const float UprightTall = 1300f;
+        static float UprightWide
+        {
+            get
+            {
+                if (!Tablet || Screen.height <= Screen.width) return 600f;
+                return Mathf.Clamp(UprightTall * Screen.width / Mathf.Max(1f, Screen.height), 600f, 1000f);
+            }
+        }
         public bool Upright { get; private set; }
         bool _uprightKnown;
         readonly Text[] _puttNames = new Text[3];
         RectTransform _menuRect;
 
+        // Wide: top right, beside the menu. Upright: a row of its own under the logo, and under the scoreboard when
+        // one is up (puttr-app-2: it sat on the rule games' score bar).
+        /// <summary>puttr-app-2: the app's score bug ends this far down the screen (pixels); upright, the chip goes below it.</summary>
+        public static float StatusBelowPx;
+        /// <summary>puttr-app-2: the chip is showing. Upright, with the app's score bug on screen, it takes a row of its own
+        /// at the top under the logo and the app moves its bug down a row (it used to sit under the bug, over the
+        /// hole in Center Cut: Matt, 2026-11-22).</summary>
+        public static bool StatusUp;
+        public const float StatusRowPx = 44f;
+
+        void PlaceStatus()
+        {
+            if (_status == null) return;
+            bool up = Upright;
+            var card = (RectTransform)_status.transform;
+            float wide = Mathf.Min(card.sizeDelta.x, up ? UprightWide - 40f : 640f);
+            if (up)
+            {
+                float y = -92f;
+                if (_scoreRoot != null && _scoreRoot.gameObject.activeInHierarchy)
+                {
+                    var score = (RectTransform)_scoreRoot.transform;
+                    Vector3[] corners = new Vector3[4];
+                    score.GetWorldCorners(corners);
+                    var mine = (RectTransform)_root;
+                    float bottom = mine.InverseTransformPoint(corners[0]).y, top = mine.rect.yMax;
+                    y = Mathf.Min(y, bottom - top - 12f);
+                }
+                // With the app's score bug up: the top row under the logo, and the bug steps down under it.
+                if (StatusBelowPx > 0f) y = -74f;
+                Place(card, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, y), new Vector2(wide, 48));
+            }
+            else Place(card, new Vector2(1, 1), new Vector2(1, 1), new Vector2(Sized(-108, -130), Sized(-36, -46)), new Vector2(wide, 48));
+        }
+
+        // ── puttr-app-2: the top row's size on a tablet, and the pause button's on anything touched ──
+        // Upright the interface is 600 units across whatever the screen, so on a tablet (820 points across, not 400) the
+        // logo, the game's name and the pause button came out twice the size they are with the tablet on its side
+        // (Matt, 2026-11-23). Upright on a tablet the logo row is drawn at its sideways size. The pause button is
+        // 44 points, iOS's own size for a navigation button, on every phone and tablet, either way up.
+
+        /// <summary>A tablet: the short side is 3.3 inches or more (the app's own test, App.Tablet), or -app2Tablet on a desktop window.</summary>
+        public static bool Tablet
+        {
+            get
+            {
+                if (_forceTablet < 0) _forceTablet = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-app2Tablet") >= 0 ? 1 : 0;
+                return _forceTablet == 1 || (Application.isMobilePlatform && Screen.dpi > 0f && Mathf.Min(Screen.width, Screen.height) / Screen.dpi >= 3.3f);
+            }
+        }
+        static int _forceTablet = -1;
+
+        /// <summary>Screen pixels to a point (as App's own scale: an iPhone's 2x or 3x, an Android's dpi / 160, 1 on a desktop).</summary>
+        static float PixelsPerPoint =>
+            !Application.isMobilePlatform || Screen.dpi <= 0f ? 1f :
+            Application.platform == RuntimePlatform.IPhonePlayer ? Mathf.Max(1f, Mathf.Round(Screen.dpi / 150f)) : Mathf.Max(1f, Screen.dpi / 160f);
+
+        /// <summary>Screen pixels to one unit of the interface, for a screen this size (the scaler's own sum, known before it has run).</summary>
+        static float UnitPixels(float width, float height)
+        {
+            if (height > width) return width / UprightWide;
+            return width / Mathf.Max(1f, height) < 16f / 9f ? width / 1920f : height / 1080f;
+        }
+
+        /// <summary>How much smaller the logo row is drawn upright on a tablet, so it is the size it is sideways.</summary>
+        float TopRowScale => Upright && Tablet ? Mathf.Clamp(UnitPixels(Screen.height, Screen.width) / Mathf.Max(0.001f, UnitPixels(Screen.width, Screen.height)), 0.3f, 1f) : 1f;
+
+        const float MenuPoints = 44f;
+        float _menuBuilt = 76f;
+
         void Arrange()
         {
             bool up = Upright;
-            if (_brand != null) Place(_brand, new Vector2(0, 1), new Vector2(0, 1), up ? new Vector2(20, -14) : new Vector2(40, -36), new Vector2(420, 56));
-            if (_menuRect != null) _menuRect.anchoredPosition = up ? new Vector2(-20, -10) : new Vector2(-40, -32);
-            if (_status != null)
+            if (_brand != null)
             {
-                // Wide: top right, beside the menu. Upright: a row of its own under the logo.
-                var card = (RectTransform)_status.transform;
-                float wide = Mathf.Min(card.sizeDelta.x, up ? UprightWide - 40f : 640f);
-                if (up) Place(card, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -92), new Vector2(wide, 48));
-                else Place(card, new Vector2(1, 1), new Vector2(1, 1), new Vector2(Sized(-108, -130), Sized(-36, -46)), new Vector2(wide, 48));
+                Place(_brand, new Vector2(0, 1), new Vector2(0, 1), up ? new Vector2(20, -14) : new Vector2(40, -36), new Vector2(420, 56));
+                _brand.localScale = Vector3.one * TopRowScale;
             }
+            if (_menuRect != null)
+            {
+                _menuRect.anchoredPosition = up ? new Vector2(-20, -10) : new Vector2(-40, -32);
+                // 44 points on a phone or tablet (it was 50 upright on a phone and over 100 on a tablet); a mouse keeps its own.
+                float want = Application.isMobilePlatform || Tablet ? MenuPoints * PixelsPerPoint / Mathf.Max(0.001f, UnitPixels(Screen.width, Screen.height)) : _menuBuilt;
+                _menuRect.localScale = Vector3.one * (want / _menuBuilt);
+            }
+            FitGameName();
+            if (_root != null) ShowTopShade();
+            PlaceStatus();
             if (_promptCard != null)
             {
                 var card = (RectTransform)_promptCard.transform;
@@ -1922,13 +2183,14 @@ namespace PuttrArcade
             {
                 Upright = up;
                 _uprightKnown = true;
-                if (_scaler != null) _scaler.referenceResolution = up ? new Vector2(UprightWide, 1300) : new Vector2(1920, 1080);
+                if (_scaler != null) _scaler.referenceResolution = up ? new Vector2(UprightWide, UprightTall) : new Vector2(1920, 1080);
                 Arrange();
             }
             float aspect = Screen.height > 0 ? Screen.width / (float)Screen.height : 16f / 9f;
             float match = up ? 0f : aspect < 16f / 9f ? 0f : 1f;
             if (_scaler != null && !Mathf.Approximately(_scaler.matchWidthOrHeight, match)) _scaler.matchWidthOrHeight = match;
             FitSafeArea();
+            FitGameName();
         }
 
         // ── Safe area ───────────────────────────────────────────────────────
@@ -1994,6 +2256,7 @@ namespace PuttrArcade
         public void Tick(float dt)
         {
             FitScreen();
+            StackUpright();
             TickRail(dt);
             _time += dt;
             // The dot beside the prompt breathes while the game waits for a putt.

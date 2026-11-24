@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quests Reimagined</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,700;0,900;1,900&display=swap">
+<style>
+/* Layout: one review scroll. Today, shared rules, then three concepts each led by full 16:9 screens, then the comparison. */
+:root{
+  --ink:#07090a; --panel:#111314; --card:#181a1c; --card2:#202325; --line:#2a2d30;
+  --mute:#8d8e8f; --sub:#b8b9b9; --text:#fff;
+  --green:#7ad446; --deep:#2d8c3c; --amber:#ffb300; --fire:#ff6a2b; --red:#ff5252; --blue:#4aa8ff;
+  --font:Montserrat,system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ink);color:var(--text);font:400 16px/1.6 var(--font)}
+.wrap{max-width:1280px;margin:0 auto;padding-block:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.02;margin:0;text-wrap:balance}
+h1{font-size:clamp(38px,6.4vw,84px);letter-spacing:-.01em}
+h2{font-size:clamp(28px,3.6vw,46px)}
+h3{font-size:20px}
+p{margin:0;max-width:66ch;color:var(--sub)}
+.eyebrow{font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--green)}
+.lede{font-size:clamp(17px,1.6vw,21px);color:var(--sub);max-width:60ch}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+
+header.top{padding-block:56px 36px;display:grid;gap:20px}
+nav.jump{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--ink);border-block:1px solid var(--line)}
+nav.jump .wrap{display:flex;gap:6px;overflow-x:auto;padding-block:10px}
+nav.jump a{flex:none;text-decoration:none;font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--sub);padding:8px 14px;border-radius:999px;border:1px solid var(--line)}
+nav.jump a:hover{color:var(--text);border-color:var(--mute)}
+nav.jump a b{font-weight:900;font-style:italic;margin-right:6px}
+nav.jump a.a b{color:var(--green)} nav.jump a.b b{color:var(--blue)} nav.jump a.c b{color:var(--fire)}
+
+section{padding-block:56px;border-bottom:1px solid var(--line);display:grid;gap:28px}
+.cols{display:grid;gap:28px;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+.cols>*{min-width:0}
+ul.plain{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+ul.plain li{padding-left:18px;position:relative;color:var(--sub);max-width:62ch}
+ul.plain li::before{content:"";position:absolute;left:0;top:.62em;width:8px;height:8px;background:var(--mute)}
+ul.plain.bad li::before{background:var(--red)}
+ul.plain.good li::before{background:var(--green)}
+ul.plain li b{color:var(--text);font-weight:700}
+.h-label{font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute);margin-bottom:12px}
+
+/* today: the current flow, drawn small */
+.today{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));align-items:stretch}
+.today .step{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:12px;align-content:start;min-width:0}
+.today .cap{font-weight:700;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.qcard{background:var(--card2);border-radius:10px;padding:10px 12px;font-size:13px;display:flex;justify-content:space-between;gap:8px;color:var(--sub)}
+.qcard b{color:var(--text)}
+.tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.tile{background:var(--card2);border-radius:8px;aspect-ratio:1;display:grid;place-items:center;font-weight:900;font-style:italic;font-size:15px}
+.tile.off{color:#4a4d50}
+.tile i{display:block;font-style:normal;font-size:8px;letter-spacing:1px;color:var(--amber)}
+.ramp{background:var(--card2);border-radius:10px;height:92px;position:relative;overflow:hidden}
+.ramp::before{content:"";position:absolute;left:50%;bottom:0;width:44%;height:100%;transform:translateX(-50%);background:var(--deep);clip-path:polygon(0 100%,100% 100%,70% 0,30% 0)}
+.ramp::after{content:"";position:absolute;left:50%;top:14px;width:14px;height:5px;border-radius:50%;background:var(--ink);transform:translateX(-50%)}
+
+/* inputs table */
+.tablebox{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;min-width:680px;font-size:14px}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);background:var(--panel)}
+td{color:var(--sub)} td:first-child{color:var(--text);font-weight:700;white-space:nowrap}
+td.pick{color:var(--green);font-weight:700}
+
+/* concept */
+.concept .head{display:grid;gap:14px}
+.badge{display:inline-grid;place-items:center;width:56px;height:56px;border-radius:14px;font-weight:900;font-style:italic;font-size:30px;color:var(--ink)}
+.concept.a .badge{background:var(--green)} .concept.b .badge{background:var(--blue)} .concept.c .badge{background:var(--fire)}
+.concept.a .eyebrow{color:var(--green)} .concept.b .eyebrow{color:var(--blue)} .concept.c .eyebrow{color:var(--fire)}
+.titleRow{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.loop{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));counter-reset:s}
+.loop div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 16px 18px;font-size:14px;color:var(--sub);counter-increment:s;min-width:0}
+.loop div::before{content:counter(s);display:block;font-weight:900;font-style:italic;font-size:24px;color:var(--text);margin-bottom:6px}
+.loop b{color:var(--text);font-weight:700}
+figure{margin:0;display:grid;gap:10px}
+.frame{border-radius:18px;border:1px solid var(--line);overflow-x:auto;background:var(--panel)}
+.frame svg{display:block;width:100%;min-width:760px;height:auto;font-family:var(--font)}
+figcaption{font-size:14px;color:var(--mute);max-width:80ch}
+figcaption b{color:var(--text);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px;margin-right:8px}
+.k{font-weight:900;font-style:italic;text-transform:uppercase}
+.l{font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.b{font-weight:500}
+.pick-box{background:var(--panel);border:1px solid var(--green);border-radius:18px;padding:28px;display:grid;gap:16px}
+ol.q{margin:0;padding-left:22px;display:grid;gap:10px;color:var(--sub);max-width:70ch}
+ol.q b{color:var(--text)}
+footer{padding-block:32px 64px;color:var(--mute);font-size:13px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<!-- shared drawing parts -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="star" viewBox="0 0 24 24"><polygon points="12,1 15.1,8.3 23,9.2 17.1,14.5 18.8,22.3 12,18.3 5.2,22.3 6.9,14.5 1,9.2 8.9,8.3"/></symbol>
+    <symbol id="ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.5"/><circle cx="9" cy="9" r="1.2" fill="#c9cccf"/><circle cx="14" cy="8" r="1.2" fill="#c9cccf"/><circle cx="12" cy="13" r="1.2" fill="#c9cccf"/><circle cx="16" cy="13" r="1.2" fill="#c9cccf"/><circle cx="8" cy="14" r="1.2" fill="#c9cccf"/></symbol>
+    <symbol id="lock" viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2.6"/><rect x="4.5" y="10.5" width="15" height="11" rx="2.5" fill="currentColor"/></symbol>
+    <symbol id="key" viewBox="0 0 24 24"><circle cx="7" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="3"/><path d="M11 12h11M18 12v4M22 12v3" fill="none" stroke="currentColor" stroke-width="3"/></symbol>
+    <symbol id="marker" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#ffb300"/><circle cx="12" cy="12" r="7" fill="none" stroke="#07090a" stroke-width="2"/><circle cx="12" cy="12" r="2.2" fill="#07090a"/></symbol>
+    <symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="mill" viewBox="0 0 100 140"><polygon points="34,140 66,140 59,58 41,58" fill="#f4ead0"/><rect x="45" y="112" width="10" height="28" fill="#6b4a2a"/><polygon points="37,58 63,58 50,40" fill="#c8452f"/><g transform="translate(50 56)"><g transform="rotate(24)"><rect x="-5" y="-52" width="10" height="48" fill="#fff"/><rect x="-5" y="4" width="10" height="48" fill="#fff"/><rect x="-52" y="-5" width="48" height="10" fill="#fff"/><rect x="4" y="-5" width="48" height="10" fill="#fff"/></g><circle r="6" fill="#07090a"/></g></symbol>
+    <symbol id="flame" viewBox="0 0 24 24"><path d="M12 1c1 5 7 7 7 13a7 7 0 0 1-14 0c0-3 2-4 2-7 2 1 3 2 3 4 1-3 1-6 2-10z"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">Puttr 2 · Quests · three directions to review</div>
+  <h1>Quests you have to beat</h1>
+  <p class="lede">Quests today are a list of ten numbered tiles that all play on the same ramp. Now that the app is in Unity, a quest can be a place: a world with levels, lives, secrets and a boss. Below is what exists, then three ways to rebuild it, each with its level select and gameplay screens.</p>
+</header>
+</div>
+
+<nav class="jump" aria-label="Sections"><div class="wrap">
+  <a href="#today">Today</a>
+  <a href="#rules">Shared rules</a>
+  <a class="a" href="#greenlands"><b>A</b>Greenlands</a>
+  <a class="b" href="#underpar"><b>B</b>Under Par</a>
+  <a class="c" href="#rollout"><b>C</b>Rollout</a>
+  <a href="#compare">Compare</a>
+  <a href="#pick">Decision</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="today">
+  <div class="eyebrow">What exists today</div>
+  <h2>A list, a grid, a ramp</h2>
+  <div class="today">
+    <div class="step">
+      <div class="cap">1 · Quests list</div>
+      <div class="qcard"><b>Beginner quest</b><span>10 levels</span></div>
+      <div class="qcard"><b>Advanced quest</b><span>10 levels</span></div>
+      <div class="qcard"><b>Difficult quest</b><span>Puttr Club</span></div>
+    </div>
+    <div class="step">
+      <div class="cap">2 · Level grid</div>
+      <div class="tiles">
+        <div class="tile">1<i>★★★</i></div><div class="tile">2<i>★★</i></div><div class="tile">3<i>★</i></div><div class="tile">4</div><div class="tile off">5</div>
+        <div class="tile off">6</div><div class="tile off">7</div><div class="tile off">8</div><div class="tile off">9</div><div class="tile off">10</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="cap">3 · "Level 4" on the ramp</div>
+      <div class="ramp"></div>
+    </div>
+  </div>
+  <div class="cols">
+    <div>
+      <div class="h-label">How it works now</div>
+      <ul class="plain">
+        <li><b>Three tiers by difficulty:</b> Beginner, Advanced, Difficult. Puttr Club quests are members only.</li>
+        <li><b>Ten levels a quest.</b> A level is a fixed list of putts, each from a dealt distance and tee.</li>
+        <li><b>Three level types:</b> Standard (count the makes), Streak (over at the first miss), Precision (a make only counts inside an entry window that tightens from 90° to 10°).</li>
+        <li><b>Stars are makes.</b> One, two or three stars at set make counts. One star opens the next level.</li>
+        <li><b>In Unity today</b> the list and grid were ported as they were, and every level plays on the same 3D ramp under the title "Level N".</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h-label">Why it does not feel like a game</div>
+      <ul class="plain bad">
+        <li><b>You cannot lose.</b> Outside Streak levels every level runs to the end and hands back zero to three stars. There is nothing to beat.</li>
+        <li><b>Every level looks the same.</b> Same ramp, same camera, no place, no theme. Level 9 of a Difficult quest looks like level 1 of a Beginner one.</li>
+        <li><b>A level can only change its putt list.</b> There is no hazard, rule or setting that makes one level play unlike another.</li>
+        <li><b>Stars buy nothing.</b> Two achievements count finished quests. No reward, no secret, no reason to replay a cleared level.</li>
+        <li><b>Pace is never asked for.</b> Rollout is the app's pace measure and no quest level uses it.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="rules">
+  <div class="eyebrow">Rules all three concepts share</div>
+  <h2>Every level is beaten with a real putt</h2>
+  <p>Every putt carries five things a level can use. The camera sees the last 2 ft of the roll, so it reads the make, the entry and the pace. Distance and tee are dealt to the Player and trusted, not checked. No level asks for something the green cannot judge.</p>
+  <div class="tablebox"><table>
+    <thead><tr><th>What a putt carries</th><th>Used today</th><th>What it can become in a level</th></tr></thead>
+    <tbody>
+      <tr><td>Make or miss</td><td>Standard and Streak levels</td><td>Clear the obstacle, hit the boss, open the door</td></tr>
+      <tr><td>Tee (left, centre, right)</td><td>Dealt, not checked</td><td>Which side you attack from. Never a choice the game has to detect</td></tr>
+      <tr><td>Distance (3 to 11 ft)</td><td>Dealt, not checked</td><td>How far the gap, how deep the room</td></tr>
+      <tr><td>Entry (degrees off centre)</td><td>Precision levels</td><td>Gates that narrow, a boss that guards one side, a centre-cut bonus</td></tr>
+      <tr><td>Pace (rollout past the cup)</td><td>Not used in quests</td><td>Bridges that need dying pace, speed boosts, ice and sand greens</td></tr>
+    </tbody>
+  </table></div>
+  <div class="cols">
+    <ul class="plain good">
+      <li><b>Balls are lives.</b> You carry a bag of balls into a level. A miss costs one. Reach the goal before the bag is empty or the level beats you.</li>
+      <li><b>Stars stay.</b> Still zero to three a level, so today's saved stars and the two quest achievements carry over.</li>
+    </ul>
+    <ul class="plain good">
+      <li><b>Markers are the coin.</b> A centre-cut make drops a ball marker. Markers buy looks only, the same rule as XP unlocks.</li>
+      <li><b>Bosses are putting's own villains:</b> the Lip, Three-Putt, the Yips. No borrowed characters.</li>
+    </ul>
+  </div>
+  <p>Screens are drawn at 16:9, the shape of a TV or a tablet propped by the green. Phone layouts follow once a direction is picked.</p>
+</section>
+
+<section id="greenlands" class="concept a">
+  <div class="head">
+    <div class="titleRow"><span class="badge">A</span><div><div class="eyebrow">Concept A · world map, stages, bosses</div><h2>Greenlands</h2></div></div>
+    <p class="lede">Eight worlds on one map. You walk a path from stage to stage, each stage is a themed green with its own hazard, and a boss guards the way to the next world.</p>
+  </div>
+  <div class="loop">
+    <div><b>Pick a stage on the map.</b> The path shows what is cleared, what is next and what is still hidden.</div>
+    <div><b>Read the rule.</b> One line: make 4 through the blades, 7 balls in the bag.</div>
+    <div><b>Putt until you win or run out.</b> A miss costs a ball. Fewer misses, more stars.</div>
+    <div><b>Open the path.</b> Stars open secret routes. Six stages open the boss. The boss opens the next world.</div>
+  </div>
+
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 1600 900" role="img" aria-label="Greenlands world map for World 2, Windmill Row, with stage nodes on a path, a secret route, a boss mill and the selected stage card">
+      <rect width="1600" height="900" fill="#2f8f43"/>
+      <ellipse cx="300" cy="330" rx="270" ry="130" fill="#3da552"/>
+      <ellipse cx="1000" cy="650" rx="340" ry="150" fill="#3da552"/>
+      <ellipse cx="1300" cy="400" rx="230" ry="120" fill="#3da552"/>
+      <!-- dunes of world 3 -->
+      <path d="M1470 96 L1600 96 L1600 900 L1530 900 C1470 700 1550 480 1470 96Z" fill="#e3c16f"/>
+      <path d="M1540 200 q20 -24 40 0 M1560 420 q16 -20 32 0" fill="none" stroke="#c9a550" stroke-width="5" stroke-linecap="round"/>
+      <!-- river -->
+      <path d="M520 96 C570 240 460 330 540 440 S710 660 570 900" fill="none" stroke="#4aa8ff" stroke-width="46" stroke-linecap="round"/>
+      <path d="M520 96 C570 240 460 330 540 440 S710 660 570 900" fill="none" stroke="#9fd2ff" stroke-width="6" stroke-dasharray="26 54" stroke-linecap="round"/>
+      <!-- trees -->
+      <g fill="#1f6a2c"><circle cx="150" cy="250" r="22"/><circle cx="185" cy="270" r="18"/><circle cx="330" cy="760" r="24"/><circle cx="370" cy="740" r="18"/><circle cx="880" cy="230" r="22"/><circle cx="915" cy="250" r="17"/><circle cx="1040" cy="760" r="20"/><circle cx="1180" cy="170" r="20"/><circle cx="430" cy="210" r="18"/></g>
+      <!-- windmills -->
+      <use href="#mill" x="100" y="380" width="110" height="154"/>
+      <use href="#mill" x="660" y="150" width="120" height="168"/>
+      <use href="#mill" x="860" y="560" width="110" height="154"/>
+      <use href="#mill" x="1160" y="470" width="90" height="126"/>
+      <!-- path: walked, then still to come -->
+      <path d="M0 660 L250 600 L420 470 L610 520 L780 400" fill="none" stroke="#f3e8be" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 28"/>
+      <path d="M780 400 L960 470 L1120 340 L1330 250 L1500 300" fill="none" stroke="#17552a" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 28"/>
+      <path d="M610 520 L650 716" fill="none" stroke="#ffb300" stroke-width="5" stroke-dasharray="10 12" stroke-linecap="round"/>
+      <!-- bridge -->
+      <g transform="translate(528 494) rotate(14)"><rect x="-44" y="-18" width="88" height="36" rx="6" fill="#8a5a2b"/><path d="M-22 -18v36M0 -18v36M22 -18v36" stroke="#6b4420" stroke-width="4"/></g>
+
+      <!-- 2-1 cleared -->
+      <g transform="translate(250 600)"><circle r="38" fill="#07090a"/><circle r="31" fill="#7ad446"/><text class="k" y="12" text-anchor="middle" font-size="32" fill="#07090a">1</text>
+        <rect x="-48" y="44" width="96" height="30" rx="15" fill="#07090a"/><g fill="#ffb300"><use href="#star" x="-38" y="48" width="22" height="22"/><use href="#star" x="-11" y="48" width="22" height="22"/><use href="#star" x="16" y="48" width="22" height="22"/></g></g>
+      <!-- 2-2 cleared -->
+      <g transform="translate(420 470)"><circle r="38" fill="#07090a"/><circle r="31" fill="#7ad446"/><text class="k" y="12" text-anchor="middle" font-size="32" fill="#07090a">2</text>
+        <rect x="-48" y="44" width="96" height="30" rx="15" fill="#07090a"/><g fill="#ffb300"><use href="#star" x="-38" y="48" width="22" height="22"/><use href="#star" x="-11" y="48" width="22" height="22"/></g><use href="#star" x="16" y="48" width="22" height="22" fill="#3a3d40"/></g>
+      <!-- 2-3 gauntlet (diamond), one star -->
+      <g transform="translate(610 520)"><rect x="-34" y="-34" width="68" height="68" rx="8" transform="rotate(45)" fill="#07090a"/><rect x="-27" y="-27" width="54" height="54" rx="5" transform="rotate(45)" fill="#7ad446"/><text class="k" y="12" text-anchor="middle" font-size="32" fill="#07090a">3</text>
+        <rect x="6" y="-78" width="96" height="30" rx="15" fill="#07090a"/><use href="#star" x="16" y="-74" width="22" height="22" fill="#ffb300"/><g fill="#3a3d40"><use href="#star" x="43" y="-74" width="22" height="22"/><use href="#star" x="70" y="-74" width="22" height="22"/></g></g>
+      <!-- secret -->
+      <g transform="translate(652 740)"><circle r="30" fill="#07090a"/><circle r="24" fill="#202325" stroke="#ffb300" stroke-width="3" stroke-dasharray="6 6"/><text class="k" y="11" text-anchor="middle" font-size="28" fill="#ffb300">?</text>
+        <rect x="42" y="-18" width="250" height="36" rx="18" fill="#07090a"/><text class="l" x="60" y="6" font-size="13" fill="#ffb300">Secret · 3 stars on 2-3</text></g>
+      <!-- 2-4 current -->
+      <g transform="translate(780 400)"><circle r="50" fill="none" stroke="#ffb300" stroke-width="6"/><circle r="38" fill="#07090a"/><circle r="31" fill="#fff"/><text class="k" y="12" text-anchor="middle" font-size="32" fill="#07090a">4</text>
+        <path d="M0 -52 C-36 -92 -32 -136 0 -136 C32 -136 36 -92 0 -52Z" fill="#ffb300" stroke="#07090a" stroke-width="5"/><use href="#ball" x="-17" y="-119" width="34" height="34" fill="#fff"/></g>
+      <!-- 2-5 gate (square) locked -->
+      <g transform="translate(960 470)"><rect x="-37" y="-37" width="74" height="74" rx="10" fill="#07090a"/><rect x="-30" y="-30" width="60" height="60" rx="6" fill="#202325"/><use href="#lock" x="-15" y="-16" width="30" height="30" color="#8d8e8f"/></g>
+      <!-- 2-6 locked -->
+      <g transform="translate(1120 340)"><circle r="38" fill="#07090a"/><circle r="31" fill="#202325"/><use href="#lock" x="-15" y="-16" width="30" height="30" color="#8d8e8f"/></g>
+      <!-- boss mill -->
+      <g transform="translate(1330 250)">
+        <polygon points="-64,70 64,70 50,-60 62,-60 62,-86 38,-86 38,-70 14,-70 14,-86 -14,-86 -14,-70 -38,-70 -38,-86 -62,-86 -62,-60 -50,-60" fill="#07090a"/>
+        <polygon points="-52,62 52,62 40,-52 -40,-52" fill="#202325"/>
+        <g transform="translate(0 -6) rotate(38)" fill="#ff5252"><rect x="-6" y="-58" width="12" height="116"/><rect x="-58" y="-6" width="116" height="12"/></g>
+        <circle cy="-6" r="9" fill="#07090a"/>
+        <rect x="-16" y="30" width="32" height="32" rx="14" fill="#07090a"/>
+        <rect x="-112" y="84" width="224" height="36" rx="18" fill="#07090a"/><text class="l" y="108" text-anchor="middle" font-size="13" fill="#ff5252">Boss · The Grinder</text>
+      </g>
+      <!-- world 3 gate -->
+      <g transform="translate(1528 300)"><circle r="26" fill="#07090a"/><use href="#lock" x="-12" y="-13" width="24" height="24" color="#e3c16f"/></g>
+      <text class="l" x="1586" y="372" text-anchor="end" font-size="12" fill="#6b5320">World 3</text>
+
+      <!-- top bar -->
+      <rect width="1600" height="96" fill="#07090a"/>
+      <text class="l" x="40" y="40" font-size="13" fill="#7ad446">World 2 of 8</text>
+      <text class="k" x="40" y="78" font-size="34" fill="#fff">Windmill Row</text>
+      <g transform="translate(520 48)">
+        <g><circle r="22" fill="#7ad446"/><use href="#check" x="-13" y="-13" width="26" height="26" color="#07090a"/></g>
+        <g transform="translate(60 0)"><circle r="22" fill="#07090a" stroke="#ffb300" stroke-width="4"/><text class="k" y="9" text-anchor="middle" font-size="22" fill="#fff">2</text></g>
+        <g fill="#202325"><circle cx="120" r="22"/><circle cx="180" r="22"/><circle cx="240" r="22"/><circle cx="300" r="22"/><circle cx="360" r="22"/><circle cx="420" r="22"/></g>
+        <g class="k" font-size="22" fill="#5d6063" text-anchor="middle"><text x="120" y="9">3</text><text x="180" y="9">4</text><text x="240" y="9">5</text><text x="300" y="9">6</text><text x="360" y="9">7</text><text x="420" y="9">8</text></g>
+      </g>
+      <use href="#star" x="1290" y="32" width="32" height="32" fill="#ffb300"/><text class="k" x="1332" y="60" font-size="28" fill="#fff">27</text>
+      <use href="#marker" x="1440" y="32" width="32" height="32"/><text class="k" x="1482" y="60" font-size="28" fill="#fff">240</text>
+
+      <!-- node key -->
+      <rect x="40" y="812" width="760" height="52" rx="26" fill="#07090a"/>
+      <g class="l" font-size="12" fill="#b8b9b9">
+        <circle cx="74" cy="838" r="11" fill="#7ad446"/><text x="94" y="843">Stage</text>
+        <rect x="178" y="829" width="18" height="18" transform="rotate(45 187 838)" fill="#7ad446"/><text x="208" y="843">Gauntlet: no misses</text>
+        <rect x="412" y="828" width="20" height="20" rx="3" fill="#7ad446"/><text x="442" y="843">Gate: entry window</text>
+        <rect x="640" y="827" width="22" height="22" fill="#ff5252"/><text x="672" y="843">Boss</text>
+      </g>
+
+      <!-- selected stage -->
+      <rect x="1080" y="560" width="480" height="304" rx="20" fill="#07090a"/>
+      <text class="l" x="1112" y="606" font-size="13" fill="#7ad446">Stage 2-4 · Timing</text>
+      <text class="k" x="1112" y="656" font-size="44" fill="#fff">Mill Race</text>
+      <text class="b" x="1112" y="694" font-size="19" fill="#b8b9b9">Make 4 putts through the blades.</text>
+      <text class="b" x="1112" y="722" font-size="19" fill="#b8b9b9">8 to 9 ft. Seven balls in the bag.</text>
+      <g fill="#ffb300"><use href="#star" x="1112" y="744" width="18" height="18"/><use href="#star" x="1132" y="744" width="18" height="18"/><use href="#star" x="1152" y="744" width="18" height="18"/>
+        <use href="#star" x="1282" y="744" width="18" height="18"/><use href="#star" x="1302" y="744" width="18" height="18"/>
+        <use href="#star" x="1432" y="744" width="18" height="18"/></g>
+      <g class="l" font-size="11" fill="#8d8e8f"><text x="1112" y="782">No misses</text><text x="1282" y="782">One miss</text><text x="1432" y="782">Clear</text></g>
+      <rect x="1112" y="800" width="416" height="46" rx="23" fill="#7ad446"/><text class="k" x="1320" y="831" text-anchor="middle" font-size="22" fill="#07090a">Play 2-4</text>
+    </svg>
+    </div>
+    <figcaption><b>Level select</b>The world map. Round nodes are stages, the diamond is a no-miss gauntlet, the square is an entry gate. Three stars on 2-3 opens a hidden route. World 3 waits behind the boss mill.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 1600 900" role="img" aria-label="Greenlands gameplay: stage 2-4 Mill Race, a green running to a windmill whose blades sweep across the cup">
+      <rect width="1600" height="900" fill="#86cdf5"/>
+      <ellipse cx="260" cy="150" rx="120" ry="30" fill="#fff"/><ellipse cx="340" cy="130" rx="80" ry="26" fill="#fff"/>
+      <ellipse cx="1290" cy="230" rx="110" ry="26" fill="#fff"/>
+      <path d="M0 400 C200 300 380 330 560 380 C760 300 980 290 1180 370 C1340 310 1480 320 1600 370 L1600 480 L0 480Z" fill="#58b368"/>
+      <use href="#mill" x="170" y="230" width="130" height="182"/>
+      <use href="#mill" x="1330" y="250" width="110" height="154"/>
+      <rect y="420" width="1600" height="480" fill="#2f8f43"/>
+      <path d="M0 520 C300 470 500 500 620 520 L620 540 L0 600Z" fill="#3da552"/><path d="M1600 520 C1300 470 1100 500 980 520 L980 540 L1600 600Z" fill="#3da552"/>
+      <!-- the green -->
+      <polygon points="430,900 1170,900 915,400 685,400" fill="#4fbf62"/>
+      <g fill="#45b058"><polygon points="501,760 1099,760 1043,650 557,650"/><polygon points="603,560 997,560 961,490 639,490"/><polygon points="665,440 935,440 915,400 685,400"/></g>
+      <polygon points="430,900 1170,900 915,400 685,400" fill="none" stroke="#17552a" stroke-width="7" stroke-linejoin="round"/>
+      <!-- the mill at the cup -->
+      <polygon points="728,404 872,404 846,170 754,170" fill="#f4ead0"/>
+      <polygon points="728,404 760,404 772,170 754,170" fill="#ddd2b4"/>
+      <polygon points="744,172 856,172 800,112" fill="#c8452f"/>
+      <path d="M760 404 v-52 a40 40 0 0 1 80 0 v52z" fill="#07090a"/>
+      <ellipse cx="800" cy="452" rx="42" ry="13" fill="#07090a"/>
+      <ellipse cx="800" cy="452" rx="42" ry="13" fill="none" stroke="#fff" stroke-width="3"/>
+      <path d="M590 250 A230 230 0 0 0 800 430" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="10 14" opacity=".55"/>
+      <g transform="translate(800 204)">
+        <g transform="rotate(152)" fill="#fff" stroke="#b9ae90" stroke-width="3"><rect x="-17" y="-262" width="34" height="232"/><rect x="-17" y="30" width="34" height="232"/><rect x="-262" y="-17" width="232" height="34"/><rect x="30" y="-17" width="232" height="34"/></g>
+        <circle r="20" fill="#07090a"/>
+      </g>
+      <!-- lamp -->
+      <rect x="1010" y="372" width="10" height="92" fill="#07090a"/><circle cx="1015" cy="362" r="26" fill="#07090a"/><circle cx="1015" cy="362" r="17" fill="#7ad446"/>
+      <rect x="1056" y="342" width="258" height="40" rx="20" fill="#07090a"/><text class="l" x="1076" y="368" font-size="13" fill="#7ad446">Lamp green: putt now</text>
+      <!-- tees -->
+      <ellipse cx="800" cy="832" rx="20" ry="6" fill="#17552a"/><ellipse cx="1000" cy="832" rx="20" ry="6" fill="#17552a"/>
+      <ellipse cx="600" cy="834" rx="50" ry="15" fill="none" stroke="#ffb300" stroke-width="6"/>
+      <use href="#ball" x="578" y="790" width="44" height="44" fill="#fff"/>
+
+      <!-- stage bug -->
+      <rect x="40" y="36" width="400" height="84" rx="14" fill="#07090a"/><path d="M54 36h82v84H54a14 14 0 0 1-14-14V50a14 14 0 0 1 14-14z" fill="#7ad446"/>
+      <text class="k" x="88" y="91" text-anchor="middle" font-size="34" fill="#07090a">2-4</text>
+      <text class="k" x="158" y="78" font-size="30" fill="#fff">Mill Race</text><text class="l" x="158" y="104" font-size="12" fill="#8d8e8f">Windmill Row</text>
+      <!-- makes -->
+      <rect x="620" y="36" width="360" height="84" rx="14" fill="#07090a"/>
+      <text class="l" x="648" y="84" font-size="14" fill="#8d8e8f">Makes</text>
+      <g><circle cx="776" cy="78" r="20" fill="#7ad446"/><use href="#check" x="764" y="66" width="24" height="24" color="#07090a"/><circle cx="830" cy="78" r="20" fill="#7ad446"/><use href="#check" x="818" y="66" width="24" height="24" color="#07090a"/>
+        <circle cx="884" cy="78" r="18" fill="none" stroke="#5d6063" stroke-width="4"/><circle cx="938" cy="78" r="18" fill="none" stroke="#5d6063" stroke-width="4"/></g>
+      <!-- bag -->
+      <rect x="1160" y="36" width="400" height="84" rx="14" fill="#07090a"/>
+      <text class="l" x="1188" y="84" font-size="14" fill="#8d8e8f">Balls</text>
+      <g fill="#fff"><use href="#ball" x="1270" y="63" width="30" height="30"/><use href="#ball" x="1310" y="63" width="30" height="30"/><use href="#ball" x="1350" y="63" width="30" height="30"/><use href="#ball" x="1390" y="63" width="30" height="30"/></g>
+      <g fill="none" stroke="#3a3d40" stroke-width="3"><circle cx="1445" cy="78" r="13"/><circle cx="1485" cy="78" r="13"/><circle cx="1525" cy="78" r="13"/></g>
+      <rect x="1160" y="132" width="400" height="44" rx="14" fill="#07090a"/>
+      <g fill="#ffb300"><use href="#star" x="1186" y="143" width="22" height="22"/><use href="#star" x="1212" y="143" width="22" height="22"/></g><use href="#star" x="1238" y="143" width="22" height="22" fill="#3a3d40"/>
+      <text class="l" x="1280" y="160" font-size="12" fill="#b8b9b9">One miss · two stars live</text>
+      <!-- this putt -->
+      <rect x="40" y="716" width="384" height="148" rx="14" fill="#07090a"/>
+      <text class="l" x="68" y="752" font-size="13" fill="#8d8e8f">This putt</text>
+      <text class="k" x="68" y="830" font-size="72" fill="#fff">8 ft</text>
+      <text class="l" x="262" y="800" font-size="16" fill="#ffb300">Left</text><text class="l" x="262" y="826" font-size="16" fill="#ffb300">tee</text>
+      <!-- last putt read -->
+      <rect x="1230" y="700" width="330" height="164" rx="14" fill="#07090a"/>
+      <text class="l" x="1258" y="738" font-size="13" fill="#8d8e8f">Last putt</text><text class="k" x="1532" y="742" text-anchor="end" font-size="26" fill="#7ad446">Made</text>
+      <g class="l" font-size="13" fill="#8d8e8f"><text x="1258" y="780">Line</text><text x="1258" y="812">Pace</text><text x="1258" y="844">Entry</text></g>
+      <g class="b" font-size="17" fill="#fff" text-anchor="end"><text x="1532" y="780">On line</text><text x="1532" y="812">14 in. past</text><text x="1532" y="844">4° left</text></g>
+    </svg>
+    </div>
+    <figcaption><b>Gameplay</b>Stage 2-4. The blades sweep the cup and the lamp tells you when a putt will get through. Goal, bag and star count sit along the top. The dealt putt is bottom left and the read of the last putt is bottom right.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 1600 900" role="img" aria-label="Greenlands boss fight against The Lip, a stone face whose mouth is the cup, with a narrowing entry window">
+      <rect width="1600" height="900" fill="#2a1f4a"/>
+      <circle cx="1280" cy="170" r="60" fill="#f4d58a"/>
+      <path d="M0 420 L0 260 L160 260 L200 200 L420 200 L460 300 L620 300 L660 420Z" fill="#4b2f6b"/>
+      <path d="M1600 420 L1600 240 L1440 240 L1400 310 L1180 310 L1120 420Z" fill="#4b2f6b"/>
+      <rect y="420" width="1600" height="480" fill="#5a2d3f"/>
+      <polygon points="0,420 320,420 150,900 0,900" fill="#7a3b4e"/><polygon points="1600,420 1280,420 1450,900 1600,900" fill="#7a3b4e"/>
+      <!-- the green -->
+      <polygon points="430,900 1170,900 915,400 685,400" fill="#4fbf62"/>
+      <g fill="#45b058"><polygon points="501,760 1099,760 1043,650 557,650"/><polygon points="603,560 997,560 961,490 639,490"/></g>
+      <polygon points="800,818 764,446 836,446" fill="#ffb300" opacity=".3"/>
+      <polygon points="430,900 1170,900 915,400 685,400" fill="none" stroke="#17552a" stroke-width="7" stroke-linejoin="round"/>
+      <!-- the lip -->
+      <path d="M560 470 C520 300 600 120 800 120 C1000 120 1080 300 1040 470Z" fill="#8d8fa3"/>
+      <path d="M560 470 C520 300 600 120 800 120 C740 200 700 330 720 470Z" fill="#74768a"/>
+      <polygon points="650,262 760,300 752,326 650,300" fill="#ffb300"/><polygon points="950,262 840,300 848,326 950,300" fill="#ffb300"/>
+      <path d="M640 236 L770 284 M960 236 L830 284" stroke="#3b3c4c" stroke-width="16" stroke-linecap="round"/>
+      <path d="M700 180 l30 40 M880 170 l-20 44 M800 140 v30" stroke="#5a5c70" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="800" cy="446" rx="150" ry="40" fill="#07090a"/>
+      <path d="M650 446 A150 40 0 0 1 764 407 L764 485 A150 40 0 0 1 650 446Z" fill="#c4c6d6" stroke="#3b3c4c" stroke-width="4"/>
+      <path d="M950 446 A150 40 0 0 0 836 407 L836 485 A150 40 0 0 0 950 446Z" fill="#c4c6d6" stroke="#3b3c4c" stroke-width="4"/>
+      <rect x="560" y="566" width="480" height="46" rx="23" fill="#07090a"/><text class="l" x="800" y="595" text-anchor="middle" font-size="14" fill="#ffb300">Direct hit · the window narrows</text>
+      <ellipse cx="800" cy="834" rx="50" ry="15" fill="none" stroke="#ffb300" stroke-width="6"/><use href="#ball" x="778" y="790" width="44" height="44" fill="#fff"/>
+
+      <!-- bug -->
+      <rect x="40" y="36" width="390" height="84" rx="14" fill="#07090a"/><path d="M54 36h82v84H54a14 14 0 0 1-14-14V50a14 14 0 0 1 14-14z" fill="#ff6a2b"/>
+      <text class="k" x="88" y="91" text-anchor="middle" font-size="34" fill="#07090a">5-B</text>
+      <text class="k" x="158" y="78" font-size="30" fill="#fff">The Narrows</text><text class="l" x="158" y="104" font-size="12" fill="#8d8e8f">World 5 boss</text>
+      <!-- boss health -->
+      <rect x="520" y="36" width="560" height="84" rx="14" fill="#07090a"/>
+      <text class="k" x="548" y="90" font-size="32" fill="#fff">The Lip</text>
+      <g fill="#ff5252"><rect x="740" y="64" width="56" height="28" rx="5"/><rect x="804" y="64" width="56" height="28" rx="5"/><rect x="868" y="64" width="56" height="28" rx="5"/></g>
+      <g fill="#2a2d30"><rect x="932" y="64" width="56" height="28" rx="5"/><rect x="996" y="64" width="56" height="28" rx="5"/></g>
+      <!-- bag -->
+      <rect x="1200" y="36" width="360" height="84" rx="14" fill="#07090a"/>
+      <text class="l" x="1228" y="84" font-size="14" fill="#8d8e8f">Balls</text>
+      <g fill="#fff"><use href="#ball" x="1306" y="63" width="30" height="30"/><use href="#ball" x="1346" y="63" width="30" height="30"/><use href="#ball" x="1386" y="63" width="30" height="30"/></g>
+      <g fill="none" stroke="#3a3d40" stroke-width="3"><circle cx="1441" cy="78" r="13"/><circle cx="1481" cy="78" r="13"/><circle cx="1521" cy="78" r="13"/></g>
+      <!-- this putt -->
+      <rect x="40" y="716" width="384" height="148" rx="14" fill="#07090a"/>
+      <text class="l" x="68" y="752" font-size="13" fill="#8d8e8f">This putt</text>
+      <text class="k" x="68" y="830" font-size="72" fill="#fff">9 ft</text>
+      <text class="l" x="262" y="800" font-size="16" fill="#ffb300">Centre</text><text class="l" x="262" y="826" font-size="16" fill="#ffb300">tee</text>
+      <!-- entry window -->
+      <rect x="1200" y="640" width="360" height="224" rx="14" fill="#07090a"/>
+      <text class="l" x="1228" y="678" font-size="13" fill="#8d8e8f">Entry window</text>
+      <text class="k" x="1228" y="752" font-size="56" fill="#ffb300">30°</text>
+      <text class="l" x="1228" y="800" font-size="12" fill="#b8b9b9">Last hit</text><text class="b" x="1228" y="826" font-size="17" fill="#fff">6° right</text>
+      <path d="M1338 830 A92 92 0 0 1 1522 830" fill="none" stroke="#2a2d30" stroke-width="16"/>
+      <path d="M1430 830 L1406.2 741.1 A92 92 0 0 1 1453.8 741.1Z" fill="#ffb300"/>
+      <path d="M1430 830 L1439.6 738.5" stroke="#7ad446" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="1430" cy="830" r="9" fill="#fff"/>
+    </svg>
+    </div>
+    <figcaption><b>Boss</b>The Lip guards world 5. Its mouth is the cup and its stone lips close in after every hit, so the entry window that Precision levels use today becomes a boss with a health bar. A make outside the window is spat back out.</figcaption>
+  </figure>
+
+  <div class="cols">
+    <div>
+      <div class="h-label">The eight worlds</div>
+      <div class="tablebox"><table style="min-width:520px">
+        <thead><tr><th>World</th><th>What it tests</th><th>Boss</th></tr></thead>
+        <tbody>
+          <tr><td>1 Meadow Links</td><td>Short makes, 3 to 5 ft. Teaches balls and stars. Open to everyone</td><td>Three-Putt</td></tr>
+          <tr><td>2 Windmill Row</td><td>Timing through moving blades</td><td>The Grinder</td></tr>
+          <tr><td>3 Dune Sea</td><td>Firm pace through sand</td><td>The Bunker King</td></tr>
+          <tr><td>4 Frostpine</td><td>Dying pace on ice</td><td>Slick</td></tr>
+          <tr><td>5 The Narrows</td><td>Entry gates</td><td>The Lip</td></tr>
+          <tr><td>6 Ember Caldera</td><td>Streaks. Lava rises on a miss</td><td>Hot Hand</td></tr>
+          <tr><td>7 Cloud Nine</td><td>Long putts, 9 to 11 ft, from every tee</td><td>The Long Shadow</td></tr>
+          <tr><td>8 Yips Keep</td><td>Everything, mixed</td><td>The Yips</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div>
+      <div class="h-label">Why you come back</div>
+      <ul class="plain good">
+        <li><b>Secret routes.</b> Three stars on a marked stage opens a hidden bonus green or a shortcut.</li>
+        <li><b>Boss rematches.</b> A beaten boss can be replayed with a smaller bag for a gold crest.</li>
+        <li><b>The map fills in.</b> Forty-eight stages and eight bosses, visible from day one.</li>
+      </ul>
+      <div class="h-label" style="margin-top:28px">Build notes</div>
+      <ul class="plain">
+        <li><b>Data fits as it is.</b> A quest becomes a world, a quest level becomes a stage, saved results stay stars.</li>
+        <li><b>Hazards exist already.</b> Windmill and Dead Weight are arcade modes in the Unity app and can dress a stage.</li>
+        <li><b>New work:</b> the map screen, bag and fail state, boss rules, one scene per world.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="underpar" class="concept b">
+  <div class="head">
+    <div class="titleRow"><span class="badge">B</span><div><div class="eyebrow">Concept B · dungeons, keys, items</div><h2>Under Par</h2></div></div>
+    <p class="lede">Six dungeons lie under the Old Course, one for each attribute on the Player card: Line, Pace, Short, Mid, Long, Clutch. Each is a maze of rooms. Every room is a putting puzzle, and each dungeon hides an item that changes what you can do next.</p>
+  </div>
+  <div class="loop">
+    <div><b>Pick a dungeon on the island.</b> Some are open, some need an item you have not found yet.</div>
+    <div><b>Work through the rooms.</b> Clear a room to open its doors. Find the key, find the chest.</div>
+    <div><b>Use the item.</b> The Metronome shows pace, the Alignment stick shows your start line. Old locked rooms open up.</div>
+    <div><b>Beat the boss, take the relic.</b> Six relics complete the Player card crest.</div>
+  </div>
+
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 1600 900" role="img" aria-label="Under Par overworld: an island golf course with six dungeon entrances and an inventory panel">
+      <rect width="1600" height="900" fill="#0d3b4f"/>
+      <g stroke="#1b566e" stroke-width="5" stroke-linecap="round" fill="none"><path d="M60 200 q18 -14 36 0 q18 14 36 0"/><path d="M980 820 q18 -14 36 0 q18 14 36 0"/><path d="M90 800 q18 -14 36 0 q18 14 36 0"/><path d="M1020 90 q18 -14 36 0 q18 14 36 0"/></g>
+      <path d="M150 480 C150 260 380 130 640 150 C820 100 1060 170 1090 360 C1130 520 1060 720 860 770 C640 840 330 800 220 680 C170 620 150 550 150 480Z" fill="#3f9c4a" stroke="#e3c16f" stroke-width="36" stroke-linejoin="round"/>
+      <ellipse cx="470" cy="470" rx="150" ry="70" fill="#4fb35d" transform="rotate(-18 470 470)"/>
+      <ellipse cx="790" cy="560" rx="130" ry="60" fill="#4fb35d" transform="rotate(14 790 560)"/>
+      <ellipse cx="700" cy="330" rx="120" ry="50" fill="#4fb35d"/>
+      <ellipse cx="560" cy="590" rx="64" ry="34" fill="#4aa8ff"/>
+      <ellipse cx="930" cy="390" rx="46" ry="24" fill="#e3c16f"/><ellipse cx="300" cy="500" rx="40" ry="22" fill="#e3c16f"/>
+      <g fill="#2a7a37"><circle cx="250" cy="420" r="18"/><circle cx="278" cy="436" r="14"/><circle cx="660" cy="700" r="18"/><circle cx="1010" cy="620" r="18"/><circle cx="450" cy="230" r="16"/><circle cx="760" cy="200" r="16"/></g>
+      <!-- trails from the clubhouse -->
+      <g fill="none" stroke="#f3e8be" stroke-width="9" stroke-linecap="round" stroke-dasharray="1 18">
+        <path d="M620 460 L330 330"/><path d="M620 460 L560 250"/><path d="M620 460 L850 270"/><path d="M620 460 L960 500"/><path d="M620 460 L760 680"/><path d="M620 460 L380 640"/></g>
+      <!-- clubhouse -->
+      <g transform="translate(620 460)"><rect x="-46" y="-22" width="92" height="52" fill="#f4ead0" stroke="#07090a" stroke-width="5"/><polygon points="-58,-22 58,-22 34,-58 -34,-58" fill="#c8452f" stroke="#07090a" stroke-width="5" stroke-linejoin="round"/><rect x="-10" y="2" width="20" height="28" fill="#07090a"/><line x1="0" y1="-58" x2="0" y2="-96" stroke="#07090a" stroke-width="5"/><polygon points="0,-96 30,-86 0,-76" fill="#7ad446"/></g>
+      <!-- dungeon doors: reusable shape drawn six times -->
+      <g id="b-doors">
+        <!-- line: cleared -->
+        <g transform="translate(330 330)"><path d="M-34 30 v-40 a34 34 0 0 1 68 0 v40z" fill="#8d8fa3" stroke="#07090a" stroke-width="5"/><path d="M-16 30 v-34 a16 16 0 0 1 32 0 v34z" fill="#07090a"/><circle cx="34" cy="-38" r="17" fill="#7ad446" stroke="#07090a" stroke-width="4"/><use href="#check" x="24" y="-48" width="20" height="20" color="#07090a"/>
+          <rect x="-112" y="40" width="224" height="52" rx="12" fill="#07090a"/><text class="l" y="60" text-anchor="middle" font-size="11" fill="#7ad446">Line</text><text class="b" y="80" text-anchor="middle" font-size="15" fill="#fff">Hall of the True Line</text></g>
+        <!-- short: cleared -->
+        <g transform="translate(560 250)"><path d="M-34 30 v-40 a34 34 0 0 1 68 0 v40z" fill="#8d8fa3" stroke="#07090a" stroke-width="5"/><path d="M-16 30 v-34 a16 16 0 0 1 32 0 v34z" fill="#07090a"/><circle cx="34" cy="-38" r="17" fill="#7ad446" stroke="#07090a" stroke-width="4"/><use href="#check" x="24" y="-48" width="20" height="20" color="#07090a"/>
+          <rect x="-84" y="-104" width="168" height="52" rx="12" fill="#07090a"/><text class="l" y="-84" text-anchor="middle" font-size="11" fill="#7ad446">Short</text><text class="b" y="-64" text-anchor="middle" font-size="15" fill="#fff">The Gimme Crypt</text></g>
+        <!-- pace: here -->
+        <g transform="translate(850 270)"><circle r="56" fill="none" stroke="#ffb300" stroke-width="6"/><path d="M-34 30 v-40 a34 34 0 0 1 68 0 v40z" fill="#8d8fa3" stroke="#07090a" stroke-width="5"/><path d="M-16 30 v-34 a16 16 0 0 1 32 0 v34z" fill="#07090a"/>
+          <path d="M0 -52 C-30 -86 -27 -122 0 -122 C27 -122 30 -86 0 -52Z" fill="#ffb300" stroke="#07090a" stroke-width="5"/><use href="#ball" x="-14" y="-108" width="28" height="28" fill="#fff"/>
+          <rect x="70" y="-26" width="150" height="52" rx="12" fill="#07090a"/><text class="l" x="145" y="-6" text-anchor="middle" font-size="11" fill="#4aa8ff">Pace</text><text class="b" x="145" y="14" text-anchor="middle" font-size="15" fill="#fff">The Still Well</text></g>
+        <!-- mid: open -->
+        <g transform="translate(960 500)"><path d="M-34 30 v-40 a34 34 0 0 1 68 0 v40z" fill="#8d8fa3" stroke="#07090a" stroke-width="5"/><path d="M-16 30 v-34 a16 16 0 0 1 32 0 v34z" fill="#07090a"/>
+          <rect x="-90" y="40" width="180" height="52" rx="12" fill="#07090a"/><text class="l" y="60" text-anchor="middle" font-size="11" fill="#b8b9b9">Mid · open</text><text class="b" y="80" text-anchor="middle" font-size="15" fill="#fff">The Middle Vaults</text></g>
+        <!-- long: needs item -->
+        <g transform="translate(760 680)"><path d="M-34 30 v-40 a34 34 0 0 1 68 0 v40z" fill="#5d6072" stroke="#07090a" stroke-width="5"/><path d="M-16 30 v-34 a16 16 0 0 1 32 0 v34z" fill="#07090a"/><circle cx="34" cy="-38" r="17" fill="#07090a"/><use href="#lock" x="25" y="-48" width="18" height="18" color="#ffb300"/>
+          <rect x="52" y="-10" width="216" height="52" rx="12" fill="#07090a"/><text class="l" x="160" y="10" text-anchor="middle" font-size="11" fill="#ffb300">Long · needs Rangefinder</text><text class="b" x="160" y="30" text-anchor="middle" font-size="15" fill="#fff">The Far Gallery</text></g>
+        <!-- clutch: sealed -->
+        <g transform="translate(380 640)"><path d="M-34 30 v-40 a34 34 0 0 1 68 0 v40z" fill="#5d6072" stroke="#07090a" stroke-width="5"/><path d="M-16 30 v-34 a16 16 0 0 1 32 0 v34z" fill="#3a1620"/><circle cx="34" cy="-38" r="17" fill="#07090a"/><use href="#lock" x="25" y="-48" width="18" height="18" color="#ff5252"/>
+          <rect x="-96" y="40" width="192" height="52" rx="12" fill="#07090a"/><text class="l" y="60" text-anchor="middle" font-size="11" fill="#ff5252">Clutch · needs 5 relics</text><text class="b" y="80" text-anchor="middle" font-size="15" fill="#fff">The Last Green</text></g>
+      </g>
+      <text class="l" x="40" y="60" font-size="13" fill="#4aa8ff">Under Par</text>
+      <text class="k" x="40" y="100" font-size="36" fill="#fff">The Old Course</text>
+
+      <!-- inventory -->
+      <rect x="1150" y="40" width="410" height="820" rx="20" fill="#111314"/>
+      <text class="l" x="1180" y="86" font-size="13" fill="#8d8e8f">Relics</text><text class="k" x="1530" y="88" text-anchor="end" font-size="22" fill="#fff">2 / 6</text>
+      <g transform="translate(1206 136)">
+        <polygon points="0,-28 24,-14 24,14 0,28 -24,14 -24,-14" fill="#7ad446"/><polygon points="62,-28 86,-14 86,14 62,28 38,14 38,-14" fill="#7ad446"/>
+        <g fill="none" stroke="#3a3d40" stroke-width="3"><polygon points="124,-28 148,-14 148,14 124,28 100,14 100,-14"/><polygon points="186,-28 210,-14 210,14 186,28 162,14 162,-14"/><polygon points="248,-28 272,-14 272,14 248,28 224,14 224,-14"/><polygon points="310,-28 334,-14 334,14 310,28 286,14 286,-14"/></g>
+        <g class="l" font-size="9" text-anchor="middle"><text y="4" fill="#07090a">Line</text><text x="62" y="4" fill="#07090a">Short</text><text x="124" y="4" fill="#8d8e8f">Pace</text><text x="186" y="4" fill="#8d8e8f">Mid</text><text x="248" y="4" fill="#8d8e8f">Long</text><text x="310" y="4" fill="#8d8e8f">Clutch</text></g>
+      </g>
+      <text class="l" x="1180" y="218" font-size="13" fill="#8d8e8f">Items</text>
+      <g>
+        <rect x="1180" y="236" width="350" height="62" rx="12" fill="#202325"/><rect x="1192" y="248" width="38" height="38" rx="8" fill="#7ad446"/><line x1="1201" y1="277" x2="1221" y2="257" stroke="#07090a" stroke-width="5" stroke-linecap="round"/>
+        <text class="b" x="1244" y="263" font-size="15" fill="#fff" style="font-weight:700">Alignment stick</text><text class="b" x="1244" y="284" font-size="13" fill="#b8b9b9">Draws your start line on the green</text>
+        <rect x="1180" y="306" width="350" height="62" rx="12" fill="#202325"/><rect x="1192" y="318" width="38" height="38" rx="8" fill="#7ad446"/><use href="#marker" x="1199" y="325" width="24" height="24"/>
+        <text class="b" x="1244" y="333" font-size="15" fill="#fff" style="font-weight:700">Tap-in token</text><text class="b" x="1244" y="354" font-size="13" fill="#b8b9b9">One free retry in every room</text>
+        <rect x="1180" y="376" width="350" height="62" rx="12" fill="#202325"/><rect x="1192" y="388" width="38" height="38" rx="8" fill="#4aa8ff"/><path d="M1211 420 L1203 396 h16z" fill="#07090a"/><line x1="1211" y1="418" x2="1219" y2="398" stroke="#07090a" stroke-width="3"/>
+        <text class="b" x="1244" y="403" font-size="15" fill="#fff" style="font-weight:700">Metronome</text><text class="b" x="1244" y="424" font-size="13" fill="#b8b9b9">Shows the pace of every putt</text>
+        <g opacity=".45"><rect x="1180" y="446" width="350" height="62" rx="12" fill="#202325"/><rect x="1192" y="458" width="38" height="38" rx="8" fill="#3a3d40"/><use href="#lock" x="1201" y="467" width="20" height="20" color="#8d8e8f"/>
+        <text class="b" x="1244" y="473" font-size="15" fill="#fff" style="font-weight:700">Rangefinder</text><text class="b" x="1244" y="494" font-size="13" fill="#b8b9b9">Opens 10 ft doors. In the Middle Vaults</text></g>
+        <g opacity=".45"><rect x="1180" y="516" width="350" height="62" rx="12" fill="#202325"/><rect x="1192" y="528" width="38" height="38" rx="8" fill="#3a3d40"/><use href="#lock" x="1201" y="537" width="20" height="20" color="#8d8e8f"/>
+        <text class="b" x="1244" y="543" font-size="15" fill="#fff" style="font-weight:700">Lantern</text><text class="b" x="1244" y="564" font-size="13" fill="#b8b9b9">Lights dark rooms. In the Far Gallery</text></g>
+      </g>
+      <text class="l" x="1180" y="622" font-size="13" fill="#8d8e8f">Bag</text>
+      <g fill="#fff"><use href="#ball" x="1240" y="602" width="28" height="28"/><use href="#ball" x="1274" y="602" width="28" height="28"/><use href="#ball" x="1308" y="602" width="28" height="28"/><use href="#ball" x="1342" y="602" width="28" height="28"/></g>
+      <circle cx="1390" cy="616" r="12" fill="none" stroke="#3a3d40" stroke-width="3"/><path d="M1390 616 L1390 604 A12 12 0 0 1 1390 628Z" fill="#8d8e8f"/>
+      <text class="b" x="1414" y="621" font-size="12" fill="#8d8e8f">2 of 4 pieces</text>
+      <line x1="1180" y1="656" x2="1530" y2="656" stroke="#2a2d30" stroke-width="2"/>
+      <text class="l" x="1180" y="696" font-size="13" fill="#4aa8ff">Pace dungeon</text>
+      <text class="k" x="1180" y="738" font-size="32" fill="#fff">The Still Well</text>
+      <text class="b" x="1180" y="770" font-size="16" fill="#b8b9b9">5 of 12 rooms cleared. Holding 1 key.</text>
+      <rect x="1180" y="792" width="350" height="46" rx="23" fill="#7ad446"/><text class="k" x="1355" y="823" text-anchor="middle" font-size="22" fill="#07090a">Enter</text>
+    </svg>
+    </div>
+    <figcaption><b>Level select 1</b>The island. Two dungeons are beaten, the Still Well is under way, the Far Gallery needs an item from another dungeon and the Last Green stays sealed until five relics are in. The panel holds everything you carry.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 1600 900" role="img" aria-label="Under Par dungeon map of The Still Well: a grid of rooms with cleared, current, unseen and locked rooms">
+      <rect width="1600" height="900" fill="#0b1220"/>
+      <text class="l" x="40" y="60" font-size="13" fill="#4aa8ff">Pace dungeon · floor B1</text>
+      <text class="k" x="40" y="104" font-size="38" fill="#fff">The Still Well</text>
+      <rect x="1240" y="40" width="320" height="72" rx="14" fill="#111314"/>
+      <use href="#key" x="1264" y="60" width="32" height="32" color="#ffb300"/><text class="k" x="1304" y="86" font-size="26" fill="#fff">× 1</text>
+      <g fill="#fff"><use href="#ball" x="1392" y="62" width="28" height="28"/><use href="#ball" x="1424" y="62" width="28" height="28"/><use href="#ball" x="1456" y="62" width="28" height="28"/><use href="#ball" x="1488" y="62" width="28" height="28"/></g><circle cx="1534" cy="76" r="12" fill="none" stroke="#3a4a6b" stroke-width="3"/>
+
+      <!-- doors -->
+      <g fill="#2f7f8f"><rect x="660" y="645" width="30" height="30"/><rect x="840" y="645" width="30" height="30"/><rect x="750" y="570" width="30" height="30"/><rect x="660" y="495" width="30" height="30"/><rect x="840" y="495" width="30" height="30"/></g>
+      <g fill="#3a4a6b"><rect x="480" y="495" width="30" height="30"/></g>
+      <g fill="none" stroke="#3a4a6b" stroke-width="3" stroke-dasharray="5 5"><rect x="1020" y="495" width="30" height="30"/><rect x="930" y="420" width="30" height="30"/><rect x="660" y="345" width="30" height="30"/></g>
+      <rect x="750" y="420" width="30" height="30" fill="#ffb300"/><circle cx="765" cy="431" r="4" fill="#07090a"/><rect x="763" y="431" width="4" height="12" fill="#07090a"/>
+      <rect x="750" y="270" width="30" height="30" fill="#ff5252"/>
+      <!-- cleared rooms -->
+      <g fill="#1d4f5a" stroke="#2f7f8f" stroke-width="4">
+        <rect x="690" y="600" width="150" height="120" rx="8"/><rect x="510" y="600" width="150" height="120" rx="8"/><rect x="870" y="600" width="150" height="120" rx="8"/><rect x="690" y="450" width="150" height="120" rx="8"/><rect x="510" y="450" width="150" height="120" rx="8"/></g>
+      <g class="l" font-size="11" fill="#9fd9e3" text-anchor="middle"><text x="765" y="704">Entrance</text><text x="585" y="704">Cleared</text><text x="945" y="704">Key taken</text><text x="765" y="554">Cleared</text><text x="585" y="554">Metronome</text></g>
+      <g color="#2f7f8f"><use href="#check" x="745" y="630" width="40" height="40"/><use href="#check" x="565" y="630" width="40" height="40"/><use href="#check" x="745" y="480" width="40" height="40"/></g>
+      <use href="#key" x="925" y="630" width="40" height="40" color="#2f7f8f"/>
+      <g transform="translate(585 496)"><rect x="-22" y="-8" width="44" height="26" rx="3" fill="#2f7f8f"/><path d="M-22 -8 q22 -24 44 0z" fill="none" stroke="#2f7f8f" stroke-width="4"/></g>
+      <path d="M765 720 v34 M753 742 l12 14 12 -14" fill="none" stroke="#3a4a6b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- seen: dark room -->
+      <rect x="330" y="450" width="150" height="120" rx="8" fill="#131c2e" stroke="#3a4a6b" stroke-width="4"/>
+      <text class="l" x="405" y="506" text-anchor="middle" font-size="11" fill="#8fa0c4">Dark room</text><text class="l" x="405" y="526" text-anchor="middle" font-size="11" fill="#ffb300">Needs Lantern</text>
+      <!-- current -->
+      <rect x="870" y="450" width="150" height="120" rx="8" fill="#1d4f5a" stroke="#ffb300" stroke-width="6"/>
+      <use href="#ball" x="925" y="474" width="40" height="40" fill="#fff"/><text class="l" x="945" y="554" text-anchor="middle" font-size="11" fill="#ffb300">You are here</text>
+      <!-- mini boss, locked -->
+      <rect x="690" y="300" width="150" height="120" rx="8" fill="#131c2e" stroke="#3a4a6b" stroke-width="4"/>
+      <use href="#lock" x="747" y="330" width="36" height="36" color="#ffb300"/><text class="l" x="765" y="404" text-anchor="middle" font-size="11" fill="#8fa0c4">Locked</text>
+      <!-- boss -->
+      <rect x="690" y="150" width="150" height="120" rx="8" fill="#3a1620" stroke="#ff5252" stroke-width="4"/>
+      <polygon points="735,222 741,186 754,206 765,180 776,206 789,186 795,222" fill="#ff5252"/><text class="l" x="765" y="254" text-anchor="middle" font-size="11" fill="#ff8a8a">Boss</text>
+      <!-- unknown -->
+      <g fill="#0f1626" stroke="#222c44" stroke-width="3" stroke-dasharray="8 8"><rect x="1050" y="450" width="150" height="120" rx="8"/><rect x="870" y="300" width="150" height="120" rx="8"/><rect x="510" y="300" width="150" height="120" rx="8"/></g>
+      <g class="k" font-size="40" fill="#2f3b59" text-anchor="middle"><text x="1125" y="524">?</text><text x="945" y="374">?</text><text x="585" y="374">?</text></g>
+
+      <!-- key to the map -->
+      <rect x="40" y="150" width="250" height="300" rx="16" fill="#111314"/>
+      <g class="l" font-size="11" fill="#b8b9b9">
+        <rect x="64" y="178" width="26" height="22" rx="3" fill="#1d4f5a" stroke="#2f7f8f" stroke-width="3"/><text x="104" y="194">Cleared</text>
+        <rect x="64" y="220" width="26" height="22" rx="3" fill="#131c2e" stroke="#3a4a6b" stroke-width="3"/><text x="104" y="236">Seen, not cleared</text>
+        <rect x="64" y="262" width="26" height="22" rx="3" fill="#0f1626" stroke="#222c44" stroke-width="3" stroke-dasharray="4 4"/><text x="104" y="278">Not found yet</text>
+        <rect x="68" y="306" width="18" height="18" fill="#ffb300"/><text x="104" y="320">Door: needs a key</text>
+        <rect x="68" y="348" width="18" height="18" fill="#ff5252"/><text x="104" y="362">Boss door</text>
+        <rect x="68" y="390" width="18" height="18" fill="#2f7f8f"/><text x="104" y="404">Open door</text>
+      </g>
+
+      <!-- room detail -->
+      <rect x="1240" y="150" width="320" height="570" rx="16" fill="#111314"/>
+      <text class="l" x="1268" y="196" font-size="13" fill="#4aa8ff">Room 6 · pace</text>
+      <text class="k" x="1268" y="244" font-size="32" fill="#fff">The Narrow</text><text class="k" x="1268" y="280" font-size="32" fill="#fff">Bridge</text>
+      <g class="b" font-size="16" fill="#b8b9b9"><text x="1268" y="326">Make two putts at dying</text><text x="1268" y="350">pace: 12 in. of rollout or</text><text x="1268" y="374">less. Each one lowers</text><text x="1268" y="398">the bridge a notch.</text></g>
+      <g class="l" font-size="11"><rect x="1268" y="424" width="70" height="30" rx="15" fill="#202325"/><text x="1303" y="444" text-anchor="middle" fill="#fff">8 ft</text><rect x="1346" y="424" width="96" height="30" rx="15" fill="#202325"/><text x="1394" y="444" text-anchor="middle" fill="#fff">Any tee</text></g>
+      <line x1="1268" y1="482" x2="1532" y2="482" stroke="#2a2d30" stroke-width="2"/>
+      <text class="l" x="1268" y="516" font-size="11" fill="#8d8e8f">Clearing it opens</text><text class="b" x="1268" y="542" font-size="16" fill="#fff">The east and north doors</text>
+      <text class="l" x="1268" y="586" font-size="11" fill="#8d8e8f">Item that helps</text><text class="b" x="1268" y="612" font-size="16" fill="#fff">Metronome</text>
+      <rect x="1268" y="650" width="264" height="46" rx="23" fill="#7ad446"/><text class="k" x="1400" y="681" text-anchor="middle" font-size="20" fill="#07090a">Enter room</text>
+    </svg>
+    </div>
+    <figcaption><b>Level select 2</b>Inside a dungeon the level select is the map. Rooms fill in as you find them. The amber door wants the key you are holding, the dark room has to wait for the Lantern from another dungeon, and the boss sits at the top.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 1600 900" role="img" aria-label="Under Par gameplay: a stone room with a green running to a cup at the edge of a chasm, a raised bridge and a pace ruler">
+      <rect width="1600" height="900" fill="#0b1220"/>
+      <polygon points="0,0 1600,0 1600,40 1240,120 360,120 0,40" fill="#141b2d"/>
+      <polygon points="0,40 360,120 360,450 0,820" fill="#222b42"/><polygon points="1600,40 1240,120 1240,450 1600,820" fill="#222b42"/>
+      <rect x="360" y="120" width="880" height="330" fill="#2b3550"/>
+      <g stroke="#232c44" stroke-width="4"><path d="M360 200h880M360 280h880M360 360h880M480 120v80M700 120v80M920 120v80M1140 120v80M580 200v80M1020 200v80M440 280v80M640 280v80M960 280v80M1160 280v80M540 360v90M1060 360v90"/></g>
+      <polygon points="360,450 1240,450 1600,820 1600,900 0,900 0,820" fill="#39445f"/>
+      <g stroke="#2f3950" stroke-width="4"><path d="M214 600h1172M96 720h1408M560 500L340 900M1040 500L1260 900"/></g>
+      <!-- chasm -->
+      <polygon points="360,450 1240,450 1289,500 311,500" fill="#05070c"/>
+      <!-- north door and raised bridge -->
+      <path d="M700 450 v-170 a100 100 0 0 1 200 0 v170z" fill="#05070c" stroke="#4a5778" stroke-width="8"/>
+      <polygon points="716,450 884,450 866,268 734,268" fill="#8a5a2b"/><path d="M725 404h150M729 358h142M733 312h134" stroke="#6b4420" stroke-width="5"/>
+      <path d="M734 268 L716 196 M866 268 L884 196" stroke="#8d8e8f" stroke-width="4" stroke-dasharray="6 6"/>
+      <circle cx="760" cy="162" r="13" fill="#5fe0d0" stroke="#07090a" stroke-width="4"/><circle cx="840" cy="162" r="13" fill="#1a2238" stroke="#07090a" stroke-width="4"/>
+      <!-- torches -->
+      <g><rect x="476" y="250" width="10" height="46" fill="#6b4420"/><polygon points="481,206 497,250 465,250" fill="#ffb300"/><rect x="1114" y="250" width="10" height="46" fill="#6b4420"/><polygon points="1119,206 1135,250 1103,250" fill="#ffb300"/></g>
+      <!-- west door (open), east door (barred) -->
+      <polygon points="130,318 250,338 250,620 130,684" fill="#05070c" stroke="#4a5778" stroke-width="8" stroke-linejoin="round"/>
+      <polygon points="1470,318 1350,338 1350,620 1470,684" fill="#05070c" stroke="#4a5778" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M1380 344v270M1410 338v292M1440 330v318" stroke="#8d8e8f" stroke-width="7"/>
+      <!-- the green -->
+      <polygon points="430,900 1170,900 925,500 675,500" fill="#2f8f5f"/>
+      <g fill="#298357"><polygon points="516,760 1084,760 1017,650 583,650"/><polygon points="638,560 962,560 944,530 656,530"/></g>
+      <polygon points="646,548 954,548 932,512 668,512" fill="#7ad446" opacity=".55"/>
+      <polygon points="668,512 932,512 925,500 675,500" fill="#ff5252" opacity=".8"/>
+      <polygon points="430,900 1170,900 925,500 675,500" fill="none" stroke="#0e3d2a" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="800" cy="566" rx="38" ry="11" fill="#05070c"/><ellipse cx="800" cy="566" rx="38" ry="11" fill="none" stroke="#fff" stroke-width="3"/>
+      <line x1="944" y1="512" x2="1000" y2="512" stroke="#fff" stroke-width="3"/><text class="l" x="1010" y="517" font-size="12" fill="#fff">12 in.</text>
+      <circle cx="812" cy="531" r="9" fill="#fff" opacity=".7"/>
+      <ellipse cx="800" cy="834" rx="50" ry="15" fill="none" stroke="#ffb300" stroke-width="6"/><use href="#ball" x="778" y="790" width="44" height="44" fill="#fff"/>
+
+      <!-- lives and keys -->
+      <rect x="40" y="36" width="350" height="64" rx="14" fill="#07090a"/>
+      <g fill="#fff"><use href="#ball" x="62" y="54" width="28" height="28"/><use href="#ball" x="96" y="54" width="28" height="28"/><use href="#ball" x="130" y="54" width="28" height="28"/><use href="#ball" x="164" y="54" width="28" height="28"/></g><circle cx="212" cy="68" r="12" fill="none" stroke="#3a3d40" stroke-width="3"/>
+      <use href="#key" x="270" y="52" width="32" height="32" color="#ffb300"/><text class="k" x="310" y="78" font-size="24" fill="#fff">× 1</text>
+      <!-- room bug -->
+      <rect x="540" y="36" width="520" height="64" rx="14" fill="#07090a"/><path d="M554 36h96v64h-96a14 14 0 0 1-14-14V50a14 14 0 0 1 14-14z" fill="#4aa8ff"/>
+      <text class="k" x="595" y="78" text-anchor="middle" font-size="22" fill="#07090a">Room 6</text><text class="k" x="672" y="78" font-size="24" fill="#fff">The Narrow Bridge</text>
+      <rect x="640" y="106" width="320" height="34" rx="17" fill="#07090a"/><text class="l" x="800" y="128" text-anchor="middle" font-size="12" fill="#5fe0d0">Dying-pace makes 1 / 2</text>
+      <!-- mini map -->
+      <rect x="1370" y="36" width="190" height="136" rx="14" fill="#07090a"/>
+      <g fill="#1d4f5a"><rect x="1448" y="130" width="30" height="22" rx="2"/><rect x="1414" y="130" width="30" height="22" rx="2"/><rect x="1482" y="130" width="30" height="22" rx="2"/><rect x="1448" y="104" width="30" height="22" rx="2"/><rect x="1414" y="104" width="30" height="22" rx="2"/></g>
+      <rect x="1482" y="104" width="30" height="22" rx="2" fill="#ffb300"/>
+      <g fill="#1a2238"><rect x="1380" y="104" width="30" height="22" rx="2"/><rect x="1448" y="78" width="30" height="22" rx="2"/></g><rect x="1448" y="52" width="30" height="22" rx="2" fill="#5a1f2a"/>
+      <!-- this putt -->
+      <rect x="40" y="716" width="384" height="148" rx="14" fill="#07090a"/>
+      <text class="l" x="68" y="752" font-size="13" fill="#8d8e8f">This putt</text>
+      <text class="k" x="68" y="830" font-size="72" fill="#fff">8 ft</text>
+      <text class="l" x="262" y="800" font-size="16" fill="#ffb300">Any</text><text class="l" x="262" y="826" font-size="16" fill="#ffb300">tee</text>
+      <!-- metronome item -->
+      <rect x="1200" y="676" width="360" height="188" rx="14" fill="#07090a"/>
+      <text class="l" x="1228" y="714" font-size="13" fill="#4aa8ff">Metronome · last putt</text>
+      <text class="k" x="1228" y="766" font-size="36" fill="#7ad446">9 in.</text><text class="b" x="1352" y="762" font-size="15" fill="#b8b9b9">of rollout. Made.</text>
+      <rect x="1228" y="794" width="304" height="14" rx="7" fill="#2a2d30"/><rect x="1228" y="794" width="101" height="14" rx="7" fill="#7ad446"/>
+      <polygon points="1304,788 1296,774 1312,774" fill="#fff"/>
+      <g class="l" font-size="10" fill="#8d8e8f"><text x="1228" y="830">0</text><text x="1322" y="830">12</text><text x="1424" y="830">24</text><text x="1516" y="830">36</text></g>
+    </svg>
+    </div>
+    <figcaption><b>Gameplay</b>Room 6 of the Still Well. The cup sits at the lip of a chasm and the green band behind it is the 12 inches of rollout you are allowed. The first dying-pace make lit one lamp over the bridge. The Metronome, found three rooms back, is what puts the pace ruler on screen.</figcaption>
+  </figure>
+
+  <div class="cols">
+    <div>
+      <div class="h-label">Room types</div>
+      <div class="tablebox"><table style="min-width:520px">
+        <thead><tr><th>Room</th><th>How you clear it</th></tr></thead>
+        <tbody>
+          <tr><td>Guard room</td><td>Make a set number of putts before the bag is empty</td></tr>
+          <tr><td>Key room</td><td>Make one putt from the tee and distance on the chest</td></tr>
+          <tr><td>Switch room</td><td>Enter the cup left or right of centre to light that side's crystal</td></tr>
+          <tr><td>Bridge room</td><td>Dying-pace makes lower the bridge</td></tr>
+          <tr><td>Gate room</td><td>Makes inside a narrowing entry window (today's Precision)</td></tr>
+          <tr><td>Dark room</td><td>No start line shown until you own the Lantern</td></tr>
+          <tr><td>Boss room</td><td>The dungeon's attribute, at its hardest, three phases</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div>
+      <div class="h-label">Why you come back</div>
+      <ul class="plain good">
+        <li><b>Items open old rooms.</b> The Lantern from the Far Gallery lights a dark room in the Still Well. Behind it is a bag piece.</li>
+        <li><b>Four bag pieces add a ball</b> to your bag for good.</li>
+        <li><b>Relics show on the Player card,</b> one beside each attribute.</li>
+      </ul>
+      <div class="h-label" style="margin-top:28px">Build notes</div>
+      <ul class="plain">
+        <li><b>Six dungeons of about twelve rooms</b> is roughly 70 rooms to design, each by hand.</li>
+        <li><b>New systems:</b> rooms and doors, keys, items, a saved inventory. None exist in the app or the API.</li>
+        <li><b>Today's quest tables do not fit.</b> Rooms are a graph, not a list of ten, so this needs its own tables.</li>
+        <li><b>Six attributes are still an open question</b> in the sports UI doc. This concept leans on them.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="rollout" class="concept c">
+  <div class="head">
+    <div class="titleRow"><span class="badge">C</span><div><div class="eyebrow">Concept C · side-scrolling run</div><h2>Rollout</h2></div></div>
+    <p class="lede">A side-scroller where every putt is a move. Your ball runs a course of gaps, walls and bonus cups toward a flagstick while a storm closes in from behind. Eight worlds, four courses each, numbered 1-1 to 8-4.</p>
+  </div>
+  <div class="loop">
+    <div><b>The ball stops at the next obstacle.</b> It shows the putt it wants: 8 ft, right tee.</div>
+    <div><b>Make it to get past.</b> Centre cut grabs the marker. Good pace rolls you through the next one too.</div>
+    <div><b>Miss and the storm gains.</b> You lose a ball and the storm moves up a step. If it reaches you the course is lost.</div>
+    <div><b>Finish on the flagstick.</b> The last putt decides how high you land and what bonus you take.</div>
+  </div>
+
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 1600 900" role="img" aria-label="Rollout level select: the four courses of World 2 drawn as one side-on strip of land, with a card under each">
+      <rect width="1600" height="900" fill="#7fd0ee"/>
+      <circle cx="1400" cy="210" r="56" fill="#ffe08a"/>
+      <ellipse cx="300" cy="200" rx="110" ry="26" fill="#fff"/><ellipse cx="370" cy="182" rx="70" ry="22" fill="#fff"/><ellipse cx="980" cy="250" rx="100" ry="24" fill="#fff"/>
+      <path d="M0 520 C200 450 380 470 560 500 C800 440 1000 450 1240 500 C1400 470 1520 470 1600 490 L1600 620 L0 620Z" fill="#f0d995"/>
+      <rect y="560" width="1600" height="150" fill="#3aa0d8"/>
+      <!-- course 2-1: steps -->
+      <rect x="40" y="600" width="380" height="110" fill="#e8c877"/><rect x="40" y="600" width="380" height="16" fill="#6cc24a"/>
+      <g fill="#c8733a" stroke="#07090a" stroke-width="4"><rect x="150" y="556" width="44" height="44"/><rect x="194" y="556" width="44" height="44"/><rect x="194" y="512" width="44" height="44"/><rect x="238" y="556" width="44" height="44"/><rect x="238" y="512" width="44" height="44"/><rect x="238" y="468" width="44" height="44"/></g>
+      <!-- course 2-2: gaps -->
+      <rect x="420" y="600" width="110" height="110" fill="#e8c877"/><rect x="420" y="600" width="110" height="16" fill="#6cc24a"/>
+      <rect x="590" y="600" width="90" height="110" fill="#e8c877"/><rect x="590" y="600" width="90" height="16" fill="#6cc24a"/>
+      <rect x="740" y="600" width="60" height="110" fill="#e8c877"/><rect x="740" y="600" width="60" height="16" fill="#6cc24a"/>
+      <rect x="530" y="616" width="60" height="94" fill="#3aa0d8"/><rect x="680" y="616" width="60" height="94" fill="#3aa0d8"/>
+      <rect x="612" y="556" width="44" height="44" fill="#c8733a" stroke="#07090a" stroke-width="4"/>
+      <!-- course 2-3: dunes, current -->
+      <rect x="800" y="600" width="380" height="110" fill="#e8c877"/><rect x="800" y="600" width="380" height="16" fill="#6cc24a"/>
+      <path d="M900 600 q50 -70 100 0z M1030 600 q40 -50 80 0z" fill="#e8c877" stroke="#c9a550" stroke-width="4"/>
+      <rect x="1120" y="566" width="44" height="34" fill="#fff" stroke="#07090a" stroke-width="4"/><ellipse cx="1142" cy="566" rx="22" ry="7" fill="#07090a"/>
+      <!-- course 2-4: locked clubhouse -->
+      <rect x="1180" y="600" width="380" height="110" fill="#5a6068"/><rect x="1180" y="600" width="380" height="16" fill="#7a8088"/>
+      <polygon points="1290,600 1290,500 1310,500 1310,520 1340,520 1340,480 1400,480 1400,520 1430,520 1430,500 1450,500 1450,600" fill="#3a3f46"/>
+      <rect x="1354" y="550" width="32" height="50" rx="16" fill="#07090a"/>
+      <circle cx="1370" cy="430" r="30" fill="#07090a"/><use href="#lock" x="1356" y="415" width="28" height="28" color="#b8b9b9"/>
+      <!-- flagsticks between courses -->
+      <g stroke="#07090a" stroke-width="6" stroke-linecap="round"><line x1="420" y1="600" x2="420" y2="420"/><line x1="800" y1="600" x2="800" y2="420"/><line x1="1180" y1="600" x2="1180" y2="420"/><line x1="1560" y1="600" x2="1560" y2="420"/></g>
+      <polygon points="420,424 480,444 420,464" fill="#7ad446" stroke="#07090a" stroke-width="4" stroke-linejoin="round"/>
+      <polygon points="800,424 860,444 800,464" fill="#7ad446" stroke="#07090a" stroke-width="4" stroke-linejoin="round"/>
+      <polygon points="1180,540 1240,560 1180,580" fill="#fff" stroke="#07090a" stroke-width="4" stroke-linejoin="round"/>
+      <polygon points="1560,540 1500,560 1560,580" fill="#7a8088" stroke="#07090a" stroke-width="4" stroke-linejoin="round"/>
+      <!-- hero -->
+      <g transform="translate(846 566)"><ellipse cy="33" rx="26" ry="6" fill="#07090a" opacity=".3"/><circle r="30" fill="#fff" stroke="#07090a" stroke-width="5"/><path d="M-30 -8 A30 30 0 0 1 30 -8 L44 -4 L44 4 L-30 2Z" fill="#ff6a2b" stroke="#07090a" stroke-width="4" stroke-linejoin="round"/><circle cx="8" cy="8" r="4" fill="#07090a"/><circle cx="20" cy="8" r="4" fill="#07090a"/></g>
+
+      <!-- top bar -->
+      <rect width="1600" height="96" fill="#07090a"/>
+      <text class="l" x="40" y="40" font-size="13" fill="#ff6a2b">Rollout · world 2 of 8</text>
+      <text class="k" x="40" y="78" font-size="34" fill="#fff">Sandtrap Coast</text>
+      <g transform="translate(560 48)">
+        <g><circle r="22" fill="#7ad446"/><use href="#check" x="-13" y="-13" width="26" height="26" color="#07090a"/></g>
+        <g transform="translate(60 0)"><circle r="22" fill="#07090a" stroke="#ffb300" stroke-width="4"/><text class="k" y="9" text-anchor="middle" font-size="22" fill="#fff">2</text></g>
+        <g fill="#202325"><circle cx="120" r="22"/><circle cx="180" r="22"/><circle cx="240" r="22"/><circle cx="300" r="22"/><circle cx="360" r="22"/><circle cx="420" r="22"/></g>
+        <g class="k" font-size="22" fill="#5d6063" text-anchor="middle"><text x="120" y="9">3</text><text x="180" y="9">4</text><text x="240" y="9">5</text><text x="300" y="9">6</text><text x="360" y="9">7</text><text x="420" y="9">8</text></g>
+      </g>
+      <use href="#ball" x="1270" y="32" width="32" height="32" fill="#fff"/><text class="k" x="1312" y="60" font-size="28" fill="#fff">× 4</text>
+      <use href="#marker" x="1430" y="32" width="32" height="32"/><text class="k" x="1472" y="60" font-size="28" fill="#fff">312</text>
+
+      <!-- cards -->
+      <rect y="710" width="1600" height="190" fill="#07090a"/>
+      <g>
+        <rect x="40" y="730" width="360" height="140" rx="16" fill="#181a1c"/>
+        <text class="k" x="64" y="776" font-size="30" fill="#7ad446">2-1</text><text class="k" x="130" y="776" font-size="24" fill="#fff">Shell Steps</text>
+        <g fill="#ffb300"><use href="#star" x="64" y="794" width="26" height="26"/><use href="#star" x="94" y="794" width="26" height="26"/><use href="#star" x="124" y="794" width="26" height="26"/></g>
+        <text class="b" x="64" y="850" font-size="14" fill="#8d8e8f">10 obstacles · best 38 markers</text>
+
+        <rect x="420" y="730" width="360" height="140" rx="16" fill="#181a1c"/>
+        <text class="k" x="444" y="776" font-size="30" fill="#7ad446">2-2</text><text class="k" x="510" y="776" font-size="24" fill="#fff">Tide Gaps</text>
+        <g fill="#ffb300"><use href="#star" x="444" y="794" width="26" height="26"/><use href="#star" x="474" y="794" width="26" height="26"/></g><use href="#star" x="504" y="794" width="26" height="26" fill="#3a3d40"/>
+        <text class="b" x="444" y="850" font-size="14" fill="#8d8e8f">11 obstacles · best 29 markers</text>
+
+        <rect x="800" y="730" width="360" height="140" rx="16" fill="#181a1c" stroke="#ffb300" stroke-width="4"/>
+        <text class="k" x="824" y="776" font-size="30" fill="#ffb300">2-3</text><text class="k" x="890" y="776" font-size="24" fill="#fff">Dune Hopper</text>
+        <text class="b" x="824" y="806" font-size="14" fill="#b8b9b9">12 obstacles · storm starts 4 behind</text>
+        <rect x="824" y="822" width="312" height="36" rx="18" fill="#7ad446"/><text class="k" x="980" y="847" text-anchor="middle" font-size="18" fill="#07090a">Play 2-3</text>
+
+        <rect x="1180" y="730" width="380" height="140" rx="16" fill="#111314"/>
+        <text class="k" x="1204" y="776" font-size="30" fill="#5d6063">2-4</text><text class="k" x="1270" y="776" font-size="24" fill="#8d8e8f">The Clubhouse</text>
+        <text class="b" x="1204" y="806" font-size="14" fill="#8d8e8f">Boss chase. No bonus cups.</text>
+        <text class="l" x="1204" y="848" font-size="12" fill="#8d8e8f">Clear 2-3 to open</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption><b>Level select</b>A world is one strip of land seen from the side, cut into four courses by flagsticks. Raised green flags are cleared. The level select and the game are the same picture at two zoom levels.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 1600 900" role="img" aria-label="Rollout gameplay: the ball stands before a water gap with a storm behind, and a panel below shows the putt to make and what each result does">
+      <rect width="1600" height="580" fill="#7fd0ee"/>
+      <ellipse cx="1040" cy="180" rx="100" ry="24" fill="#fff"/><ellipse cx="1380" cy="240" rx="80" ry="20" fill="#fff"/>
+      <path d="M0 410 C240 330 420 360 640 400 C860 330 1100 340 1300 400 C1440 370 1540 370 1600 390 L1600 480 L0 480Z" fill="#f0d995"/>
+      <rect y="440" width="1600" height="40" fill="#3aa0d8"/>
+      <!-- ground with gaps -->
+      <g fill="#e8c877"><rect x="0" y="470" width="640" height="110"/><rect x="800" y="470" width="580" height="110"/><rect x="1440" y="470" width="160" height="110"/></g>
+      <g fill="#6cc24a"><rect x="0" y="470" width="640" height="16"/><rect x="800" y="470" width="580" height="16"/><rect x="1440" y="470" width="160" height="16"/></g>
+      <g fill="#3aa0d8"><rect x="640" y="486" width="160" height="94"/><rect x="1380" y="486" width="60" height="94"/></g>
+      <path d="M660 510 q14 -10 28 0 q14 10 28 0 M730 540 q14 -10 28 0" fill="none" stroke="#9fd9f5" stroke-width="4" stroke-linecap="round"/>
+      <!-- cleared wall, broken -->
+      <g fill="#c8733a" stroke="#07090a" stroke-width="4"><rect x="330" y="430" width="40" height="40"/><polygon points="376,470 410,470 398,446"/><polygon points="296,470 322,470 304,452"/></g>
+      <!-- storm -->
+      <path d="M0 40 L150 40 C210 60 170 120 216 150 C170 190 226 240 180 280 C230 320 176 380 210 420 C180 440 190 460 170 470 L0 470Z" fill="#2a2d44"/>
+      <polygon points="96,150 136,150 112,220 144,220 80,330 100,244 70,244" fill="#ffb300"/>
+      <g stroke="#6f7396" stroke-width="4" stroke-linecap="round"><path d="M40 360l-14 40M90 380l-14 40M150 370l-14 40M60 90l-10 28"/></g>
+      <!-- the jump -->
+      <path d="M560 420 Q715 220 868 430" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="4 16" stroke-linecap="round"/>
+      <use href="#marker" x="694" y="262" width="52" height="52"/>
+      <!-- hero -->
+      <g transform="translate(548 436)"><ellipse cy="33" rx="26" ry="6" fill="#07090a" opacity=".3"/><circle r="30" fill="#fff" stroke="#07090a" stroke-width="5"/><path d="M-30 -8 A30 30 0 0 1 30 -8 L44 -4 L44 4 L-30 2Z" fill="#ff6a2b" stroke="#07090a" stroke-width="4" stroke-linejoin="round"/><circle cx="8" cy="8" r="4" fill="#07090a"/><circle cx="20" cy="8" r="4" fill="#07090a"/></g>
+      <!-- wall -->
+      <g fill="#c8733a" stroke="#07090a" stroke-width="4"><rect x="960" y="390" width="80" height="80"/><rect x="960" y="310" width="80" height="80"/></g>
+      <path d="M960 430h80M1000 390v40M980 430v40M1020 430v40M960 350h80M1000 310v40M980 350v40M1020 350v40" stroke="#07090a" stroke-width="3"/>
+      <use href="#marker" x="978" y="232" width="44" height="44"/>
+      <!-- bonus cup -->
+      <rect x="1190" y="396" width="100" height="74" fill="#fff" stroke="#07090a" stroke-width="5"/><rect x="1178" y="382" width="124" height="26" rx="6" fill="#fff" stroke="#07090a" stroke-width="5"/><ellipse cx="1240" cy="394" rx="46" ry="8" fill="#07090a"/>
+      <!-- far flag -->
+      <line x1="1540" y1="470" x2="1540" y2="250" stroke="#07090a" stroke-width="6" stroke-linecap="round"/><polygon points="1540,254 1596,274 1540,294" fill="#7ad446" stroke="#07090a" stroke-width="4" stroke-linejoin="round"/>
+      <!-- tags on what is ahead -->
+      <g class="l" font-size="13" text-anchor="middle">
+        <rect x="664" y="196" width="112" height="36" rx="18" fill="#07090a" stroke="#ffb300" stroke-width="3"/><text x="720" y="219" fill="#ffb300">Now</text>
+        <rect x="944" y="176" width="112" height="36" rx="18" fill="#07090a"/><text x="1000" y="199" fill="#fff">10 ft</text>
+        <rect x="1172" y="322" width="136" height="36" rx="18" fill="#07090a"/><text x="1240" y="345" fill="#fff">Bonus cup</text>
+      </g>
+
+      <!-- course bug -->
+      <rect x="240" y="28" width="360" height="72" rx="14" fill="#07090a"/><path d="M254 28h76v72h-76a14 14 0 0 1-14-14V42a14 14 0 0 1 14-14z" fill="#ff6a2b"/>
+      <text class="k" x="285" y="76" text-anchor="middle" font-size="28" fill="#07090a">2-3</text><text class="k" x="350" y="76" font-size="26" fill="#fff">Dune Hopper</text>
+      <!-- progress -->
+      <rect x="640" y="28" width="560" height="72" rx="14" fill="#07090a"/>
+      <line x1="676" y1="64" x2="1140" y2="64" stroke="#2a2d30" stroke-width="8" stroke-linecap="round"/>
+      <line x1="753" y1="64" x2="869" y2="64" stroke="#7ad446" stroke-width="8" stroke-linecap="round"/>
+      <g fill="#5d6063"><circle cx="908" cy="64" r="4"/><circle cx="947" cy="64" r="4"/><circle cx="985" cy="64" r="4"/><circle cx="1024" cy="64" r="4"/><circle cx="1063" cy="64" r="4"/><circle cx="1101" cy="64" r="4"/></g>
+      <circle cx="753" cy="64" r="15" fill="#2a2d44" stroke="#ff5252" stroke-width="4"/><polygon points="755,54 760,54 755,63 760,63 750,76 753,66 748,66" fill="#ffb300"/>
+      <use href="#ball" x="855" y="50" width="28" height="28" fill="#fff"/>
+      <line x1="1160" y1="46" x2="1160" y2="82" stroke="#fff" stroke-width="4" stroke-linecap="round"/><polygon points="1160,46 1180,53 1160,60" fill="#7ad446"/>
+      <!-- lives and markers -->
+      <rect x="1240" y="28" width="320" height="72" rx="14" fill="#07090a"/>
+      <use href="#ball" x="1264" y="48" width="32" height="32" fill="#fff"/><text class="k" x="1306" y="76" font-size="26" fill="#fff">× 4</text>
+      <use href="#marker" x="1408" y="48" width="32" height="32"/><text class="k" x="1450" y="76" font-size="26" fill="#fff">27</text>
+
+      <!-- putt panel -->
+      <rect y="580" width="1600" height="320" fill="#07090a"/><rect y="580" width="1600" height="3" fill="#2a2d30"/>
+      <text class="l" x="40" y="632" font-size="13" fill="#ff6a2b">Next obstacle · gap</text>
+      <text class="k" x="40" y="740" font-size="104" fill="#fff">8 ft</text>
+      <text class="l" x="44" y="796" font-size="20" fill="#ffb300">Right tee</text>
+      <rect x="344" y="614" width="104" height="252" rx="10" fill="#2d8c3c"/><circle cx="396" cy="646" r="10" fill="#07090a"/>
+      <circle cx="368" cy="838" r="6" fill="#17552a"/><circle cx="396" cy="838" r="6" fill="#17552a"/><circle cx="424" cy="838" r="11" fill="#fff" stroke="#ffb300" stroke-width="5"/>
+      <line x1="492" y1="614" x2="492" y2="866" stroke="#2a2d30" stroke-width="2"/>
+
+      <text class="l" x="528" y="632" font-size="13" fill="#8d8e8f">What your putt does</text>
+      <g class="l" font-size="13">
+        <rect x="528" y="652" width="250" height="42" rx="21" fill="#181a1c"/><text x="550" y="678" fill="#7ad446">Make</text>
+        <rect x="528" y="704" width="250" height="42" rx="21" fill="#181a1c"/><text x="550" y="730" fill="#ffb300">Centre cut</text>
+        <rect x="528" y="756" width="250" height="42" rx="21" fill="#181a1c"/><text x="550" y="782" fill="#4aa8ff">Pace 6 to 18 in. past</text>
+        <rect x="528" y="808" width="250" height="42" rx="21" fill="#181a1c"/><text x="550" y="834" fill="#ff5252">Miss</text>
+      </g>
+      <g class="b" font-size="18" fill="#fff"><text x="800" y="679">Clear the gap</text><text x="800" y="731">Grab the marker on the way over</text><text x="800" y="783">Roll on through the next obstacle too</text><text x="800" y="835">Lose a ball. The storm gains a step</text></g>
+      <line x1="1176" y1="614" x2="1176" y2="866" stroke="#2a2d30" stroke-width="2"/>
+
+      <text class="l" x="1212" y="632" font-size="13" fill="#8d8e8f">Hot streak</text>
+      <g><use href="#flame" x="1208" y="648" width="54" height="54" fill="#ff6a2b"/><use href="#flame" x="1268" y="648" width="54" height="54" fill="#ff6a2b"/><use href="#flame" x="1328" y="648" width="54" height="54" fill="#2a2d30"/></g>
+      <g class="b" font-size="15" fill="#b8b9b9"><text x="1212" y="732">One more make lights the fireball.</text><text x="1212" y="754">It breaks the next wall for you.</text></g>
+      <line x1="1212" y1="780" x2="1560" y2="780" stroke="#2a2d30" stroke-width="2"/>
+      <text class="l" x="1212" y="814" font-size="13" fill="#8d8e8f">Last putt</text>
+      <text class="b" x="1212" y="846" font-size="16" fill="#fff">Made · on line · 11 in. past · 3° left</text>
+    </svg>
+    </div>
+    <figcaption><b>Gameplay</b>Course 2-3. The ball waits at a gap that wants an 8 ft putt from the right tee. A make jumps it, a centre cut takes the marker, good pace carries on through the wall. The bar at the top shows the storm three steps behind and seven obstacles to the flag.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 1600 900" role="img" aria-label="Rollout course clear: the ball at the top of the flagstick and the tally for course 2-3">
+      <rect width="1600" height="900" fill="#7fd0ee"/>
+      <ellipse cx="220" cy="150" rx="110" ry="26" fill="#fff"/><ellipse cx="620" cy="260" rx="80" ry="20" fill="#fff"/>
+      <path d="M0 700 C200 620 380 640 560 680 C680 640 760 640 800 660 L800 780 L0 780Z" fill="#f0d995"/>
+      <rect y="760" width="1600" height="140" fill="#e8c877"/><rect y="760" width="1600" height="18" fill="#6cc24a"/>
+      <g fill="#c8733a" stroke="#07090a" stroke-width="4"><rect x="60" y="700" width="60" height="60"/><rect x="120" y="700" width="60" height="60"/><rect x="120" y="640" width="60" height="60"/><rect x="180" y="700" width="60" height="60"/><rect x="180" y="640" width="60" height="60"/><rect x="180" y="580" width="60" height="60"/><rect x="240" y="700" width="60" height="60"/><rect x="240" y="640" width="60" height="60"/><rect x="240" y="580" width="60" height="60"/><rect x="240" y="520" width="60" height="60"/></g>
+      <!-- the stick -->
+      <line x1="470" y1="760" x2="470" y2="150" stroke="#07090a" stroke-width="10" stroke-linecap="round"/>
+      <polygon points="470,156 610,202 470,248" fill="#7ad446" stroke="#07090a" stroke-width="5" stroke-linejoin="round"/>
+      <circle cx="470" cy="144" r="12" fill="#ffb300" stroke="#07090a" stroke-width="4"/>
+      <ellipse cx="470" cy="762" rx="34" ry="9" fill="#07090a"/>
+      <g stroke="#07090a" stroke-width="4"><line x1="484" y1="330" x2="520" y2="330"/><line x1="484" y1="500" x2="520" y2="500"/><line x1="484" y1="670" x2="520" y2="670"/></g>
+      <g class="l" font-size="14" fill="#07090a"><text x="532" y="296">Centre cut</text><text x="532" y="316">+1 ball</text><text x="532" y="420">Inside 30°</text><text x="532" y="440">+20 markers</text><text x="532" y="590">Any make</text><text x="532" y="610">+5 markers</text></g>
+      <path d="M300 500 Q380 250 448 268" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="4 16" stroke-linecap="round"/>
+      <g transform="translate(446 280)"><circle r="30" fill="#fff" stroke="#07090a" stroke-width="5"/><path d="M-30 -8 A30 30 0 0 1 30 -8 L44 -4 L44 4 L-30 2Z" fill="#ff6a2b" stroke="#07090a" stroke-width="4" stroke-linejoin="round"/><circle cx="8" cy="8" r="4" fill="#07090a"/><circle cx="20" cy="8" r="4" fill="#07090a"/></g>
+
+      <!-- tally -->
+      <rect x="800" y="80" width="760" height="740" rx="24" fill="#07090a"/>
+      <text class="l" x="848" y="146" font-size="14" fill="#7ad446">Course clear</text>
+      <text class="k" x="848" y="212" font-size="54" fill="#fff">2-3 Dune Hopper</text>
+      <g fill="#ffb300"><use href="#star" x="844" y="240" width="76" height="76"/><use href="#star" x="930" y="240" width="76" height="76"/><use href="#star" x="1016" y="240" width="76" height="76"/></g>
+      <text class="b" x="1120" y="286" font-size="18" fill="#b8b9b9">No ball lost</text>
+      <line x1="848" y1="350" x2="1512" y2="350" stroke="#2a2d30" stroke-width="2"/>
+      <g class="l" font-size="14" fill="#8d8e8f"><text x="848" y="402">Markers</text><text x="848" y="462">Rolled on with good pace</text><text x="848" y="522">Longest hot streak</text><text x="848" y="582">Flag finish</text></g>
+      <g class="k" font-size="30" fill="#fff" text-anchor="end"><text x="1512" y="406">34</text><text x="1512" y="466">5 times</text><text x="1512" y="526">6 makes</text><text x="1512" y="586" fill="#7ad446">+1 ball</text></g>
+      <line x1="848" y1="620" x2="1512" y2="620" stroke="#2a2d30" stroke-width="2"/>
+      <text class="l" x="848" y="668" font-size="14" fill="#ffb300">Opened · 2-4 The Clubhouse</text>
+      <rect x="848" y="704" width="320" height="64" rx="32" fill="#7ad446"/><text class="k" x="1008" y="746" text-anchor="middle" font-size="24" fill="#07090a">Next course</text>
+      <rect x="1184" y="704" width="156" height="64" rx="32" fill="none" stroke="#5d6063" stroke-width="3"/><text class="k" x="1262" y="745" text-anchor="middle" font-size="20" fill="#fff">Replay</text>
+      <rect x="1356" y="704" width="156" height="64" rx="32" fill="none" stroke="#5d6063" stroke-width="3"/><text class="k" x="1434" y="745" text-anchor="middle" font-size="20" fill="#fff">World</text>
+    </svg>
+    </div>
+    <figcaption><b>Course clear</b>Every course ends on a flagstick. The entry of the last putt sets how high the ball lands: a centre cut reaches the top and puts a ball back in the bag.</figcaption>
+  </figure>
+
+  <div class="cols">
+    <div>
+      <div class="h-label">Obstacles</div>
+      <div class="tablebox"><table style="min-width:520px">
+        <thead><tr><th>Obstacle</th><th>What it asks</th></tr></thead>
+        <tbody>
+          <tr><td>Gap</td><td>A make at the distance shown. Wider gap, longer putt</td></tr>
+          <tr><td>Wall</td><td>A make. A fireball breaks it without one</td></tr>
+          <tr><td>Narrow pipe</td><td>A make inside an entry window (today's Precision)</td></tr>
+          <tr><td>Ice bridge</td><td>A make at dying pace or it cracks</td></tr>
+          <tr><td>Bonus cup</td><td>Optional. Drop in for five putts, ten markers a make</td></tr>
+          <tr><td>Clubhouse chase</td><td>The fourth course of each world. The storm starts closer and no make can be skipped</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div>
+      <div class="h-label">Why you come back</div>
+      <ul class="plain good">
+        <li><b>Marker totals.</b> Every course has a best to beat, so a cleared course still has a score.</li>
+        <li><b>The fireball run.</b> Clearing a course without losing the streak is its own badge.</li>
+        <li><b>100 markers is a ball,</b> so a strong run now pays for a hard course later.</li>
+      </ul>
+      <div class="h-label" style="margin-top:28px">Build notes</div>
+      <ul class="plain">
+        <li><b>Data nearly fits.</b> A course is a list of putts, as a quest level is today. Each putt needs an obstacle type added.</li>
+        <li><b>New work:</b> the 2D course, the runner and its moves, the storm, the flag finish, art for eight worlds.</li>
+        <li><b>The putt and the picture are apart.</b> You watch your real ball on the real green, then look up to see what it did. A and B draw the green itself, so the screen shows the putt you just hit.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="eyebrow">Side by side</div>
+  <h2>How the three differ</h2>
+  <div class="tablebox"><table>
+    <thead><tr><th></th><th>A · Greenlands</th><th>B · Under Par</th><th>C · Rollout</th></tr></thead>
+    <tbody>
+      <tr><td>Shape</td><td>World map, stages in a line, a boss per world</td><td>Six dungeons of linked rooms, items, backtracking</td><td>Side-scrolling courses, 1-1 to 8-4</td></tr>
+      <tr><td>One sitting</td><td>One stage: 5 to 10 putts</td><td>A few rooms: 10 to 20 putts, save between rooms</td><td>One course: 10 to 15 putts</td></tr>
+      <tr><td>How you lose</td><td>Bag runs out before the goal</td><td>Bag runs out: back to the dungeon door, rooms stay cleared</td><td>The storm catches you, or the bag runs out</td></tr>
+      <tr><td>Uses pace</td><td>Whole worlds (sand, ice)</td><td>Bridge rooms, the Pace dungeon</td><td>The roll-on boost</td></tr>
+      <tr><td>Uses entry</td><td>Gates, the Lip</td><td>Switch and gate rooms</td><td>Markers, narrow pipes, the flag finish</td></tr>
+      <tr><td>Screen shows your putt</td><td class="pick">Yes, the green in 3D</td><td class="pick">Yes, the green in 3D</td><td>No, the putt becomes a jump</td></tr>
+      <tr><td>Fits today's quest data</td><td class="pick">Yes, as it is</td><td>No, needs new tables</td><td>Mostly, one field added</td></tr>
+      <tr><td>Reuses Unity work</td><td class="pick">Arcade hazards, the 3D green, the quest round</td><td>The 3D green</td><td>Little, it is a 2D game</td></tr>
+      <tr><td>Content to make</td><td>48 stages, 8 bosses, 8 scenes</td><td>About 70 rooms, 6 bosses, 6 items</td><td>32 courses, 8 backdrops</td></tr>
+      <tr><td>Build size (my estimate)</td><td class="pick">Medium</td><td>Large</td><td>Medium to large</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="pick">
+  <div class="eyebrow">Decision</div>
+  <h2>Build Greenlands, borrow from the other two</h2>
+  <div class="pick-box">
+    <p>Greenlands is the one to build first. It gives the feeling you asked for, a map of levels you have to beat, and it is the only one that sits on what already exists: quests become worlds, levels become stages, saved stars stay, and hazards such as Windmill and Dead Weight are already playable in the Unity app.</p>
+    <ul class="plain good">
+      <li><b>Take the items from Under Par.</b> Beating a world's boss hands you one item (the Metronome for pace, an entry gauge for entry) that adds a read to the screen from then on. Items only show what the camera sees in the last 2 ft, so there is no start-line item. That gives each world a reward worth more than stars.</li>
+      <li><b>Take the flag finish from Rollout.</b> Use it as the bonus green behind each secret route: one putt, land as high as you can.</li>
+      <li><b>Keep Under Par as the sequel.</b> It is the deepest of the three and the most work. If Greenlands lands, the dungeons are a strong second season, and the room rules can be tried first as Greenlands stages.</li>
+    </ul>
+  </div>
+  <div>
+    <div class="h-label">Decided · 22 November</div>
+    <ol class="q">
+      <li><b>Direction:</b> Greenlands, with the items from Under Par and the flag finish from Rollout.</li>
+      <li><b>Losing:</b> an empty bag ends the level. Retry is free and the bag refills.</li>
+      <li><b>Old stars:</b> Greenlands starts clean. Stars from today's quests do not carry in.</li>
+      <li><b>Puttr Club:</b> world 1 is open to everyone. Worlds 2 to 8 are Puttr Club only.</li>
+      <li><b>The tee:</b> the camera sees only the last 2 ft of a putt, so the game never knows which tee a ball left from. Tees are dealt and trusted. No rule depends on detecting one.</li>
+      <li><b>Distances:</b> 3 to 11 ft, all three tees.</li>
+    </ol>
+  </div>
+</section>
+
+<footer>Mockups for review, drawn in HTML and SVG. Direction decided 22 November. Names, bosses and counts are still proposals. Nothing here is built.</footer>
+</div>
+</body>
+</html>

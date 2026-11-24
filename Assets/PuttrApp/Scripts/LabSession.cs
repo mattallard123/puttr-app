@@ -107,23 +107,27 @@ namespace PuttrApp
         public LabIntroScreen(App app)
         {
             _app = app;
-            _chips = Ui.Box("tee-grid");
+            _chips = Ui.Box("lab-dist");
             DrawChips();
+            Image howIcon = Ui.Icon("FillTarget", 24, Color.white), howGo = Ui.Icon("CaretRight", 16, Ui.Faint);
+            howIcon.AddToClassList("lab-how-icon");
+            howGo.AddToClassList("lab-how-end");
             ScrollView scroll = Ui.Scroll();
             scroll.Add(Ui.Header("", app.Pop));
             scroll.Add(Ui.Box("pad",
-                Ui.Text("3D SESSION   ·   ABOUT 90 SECONDS", "kick", Ui.Bold),
-                Ui.Text("Let's see why, not just what.", "h1", Ui.Bold),
-                Ui.Text("Filming your stroke from down the line and face on lets me see the cause: your eyes, stance, and posture.", "sub", Ui.Regular),
-                Ui.Box("glass list-row", Ui.Bubble("FillTarget", Ui.Bright), FreePuttScreen.Space(12),
-                    Ui.Box("grow", Ui.Text("How to set up", "feed-name", Ui.Bold), Ui.Text("Watch the 30-second guide to position your phone for both angles.", "tile-desc", Ui.Regular)))
-                    .OnTap(() => Application.OpenURL("https://storage.googleapis.com/images.puttr.co/howto/Session_Setup_Final.mp4")).Margin(14),
-                Ui.Text("DISTANCE", "kick", Ui.Bold).Margin(16),
-                Ui.Text("Pick your distance. Re-checks compare best at the same distance. Straight, center tee.", "muted", Ui.Regular),
+                Ui.Caps("3D session · about 90 seconds", "caps caps-green"),
+                Ui.Title("Let's see why, not just what.", "title lab-intro-title"),
+                Ui.Text("Filming your stroke from down the line and face on lets me see the cause: your eyes, stance, and posture.", "body-2 lab-intro-body", Ui.Medium),
+                Ui.Box("card lab-how", howIcon,
+                    Ui.Box("lab-how-words", Ui.Text("How to set up", "body", Ui.Bold), Ui.Text("Watch the 30-second guide to position your phone for both angles.", "body-2 lab-line", Ui.Medium)), howGo)
+                    .OnTap(() => Application.OpenURL("https://storage.googleapis.com/images.puttr.co/howto/Session_Setup_Final.mp4"))));
+            scroll.Add(Ui.Section("Distance"));
+            scroll.Add(Ui.Box("pad",
+                Ui.Text("Pick your distance. Re-checks compare best at the same distance. Straight, center tee.", "body-2", Ui.Medium),
                 _chips,
                 Ui.Button("Start putt capture", Start),
-                Ui.Text("One time. Re-check monthly or when your numbers drift.", "muted center", Ui.Regular).Margin(10)));
-            Root = scroll;
+                Ui.Text("One time. Re-check monthly or when your numbers drift.", "body-2 center lab-note", Ui.Medium)));
+            Root = LabUi.Style(scroll);
         }
 
         void DrawChips()
@@ -132,45 +136,92 @@ namespace PuttrApp
             for (int feet = 3; feet <= 11; feet++)
             {
                 int pick = feet;
-                _chips.Add(Ui.Box(feet == _feet ? "tee-cell tee-on" : "tee-cell", Ui.Text(feet + " ft", "tee-number", Ui.Bold)).OnTap(() => { _feet = pick; DrawChips(); }));
+                _chips.Add(Ui.Box(feet == _feet ? "scope scope-on" : "scope", Ui.Text(feet + " FT", "scope-text", Ui.Bold)).OnTap(() => { _feet = pick; DrawChips(); }));
             }
         }
 
         void Start()
         {
             if (J.Flag(_app.Profile, "isKid")) { _app.Toast("Video is off for Kid profiles."); return; }
-            if (!Capture.Supported) { _app.Toast("3D sessions need the phone app: the camera is not available here."); return; }
+            // CoachGame startGame: no Puttr, no session (the connect sheet instead). Test putts count as a Puttr.
+            if (PuttStrip.SaysOffline(_app.Profile)) { ConnectSheet.Open(_app, Root); return; }
             _app.Pop();
             _app.Push(new LabCaptureScreen(_app, _feet));
         }
     }
 
-    /// <summary>Filming: the camera on top, and below it the framing check, the putt count and the last putt.</summary>
+    /// <summary>
+    /// Filming, as CoachGame.js's capture: the live camera fills the screen above a bottom bar, with the
+    /// guide drawn over the picture by the native plugin (dashed centre line, skeleton, red/amber/green
+    /// frame, the coach's line at the top) while the coach talks the Player into frame. The bar has the
+    /// angle, the putt count and progress, Flip and End. With no camera (a Mac, the Simulator) or no
+    /// access, the screen says so instead.
+    /// </summary>
     public sealed class LabCaptureScreen : AppScreen
     {
         readonly App _app;
         readonly int _feet;
         readonly FramingCheck _framing = new FramingCheck();
-        readonly ScrollView _scroll;
         readonly List<AppPutt.Verdict> _putts = new List<AppPutt.Verdict>();
         readonly List<(double speed, double entry)> _scores = new List<(double, double)>();
-        string _session;
-        bool _ended, _listening;
+        readonly VisualElement _picture, _cover, _bar, _fill;
+        readonly Label _angle, _count, _last;
+        Label _endText;
+        string _session, _guideKey;
+        bool _ended, _listening, _shown = true, _moving, _leaveAsked, _turnSaid, _camera;
+        float _fullAt = -1f;
+        Rect _placed = new Rect(-1, -1, -1, -1);
         Action<object> _onPose;
+        IVisualElementScheduledItem _ticker;
 
-        const float CameraShare = 0.6f; // the top of an upright phone shows the camera
+        const string TurnUpright = "Turn your phone upright. Portrait films your whole setup.";
 
         public LabCaptureScreen(App app, int feet)
         {
             _app = app;
             _feet = feet;
-            _scroll = Ui.Scroll();
-            VisualElement space = new VisualElement();
-            space.style.height = Length.Percent(CameraShare * 100f);
-            space.style.flexShrink = 0;
-            Root = Ui.Box("lab", space, _scroll);
+            _cover = Ui.Box("lab-cover");
+            _picture = Ui.Box("lab-picture", _cover);
+            _angle = Ui.Caps("");
+            _count = Ui.Title("", "title-20 lab-count");
+            _last = Ui.Text("", "lab-last", Ui.Medium);
+            _fill = Ui.Box("lab-progress-fill");
+            // Two secondary buttons: this screen has no main one (the putts are the action).
+            VisualElement end = Ui.Button("End", Leave, "btn btn-ghost lab-cap-btn");
+            _endText = end.Q<Label>(className: "btn-text");
+            _bar = Ui.Box("lab-capbar",
+                Ui.Box("lab-caprow",
+                    Ui.Box("lab-capwords", _angle, _count),
+                    Ui.Button("Flip", () => { if (_camera) Capture.One.SwitchCamera(); }, "btn btn-ghost lab-cap-btn"),
+                    end),
+                Ui.Box("lab-progress", _fill),
+                _last);
+            Root = LabUi.Style(Ui.Box("lab-cap", _picture, _bar));
+            Root.RegisterCallback<GeometryChangedEvent>(_ => { Pad(); Place(); });
+            Root.RegisterCallback<DetachFromPanelEvent>(_ => { if (!_ended) Stop(); });
             _framing.Changed += Draw;
             Draw();
+
+            // -app2LabBar: the filming layout without a camera (a Mac screenshot of the bar and the picture area).
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-app2LabBar") >= 0)
+            {
+                Cover("VideoCamera", "Starting camera", "Hold on while the camera and the recorder start.");
+                return;
+            }
+            switch (Capture.Has)
+            {
+                case Capture.CameraAccess.None:
+                    _bar.style.display = DisplayStyle.None;
+                    Cover("Warning", "Camera not available on this device",
+                        "A 3D session films your stroke with your phone's camera. Open Puttr on your iPhone or Android phone to film your baseline.",
+                        ("Back", _app.Pop));
+                    return;
+                case Capture.CameraAccess.Refused:
+                    _bar.style.display = DisplayStyle.None;
+                    NoAccess();
+                    return;
+            }
+            Cover("VideoCamera", "Starting camera", "Hold on while the camera and the recorder start.");
             App.Run(Open());
         }
 
@@ -179,6 +230,7 @@ namespace PuttrApp
             string handedness = J.Str(_app.Profile, "handedness").ToUpperInvariant().StartsWith("L") ? "LEFTY" : "RIGHTY";
             object started = null;
             string failed = null;
+            // The real session row: 3D sessions are not held (Api.PlayRecords), so this and every write below reach production.
             yield return Api.Post("/lab/session/start", new Dictionary<string, object> { { "handedness", handedness } }, d => started = d, w => failed = w);
             _session = J.Str(started, "insertId");
             if (failed != null || _session.Length == 0)
@@ -187,28 +239,144 @@ namespace PuttrApp
                 _app.Pop();
                 yield break;
             }
+            if (Root.panel == null) yield break; // left while it started
             _app.EnterPractice();
             Green.Console.distanceFt = _feet;
             Green.Console.tee = 2;
-            Capture.One.Place(new Rect(0.04f, 0.04f, 0.92f, CameraShare - 0.06f));
-            Capture.One.BeginLab(_session);
+            _camera = true;
             _onPose = pose => _framing.Seen(pose);
             Capture.One.Pose += _onPose;
-            Capture.One.Changed += Draw;
+            Capture.One.Changed += OnCapture;
             Green.Console.Putt += OnPutt;
             _listening = true;
+            Capture.One.BeginLab(_session);
+            Place();
             CoachVoice.Warm(LabMath.MakeCenter); CoachVoice.Warm(LabMath.Make); CoachVoice.Warm(LabMath.MakeEdge); CoachVoice.Warm(LabMath.Miss);
             CoachVoice.Say("Set your phone behind the ball, facing the hole. Then step back until I can see your whole body.");
-            Root.schedule.Execute(Tick).Every(100);
+            _ticker = Root.schedule.Execute(Tick).Every(100);
             Perf.Mark("3d session " + _session + " started");
         }
 
+        // ── The picture ─────────────────────────────────────────────────────
+
+        /// <summary>The native preview over the picture area, or hidden when something of the app's must show there.</summary>
+        void Place()
+        {
+            bool show = _camera && _shown && !_ended && !_moving && Root.panel != null
+                && Capture.One.Now != Capture.State.Off && Capture.One.Now != Capture.State.Failed;
+            Rect share = new Rect(0, 0, 0, 0);
+            if (show)
+            {
+                Rect all = Root.panel.visualTree.layout, r = _picture.worldBound;
+                if (all.width <= 0 || all.height <= 0 || r.width <= 0 || r.height <= 0) return;
+                share = new Rect(r.x / all.width, r.y / all.height, r.width / all.width, r.height / all.height);
+            }
+            if (share == _placed) return;
+            _placed = share;
+            Capture.One.Place(share);
+        }
+
+        /// <summary>The bar clears the home indicator.</summary>
+        void Pad()
+        {
+            Vector4 safe = _app.SafeInsets();
+            _bar.style.paddingBottom = 12 + safe.y;
+            _bar.style.paddingLeft = 16 + safe.x;
+            _bar.style.paddingRight = 16 + safe.z;
+            _cover.style.marginTop = safe.w;
+        }
+
+        public override void Shown() { _shown = true; Place(); }
+        public override void Hidden() { _shown = false; Place(); }
+
+        void OnCapture()
+        {
+            if (_ended) return;
+            if (Capture.One.Now == Capture.State.Failed)
+            {
+                if (Capture.One.Refused) NoAccess();
+                else Cover("Warning", "The camera did not start", Capture.One.Problem ?? "Something stopped the camera.",
+                    ("Try again", Retry), ("Leave", Leave));
+            }
+            Place();
+            Draw();
+        }
+
+        void Retry()
+        {
+            if (_session == null || _ended) return;
+            Cover("VideoCamera", "Starting camera", "Hold on while the camera and the recorder start.");
+            _guideKey = null;
+            Capture.One.BeginLab(_session);
+            Place();
+        }
+
+        void NoAccess()
+        {
+            var actions = new List<(string, Action)>();
+            if (Application.platform == RuntimePlatform.IPhonePlayer) actions.Add(("Open Settings", () => Application.OpenURL("app-settings:")));
+            actions.Add(("Back", Leave));
+            Cover("VideoCamera", "Camera access is off", "Puttr needs the camera to film your stroke. Turn on Camera for Puttr in Settings, then start again.", actions.ToArray());
+        }
+
+        /// <summary>What the picture area shows when the camera is not over it.</summary>
+        void Cover(string icon, string title, string body, params (string label, Action tap)[] actions)
+        {
+            _cover.Clear();
+            _cover.Add(Ui.Icon(icon, 32, Ui.Bright));
+            _cover.Add(Ui.Title(title, "title-20 lab-cover-title"));
+            if (!string.IsNullOrEmpty(body)) _cover.Add(Ui.Text(body, "body-2 lab-cover-body", Ui.Medium));
+            VisualElement buttons = Ui.Box("lab-cover-actions");
+            for (int i = 0; i < actions.Length; i++) buttons.Add(Ui.Button(actions[i].label, actions[i].tap, i == 0 ? "btn" : "btn btn-ghost"));
+            if (actions.Length > 0) _cover.Add(buttons);
+        }
+
+        // ── The guide over the picture, ten times a second ──────────────────
+
         void Tick()
         {
-            if (_ended || Capture.One.Now != Capture.State.Recording) return;
-            _framing.Tick();
-            Capture.One.Border(_framing.Colour, _framing.Confirmed ? 3f : 6f);
+            if (_ended) return;
+            Place();
+            float now = Time.realtimeSinceStartup;
+            string line;
+            Color frame = Color.clear;
+            float progress = 0f;
+            bool confirmed = false;
+            string waiting = Capture.One.Waiting();
+            if (waiting != null) line = waiting;
+            else if (Capture.NoteInGuide && now < _noteUntil) { line = _noteTitle + "\n" + _noteBody; frame = _noteGood ? Ui.Green : Ui.Red; }
+            else if (Screen.width > Screen.height)
+            {
+                // CoachGame: the recording is a portrait strip, so the coach asks for the phone upright, once a turn.
+                line = TurnUpright;
+                if (!_turnSaid) { _turnSaid = true; CoachVoice.Say("Turn your device upright. Portrait captures your whole setup."); }
+            }
+            else
+            {
+                _turnSaid = false;
+                _framing.Tick();
+                confirmed = _framing.Confirmed;
+                if (confirmed) { line = "Framing good"; _fullAt = -1f; }
+                else if (_framing.Status == FramingStatus.Full)
+                {
+                    if (_fullAt < 0f) _fullAt = now;
+                    line = "Hold still...";
+                    progress = Mathf.Clamp01((now - _fullAt) / 2f);
+                }
+                else { _fullAt = -1f; line = _framing.Hint; }
+                if (!confirmed) frame = _framing.Colour;
+            }
+            string key = line + "|" + frame + "|" + Mathf.RoundToInt(progress * 20) + "|" + confirmed;
+            if (key == _guideKey) return;
+            _guideKey = key;
+            Capture.One.Guide(line, frame, progress, confirmed);
         }
+
+        // ── Putts ───────────────────────────────────────────────────────────
+
+        string _noteTitle, _noteBody;
+        bool _noteGood;
+        float _noteUntil;
 
         void OnPutt(PuttResult putt)
         {
@@ -230,14 +398,42 @@ namespace PuttrApp
             }, null, w => Perf.Note("lab: putt not saved (" + w + ")")));
             Perf.Note("lab: putt " + _putts.Count + " at " + Mathf.RoundToInt(offset) + " ms");
 
+            // Seen and saved: a card over the picture says which putt it was and what became of it (Matt, 2026-11-24).
+            string what = string.IsNullOrEmpty(v.Description) ? "" : " · " + System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToTitleCase(v.Description.ToLowerInvariant());
+            _noteTitle = "Putt " + _putts.Count + " of " + LabMath.Putts + " recorded";
+            _noteBody = (v.Made ? "Made" : "Missed") + what;
+            _noteGood = v.Made;
+            _noteUntil = Time.realtimeSinceStartup + 2.2f;
+            Capture.One.Note(_noteTitle, _noteBody, v.Made);
+            _guideKey = null;
+
             if (_putts.Count == 3)
             {
                 CoachVoice.Say("Nice. Now move your phone in front of you, facing you, for three more.");
                 _framing.Reset();
+                Move();
             }
             else CoachVoice.Say(LabMath.Feedback(v));
             if (_putts.Count >= LabMath.Putts) App.Run(End());
             Draw();
+        }
+
+        /// <summary>After putt 3 (CoachGame's camera modal): face on, for three seconds or until tapped; the camera keeps recording.</summary>
+        void Move()
+        {
+            if (_putts.Count >= LabMath.Putts) return;
+            _moving = true;
+            Cover("VideoCamera", "Face on", "Move your camera to face you from the front.", ("Got it", EndMove));
+            Place();
+            Root.schedule.Execute(EndMove).StartingIn(3000);
+        }
+
+        void EndMove()
+        {
+            if (!_moving) return;
+            _moving = false;
+            _guideKey = null;
+            Place();
         }
 
         IEnumerator End()
@@ -255,48 +451,48 @@ namespace PuttrApp
             _app.Push(new LabProcessingScreen(_app, _session, _putts, score));
         }
 
+        /// <summary>Stops listening and filming: the recorder runs 2.5 s more, then POST /lab/recording/stop (Capture.CloseLab).</summary>
         void Stop()
         {
+            _ticker?.Pause();
+            Capture.One.Place(new Rect(0, 0, 0, 0));
+            _placed = new Rect(0, 0, 0, 0);
             if (!_listening) return;
             _listening = false;
             Green.Console.Putt -= OnPutt;
             if (_onPose != null) Capture.One.Pose -= _onPose;
-            Capture.One.Changed -= Draw;
+            Capture.One.Changed -= OnCapture;
             Capture.One.End();
         }
 
         void Leave()
         {
+            // Mid-session, End asks once (CoachGame's BackButton confirm): a second tap within three seconds leaves.
+            if (_putts.Count > 0 && !_ended && !_leaveAsked)
+            {
+                _leaveAsked = true;
+                _endText.text = "LEAVE?";
+                Root.schedule.Execute(() => { _leaveAsked = false; _endText.text = "END"; }).StartingIn(3000);
+                return;
+            }
+            _ended = true;
             Stop();
             CoachVoice.Hush();
-            _app.LeavePractice();
+            if (_camera) _app.LeavePractice();
             _app.Pop();
         }
 
         void Draw()
         {
-            _scroll.Clear();
             bool faceOn = _putts.Count >= 3;
-            _scroll.Add(Ui.Box("sheet-card row",
-                Ui.Box("grow", Ui.Text((faceOn ? "FACE ON" : "DOWN THE LINE") + "   ·   " + _feet + " FT STRAIGHT", "kick", Ui.Bold),
-                    Ui.Text("Putt " + Mathf.Min(_putts.Count + 1, LabMath.Putts) + " of " + LabMath.Putts, "h2", Ui.Bold).Margin(2)),
-                Ui.Box("btn-small", Ui.Text("Flip", "btn-text", Ui.Bold)).OnTap(() => Capture.One.SwitchCamera()),
-                FreePuttScreen.Space(8),
-                Ui.Box("btn-small", Ui.Text(_ended ? "Done" : "End", "btn-text", Ui.Bold)).OnTap(Leave)));
-
-            string waiting = Capture.One.Waiting();
-            if (waiting != null) _scroll.Add(Ui.Text(waiting, "sheet-note sheet-warn", Ui.Bold));
-            else
-            {
-                Label hint = Ui.Text(_framing.Confirmed ? "Framing good" : _framing.Status == FramingStatus.Full ? "Hold still..." : _framing.Hint, "sheet-note", Ui.Bold);
-                hint.style.backgroundColor = Color.Lerp(Ui.Ink, _framing.Colour, 0.35f);
-                _scroll.Add(hint);
-            }
-            if (_putts.Count > 0)
-            {
-                AppPutt.Verdict last = _putts[_putts.Count - 1];
-                _scroll.Add(Frame.PuttRead(last, 0, false));
-            }
+            _angle.text = (faceOn ? "FACE ON" : "DOWN THE LINE") + "   ·   " + _feet + " FT STRAIGHT";
+            _count.text = "PUTT " + Mathf.Min(_putts.Count + 1, LabMath.Putts) + " OF " + LabMath.Putts;
+            _fill.style.width = Length.Percent(100f * _putts.Count / LabMath.Putts);
+            if (_putts.Count == 0) { _last.text = "Putts count once the camera is recording."; _last.style.color = Ui.Faint; return; }
+            AppPutt.Verdict last = _putts[_putts.Count - 1];
+            string what = string.IsNullOrEmpty(last.Description) ? "" : "   ·   " + System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToTitleCase(last.Description.ToLowerInvariant());
+            _last.text = "Putt " + _putts.Count + ": " + (last.Made ? "Made" : "Missed") + what;
+            _last.style.color = last.Made ? Ui.Bright : Ui.Red;
         }
     }
 
@@ -305,7 +501,7 @@ namespace PuttrApp
     {
         readonly App _app;
         readonly string _session;
-        readonly Label _status;
+        readonly Label _status, _note;
         readonly VisualElement _action;
 
         public LabProcessingScreen(App app, string session, List<AppPutt.Verdict> putts, double score)
@@ -314,17 +510,27 @@ namespace PuttrApp
             _session = session;
             int made = 0;
             foreach (AppPutt.Verdict v in putts) if (v.Made) made++;
-            _status = Ui.Text("Uploading video...", "h2 center", Ui.Bold);
+            _status = Ui.Title("Uploading video...", "title-20 lab-done-status");
+            _note = Ui.Text("You can leave this screen. The 3D session appears in Improve when it is ready.", "body-2 center lab-intro-body", Ui.Medium);
             _action = new VisualElement();
             ScrollView scroll = Ui.Scroll();
             scroll.Add(Ui.Header("", app.Pop));
             scroll.Add(Ui.Box("pad",
-                Ui.Text("SESSION COMPLETE", "kick center", Ui.Bold),
-                Ui.Text(made + " of " + putts.Count, "score-big", Ui.Bold),
-                Ui.Text("made   ·   session score " + score.ToString("0.0"), "sub center", Ui.Regular),
-                Ui.Box("glass", _status, Ui.Text("You can leave this screen. The 3D session appears in Improve when it is ready.", "muted center", Ui.Regular).Margin(8)).Margin(18),
+                Ui.Box("lab-done",
+                    Ui.Caps("Session complete", "caps caps-green"),
+                    Ui.Num(made + " of " + putts.Count, "num-44 lab-done-num"),
+                    Ui.Caps("made · session score " + score.ToString("0.0"))),
+                Ui.Box("card lab-done-card", _status, _note),
                 _action));
-            Root = scroll;
+            Root = LabUi.Style(scroll);
+            if (Api.IsLocal(session))
+            {
+                // A local id would only come from a development build that held /lab/session (it is never in
+                // Api.PlayRecords): nothing was uploaded for the cloud to process. A real id is polled below.
+                _status.text = Api.NotSaved.ToUpperInvariant();
+                _note.text = "The camera filmed your putts, but this session was held on this device, so there is nothing to process.";
+                return;
+            }
             Root.schedule.Execute(Poll).Every(2000);
             Poll();
         }
@@ -337,9 +543,9 @@ namespace PuttrApp
             App.Run(Api.Get("/lab/session/status/" + _session, data =>
             {
                 object row = J.First(data);
-                if (row == null) { _status.text = "Uploading video..."; return; }
+                if (row == null) { _status.text = "UPLOADING VIDEO..."; return; }
                 int status = J.Int(row, "status");
-                _status.text = status <= 1 ? "Processing video..." : status == 2 ? "Analyzing video..." : "Your 3D session is ready";
+                _status.text = status <= 1 ? "PROCESSING VIDEO..." : status == 2 ? "ANALYZING VIDEO..." : "YOUR 3D SESSION IS READY";
                 if (status >= 3 && !_ready)
                 {
                     _ready = true;
@@ -349,30 +555,110 @@ namespace PuttrApp
         }
     }
 
-    /// <summary>Every 3D session filmed, newest first (GET /lab/sessions).</summary>
+    /// <summary>
+    /// Every 3D session filmed, newest first (puttr-app LabScreen with SessionRowCard): Record a 3D session, then one block
+    /// with a row per session: its thumbnail, date, LATEST on the newest, how it was filmed ("Good capture"), how long ago, the
+    /// score and side (or Processing...), Club data when a Vertex rode along, and a bin that deletes it after a yes.
+    /// GET /lab/sessions; GET /lab/session/delete/:id (the app's delete is a GET that sets status 5).
+    /// </summary>
     public sealed class LabSessionsScreen : AppScreen
     {
+        readonly App _app;
+        readonly VisualElement _list;
+        int _asked;
+
         public LabSessionsScreen(App app)
         {
-            var list = new VisualElement();
+            _app = app;
+            _list = new VisualElement();
+            VisualElement record = Ui.Button("Record a 3D session", () => app.Push(new LabIntroScreen(app)), "btn lab-record");
             ScrollView scroll = Ui.Scroll();
             scroll.Add(Ui.Header("3D sessions", app.Pop));
-            scroll.Add(Ui.Box("pad", Ui.Button("Record a new session", () => app.Push(new LabIntroScreen(app))), list.Margin(14)));
-            Root = scroll;
-            App.Run(Api.Get("/lab/sessions", data =>
+            scroll.Add(Ui.Box("pad", record));
+            scroll.Add(Ui.Section("Previous sessions"));
+            scroll.Add(Ui.Box("pad", _list));
+            scroll.Add(FreePuttScreen.Space(32));
+            Root = LabUi.Style(scroll);
+            _list.Add(Page.Loading());
+        }
+
+        // The app reloads the list every time the screen comes back (a session may have finished processing).
+        public override void Shown() => Load();
+
+        void Load()
+        {
+            int my = ++_asked;
+            App.Run(Api.Get("/lab/sessions", data => { if (my == _asked) Draw(J.List(data)); }, _ =>
             {
-                List<object> rows = J.List(data);
-                if (rows.Count == 0) { list.Add(Ui.Text("No 3D sessions yet.", "sub center", Ui.Regular)); return; }
-                foreach (object row in rows)
-                {
-                    object session = row;
-                    int status = J.Int(row, "status");
-                    list.Add(Ui.Box("glass game-row",
-                        Ui.Box("grow", Ui.Text("Session " + J.Str(row, "id"), "feed-name", Ui.Bold), Ui.Text(Ago.Words(ProfileMath.Date(row, "created_at"), DateTime.UtcNow), "muted", Ui.Regular)),
-                        Ui.Text(status >= 4 ? "3D ready" : "Processing", status >= 4 ? "chip chip-green" : "chip chip-amber", Ui.Bold))
-                        .OnTap(() => app.Push(new LabSessionScreen(app, session))));
-                }
-            }, _ => list.Add(Ui.Text("Could not load your sessions.", "sub center", Ui.Regular))));
+                if (my != _asked) return;
+                _list.Clear();
+                _list.Add(Ui.Text("Could not load your sessions.", "lab-empty-text", Ui.Medium));
+            }));
+        }
+
+        void Draw(List<object> rows)
+        {
+            _list.Clear();
+            if (rows.Count == 0)
+            {
+                _list.Add(Ui.Box("lab-empty", Ui.Icon("VideoCamera", 24, Ui.Faint),
+                    Ui.Text("No sessions yet", "body lab-empty-title", Ui.Bold), Ui.Text("Start a session to record your stroke", "body-2 center", Ui.Medium)));
+                return;
+            }
+            rows.Sort((a, b) => Nullable.Compare(ProfileMath.Date(b, "created_at"), ProfileMath.Date(a, "created_at")));
+            // One bordered block, a row a session.
+            VisualElement block = Ui.Box("lab-block");
+            for (int i = 0; i < rows.Count; i++) block.Add(Row(rows[i], i == 0));
+            _list.Add(block);
+        }
+
+        /// <summary>SessionRowCard.</summary>
+        VisualElement Row(object s, bool latest)
+        {
+            int status = J.Int(s, "status", 4);
+            bool processing = J.Get(s, "status") != null && status < 4;
+            LabCapture.Info capture = LabCapture.Describe(LabCapture.Parse(s));
+
+            VisualElement thumb = Images.Cover(Ui.Box("lab-thumb", Ui.Icon("VideoCamera", 20, Ui.Faint)));
+            string thumbUrl = J.Str(s, "thumbUrl");
+            if (thumbUrl.StartsWith("http")) { thumb.Clear(); Images.Into(thumb, thumbUrl); }
+
+            DateTime? at = ProfileMath.Date(s, "created_at");
+            string day = at?.ToLocalTime().ToString("MMM d", System.Globalization.CultureInfo.InvariantCulture);
+            string name = J.Str(s, "playerName");
+            string title = name.Length > 0 ? name + (day != null ? " \u00B7 " + day : "") : day ?? "Session";
+            VisualElement top = Ui.Box("row lab-row-top", Ui.Text(title, "lab-row-title", Ui.Bold));
+            if (latest) top.Add(Ui.Caps("Latest", "caps caps-green lab-latest"));
+            if (!processing && capture != null)
+            {
+                // How it was filmed: the words in green or amber, no ground behind them.
+                Label how = Ui.Caps(capture.Short, "caps lab-capture-text");
+                how.style.color = capture.Ok ? Ui.Bright : Ui.Amber;
+                top.Add(Ui.Box("lab-capture", Ui.Icon(capture.Ok ? "CheckCircle" : "Warning", 12, capture.Ok ? Ui.Bright : Ui.Amber), how));
+            }
+
+            // One quiet line: the score, the side, club data, or that the cloud is still working.
+            var meta = new List<string>();
+            if (J.Get(s, "score") != null) meta.Add("Score " + J.Num(s, "score").ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
+            if (J.Str(s, "handedness").Length > 0) meta.Add(J.Str(s, "handedness") == "LEFTY" ? "Lefty" : "Righty");
+            bool club = J.Int(s, "hasClubData") == 1 || J.List(J.Get(s, "putts")).Exists(p => J.Get(p, "sensorData") != null);
+            if (club) meta.Add("Club data");
+            if (processing) meta.Add("Processing...");
+
+            VisualElement words = Ui.Box("lab-srow-words", top);
+            if (at != null) words.Add(Ui.Text(LabUi.Ago(s), "body-2 lab-row-ago", Ui.Medium));
+            if (meta.Count > 0) words.Add(Ui.Text(string.Join(" · ", meta), "body-2 lab-row-ago", Ui.Medium));
+
+            object session = s;
+            VisualElement bin = Ui.Box("lab-bin", Ui.Icon("Trash", 20, Ui.Faint)).OnTap(() => Delete(session));
+            bin.RegisterCallback<PointerDownEvent>(e => e.StopPropagation());
+            return Ui.Box(latest ? "lab-srow lab-srow-first" : "lab-srow", thumb, words, bin).OnTap(() => _app.Push(new LabSessionScreen(_app, session)));
+        }
+
+        void Delete(object s)
+        {
+            Dialog.Ask(Root, "Delete session", "Are you sure you want to delete this session?", "Delete", () =>
+                App.Run(Api.Get("/lab/session/delete/" + J.Str(s, "id"), _ => Load(), _ => _app.Toast("Could not delete the session. Check your connection."))), true);
         }
     }
 }

@@ -24,6 +24,7 @@ namespace PuttrArcade
         float _beam;
 
         static bool Portrait => Screen.height > Screen.width;
+        public override float WideFrame => 0.74f;   // a lane down the middle: nothing of it is under the side cards
         public override Vector3 CameraFrom => At(Portrait ? new Vector3(-4f, 110f, -262f) : new Vector3(-10f, 96f, -250f));
         public override Vector3 CameraLook => At(Portrait ? new Vector3(-12f, 66f, 0f) : new Vector3(-40f, 50f, 0f));
         public override float CameraFov => Portrait ? 60f : 46f;
@@ -220,8 +221,8 @@ namespace PuttrArcade
                 yield return null;
             }
             cube.localPosition = to; cube.localScale = Vector3.one; cube.localRotation = Quaternion.identity;
-            if (pts >= 5) { Arcade.Sparks(At(to), 22); Sound("coin", 0.5f, 1.2f); }
-            else if (!v.Made) Sound("ball_land", 0.5f, 0.6f);
+            if (pts >= 5) { Arcade.Sparks(At(to), 22); Sound("fullworkout_big", "coin", 0.5f, 1.2f); }   // puttr-app-2: the game's own sound, the shared one until recorded
+            else if (!v.Made && !Has("fullworkout_miss")) Sound("ball_land", 0.5f, 0.6f);   // puttr-app-2: the game's own miss (SoundFor) takes its place
             // A little settle.
             for (float t = 0f; t < 1f; t += Time.deltaTime / 0.25f) { cube.localScale = Vector3.one * (1f + Mathf.Sin(t * Mathf.PI) * 0.12f); yield return null; }
             cube.localScale = Vector3.one;

@@ -37,7 +37,7 @@ namespace PuttrApp
     public sealed partial class LeapfrogGame : ListGame
     {
         double _target;
-        public override string Title => "Leapfrog";
+        protected override string OwnTitle => "Leapfrog";
         public override string GameType => "LEAPFROG";
         public override int MaxPlayers => 4;
         public override string Icon => "Frog";
@@ -81,7 +81,7 @@ namespace PuttrApp
         static readonly double[][] Bounds = { new[] { -18.0, 18 }, new[] { -54.0, -18, 18, 54 }, new[] { -64.3, -38.6, -12.9, 12.9, 38.6, 64.3 } };
         int _level;
         readonly List<int> _calls = new List<int>();
-        public override string Title => "Doors";
+        protected override string OwnTitle => "Doors";
         public override string GameType => "DOORS";
         public override int MaxPlayers => 4;
         public override string Icon => "Door";
@@ -94,10 +94,13 @@ namespace PuttrApp
         public override VisualElement Options()
         {
             VisualElement box = Ui.Box("");
-            box.Add(Form.Label("Doors"));
-            box.Add(Form.Pills(new[] { "Standard (3)", "Hard (5)", "Diabolical (7)" }, 0, i => _level = i));
+            // The app's heading for it (Doors.js renderDifficulty): this is the game's difficulty, so the page adds no other.
+            box.Add(Form.Label("Difficulty"));
+            box.Add(Form.Pills(LevelWords, 0, i => _level = i));
             return box;
         }
+        static readonly string[] LevelWords = { "Standard (3 doors)", "Hard (5 doors)", "Diabolical (7 doors)" };
+        public override string DifficultyWord => LevelWords[_level];
         double Centre(int door)
         {
             double[] b = Bounds[_level];
@@ -112,7 +115,6 @@ namespace PuttrApp
             return _calls.Select(d => new TournamentMath.Dealt { Feet = Dice.Next(3, 12), Tee = Centre(d) < -45 ? 1 : Centre(d) > 45 ? 3 : 2 }).ToList();
         }
         int DoorFor(double a) => Bounds[_level].Count(b => a > b);
-        public override string SoundFor(Shot s) => Over ? "rule_win" : s.Points >= 10 ? "door_creak" : s.Points > 0 ? "door_slam" : "rule_miss";
         protected override Shot Take(AppPutt.Verdict v)
         {
             if (!v.Made) return Call(0, false, "MISS");
@@ -136,7 +138,7 @@ namespace PuttrApp
     {
         const int LowMiss = -3;
         int _makes, _high, _low;
-        public override string Title => "High Side";
+        protected override string OwnTitle => "High Side";
         public override string GameType => "HIGHSIDE";
         public override int MaxPlayers => 4;
         public override string Icon => "TrendUp";
@@ -149,8 +151,9 @@ namespace PuttrApp
         protected override List<TournamentMath.Dealt> MakeList()
         {
             var tees = Enumerable.Repeat(1, 6).Concat(Enumerable.Repeat(3, 6)).OrderBy(_ => Dice.Next()).ToList();
-            return tees.Select(t => new TournamentMath.Dealt { Feet = Dice.Next(3, 12), Tee = t }).ToList();
+            return tees.Select(t => new TournamentMath.Dealt { Feet = Dice.Next(FeetFrom(), FeetTo() + 1), Tee = t }).ToList();
         }
+        public override string[] DifficultyNotes => GameLevels.RandomNotes;
         protected override Shot Take(AppPutt.Verdict v)
         {
             if (v.Made)
@@ -167,16 +170,16 @@ namespace PuttrApp
             return Call(LowMiss, false, "NEVER LOW", "Missed low: -3");
         }
         public override VisualElement Board() => Card("HIGH SIDE: " + (Tee == 1 ? "LEFT" : "RIGHT"), Ui.Box("stat-tiles",
-            Ui.Box("glass stat-tile", Ui.Text(_makes.ToString(), "stat-value", Ui.Bold), Ui.Text("MAKES", "stat-label", Ui.Bold)),
-            Ui.Box("glass stat-tile", Ui.Text(_high.ToString(), "stat-value", Ui.Bold), Ui.Text("HIGH MISSES", "stat-label", Ui.Bold)),
-            Ui.Box("glass stat-tile", Ui.Text(_low.ToString(), "stat-value", Ui.Bold), Ui.Text("LOW SIDE", "stat-label", Ui.Bold))));
+            Ui.Box("glass stat-tile", Ui.Text(_makes.ToString(), "stat-value", Ui.Bold), Ui.Text("MAKES", "caps", Ui.Bold)),
+            Ui.Box("glass stat-tile", Ui.Text(_high.ToString(), "stat-value", Ui.Bold), Ui.Text("HIGH MISSES", "caps", Ui.Bold)),
+            Ui.Box("glass stat-tile", Ui.Text(_low.ToString(), "stat-value", Ui.Bold), Ui.Text("LOW SIDE", "caps", Ui.Bold))));
     }
 
     // ── Switchback: the break switches every putt ──
 
     public sealed partial class SwitchbackGame : ListGame
     {
-        public override string Title => "Switchback";
+        protected override string OwnTitle => "Switchback";
         public override string GameType => "SWITCHBACK";
         public override int MaxPlayers => 4;
         public override string Icon => "ArrowsLeftRight";
@@ -189,8 +192,9 @@ namespace PuttrApp
         protected override List<TournamentMath.Dealt> MakeList()
         {
             int start = Dice.Next(2) == 0 ? 1 : 3;
-            return Enumerable.Range(0, 12).Select(i => new TournamentMath.Dealt { Feet = Dice.Next(3, 12), Tee = i % 2 == 0 ? start : 4 - start }).ToList();
+            return Enumerable.Range(0, 12).Select(i => new TournamentMath.Dealt { Feet = Dice.Next(FeetFrom(), FeetTo() + 1), Tee = i % 2 == 0 ? start : 4 - start }).ToList();
         }
+        public override string[] DifficultyNotes => GameLevels.RandomNotes;
         protected override Shot Take(AppPutt.Verdict v)
         {
             if (!v.Made) return Call(0, false, "MISS");
@@ -211,7 +215,7 @@ namespace PuttrApp
         const int Putts = 15, Top = 6, Shift = 25, Bonus = 10;
         int _feet = 6, _tee = 2, _round, _won = -1;
         int[] _gear = { 1, 1, 1, 1 }, _best = { 1, 1, 1, 1 };
-        public override string Title => "Gears";
+        protected override string OwnTitle => "Gears";
         public override string GameType => "GEARS";
         public override int MaxPlayers => 4;
         public override string Icon => "GearSix";
@@ -224,11 +228,8 @@ namespace PuttrApp
         public override VisualElement Options()
         {
             VisualElement box = Ui.Box("");
-            box.Add(Form.Label("Spot"));
-            VisualElement picker = Ui.Box("");
-            void Draw() { picker.Clear(); picker.Add(RuleCatalogB.SpotPicker(_feet, _tee, (f, t) => { _feet = f; _tee = t; Draw(); })); }
-            Draw();
-            box.Add(picker);
+            box.Add(Form.Label("Distance and tee"));
+            box.Add(RuleCatalogB.SpotPicker(_feet, _tee, (f, t) => { _feet = f; _tee = t; }));
             return box;
         }
         protected override void Begin() { _gear = new[] { 1, 1, 1, 1 }; _best = new[] { 1, 1, 1, 1 }; _round = 0; _won = -1; }
@@ -253,11 +254,12 @@ namespace PuttrApp
             return Call(0, false, "STALL", (v.Rollout == null ? "No read" : AppPutt.FmtRollout(v.Rollout)) + ": wanted " + lo + " to " + hi + " in");
         }
         public override int Winner => _won >= 0 ? _won : base.Winner;
-        public override string SoundFor(Shot s) => Over ? "rule_win" : s.Good ? "gear_shift" : "rule_miss";
         public override VisualElement Board()
         {
             var (lo, hi) = Band(Math.Min(_gear[P], 5));
-            return Card("GEAR " + _gear[P] + "   ·   PACE " + (lo < 0 ? lo + "" : "+" + lo) + " TO +" + hi + " IN", Pips(Top, i => i < _gear[P], i => (i + 1).ToString()));
+            // The speed the gear wants, in plain words: where the ball has to stop.
+            string stop = lo < 0 ? "STOP " + (-lo) + " IN SHORT TO " + hi + " IN PAST THE HOLE" : "STOP " + lo + " TO " + hi + " IN PAST THE HOLE";
+            return Card("GEAR " + _gear[P] + "   ·   " + stop, Pips(Top, i => i < _gear[P], i => (i + 1).ToString()));
         }
     }
 
@@ -272,7 +274,7 @@ namespace PuttrApp
         int[] _streak = new int[4], _misses = new int[4];
         bool[] _out = new bool[4];
         int _roundSeen = -1;
-        public override string Title => "Groove";
+        protected override string OwnTitle => "Groove";
         public override string GameType => "GROOVE";
         public override int MaxPlayers => 4;
         public override string Icon => "Waveform";
@@ -285,11 +287,8 @@ namespace PuttrApp
         public override VisualElement Options()
         {
             VisualElement box = Ui.Box("");
-            box.Add(Form.Label("Spot"));
-            VisualElement picker = Ui.Box("");
-            void Draw() { picker.Clear(); picker.Add(RuleCatalogB.SpotPicker(_feet, _tee, (f, t) => { _feet = f; _tee = t; Draw(); })); }
-            Draw();
-            box.Add(picker);
+            box.Add(Form.Label("Distance and tee"));
+            box.Add(RuleCatalogB.SpotPicker(_feet, _tee, (f, t) => { _feet = f; _tee = t; }));
             box.Add(RuleCatalogC.SpeedChoice(t => _target = t));
             return box;
         }
@@ -330,29 +329,34 @@ namespace PuttrApp
     public sealed partial class AroundTheClockGame : RuleGame
     {
         const int Rounds = 15, Points = 10, BonusPer = 5, Distance = 6;
+        /// <summary>The parts cover the front 150 degrees of the cup, 75 either side of straight in (Matt, 2026-11-23:
+        /// the side-most parts of the full front half could hardly be holed).</summary>
+        public const double Half = PuttrArcade.ClockScene.HalfArc;
         int _sectors = 5, _round, _won = -1;
         bool[][] _got;
-        public override string Title => "Around the Clock";
+        protected override string OwnTitle => "Around the Clock";
         public override string GameType => "CLOCK";
         public override int MaxPlayers => 4;
         public override string Icon => "Clock";
         public override string[] HowTo => new[]
         {
-            "Six-foot putts. Hole one through every part of the cup, left edge to right edge.",
+            "Six-foot putts. Hole one through every part of the front of the cup, left side to right side.",
             "A new part is 10 points. The tee moves to set up the part you need next.",
             "Collect them all to win, with 5 for every round left.",
         };
         public override VisualElement Options()
         {
             VisualElement box = Ui.Box("");
-            box.Add(Form.Label("Parts of the cup"));
+            // The app's heading for it (AroundTheClock.js renderSectorSetting): this is the game's difficulty.
+            box.Add(Form.Label("Difficulty"));
             int[] n = { 5, 7, 9 };
-            box.Add(Form.Pills(new[] { "Standard (5)", "Hard (7)", "Diabolical (9)" }, 0, i => _sectors = n[i]));
+            box.Add(Form.Pills(new[] { "Standard (5 sectors)", "Hard (7 sectors)", "Diabolical (9 sectors)" }, 0, i => _sectors = n[i]));
             return box;
         }
+        public override string DifficultyWord => (_sectors == 5 ? "Standard" : _sectors == 7 ? "Hard" : "Diabolical") + " (" + _sectors + " sectors)";
         protected override void Begin() { _got = Enumerable.Range(0, 4).Select(_ => new bool[_sectors]).ToArray(); _round = 0; _won = -1; }
-        int SectorFor(double a) => Mathf.Clamp((int)Math.Floor((a + 90) / (180.0 / _sectors)), 0, _sectors - 1);
-        double Centre(int s) => -90 + (s + 0.5) * 180.0 / _sectors;
+        int SectorFor(double a) => Mathf.Clamp((int)Math.Floor((a + Half) / (2 * Half / _sectors)), 0, _sectors - 1);
+        double Centre(int s) => -Half + (s + 0.5) * 2 * Half / _sectors;
         int NextSector => Array.FindIndex(_got[P], g => !g);
         protected override void Deal() { Feet = Distance; int s = Math.Max(0, NextSector); Tee = Centre(s) < -45 ? 1 : Centre(s) > 45 ? 3 : 2; }
         protected override void Next() { P = (P + 1) % Players; if (P == 0) _round++; }
@@ -362,6 +366,7 @@ namespace PuttrApp
         {
             if (!v.Made) return Call(0, false, "MISS");
             if (!v.HasEntry || Math.Abs(v.Entry) > 90) return Call(0, false, "BACK DOOR");
+            if (Math.Abs(v.Entry) > Half) return Call(0, false, "TOO FAR ROUND", "Outside the parts");
             int s = SectorFor(v.Entry);
             if (_got[P][s]) return Call(0, false, "AGAIN", "Already have that part");
             _got[P][s] = true;
@@ -371,7 +376,6 @@ namespace PuttrApp
             return Call(pts, true, _won == P ? "CLOCK DONE!" : "+" + pts, _got[P].Count(g => g) + " of " + _sectors);
         }
         public override int Winner => _won >= 0 ? _won : base.Winner;
-        public override string SoundFor(Shot s) => _won >= 0 ? "clock_chime" : Over ? "rule_win" : s.Good ? "rule_make" : "rule_miss";
         public override VisualElement Board() => Card("COLLECTED " + _got[P].Count(g => g) + " OF " + _sectors + "   ·   NEXT: " + (NextSector >= 0 ? (NextSector + 1).ToString() : "-"), Pips(_sectors, i => _got[P][i], i => (i + 1).ToString()));
     }
 }

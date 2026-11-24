@@ -1,5 +1,7 @@
 // Balloon Pop (puttr-app BalloonPop.js, rebuilt in 3D): a stage game, like Turf War. A square board stands for the
-// mat around the cup (no mat, no cup), with balloons floating over it in rings. The putt's ball rolls across the
+// mat around the cup (no mat, no cup), with balloons in rings on it. puttr-app-2: the board is a cork board on the wall
+// of a fairground stall, the balloons pinned to it as at the darts game (Matt, 2026-11-21). The board is laid out flat
+// as before under _wall, which stands it up: past the cup is up the wall, and off the board is out toward the camera. The putt's ball rolls across the
 // board on the path the camera saw and pops every balloon it rolls under. Made or missed doesn't matter, only the path.
 //
 //   gold   1 over the middle (where the cup is)   100
@@ -19,14 +21,14 @@ namespace PuttrArcade
     public sealed class BalloonPopMode : StageMode
     {
         public override string Name => "Balloon Pop";
-        public override string Blurb => "Balloons over the green.\nYour ball pops every one\nit rolls through.";
+        public override string Blurb => "Balloons on the cork board.\nYour ball pops every one\nit rolls through.";
         public override string Rule => "Ten putts. Pop as many balloons as you can: gold is 100, red 75, blue 50, white 25.";
         public override string Icon => "Heart";
         public override Color Accent => new Color(0.95f, 0.36f, 0.42f);
         public override string[] Tags => new[] { "10 putts", "Line" };
         public override string[] HowTo => new[]
         {
-            "Balloons float in rings over the board. The middle is where the cup is.",
+            "Balloons are pinned in rings on the cork board. The middle is where the cup is.",
             "Your putt rolls across the board and pops every balloon it passes. Made or missed, only the path counts.",
             "Gold in the middle is 100, then red 75, blue 50 and white 25.",
         };
@@ -36,16 +38,19 @@ namespace PuttrArcade
         public override bool ShowsAim => false;
         public override bool HasPortrait => true;
         public override string Tee => null; // the tee sign says it
-        public override GameAudio.Scene Sound => GameAudio.Scene.Table;
+        public override GameAudio.Scene Sound => GameAudio.Scene.Quiet;   // puttr-app-2: no background sound (Matt, 2026-11-21)
+        // puttr-app-2: the stall's prize bell ends the game (the arcade's game-over until it is recorded).
+        public override string EndSlot => "balloonpop_jackpot";
         public override int Score(int player) => _total[player];
 
         const float Scale = 10f;                    // units to the inch
         const float HalfW = 13f, Near = -15f, Far = 15f; // the board, in inches
         const int Putts = 10;
-        const float HitR = 2.1f, FloatH = 3.2f;
+        const float HitR = 2.1f, FloatH = 0f;       // pinned flat to the board
+        const float WallY = 175f;                   // the middle of the cork board, up the wall
 
-        public override Vector3 CameraPosition => Portrait ? At(0f, 560f, -340f) : At(0f, 330f, -330f);
-        public override Vector3 CameraLook => Portrait ? At(0f, 0f, -20f) : At(0f, 0f, 0f);
+        public override Vector3 CameraPosition => Portrait ? At(0f, WallY - 10f, -700f) : At(0f, WallY + 10f, -480f);
+        public override Vector3 CameraLook => Portrait ? At(0f, WallY - 10f, 0f) : At(0f, WallY, 0f);
         public override float CameraFov => Portrait ? 44f : 40f;
         public override float ShadowDistance => 900f;
 
@@ -62,7 +67,7 @@ namespace PuttrArcade
         readonly List<Balloon> _balloons = new List<Balloon>();
         readonly List<Balloon> _thisPutt = new List<Balloon>();
         readonly System.Random _dice = new System.Random();
-        Transform _ball;
+        Transform _ball, _wall;
         LineRenderer _trail;
         int _players = 1, _thrown;
         int[] _total = new int[1];
@@ -77,61 +82,114 @@ namespace PuttrArcade
 
         public override void Build()
         {
+            // The stall: a dark floor, a back wall in fairground stripes, and the cork board on it in a painted frame.
             Material studio = Make.Lit(new Color(0.035f, 0.04f, 0.05f), 0.3f);
-            Material slab = Make.Lit(new Color(0.11f, 0.32f, 0.2f), 0.35f);
-            Material rim = Make.Lit(new Color(0.03f, 0.03f, 0.035f), 0.6f, 0.3f);
             Shape(PrimitiveType.Cube, "Studio floor", Root, new Vector3(0, -12f, 0), new Vector3(2400f, 2f, 2400f), studio);
-            Shape(PrimitiveType.Cube, "Rim", Root, new Vector3(0, -5f, (Near + Far) * 0.5f * Scale), new Vector3(HalfW * 2 * Scale + 16f, 10f, (Far - Near) * Scale + 16f), rim);
-            Shape(PrimitiveType.Cube, "Board", Root, new Vector3(0, -2f, (Near + Far) * 0.5f * Scale), new Vector3(HalfW * 2 * Scale, 4.2f, (Far - Near) * Scale), slab);
-            // The rings, painted faintly on the board, and a glow round its edge.
+            Material red = Make.Lit(new Color(0.62f, 0.07f, 0.09f), 0.35f), cream = Make.Lit(new Color(0.93f, 0.86f, 0.7f), 0.35f);
+            const float stripe = 40f;
+            for (int i = -14; i <= 14; i++)
+                Shape(PrimitiveType.Cube, "Stall wall", Root, new Vector3(i * stripe, 260f, 16f), new Vector3(stripe, 560f, 6f), i % 2 == 0 ? red : cream);
+            // The awning over the board, scalloped edge and all.
+            for (int i = -6; i <= 6; i++)
+            {
+                Shape(PrimitiveType.Cube, "Awning", Root, new Vector3(i * 36f, WallY + 205f, -40f), new Vector3(36f, 4f, 110f), i % 2 == 0 ? red : cream).transform.localRotation = Quaternion.Euler(-18f, 0, 0);
+                Shape(PrimitiveType.Cylinder, "Scallop", Root, new Vector3(i * 36f, WallY + 186f, -93f), new Vector3(36f, 2f, 36f), i % 2 == 0 ? red : cream).transform.localRotation = Quaternion.Euler(90f, 0, 0);
+            }
+            // The counter in front, where the players stand.
+            Material wood = Make.Lit(new Color(0.42f, 0.24f, 0.12f), 0.4f, 0f, Make.Wood(11), null);
+            Shape(PrimitiveType.Cube, "Counter", Root, new Vector3(0, 6f, -150f), new Vector3(520f, 36f, 30f), wood);
+            Shape(PrimitiveType.Cube, "Counter top", Root, new Vector3(0, 25f, -150f), new Vector3(540f, 4f, 40f), red);
+
+            _wall = new GameObject("Cork board").transform;
+            _wall.SetParent(Root, false);
+            _wall.localPosition = new Vector3(0f, WallY, 0f);
+            _wall.localRotation = Quaternion.Euler(-90f, 0f, 0f);   // the board's up is out of the wall, past the cup is up
+
+            Material frame = Make.Lit(new Color(0.95f, 0.78f, 0.2f), 0.55f, 0.2f);
+            Material cork = Make.Lit(new Color(0.78f, 0.58f, 0.38f), 0.12f, 0f, Cork(), null);
+            Shape(PrimitiveType.Cube, "Frame", _wall, new Vector3(0, -5f, (Near + Far) * 0.5f * Scale), new Vector3(HalfW * 2 * Scale + 24f, 10f, (Far - Near) * Scale + 24f), frame);
+            Shape(PrimitiveType.Cube, "Cork", _wall, new Vector3(0, -2f, (Near + Far) * 0.5f * Scale), new Vector3(HalfW * 2 * Scale, 4.2f, (Far - Near) * Scale), cork);
+            // The rings, chalked faintly on the cork.
             foreach (float r in new[] { 4.2f, 7.4f, 10.4f })
             {
-                LineRenderer ring = Stroke(Root, "Ring", new Color(1f, 1f, 1f, 0.12f), 0.6f);
+                LineRenderer ring = Stroke(_wall, "Ring", new Color(1f, 1f, 1f, 0.08f), 0.6f);
                 ring.positionCount = 97;
                 for (int i = 0; i <= 96; i++) { float a = i / 96f * Mathf.PI * 2f; ring.SetPosition(i, W(new Vector2(Mathf.Cos(a) * r, Mathf.Sin(a) * r), 0.3f)); }
             }
-            LineRenderer edge = Stroke(Root, "Edge", Make.Green * 1.6f, 1.6f);
-            edge.positionCount = 5;
-            edge.SetPosition(0, W(new Vector2(-HalfW, Near), 0.4f)); edge.SetPosition(1, W(new Vector2(HalfW, Near), 0.4f));
-            edge.SetPosition(2, W(new Vector2(HalfW, Far), 0.4f)); edge.SetPosition(3, W(new Vector2(-HalfW, Far), 0.4f)); edge.SetPosition(4, W(new Vector2(-HalfW, Near), 0.4f));
-            Words(Root, "PUTT THIS WAY", new Vector3(0, 0.5f, Near * Scale - 18f), 7f, new Color(1f, 1f, 1f, 0.5f)).transform.localRotation = Quaternion.Euler(90f, 0, 0);
+            Words(_wall, "PUTT THIS WAY", new Vector3(0, 0.5f, Near * Scale - 22f), 7f, new Color(1f, 1f, 1f, 0.7f)).transform.localRotation = Quaternion.Euler(90f, 0, 0);
 
             Ring(0f, 1, 100, new Color(1f, 0.78f, 0.18f), 0f);
             Ring(4.2f, 6, 75, new Color(0.93f, 0.2f, 0.25f), -Mathf.PI / 2f);
             Ring(7.4f, 10, 50, new Color(0.24f, 0.5f, 0.98f), -Mathf.PI / 6f);
             Ring(10.4f, 14, 25, new Color(0.95f, 0.95f, 0.97f), 0f);
 
-            // The cup, under the gold balloon: a holed putt drops in.
-            Shape(PrimitiveType.Cylinder, "Cup", Root, new Vector3(0f, 0.12f, 0f), new Vector3(LaneSpec.HoleRadius * 2f * Scale, 0.05f, LaneSpec.HoleRadius * 2f * Scale), Make.Lit(new Color(0.01f, 0.015f, 0.012f), 0.2f));
+            // The cup, under the gold balloon: a hole in the cork a holed putt drops into.
+            Shape(PrimitiveType.Cylinder, "Cup", _wall, new Vector3(0f, 0.12f, 0f), new Vector3(LaneSpec.HoleRadius * 2f * Scale, 0.05f, LaneSpec.HoleRadius * 2f * Scale), Make.Lit(new Color(0.01f, 0.015f, 0.012f), 0.2f));
             // A real ball's skin (its markings show it turning as it rolls).
             Make.Ball(out Texture2D ballColor, out Texture2D ballDimples);
-            _ball = Shape(PrimitiveType.Sphere, "Ball", Root, Vector3.zero, Vector3.one * 1.68f * Scale, Make.Lit(Color.white, 0.8f, 0f, ballColor, ballDimples, 0.45f)).transform;
+            _ball = Shape(PrimitiveType.Sphere, "Ball", _wall, Vector3.zero, Vector3.one * 1.68f * Scale, Make.Lit(Color.white, 0.8f, 0f, ballColor, ballDimples, 0.45f)).transform;
             _ball.gameObject.SetActive(false);
-            _trail = Stroke(Root, "Trail", new Color(1f, 1f, 1f, 0.55f), 3f);
+            _trail = Stroke(_wall, "Trail", new Color(1f, 1f, 1f, 0.55f), 3f);
 
-            Sun(Root, new Vector3(58f, 25f, 0f), new Color(1f, 0.97f, 0.92f), 1.6f);
-            Light fill = World.NewLight(Root, "Fill", LightType.Point, new Color(1f, 0.88f, 0.95f), 90000f);
-            fill.transform.localPosition = new Vector3(0, 260f, -120f);
+            Sun(Root, new Vector3(28f, 20f, 0f), new Color(1f, 0.95f, 0.85f), 1.5f);
+            Light fill = World.NewLight(Root, "Fill", LightType.Point, new Color(1f, 0.85f, 0.7f), 90000f);
+            fill.transform.localPosition = new Vector3(0, WallY + 150f, -160f);
             fill.range = 900f;
+        }
+
+        // Cork: tan with darker and lighter flecks, tiled.
+        static Texture2D _cork;
+        static Texture2D Cork()
+        {
+            if (_cork != null) return _cork;
+            const int n = 256;
+            Texture2D t = Make.NewTexture(n, n, true);
+            var rng = new System.Random(5);
+            var px = new Color[n * n];
+            for (int i = 0; i < px.Length; i++)
+            {
+                float v = 0.86f + (float)rng.NextDouble() * 0.2f;
+                double f = rng.NextDouble();
+                if (f < 0.06) v *= 0.62f; else if (f < 0.1) v *= 1.18f;
+                px[i] = new Color(v, v, v, 1f);
+            }
+            // Soften the flecks into granules.
+            var soft = new Color[px.Length];
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    Color c = px[y * n + x] * 0.5f;
+                    c += (px[y * n + (x + 1) % n] + px[y * n + (x + n - 1) % n] + px[((y + 1) % n) * n + x] + px[((y + n - 1) % n) * n + x]) * 0.125f;
+                    c.a = 1f;
+                    soft[y * n + x] = c;
+                }
+            t.SetPixels(soft);
+            t.Apply(true);
+            t.name = "Cork";
+            return _cork = t;
         }
 
         void Ring(float radius, int count, int value, Color colour, float start)
         {
             Material skin = Make.Lit(colour, 0.92f, 0.05f);
             Material knot = Make.Lit(colour * 0.8f, 0.6f);
-            Material line = Make.Lit(new Color(0.85f, 0.85f, 0.85f), 0.3f);
+            Material line = Make.Lit(new Color(0.85f, 0.85f, 0.88f), 0.7f, 0.8f);   // the tack's steel
             Material shadow = Make.Glow(new Color(0f, 0f, 0f, 0.35f), false);
             for (int i = 0; i < count; i++)
             {
                 float a = start + i / (float)count * Mathf.PI * 2f;
                 var b = new Balloon { At = new Vector2(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius), Value = value, Phase = (float)_dice.NextDouble() * 6f };
                 b.Body = new GameObject("Balloon " + value).transform;
-                b.Body.SetParent(Root, false);
+                b.Body.SetParent(_wall, false);
+                // Upright on the wall: the art is turned back so the balloon stands tall, knot down, a pin through it.
+                Transform art = new GameObject("Art").transform;
+                art.SetParent(b.Body, false);
+                art.localRotation = Quaternion.Euler(90f, 0f, 0f);
                 float size = (value == 100 ? 2.1f : value == 75 ? 1.8f : 1.6f) * Scale;
-                Shape(PrimitiveType.Sphere, "Skin", b.Body, Vector3.zero, new Vector3(size, size * 1.18f, size), skin);
-                Shape(PrimitiveType.Sphere, "Knot", b.Body, new Vector3(0, -size * 0.62f, 0), Vector3.one * size * 0.18f, knot);
-                Shape(PrimitiveType.Cylinder, "String", b.Body, new Vector3(0, -size * 0.62f - FloatH * Scale * 0.5f, 0), new Vector3(0.5f, FloatH * Scale * 0.5f, 0.5f), line);
-                Shape(PrimitiveType.Cylinder, "Shadow", b.Body, new Vector3(0, -size * 0.62f - FloatH * Scale + 0.2f, 0), new Vector3(size * 0.8f, 0.05f, size * 0.8f), shadow);
+                Shape(PrimitiveType.Sphere, "Skin", art, Vector3.zero, new Vector3(size, size * 1.18f, size * 0.8f), skin);
+                Shape(PrimitiveType.Sphere, "Knot", art, new Vector3(0, -size * 0.62f, 0), Vector3.one * size * 0.18f, knot);
+                Shape(PrimitiveType.Cylinder, "Tack", art, new Vector3(0, -size * 0.62f, -size * 0.12f), new Vector3(size * 0.12f, size * 0.05f, size * 0.12f), line).transform.localRotation = Quaternion.Euler(90f, 0, 0);
+                Shape(PrimitiveType.Sphere, "Shadow", b.Body, new Vector3(size * 0.08f, -(1.2f * Scale - 0.4f), -size * 0.12f), new Vector3(size * 0.95f, 0.05f, size * 1.1f), shadow);
                 _balloons.Add(b);
             }
         }
@@ -154,14 +212,13 @@ namespace PuttrArcade
                 Arcade.Hud.BuildBoard(names, Putts, "TOTAL", false, "PUTTS", 38f);
                 ShowScores();
                 Deal();
-                Arcade.Audio.GameBed("carnival_loop", 0.22f);
             }
             Tick();
         }
 
         void Deal()
         {
-            DealtFeetNow = _dice.Next(3, 12);
+            DealtFeetNow = Arcade.DealFeet(_dice);   // puttr-app-2: 3 to 11 ft, or the range of the game page's Difficulty
             DealtTee = _dice.Next(1, 4);
             ShowTeeSign();
         }
@@ -189,13 +246,13 @@ namespace PuttrArcade
             foreach (Balloon b in _balloons)
             {
                 if (b.Popped) continue;
-                float bob = Mathf.Sin(t * 1.7f + b.Phase) * 0.25f;
-                // On its string: a shove swings it out, and it settles back.
+                float bob = Mathf.Sin(t * 1.7f + b.Phase) * 0.08f;
+                // Pinned: a shove jiggles it, and it settles back.
                 float dt = Mathf.Min(Time.deltaTime, 0.05f);
                 b.Push += (-b.Sway * 28f - b.Push * 2.6f) * dt;
                 b.Sway += b.Push * dt;
                 b.Body.localPosition = W(b.At + b.Sway, (FloatH + 1.2f + bob) * Scale);
-                b.Body.localRotation = Quaternion.Euler(Mathf.Sin(t * 1.1f + b.Phase) * 5f, 0f, Mathf.Cos(t * 0.9f + b.Phase) * 5f);
+                b.Body.localRotation = Quaternion.Euler(0f, Mathf.Sin(t * 1.1f + b.Phase) * 4f, 0f);   // a slight turn on its pin
                 if (b.Body.localScale.x < 1f) b.Body.localScale = Vector3.one * Mathf.Min(1f, b.Body.localScale.x + Time.deltaTime * 2.5f);
             }
         }
@@ -318,18 +375,19 @@ namespace PuttrArcade
                 {
                     // Into the cup: over its lip and down, with gravity.
                     yield return Sink(now, velocity);
-                    Arcade.Audio.Coin();
+                    if (!Arcade.Audio.TryLibrary("balloonpop_sink", 0.75f)) Arcade.Audio.Coin();   // puttr-app-2
                 }
                 else yield return Coast(now, velocity);
             }
             int value = 0;
             foreach (Balloon b in _thisPutt) value += b.Value;
             Hud hud = Arcade.Hud;
-            if (value == 0) { hud.Banner("NO POP", path.Count < 2 ? "It never reached the balloons" : "Roll it through the balloons", Make.Amber, 1.6f); Arcade.Audio.Library("rule_miss"); }
+            if (value == 0) { hud.Banner("NO POP", path.Count < 2 ? "It never reached the balloons" : "Roll it through the balloons", Make.Amber, 1.6f); Arcade.Audio.Library("balloonpop_no_pop", "rule_miss"); }   // puttr-app-2: its own sounds, the rule games' until recorded
             else
             {
                 hud.Banner("+" + value, _thisPutt.Count == 1 ? "1 balloon" : _thisPutt.Count + " balloons", value >= 175 ? Make.Bright : Color.white, 1.8f);
-                Arcade.Audio.Library(value >= 175 ? "rule_bonus" : "rule_make");
+                if (value >= 175) Arcade.Audio.Library("balloonpop_jackpot", "rule_bonus");   // puttr-app-2
+                else Arcade.Audio.Library("balloonpop_score", "rule_make");
             }
             ShowPutt(putt, value > 0 ? "+" + value : "No pop", value > 0 ? Make.Bright : Make.Amber);
             _scores[Active, Turn] = value;
@@ -425,7 +483,7 @@ namespace PuttrArcade
         {
             b.Popped = true;
             _thisPutt.Add(b);
-            Vector3 at = Root.TransformPoint(b.Body.localPosition);
+            Vector3 at = b.Body.position;
             b.Body.gameObject.SetActive(false);
             Arcade.Sparks(at, b.Value >= 75 ? 18 : 10);
             Arcade.Audio.Library("balloon_pop", 0.9f, 0.9f + Random.value * 0.25f);

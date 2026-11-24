@@ -32,8 +32,8 @@ namespace PuttrArcade
         Vector3 _ballHome;
 
         public override Vector3 CameraFrom => Portrait ? At(10f, 64f, -190f) : At(4f, 56f, -146f);
-        public override Vector3 CameraLook => Portrait ? At(10f, 50f, 60f) : At(6f, 44f, 60f);
-        public override float CameraFov => Portrait ? 40f : 38f;
+        public override Vector3 CameraLook => Portrait ? At(10f, 62f, 60f) : At(6f, 44f, 60f);   // upright: the dial sits under the score bug, not behind it
+        public override float CameraFov => Portrait ? 44f : 38f;
         public override float ShadowDistance => 400f;
 
         // ── The set ──────────────────────────────────────────────────────────
@@ -314,7 +314,8 @@ namespace PuttrArcade
             float total = Mathf.Max(0.05f, s.Back + s.Fwd), share = s.Back / total;
             Split(0f);
             _splitThrough.localScale = new Vector3(0.01f, 3.2f, 0.3f);
-            yield return Swing(_putter, s, () => Sound("swish", 0.25f, 1.4f), 1f, (t, phase) =>
+            // puttr-app-2: the putter's swing, shared by every sensor replay (the old swish until it is recorded).
+            yield return Swing(_putter, s, () => Sound("putter_swing", "swish", 0.25f, 1.4f), 1f, (t, phase) =>
             {
                 if (phase == 0) { float wb = BarW * share * t; _splitBack.localScale = new Vector3(Mathf.Max(0.01f, wb), 3.2f, 0.3f); _splitBack.localPosition = new Vector3(-BarW / 2f + wb / 2f, 0, 0); }
                 else if (phase == 1) { float wb = BarW * share, wt = (BarW - wb) * t; _splitThrough.localScale = new Vector3(Mathf.Max(0.01f, wt), 3.2f, 0.3f); _splitThrough.localPosition = new Vector3(-BarW / 2f + wb + wt / 2f, 0, 0); }
@@ -352,12 +353,12 @@ namespace PuttrArcade
                 _wedge.SetColor("_Color", new Color(1f, 0.8f, 0.7f, 1f) * 1.8f);
                 Vector3 ring = _rings[Mathf.Clamp(_lit - 1, 0, 2)].position;
                 if (Arcade != null) Arcade.Sparks(ring + Vector3.up * 2f, 16);
-                Sound("bell_ding", 0.3f, waltz ? 1.5f : 1.2f);
+                Sound("waltz_beat", "bell_ding", 0.3f, waltz ? 1.5f : 1.2f);   // puttr-app-2: the game's own sound, the shared one until recorded
             }
             if (waltz)
             {
                 if (Arcade != null) Arcade.Celebrate(30, At(SetX, 12f, 50f));
-                Sound("riser", 0.35f, 1.1f);
+                Sound("waltz_swell", "riser", 0.35f, 1.1f);   // puttr-app-2: the game's own sound, the shared one until recorded
             }
             yield return new WaitForSeconds(0.55f);
             _wedge.SetColor("_Color", new Color(Coral.r, Coral.g, Coral.b, 1f) * 1.2f);

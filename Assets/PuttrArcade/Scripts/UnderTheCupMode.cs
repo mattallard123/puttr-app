@@ -20,6 +20,10 @@ namespace PuttrArcade
     public sealed class UnderTheCupMode : GameMode
     {
         public override string Name => "Under the Cup";
+        public override bool Branded => true;
+        // puttr-app-2: a pin table's hum (the room tone until it is recorded); it ends on the jackpot bells.
+        public override string BedSlot => "underthecup_machine_loop";
+        public override string EndSlot => "underthecup_jackpot";
         public override string VoicePrefix => "underthecup";
         public override int Putter => Active; // whose difficulty applies to this putt
         public override string Blurb => "A pin table under the hole.\nRun the middle untouched\nfor the hundred.";
@@ -224,7 +228,8 @@ namespace PuttrArcade
                 {
                     _lastTing = Time.time;
                     _tings++;
-                    Arcade.Audio.PinKnock(speed);
+                    // puttr-app-2: steel on a steel pin, the shared click until it is recorded.
+                    if (!Arcade.Audio.TryLibrary("underthecup_pin", Mathf.InverseLerp(4f, 45f, speed) * 0.7f + 0.15f, 1f + Random.Range(-0.12f, 0.12f))) Arcade.Audio.PinKnock(speed);
                     if (speed > 16f) Arcade.Sparks(collision.GetContact(0).point, 3);
                 }
                 else if (speed > 14f) Arcade.Audio.Thump(speed);
@@ -261,7 +266,7 @@ namespace PuttrArcade
             if (ball == null)
             {
                 hud.Banner(putt.Launch.Reached ? "NO DROP" : "SHORT", putt.Launch.Reached ? "It has to go in, or over the top" : "It never reached the hole", Make.Amber);
-                Arcade.Audio.Miss();
+                if (!Arcade.Audio.TryLibrary("underthecup_zero", 0.7f)) Arcade.Audio.Miss();   // puttr-app-2
             }
             else
             {
@@ -269,10 +274,10 @@ namespace PuttrArcade
                 value = PocketValue(local);
                 bool middle = value == 100;
                 if (middle && _touched) value = 60;
-                if (value == 100) { hud.Banner("100", "A clean run", Make.Bright, 2.2f); Arcade.Audio.Strike(); Arcade.Celebrate(110, ball.transform.position); }
-                else if (middle) { hud.Banner("60", "In the middle, but it touched on the way", Color.white, 1.8f); Arcade.Audio.Spare(); }
-                else if (value > 0) { hud.Banner(value.ToString(), "", Color.white, 1.5f); Arcade.Audio.Spare(); }
-                else { hud.Banner("0", "It did not find a pocket", Make.Amber, 1.5f); Arcade.Audio.Miss(); }
+                if (value == 100) { hud.Banner("100", "A clean run", Make.Bright, 2.2f); if (!Arcade.Audio.TryLibrary("underthecup_jackpot", 1f)) Arcade.Audio.Strike(); Arcade.Celebrate(110, ball.transform.position); }   // puttr-app-2: the table's own, the shared stings until recorded
+                else if (middle) { hud.Banner("60", "In the middle, but it touched on the way", Color.white, 1.8f); if (!Arcade.Audio.TryLibrary("underthecup_pocket", 0.85f)) Arcade.Audio.Spare(); }
+                else if (value > 0) { hud.Banner(value.ToString(), "", Color.white, 1.5f); if (!Arcade.Audio.TryLibrary("underthecup_pocket", 0.75f)) Arcade.Audio.Spare(); }
+                else { hud.Banner("0", "It did not find a pocket", Make.Amber, 1.5f); if (!Arcade.Audio.TryLibrary("underthecup_zero", 0.7f)) Arcade.Audio.Miss(); }
                 Arcade.Shot("result");
                 yield return new WaitForSecondsRealtime(0.5f);
                 Arcade.Release(ball);

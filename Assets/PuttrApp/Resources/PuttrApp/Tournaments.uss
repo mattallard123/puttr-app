@@ -1,0 +1,8 @@
+/* Tournaments: the list's pull to refresh, the create screen's cover. On top of App.uss. */
+
+.tourn-page { flex-grow: 1; }
+.tourn-pull { position: absolute; left: 0; right: 0; top: 8px; height: 64px; align-items: center; justify-content: flex-start; }
+.tourn-pull-mark { opacity: 0; }
+
+.tourn-cover { overflow: hidden; }
+.tourn-cover-change { position: absolute; right: 8px; bottom: 8px; font-size: 11px; padding: 8px 12px; border-radius: 4px; background-color: rgb(34, 38, 42); color: rgb(255, 255, 255); }

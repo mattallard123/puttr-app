@@ -3,7 +3,7 @@
 //
 //   Matchup: a stage before the game: the game, its length, the Player's card with their PQS.
 //   Score bug: one compact bar: who is playing, the score, how far through.
-//   Tee sign: where to putt from, large, over the scene.
+//   Tee sign: where to putt from, over the scene: the distance large, and the three tees with the ball on one (TeeMarker).
 //   Putt read: after each putt, what happened and three graded reads: Line, Pace, Entry.
 //   Final: the result, stat lines, what it did to PQS, and the next choice.
 //
@@ -67,7 +67,7 @@ namespace PuttrApp
         }
 
         public static Color Colour(Tone tone) =>
-            tone == Tone.Best ? Ui.Bright : tone == Tone.Good ? (Color)new Color32(0x9E, 0xD8, 0x7A, 0xFF) : tone == Tone.Fair ? Ui.Amber : tone == Tone.Poor ? Ui.Red : Ui.Faint;
+            tone == Tone.Best ? Ui.Bright : tone == Tone.Good ? (Color)Ui.Bright : tone == Tone.Fair ? Ui.Amber : tone == Tone.Poor ? Ui.Red : Ui.Faint;
     }
 
     public static class Frame
@@ -82,15 +82,180 @@ namespace PuttrApp
                 Ui.Box("bug-progress", Ui.Text(progress, "bug-round", Ui.Bold)));
         }
 
-        /// <summary>The tee sign: "PUTT FROM", the distance large, the tee under it.</summary>
-        public static VisualElement TeeSign(int feet, int tee) =>
-            Ui.Box("tee-sign", Ui.Text("PUTT FROM", "kick center", Ui.Bold), Ui.Text(feet + " FEET", "tee-feet", Ui.Bold), Ui.Text(PracticeSession.TeeName(tee) + " tee", "sub center", Ui.Medium));
+        /// <summary>True where the tee is the band under the game's picture (a phone), not the large sign over the scene.</summary>
+        public static bool TeeInBand => Sized(TeeSize.Auto) == TeeSize.Phone;
 
-        /// <summary>The putt read: the result and its points, then Line, Pace and Entry, each with its grade.</summary>
-        public static VisualElement PuttRead(AppPutt.Verdict v, double points, bool scored, string pointsWord = "POINTS")
+        /// <summary>
+        /// Where to putt from on a phone (Matt, 2026-11-18): a band across the screen just under the game's picture,
+        /// centered: the three tees as circles, left to right as the Player sees the mat, the one to putt from solid,
+        /// and the distance large. Nothing sits over the scene or the ball's replay.
+        /// </summary>
+        public static VisualElement TeeBand(int feet, int tee)
         {
-            Label head = Ui.Text(v.Made && points > 0 || v.Made && !scored ? "MADE" : v.Made ? "BACK DOOR" : "MISSED", "read-head", Ui.Bold);
-            head.style.color = v.Made && (points > 0 || !scored) ? Ui.Bright : Ui.Red;
+            int on = Mathf.Clamp(tee, 1, 3);
+            VisualElement band = Ui.Box("tee-band");
+            band.pickingMode = PickingMode.Ignore;
+            for (int t = 1; t <= 3; t++) band.Add(Ui.Box(t == on ? "tee-dot tee-dot-on" : "tee-dot"));
+            if (feet > 0) band.Add(Ui.Box("tee-band-ft", Ui.Text(feet.ToString(), "tee-band-num", Ui.Bold), Ui.Text("FT", "tee-band-unit", Ui.Bold)));
+            return band;
+        }
+
+        /// <summary>How large the tee marker is drawn. Auto picks by device: a phone, a tablet, or a TV read from across the room.</summary>
+        public enum TeeSize { Auto, Phone, Tablet, Tv }
+
+        static TeeSize Sized(TeeSize size) => size != TeeSize.Auto ? size : Tv.On ? TeeSize.Tv : App.Tablet ? TeeSize.Tablet : TeeSize.Phone;
+
+        // A game panel sits on the stage, outside the app's own root, so the .tablet and .wide classes never reach
+        // it: the size is a class on the piece itself.
+        static string SizeClass(string name, TeeSize size)
+        {
+            TeeSize s = Sized(size);
+            return s == TeeSize.Tv ? name + " " + name + "-tv" : s == TeeSize.Tablet ? name + " " + name + "-tablet" : name;
+        }
+
+        /// <summary>
+        /// The one tee marker, wherever a game says where to putt from: the distance as a large number with FEET, and
+        /// the three tees in a row as the Player sees the mat (left, center, right), a golf ball on the one to putt
+        /// from and the other two empty rings. The picture is the instruction; no "Left tee" in words.
+        /// On a solid dark plate, so it reads over a 3D scene. Number / circle sizes in panel units: phone 46 / 30,
+        /// tablet 72 / 46, TV 100 / 62 (of a 720 unit high screen).
+        /// </summary>
+        /// <param name="feet">The distance; 0 or less draws the three tees alone.</param>
+        /// <param name="tee">1 left, 2 center, 3 right.</param>
+        /// <param name="caption">Adds the tee's name small under the circles, for a screen that wants the word too.</param>
+        public static VisualElement TeeMarker(int feet, int tee, TeeSize size = TeeSize.Auto, bool caption = false)
+        {
+            VisualElement marker = Ui.Box(SizeClass("tee-marker", size));
+            marker.pickingMode = PickingMode.Ignore;
+            if (feet > 0) marker.Add(Ui.Box("tee-marker-top", Ui.Text(feet.ToString(), "tee-num", Ui.Bold), Ui.Text("FEET", "tee-unit", Ui.Bold)));
+            marker.Add(TeeSpots(tee, null));
+            if (caption) marker.Add(Ui.Text(PracticeSession.TeeName(tee).ToUpperInvariant() + " TEE", "tee-caption", Ui.Bold));
+            return marker;
+        }
+
+        // The three circles. With pick, each is a button (the tee picker).
+        static VisualElement TeeSpots(int tee, Action<int> pick)
+        {
+            int on = Mathf.Clamp(tee, 1, 3);
+            VisualElement spots = Ui.Box("tee-spots");
+            for (int t = 1; t <= 3; t++)
+            {
+                int which = t;
+                VisualElement spot = t == on ? Ui.Box("tee-spot tee-spot-on", Ui.Box("tee-ball")) : Ui.Box("tee-spot");
+                if (pick != null) spot.OnTap(() => pick(which));
+                spots.Add(spot);
+            }
+            return spots;
+        }
+
+        /// <summary>Choosing a tee by the same picture: the three circles as buttons, the ball on the chosen one.</summary>
+        public static VisualElement TeePicker(int tee, Action<int> pick, TeeSize size = TeeSize.Auto)
+        {
+            VisualElement picker = Ui.Box(SizeClass("tee-marker", size) + " tee-picker");
+            // The ball moves to the tapped circle here, so a screen that does not redraw itself still shows the choice.
+            void Draw(int on)
+            {
+                picker.Clear();
+                picker.Add(TeeSpots(on, t => { Draw(t); pick?.Invoke(t); }));
+            }
+            Draw(tee);
+            return picker;
+        }
+
+        /// <summary>
+        /// Where to putt from, on a setup screen (puttr-app Open.js): one row with the distance and the tee's way, and
+        /// tapping it opens the mat's 27 spots (TeeSheet). In place of every distance as a pill and the tees under them.
+        /// </summary>
+        public static VisualElement SpotRow(int feet, int tee, Action<int, int> pick)
+        {
+            VisualElement row = Ui.Box("glass row spot-row");
+            Label distance = Ui.Text("", "spot-row-ft", Ui.Bold), way = Ui.Text("", "spot-row-way", Ui.Regular);
+            void Show(int f, int t) { distance.text = f + " ft"; way.text = TeeWay(t); }
+            Show(feet, tee);
+            row.Add(Ui.Box("grow", distance, way));
+            row.Add(Ui.Box("spot-row-icon", Ui.Icon("Target", 24, Ui.Faint)));
+            // The row shows the new spot itself, so a screen that does not redraw still shows the choice.
+            row.OnTap(() => TeeSheet(feet, tee, (f, t) => { feet = f; tee = t; Show(f, t); pick?.Invoke(f, t); }, App.Layer(row)));
+            return row;
+        }
+
+        /// <summary>The way a tee breaks, as the app words it: left to right, straight, right to left.</summary>
+        public static string TeeWay(int tee) => tee == 1 ? "Left to right" : tee == 3 ? "Right to left" : "Straight";
+
+        /// <summary>
+        /// "Select tee position" (puttr-app common/Green.js): the mat's 27 spots, 3 feet nearest the hole at the top to
+        /// 11 at the bottom, three tees across, the distance under each row, the Puttr mark printed on 11 feet's center
+        /// spot as on the mat. Tapping a spot picks it and closes the sheet.
+        /// </summary>
+        /// <param name="layer">Where the sheet goes: App.Layer on a screen, the game's overlay in a game.</param>
+        public static void TeeSheet(int feet, int tee, Action<int, int> pick, VisualElement layer)
+        {
+            VisualElement dim = null;
+            void Close() => dim?.RemoveFromHierarchy();
+            VisualElement grid = Ui.Box("spot-grid");
+            for (int f = PracticeSession.MinFeet; f <= PracticeSession.MaxFeet; f++)
+            {
+                VisualElement spots = Ui.Box("spot-line");
+                for (int t = 1; t <= 3; t++)
+                {
+                    int pf = f, pt = t;
+                    bool on = f == feet && t == tee, mark = f == PracticeSession.MaxFeet && t == 2;
+                    VisualElement spot = Ui.Box(on ? "spot spot-on" : mark ? "spot spot-mark" : "spot");
+                    if (on) spot.Add(Ui.Box("spot-ball"));
+                    else if (mark)
+                    {
+                        var logo = new Image { image = Resources.Load<Texture2D>("PuttrArcade/LogoMarkWhite"), scaleMode = ScaleMode.ScaleToFit };
+                        logo.AddToClassList("spot-logo");
+                        logo.pickingMode = PickingMode.Ignore;
+                        spot.Add(logo);
+                    }
+                    spots.Add(spot.OnTap(() => { Close(); pick?.Invoke(pf, pt); }));
+                }
+                grid.Add(spots);
+                grid.Add(Ui.Text(f.ToString(), "spot-ft", Ui.Regular));
+            }
+            VisualElement head = Ui.Box("row spot-head", Ui.Title("Select tee position", "title-20 grow"),
+                Ui.IconSquare("X", Close));
+            VisualElement card = Ui.Box("modal spot-sheet", head, grid);
+            card.RegisterCallback<ClickEvent>(e => e.StopPropagation());
+            dim = Ui.Box("modal-dim", card).OnBackdropTap(Close);
+            dim.Face(Ui.Medium);
+            layer.Add(dim);
+            // On a TV the remote starts on the spot that is picked, not the close button.
+            if (Tv.On) card.schedule.Execute(() => Tv.FocusOn(card.Q(className: "spot-on") ?? card.Q(className: "spot"))).StartingIn(50);
+        }
+
+        /// <summary>The tee sign: the tee marker in its place over the scene, top left under the score bug.</summary>
+        public static VisualElement TeeSign(int feet, int tee)
+        {
+            VisualElement sign = Ui.Box("tee-sign", TeeMarker(feet, tee));
+            sign.pickingMode = PickingMode.Ignore;
+            return sign;
+        }
+
+        /// <summary>
+        /// How far through a list of putts: one segment a putt, green for a putt that scored, red for one that did
+        /// not, white for the one being played. A list too long for segments to read is one bar.
+        /// </summary>
+        public static VisualElement PuttProgress(IList<double> scores, int count)
+        {
+            int played = scores != null ? scores.Count : 0;
+            if (count > 40 || count <= 0) return Ui.Progress(count > 0 ? played / (float)count : 0f);
+            VisualElement row = Ui.Box("putt-segs");
+            for (int i = 0; i < count; i++)
+                row.Add(Ui.Box(i < played ? (scores[i] > 0 ? "putt-seg putt-seg-made" : "putt-seg putt-seg-missed") : i == played ? "putt-seg putt-seg-now" : "putt-seg"));
+            return row;
+        }
+
+        /// <summary>The putt read: the result and its points, then Line, Pace and Entry, each with its grade.
+        /// backDoor: whether the make came in the back of the cup, where the caller knows (a rule game: Scoring.BackDoor).
+        /// Without it a make that scored nothing reads as one, which is wrong for a game where most makes score 0 (Dead
+        /// Center: a made 27° push is a make, not a back door).</summary>
+        public static VisualElement PuttRead(AppPutt.Verdict v, double points, bool scored, string pointsWord = "POINTS", bool? backDoor = null)
+        {
+            bool back = v.Made && (backDoor ?? scored && points <= 0);
+            Label head = Ui.Text(!v.Made ? "MISSED" : back ? "BACK DOOR" : "MADE", "read-head", Ui.Bold);
+            head.style.color = v.Made && !back ? Ui.Bright : Ui.Red;
             VisualElement top = Ui.Box("row", Ui.Box("grow", Ui.Text("PUTT READ", "kick", Ui.Bold), head));
             if (scored) top.Add(Ui.Box("read-points", Ui.Text((points > 0 ? "+" : "") + RoundSession.Points(points), "read-number", Ui.Bold), Ui.Text(pointsWord, "kick center", Ui.Bold)));
             VisualElement card = Ui.Box("sheet-card read", top);
@@ -112,8 +277,8 @@ namespace PuttrApp
             string name = J.Str(profile, "displayName", "You");
             VisualElement avatar = Ui.Avatar(name, J.Str(profile, "photoURL"), true);
             if (Club.Member(profile)) avatar.AddToClassList("avatar-member");
-            VisualElement words = Ui.Box("grow next-words", Ui.Text(name.ToUpperInvariant(), "tile-name", Ui.Bold), Ui.Text(line, "muted", Ui.Regular));
-            VisualElement rating = Ui.Box("card-rating", Ui.Text(pqs >= 0 ? pqs.ToString() : "–", "score-mid", Ui.Bold), Ui.Text("PQS", "kick center", Ui.Bold));
+            VisualElement words = Ui.Box("grow next-words", Ui.Title(name, "title-20"), Ui.Text(line, "muted", Ui.Regular));
+            VisualElement rating = Ui.Box("card-rating", Ui.Num(pqs >= 0 ? pqs.ToString() : "–", "num-44 center"), Ui.Text("PQS", "kick center", Ui.Bold));
             return Ui.Box("glass row player-card", avatar, words, rating);
         }
 
@@ -150,12 +315,12 @@ namespace PuttrApp
             var card = new VisualElement();
             VisualElement rules = Ui.Box("glass",
                 Ui.Text(session.Putts.Count + " putts   ·   " + feetFrom + " to " + feetTo + " feet   ·   a new tee each putt", "sub", Ui.Medium),
-                Ui.Text(Rules(session), "muted", Ui.Regular).Margin(6));
+                Ui.Text(Rules(session), "muted", Ui.Regular).Margin(8));
             ScrollView scroll = Ui.Scroll();
             scroll.Add(Ui.Header("", app.Pop));
             scroll.Add(Ui.Box("pad",
                 Ui.Text((string.Equals(kicker, title, StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(kicker) ? "" : kicker.ToUpperInvariant() + "   ·   ") + "ABOUT " + Mathf.Max(2, Mathf.CeilToInt(session.Putts.Count / 3f)) + " MIN", "kick center", Ui.Bold),
-                Ui.Text(title.ToUpperInvariant(), "display center wrap", Ui.Bold),
+                Ui.Title(title, "title center wrap"),
                 card.Margin(16), rules.Margin(12),
                 Ui.Button("Start", () => { app.Pop(); start(); })));
             Root = scroll;
@@ -188,7 +353,7 @@ namespace PuttrApp
             VisualElement stats = Ui.Box("glass");
             void Stat(string label, string value)
             {
-                stats.Add(Ui.Box("board-row", Ui.Text(label, "read-label grow", Ui.Bold), Ui.Text(value, "feed-score", Ui.Bold)));
+                stats.Add(Ui.Box("board-row", Ui.Text(label, "read-label grow", Ui.Bold), Ui.Text(value, "g-score", Ui.Bold)));
             }
             Stat("PUTTS MADE", made + " of " + s.Seen.Count);
             if (lines > 0) Stat("AVERAGE LINE MISS", (lineSum / lines).ToString("0.0", CultureInfo.InvariantCulture) + "°");
@@ -198,16 +363,19 @@ namespace PuttrApp
 
             var rating = new VisualElement();
             ScrollView scroll = Ui.Scroll();
-            scroll.Add(Ui.Header("", app.Pop));
+            scroll.Add(Ui.Header("", app.ExitToTab));
             VisualElement buttons = Ui.Box("pad");
             if (again != null) buttons.Add(Ui.Button("Play again", () => { app.Pop(); again(); }));
             buttons.Add(Ui.Button("Exit", app.ExitToTab, again != null ? "btn btn-ghost" : "btn"));
             scroll.Add(Ui.Box("pad",
                 Ui.Text("FINAL   ·   " + title.ToUpperInvariant(), "kick center", Ui.Bold),
-                Ui.Text(RoundSession.Points(s.Total), "score-big", Ui.Bold),
+                Ui.Num(RoundSession.Points(s.Total), "num-44 center"),
                 Ui.Text("of " + s.Possible + " possible", "sub center", Ui.Regular),
                 Ui.Text(round.Outcome(), "sub center", Ui.Regular).Margin(8),
                 stats.Margin(16), rating.Margin(12)));
+            // Rate this game: five stars, and a box to say why when it is under five (Feedback.GameCard).
+            VisualElement rateGame = Feedback.GameCard(app, title);
+            if (rateGame != null) scroll.Add(Ui.Box("pad", rateGame));
             scroll.Add(buttons);
             Root = scroll;
 
@@ -227,7 +395,7 @@ namespace PuttrApp
                 int change = before >= 0 ? now - before : 0;
                 Label delta = Ui.Text(before < 0 ? "Your first PQS" : (change > 0 ? "▲ " : change < 0 ? "▼ " : "") + (change == 0 ? "No change" : Math.Abs(change) + " from this game"), "sub", Ui.Medium);
                 delta.style.color = change > 0 ? Ui.Bright : change < 0 ? Ui.Red : Ui.Faint;
-                rating.Add(Ui.Box("glass row", Ui.Box("card-rating", Ui.Text(now.ToString(), "score-mid", Ui.Bold), Ui.Text("PQS", "kick center", Ui.Bold)), Ui.Box("grow next-words", Ui.Text("LAST 30 DAYS", "kick", Ui.Bold), delta)));
+                rating.Add(Ui.Box("glass row", Ui.Box("card-rating", Ui.Num(now.ToString(), "num-44 center"), Ui.Text("PQS", "kick center", Ui.Bold)), Ui.Box("grow next-words", Ui.Text("LAST 30 DAYS", "kick", Ui.Bold), delta)));
             });
         }
     }

@@ -42,6 +42,8 @@ namespace PuttrArcade
         public override int Difficulty => 1;
         public override int MaxPlayers => 4;
         public override GameAudio.Scene Sound => GameAudio.Scene.Range;
+        // puttr-app-2: the target's bell and the gallery end the game (the arcade's game-over until recorded).
+        public override string EndSlot => "archery_bullseye";
         public override string[] HowTo => new[]
         {
             "Take turns, one arrow each. Every putt looses an arrow at the target, and the hole is the gold.",
@@ -534,9 +536,8 @@ namespace PuttrArcade
                 result = "Bullseye"; color = Gold;
                 _bulls[player]++;
                 hud.Banner("BULLSEYE", "+100", Gold, 2.4f);
-                Arcade.Audio.Strike();
-                Arcade.Audio.Roar(true);
-                Arcade.Audio.Bell();
+                // puttr-app-2: the range's own bullseye (the shared stings until it is recorded).
+                if (!Arcade.Audio.TryLibrary("archery_bullseye", 1f)) { Arcade.Audio.Strike(); Arcade.Audio.Roar(true); Arcade.Audio.Bell(); }
                 Arcade.SlowMotion(1f);
                 Arcade.Shake(0.45f);
                 Arcade.Celebrate(150, At(TargetAt.x, TargetAt.y, FaceZ - 6f));
@@ -546,28 +547,26 @@ namespace PuttrArcade
             {
                 result = "Inner ring"; color = Red;
                 hud.Banner("INNER RING", "+75", Red, 1.8f);
-                Arcade.Audio.Spare();
-                Arcade.Audio.Roar(false);
+                if (!Arcade.Audio.TryLibrary("archery_ring", 0.9f, 1.06f)) { Arcade.Audio.Spare(); Arcade.Audio.Roar(false); }   // puttr-app-2
                 Arcade.Celebrate(30, At(to.x, to.y, FaceZ - 6f));
             }
             else if (points == 50)
             {
                 result = "Mid ring"; color = Blue;
                 hud.Banner("MID RING", "+50", Blue, 1.8f);
-                Arcade.Audio.Coin();
+                if (!Arcade.Audio.TryLibrary("archery_ring", 0.75f)) Arcade.Audio.Coin();   // puttr-app-2
             }
             else if (points == 25)
             {
                 result = "Outer ring"; color = Color.white;
                 hud.Banner("OUTER RING", "+25", Color.white, 1.8f);
-                Arcade.Audio.Coin();
+                if (!Arcade.Audio.TryLibrary("archery_ring", 0.6f, 0.94f)) Arcade.Audio.Coin();   // puttr-app-2
             }
             else
             {
                 result = "Miss"; color = Make.Red;
                 hud.Banner("MISS", lands == Lands.Grass ? "Left short: it never reached the target" : "Wide of the target, into the hay", Make.Red, 1.8f);
-                Arcade.Audio.Miss();
-                Arcade.Audio.Groan();
+                if (!Arcade.Audio.TryLibrary("archery_miss", 0.75f)) { Arcade.Audio.Miss(); Arcade.Audio.Groan(); }   // puttr-app-2
             }
             ShowPutt(putt, result, color);
 

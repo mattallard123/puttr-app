@@ -2,8 +2,7 @@
 // the game page like every game (GameScreen); Start hands over to the 3D game (PuttrArcade.FreePuttMode: the
 // ramp, the hole and every putt replayed on it) with the session's numbers beside it (PracticePanel).
 //
-// Not brought over yet: the putt grade (it needs the app's rollout pace system ported and
-// checked against it), the speed and entry focus views, the Vertex sensor and the watch.
+// Not brought over yet: the Vertex sensor and the watch.
 using System.Collections.Generic;
 using Puttr;
 using UnityEngine;
@@ -17,7 +16,6 @@ namespace PuttrApp
     public static class FreePuttScreen
     {
         public const string GameType = "OPEN";
-        static readonly int[] Targets = { 5, 10, 15, 20, 25, 50 };
 
         /// <summary>Practice as a game row, for the entries that are not a catalog card (Home's Start putting, Improve).</summary>
         public static object Game => J.Parse("{\"title\":\"Practice\",\"gameType\":\"OPEN\",\"description\":\"A driving range for putting. No score, no pressure: every putt is measured and saved to your stats.\",\"multiPlayer\":0}");
@@ -25,30 +23,76 @@ namespace PuttrApp
         /// <summary>Opens Practice's page.</summary>
         public static void Open(App app) => app.Push(new GameScreen(app, Game));
 
-        /// <summary>Tees (yours or random) and a goal (none, makes in a row, total putts), redrawn into the given box.</summary>
+        /// <summary>
+        /// Open.js's setup, redrawn into the given box: SESSION FOCUS (what the session's read leads with), SESSION GOAL
+        /// (none, makes in a row, total putts, and its target), and TEES (a fixed tee you pick, or a new spot every putt).
+        /// </summary>
         public static void Setup(VisualElement into, PracticeSession session)
         {
             into.Clear();
+            if (PracticePanel.Sheet != null && !into.styleSheets.Contains(PracticePanel.Sheet)) into.styleSheets.Add(PracticePanel.Sheet);
             void Again() => Setup(into, session);
+
+            into.Add(Form.Label("Session focus"));
+            into.Add(Tiles(new[] { ("Target", "Overall", "All stats"), ("Lightning", "Speed", "Pace control"), ("RadioButton", "Entry", "Accuracy") },
+                (int)session.Focus, i => { session.Focus = (PracticeFocus)i; PracticeSession.LastFocus = session.Focus; Again(); }));
+
+            into.Add(Form.Label("Session goal"));
+            into.Add(Tiles(new[] { ("Fire", "Free play", "No target"), ("ListNumbers", "Make streak", "Consecutive"), ("Target", "Total putts", "Volume") },
+                (int)session.Goal, i =>
+                {
+                    var goal = (PracticeGoal)i;
+                    if (goal != session.Goal && goal != PracticeGoal.Free) session.Target = PracticeSession.DefaultTarget(goal);
+                    session.Goal = goal;
+                    Again();
+                }));
+            if (session.Goal != PracticeGoal.Free)
+            {
+                int[] targets = PracticeSession.TargetsFor(session.Goal);
+                if (System.Array.IndexOf(targets, session.Target) < 0) session.Target = PracticeSession.DefaultTarget(session.Goal);
+                VisualElement row = Ui.Box("pr-targets");
+                for (int i = 0; i < targets.Length; i++)
+                {
+                    int t = targets[i];
+                    VisualElement cell = Ui.Box(t == session.Target ? "pr-target pr-target-on" : "pr-target",
+                        Ui.Text(t.ToString(), "pr-target-num", Ui.Bold), Ui.Text(session.Goal == PracticeGoal.Streak ? "in a row" : "putts", "pr-target-sub", Ui.Regular))
+                        .OnTap(() => { session.Target = t; Again(); });
+                    if (i == targets.Length - 1) cell.style.marginRight = 0;
+                    row.Add(cell);
+                }
+                into.Add(row);
+            }
+
             into.Add(Form.Label("Tees"));
-            into.Add(Choice(new[] { "You choose", "Random" }, session.RandomTees ? 1 : 0, i => { session.RandomTees = i == 1; Again(); }));
+            into.Add(Tiles(new[] { ("Target", "Fixed tee", "You pick the spot"), ("Cube", "Random tees", "New spot every putt") },
+                session.RandomTees ? 1 : 0, i => { session.RandomTees = i == 1; Again(); }));
             if (session.RandomTees)
             {
-                into.Add(Ui.Text("A new distance and tee after every putt, between:", "sub", Ui.Regular).Margin(10));
+                into.Add(Ui.Text("A new distance and tee after every putt, between:", "sub", Ui.Regular).Margin(12));
                 into.Add(Ui.Box("row",
                     Stepper(() => session.RangeMin + " ft", d => { session.RangeMin = Mathf.Clamp(session.RangeMin + d, PracticeSession.MinFeet, session.RangeMax); }),
                     Ui.Text("and", "sub center", Ui.Regular).Width(48),
                     Stepper(() => session.RangeMax + " ft", d => { session.RangeMax = Mathf.Clamp(session.RangeMax + d, session.RangeMin, PracticeSession.MaxFeet); })));
             }
-            else into.Add(TeePicker(session, Again, true));
-            into.Add(Form.Label("Goal"));
-            into.Add(Choice(new[] { "Just putt", "Makes in a row", "Total putts" }, (int)session.Goal, i => { session.Goal = (PracticeGoal)i; Again(); }));
-            if (session.Goal != PracticeGoal.Free)
-                into.Add(Stepper(() => session.Target + (session.Goal == PracticeGoal.Streak ? " in a row" : " putts"), d =>
-                {
-                    int at = System.Array.IndexOf(Targets, session.Target);
-                    session.Target = Targets[Mathf.Clamp((at < 0 ? 1 : at) + d, 0, Targets.Length - 1)];
-                }).Margin(10));
+            else into.Add(TeePicker(session, Again));
+        }
+
+        // Open.js PillRow: a row of tiles, each an icon, a word and a line under it, one lit.
+        internal static VisualElement Tiles((string icon, string label, string sub)[] options, int chosen, System.Action<int> pick)
+        {
+            VisualElement row = Ui.Box("pr-tiles");
+            for (int i = 0; i < options.Length; i++)
+            {
+                int index = i;
+                bool on = i == chosen;
+                VisualElement icon = Ui.Icon(options[i].icon, 20, on ? Color.white : (Color)Ui.Faint);
+                icon.AddToClassList("pr-tile-icon");
+                VisualElement tile = Ui.Box(on ? "pr-tile pr-tile-on" : "pr-tile", icon, Ui.Text(options[i].label, "pr-tile-label", Ui.Bold), Ui.Text(options[i].sub, "pr-tile-sub", Ui.Regular))
+                    .OnTap(() => pick(index));
+                if (i == options.Length - 1) tile.style.marginRight = 0;
+                row.Add(tile);
+            }
+            return row;
         }
 
         // ── Small pieces ─────────────────────────────────────────────────────
@@ -60,16 +104,21 @@ namespace PuttrApp
             return space;
         }
 
-        internal static VisualElement Stat(string value, string label) => Ui.Box("grow stat", Ui.Text(value, "stat-value", Ui.Bold), Ui.Text(label, "muted center", Ui.Medium));
+        internal static VisualElement Stat(string value, string label) => Ui.Box("grow stat", Ui.Num(value, "stat-value"), Ui.Caps(label, "caps center"));
 
-        // A row of options, one lit.
+        // A row of options, one lit. The light follows the tap itself, so a caller that only reloads its list (and never
+        // draws the row again) still shows which tab is on.
         internal static VisualElement Choice(string[] names, int chosen, System.Action<int> pick)
         {
             VisualElement row = Ui.Box("choice");
             for (int i = 0; i < names.Length; i++)
             {
                 int index = i;
-                row.Add(Ui.Box(i == chosen ? "choice-item choice-on" : "choice-item", Ui.Text(names[i], "choice-text", Ui.Bold)).OnTap(() => pick(index)));
+                row.Add(Ui.Box(i == chosen ? "choice-item choice-on" : "choice-item", Ui.Text(names[i], "choice-text", Ui.Bold)).OnTap(() =>
+                {
+                    for (int k = 0; k < row.childCount; k++) row[k].EnableInClassList("choice-on", k == index);
+                    pick(index);
+                }));
             }
             return row;
         }
@@ -82,15 +131,12 @@ namespace PuttrApp
             return Ui.Box("stepper grow", Button("−", -1), label, Button("+", 1));
         }
 
-        // Distance, then the three tees.
-        internal static VisualElement TeePicker(PracticeSession session, System.Action changed, bool sideBySide = false)
+        // The distance and the tee in one row; tapping it opens the mat's 27 spots (Frame.SpotRow, as Open.js).
+        internal static VisualElement TeePicker(PracticeSession session, System.Action changed)
         {
-            VisualElement distance = Stepper(() => session.Feet + " ft", d => { session.Feet = Mathf.Clamp(session.Feet + d, PracticeSession.MinFeet, PracticeSession.MaxFeet); changed(); });
-            VisualElement tee = Choice(new[] { "Left", "Center", "Right" }, session.Tee - 1, i => { session.Tee = i + 1; changed(); });
-            if (!sideBySide) { tee.style.marginTop = 10; return Ui.Box("", distance, tee); }
-            distance.style.flexGrow = 0; distance.style.width = 132; distance.style.marginRight = 8; distance.style.marginTop = 10;
-            tee.style.flexGrow = 1;
-            return Ui.Box("row", distance, tee);
+            VisualElement row = Frame.SpotRow(session.Feet, session.Tee, (f, t) => { session.Feet = f; session.Tee = t; changed(); });
+            row.style.marginTop = 10;
+            return row;
         }
     }
 

@@ -202,12 +202,12 @@ namespace PuttrArcade
             int lost = !calib && !inside ? v.Int("balls") : -1;
 
             bool hit = false;
-            yield return Swing(_putter, s, () => { hit = true; Sound("golf_iron", 0.35f, 1.3f); });
+            yield return Swing(_putter, s, () => { hit = true; Sound("putter_strike", "golf_iron", 0.35f, 1.3f); });   // puttr-app-2: the putter on the ball, shared by every sensor replay (the old sound until it is recorded)
 
             // The beam and the ball go out together.
             Color c = calib ? Color.white : inside ? Clean : Bad;
             _beamMat.SetColor("_Color", new Color(c.r, c.g, c.b, 1f) * 1.4f);
-            Sound("laser_zap", 0.45f, inside ? 1.2f : 0.85f);
+            Sound("squareup_beam", "laser_zap", 0.45f, inside ? 1.2f : 0.85f);   // puttr-app-2: the game's own sound, the shared one until recorded
             float reach = inside ? D + 46f : D;
             Vector3 from = new Vector3(0, 0.9f, 1f), dir = Dir(s.Face);
             Vector3 ballFrom = _ball.localPosition, ballTo = ballFrom + Quaternion.Euler(0, -Clamp(s.Face) / 3f, 0) * Vector3.forward * 46f;
@@ -235,7 +235,7 @@ namespace PuttrArcade
                     _hasCenter = true;
                     _center = v.Num("center"); _gate = v.Num("gate", 2f);
                     _gateRoot.gameObject.SetActive(true);
-                    Sound("riser", 0.5f);
+                    Sound("squareup_block", "riser", 0.5f);   // puttr-app-2: the game's own sound, the shared one until recorded
                     for (float t = 0f; t < 1f; t += Time.deltaTime / 0.7f) { Lay(_center, _gate, Mathf.Lerp(0.3f, 1f, Ease(t))); yield return null; }
                     Lay(_center, _gate, 1f);
                     Arcade.Sparks(At(Dir(_center) * D + Vector3.up * PostH), 30);
@@ -253,7 +253,7 @@ namespace PuttrArcade
                 {
                     // The posts grind inward to the next level's gate.
                     float next = v.Num("gate", judged);
-                    Sound("stone_grind", 0.6f);
+                    Sound("squareup_block", "stone_grind", 0.6f);   // puttr-app-2: the game's own sound, the shared one until recorded
                     for (float t = 0f; t < 1f; t += Time.deltaTime / 0.75f) { Lay(_center, Mathf.Lerp(judged, next, Ease(t)), 1f); yield return null; }
                     _gate = next;
                     Lay(_center, _gate, 1f);
@@ -269,14 +269,14 @@ namespace PuttrArcade
                 post.SetColor("_EmissionColor", Bad * 3f);
                 Arcade.Sparks(At(end), 40);
                 Arcade.Shake(0.35f);
-                Sound("anvil", 0.5f);
+                Sound("squareup_miss", "anvil", 0.5f);   // puttr-app-2: the beam breaks on the post, Metal's anvil until recorded
                 _read.Show("FACE", Signed(s.Face) + "°", "", "", Bad);
                 Transform life = lost >= 0 && lost < _lives.Count && livesBefore > lost ? _lives[lost] : null;
                 if (life != null)
                 {
                     Vector3 a = life.localPosition, b = a + new Vector3(3.2f, -1f, 0.5f), cc = b + new Vector3(26f, 0f, 4f);
                     yield return Arc(life, a, b, 0.25f, 1.2f);
-                    Sound("thud", 0.4f);
+                    if (!Has("squareup_miss")) Sound("thud", 0.4f);   // puttr-app-2: the beam break says it once recorded
                     for (float t = 0f; t < 1f; t += Time.deltaTime / 0.7f)
                     {
                         life.localPosition = Vector3.Lerp(b, cc, 1f - (1f - t) * (1f - t));

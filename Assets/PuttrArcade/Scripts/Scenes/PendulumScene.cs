@@ -30,8 +30,8 @@ namespace PuttrArcade
         Vector3 _ballHome;
 
         public override Vector3 CameraFrom => Portrait ? At(10f, 64f, -190f) : At(4f, 56f, -146f);
-        public override Vector3 CameraLook => Portrait ? At(10f, 50f, 60f) : At(6f, 44f, 60f);
-        public override float CameraFov => Portrait ? 40f : 38f;
+        public override Vector3 CameraLook => Portrait ? At(10f, 62f, 60f) : At(6f, 44f, 60f);   // upright: the dial sits under the score bug, not behind it
+        public override float CameraFov => Portrait ? 44f : 38f;
         public override float ShadowDistance => 400f;
 
         // ── The set ──────────────────────────────────────────────────────────
@@ -246,7 +246,7 @@ namespace PuttrArcade
             StrokeData s = StrokeOf(v);
             if (!s.Has) yield break;
             bool struck = false;
-            yield return Swing(_putter, s, () => { struck = true; Sound("swish", 0.25f, 1.4f); });
+            yield return Swing(_putter, s, () => { struck = true; Sound("putter_swing", "swish", 0.25f, 1.4f); });   // puttr-app-2: the putter on the ball, shared by every sensor replay (the old sound until it is recorded)
             // The ball runs off down the mat while the needle swings to the stroke's tempo and settles.
             float from = _needleDeg, to = DegFor(s.Tempo);
             float roll = v.Made ? 46f : 30f + Mathf.Clamp(v.RolloutIn, -10f, 20f) * 0.6f;
@@ -282,7 +282,7 @@ namespace PuttrArcade
             {
                 _wedge.SetColor("_Color", new Color(0.7f, 0.82f, 1f, 1f) * 1.8f);
                 if (Arcade != null) Arcade.Sparks(At(ClockX, DialY + DialR - 4f, DialZ - 2f), 22);
-                Sound("bell_ding", 0.35f, v.Int("mult") >= 5 ? 1.5f : 1.2f);
+                Sound("pendulum_beat", "bell_ding", 0.35f, v.Int("mult") >= 5 ? 1.5f : 1.2f);   // puttr-app-2: the game's own sound, the shared one until recorded
                 if (v.Int("mult") >= 5 && Arcade != null) Arcade.Celebrate(30, At(ClockX, DialY + 20f, DialZ - 10f));
             }
             yield return new WaitForSeconds(0.5f);

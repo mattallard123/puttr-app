@@ -1,5 +1,7 @@
-// 01 as darts in a pub: the cup is the bull, ringed by a fan of multiplier wedges on the oche mat (x4 within 15°,
-// x3 within 30°, x2 within 45°, x1 outside). The putt rolls up the mat and the wedge it entered through lights up;
+// 01 as darts in a pub: the cup is the bull, and the multipliers are on the hole itself: a band of wedges round its
+// front lip (x4 within 15°, x3 within 30°, x2 within 45°, x1 outside), turned to face the tee. The camera is close
+// on the hole, as Center Cut's: the putt comes in over the wedge it entered through, and that wedge lights up
+// (puttr-app-2, Matt 2026-11-18: the wedges were a 4 ft fan down the mat, so every putt rolled up the x4 one);
 // on a checkout the centre wedge is the double. A chalk scoreboard on the panelled wall keeps what each Player has
 // left, the old number struck through. Units are inches; the cup is at the origin, the putter looks up +Z.
 using System.Collections;
@@ -10,8 +12,14 @@ namespace PuttrArcade
 {
     public sealed class OhOneScene : RuleScene
     {
-        const float CupR = 3.4f, BallR = 1.6f, FanIn = 4.6f, FanOut = 52f, WallZ = 110f, Near = 0.75f;
+        const float K = 1.6f, CupR = 2.125f * K, BallR = 0.84f * K, Depth = 4f * K, MatY = 0.45f, FanIn = CupR + 0.55f, FanOut = CupR + 5.2f, WallZ = 110f, Near = 0.75f, Approach = 30f;
         static readonly float[] Edges = { 0f, 15f, 30f, 45f };
+
+        // The cup is the Puttr's own, as Center Cut draws it: a white liner at the top, black below, a floor that slopes
+        // down to the back and the mouth of the return tunnel there, where a make rolls out.
+        const float RampFront = -0.35f * Depth, RampBack = -0.72f * Depth;
+        static float RampY(float z) => Mathf.Lerp(RampFront, RampBack, Mathf.InverseLerp(-CupR, CupR, z));
+        static float RampTilt => Mathf.Atan2(RampFront - RampBack, 2f * CupR) * Mathf.Rad2Deg;
 
         Transform _ball, _fan;
         LineRenderer _trail;
@@ -29,16 +37,18 @@ namespace PuttrArcade
         float _pulse;
 
         static bool Portrait => Screen.height > Screen.width;
-        public override Vector3 CameraFrom => At(Portrait ? 16f : 30f, 120f, Portrait ? -185f : -170f);
-        public override Vector3 CameraLook => At(10f, 18f, -8f);
-        public override float CameraFov => Portrait ? 54f : 44f;
+        // The hole sits a little under the middle of the picture, clear of the score bar along the top.
+        public override Vector3 CameraFrom => At(0f, Portrait ? 38f : 26f, Portrait ? -27f : -21f);
+        public override Vector3 CameraLook => At(0f, 0f, Portrait ? 5.5f : 2.5f);
+        public override float CameraFov => Portrait ? 44f : 40f;
 
         public override void Build()
         {
             Material planks = Make.Lit(new Color(0.32f, 0.2f, 0.12f), 0.35f, 0f, Make.Wood(11));
             Material panel = Make.Lit(new Color(0.36f, 0.22f, 0.12f), 0.45f, 0f, Make.Wood(4));
             Material trim = Make.Lit(new Color(0.22f, 0.12f, 0.06f), 0.5f);
-            Material mat = Make.Lit(new Color(0.08f, 0.3f, 0.14f), 0.1f);
+            Make.Carpet(out Texture2D pile, out Texture2D pileNormal);
+            Material mat = Make.Lit(new Color(0.05f, 0.2f, 0.11f), 0.12f, 0f, pile, pileNormal, 0.9f);
             Material matEdge = Make.Lit(new Color(0.08f, 0.26f, 0.12f), 0.2f);
             Material hole = Make.Lit(new Color(0.01f, 0.01f, 0.01f), 0.1f);
             Material white = Make.Lit(new Color(0.95f, 0.95f, 0.92f), 0.6f);
@@ -47,7 +57,8 @@ namespace PuttrArcade
             Material brass = Make.Lit(new Color(0.85f, 0.62f, 0.3f), 0.8f, 0.9f);
 
             // The room: plank floor, panelled wall, a rail.
-            Shape(PrimitiveType.Cube, "Floor", Root, new Vector3(0, -1f, -80f), new Vector3(700f, 2f, 420f), planks);
+            // The floor and the mat are cut round the cup: nothing may cross its column, or it would show in the hole.
+            Make.MeshObject("Floor", Root, Make.HolePatch(700f, CupR + 1f, 1f / 120f, Vector3.zero, 1f, 48), planks);
             Shape(PrimitiveType.Cube, "Wall", Root, new Vector3(0, 150f, WallZ + 4f), new Vector3(700f, 300f, 8f), panel);
             for (int i = -6; i <= 6; i++)
                 Shape(PrimitiveType.Cube, "Stile", Root, new Vector3(i * 52f, 100f, WallZ - 1f), new Vector3(4f, 200f, 3f), trim);
@@ -55,17 +66,28 @@ namespace PuttrArcade
             Shape(PrimitiveType.Cube, "Skirting", Root, new Vector3(0, 5f, WallZ - 2f), new Vector3(700f, 10f, 5f), trim);
 
             // The oche mat, the cup and its liner.
-            Shape(PrimitiveType.Cube, "Mat edge", Root, new Vector3(0, 0.1f, -36f), new Vector3(124f, 0.4f, 200f), matEdge);
-            Shape(PrimitiveType.Cube, "Mat", Root, new Vector3(0, 0.25f, -36f), new Vector3(118f, 0.4f, 196f), mat);
+            for (int sd = -1; sd <= 1; sd += 2)
+                Shape(PrimitiveType.Cube, "Mat edge", Root, new Vector3(sd * 60.5f, 0.1f, -36f), new Vector3(3f, 0.4f, 200f), matEdge);
+            Shape(PrimitiveType.Cube, "Mat edge", Root, new Vector3(0, 0.1f, 60.5f), new Vector3(124f, 0.4f, 3f), matEdge);
+            Make.MeshObject("Mat by the cup", Root, Make.HolePatch(59f, CupR, 1f / (10f * K), Vector3.zero, 1f, 96), mat).transform.localPosition = new Vector3(0, MatY, 0);
+            Shape(PrimitiveType.Cube, "Mat near", Root, new Vector3(0, MatY - 0.2f, -96.5f), new Vector3(118f, 0.4f, 75f), mat);
             Shape(PrimitiveType.Cube, "Oche", Root, new Vector3(0, 0.5f, -112f), new Vector3(70f, 0.3f, 2.5f), brass);
-            GameObject cup = Make.MeshObject("Cup", Root, Make.Disc(CupR, 48), hole);
-            cup.transform.localPosition = new Vector3(0, 0.5f, 0);
-            Hoop("Liner", Root, new Vector3(0, 0.55f, 0), CupR, CupR + 0.5f, white);
+            Transform cup = new GameObject("Hole").transform;
+            cup.SetParent(Root, false);
+            cup.localPosition = new Vector3(0, MatY, 0);
+            Make.MeshObject("Liner", cup, Make.Cup(CupR, 1.1f * K, false, 72), Make.Lit(new Color(0.92f, 0.93f, 0.9f), 0.45f));
+            Make.MeshObject("Cup", cup, Make.Cup(CupR, Depth - 1.1f * K, true, 72), Make.Lit(new Color(0.015f, 0.015f, 0.017f), 0.15f)).transform.localPosition = new Vector3(0, -1.1f * K, 0);
+            GameObject ramp = Make.MeshObject("Cup floor", cup, Make.Disc(CupR - 0.05f, 72), hole);
+            ramp.transform.localPosition = new Vector3(0, (RampFront + RampBack) / 2f, 0);
+            ramp.transform.localRotation = Quaternion.Euler(RampTilt, 0, 0);
+            ramp.transform.localScale = new Vector3(1f, 1f, 1f / Mathf.Cos(RampTilt * Mathf.Deg2Rad));
+            Make.MeshObject("Return tunnel", cup, CenterCutScene.Mouth(CupR - 0.06f, 34f, RampBack - 0.2f, RampBack + BallR * 2.2f), Make.Glow(new Color(0.01f, 0.01f, 0.012f, 1f), false))
+                .GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
             // The fan of wedges round the cup, opening towards the putter.
             _fan = new GameObject("Fan").transform;
             _fan.SetParent(Root, false);
-            _fan.localPosition = new Vector3(0, 0.48f, 0);
+            _fan.localPosition = new Vector3(0, MatY + 0.1f, 0);
             Color[] zone = { new Color(0.86f, 0.14f, 0.12f), new Color(0.12f, 0.55f, 0.22f), new Color(0.93f, 0.88f, 0.74f), new Color(0.1f, 0.3f, 0.15f) };
             for (int z = 0; z < 4; z++)
             {
@@ -74,24 +96,25 @@ namespace PuttrArcade
             }
             AddWedge(-Edges[1], Edges[1], 0);
             for (int z = 1; z < 3; z++) { AddWedge(Edges[z], Edges[z + 1], z); AddWedge(-Edges[z + 1], -Edges[z], z); }
-            AddWedge(45f, 80f, 3); AddWedge(-80f, -45f, 3);
+            AddWedge(45f, 90f, 3); AddWedge(-90f, -45f, 3);
             // Wire between the wedges, as on a board.
             Material wire = Make.Lit(new Color(0.8f, 0.8f, 0.82f), 0.85f, 1f);
             foreach (float e in new[] { -45f, -30f, -15f, 15f, 30f, 45f })
             {
-                LineRenderer w = Stroke(_fan, "Wire", Color.white, 0.45f, false);
+                LineRenderer w = Stroke(_fan, "Wire", Color.white, 0.16f, false);
                 w.sharedMaterial = wire;
                 Points(w, new[] { Dir(e) * FanIn + Vector3.up * 0.2f, Dir(e) * FanOut + Vector3.up * 0.2f });
             }
-            LineRenderer rim = Stroke(_fan, "Rim wire", Color.white, 0.45f, false);
+            LineRenderer rim = Stroke(_fan, "Rim wire", Color.white, 0.16f, false);
             rim.sharedMaterial = wire;
             var arc = new List<Vector3>();
-            for (int i = 0; i <= 40; i++) arc.Add(Dir(Mathf.Lerp(-80f, 80f, i / 40f)) * FanOut + Vector3.up * 0.2f);
+            for (int i = 0; i <= 40; i++) arc.Add(Dir(Mathf.Lerp(-90f, 90f, i / 40f)) * FanOut + Vector3.up * 0.2f);
             Points(rim, arc);
-            float[] at = { 0f, 22.5f, -22.5f, 37.5f, -37.5f, 62f, -62f };
+            // Each wedge's multiplier, written on it.
+            float[] at = { 0f, 22.5f, -22.5f, 37.5f, -37.5f, 67f, -67f };
             for (int i = 0; i < at.Length; i++)
             {
-                TextMesh t = Words(_fan, "", Dir(at[i]) * (i == 0 ? 36f : i < 5 ? 42f : 40f) + Vector3.up * 0.3f, i == 0 ? 7f : 5f, Color.white);
+                TextMesh t = Words(_fan, "", Dir(at[i]) * ((FanIn + FanOut) * 0.5f + 0.2f) + Vector3.up * 0.3f, i == 0 ? 1.35f : i < 5 ? 0.82f : 1.05f, Color.white);
                 t.transform.localRotation = Quaternion.Euler(90f, 0, 0);
                 _labels.Add(t);
             }
@@ -102,6 +125,8 @@ namespace PuttrArcade
             _board.localPosition = new Vector3(62f, 34f, 12f);
             _board.localRotation = Quaternion.Euler(10f, 18f, 0f);
             _board.localScale = Vector3.one * 0.62f;
+            // puttr-app-2: the chalkboard is gone (Matt, 2026-11-21); the app's panel has a hopper of balls for each Player.
+            _board.gameObject.SetActive(false);
             Shape(PrimitiveType.Cube, "Leg", _board, new Vector3(-46f, -40f, 6f), new Vector3(4f, 80f, 4f), frame).transform.localRotation = Quaternion.Euler(-10f, 0, 8f);
             Shape(PrimitiveType.Cube, "Leg", _board, new Vector3(46f, -40f, 6f), new Vector3(4f, 80f, 4f), frame).transform.localRotation = Quaternion.Euler(-10f, 0, -8f);
             Shape(PrimitiveType.Cube, "Back leg", _board, new Vector3(0, -30f, 30f), new Vector3(4f, 90f, 4f), frame).transform.localRotation = Quaternion.Euler(-30f, 0, 0);
@@ -130,8 +155,9 @@ namespace PuttrArcade
             Shape(PrimitiveType.Sphere, "Bulb", Root, new Vector3(-62f, 170f, 6f), Vector3.one * 7f, Make.Emissive(new Color(1f, 0.9f, 0.7f), new Color(4f, 3f, 1.6f)));
             _lamp = Lamp(Root, new Vector3(-62f, 168f, 6f), new Vector3(-10f, 0, -40f), new Color(1f, 0.82f, 0.55f), 160000f, 80f, 600f);
 
-            _ball = Shape(PrimitiveType.Sphere, "Ball", Root, Vector3.zero, Vector3.one * BallR * 2f, Make.Lit(new Color(0.97f, 0.97f, 0.95f), 0.65f)).transform;
-            _trail = Stroke(Root, "Trace", new Color(1f, 0.92f, 0.7f, 0.9f), 1.3f);
+            Make.Ball(out Texture2D bc, out Texture2D bn);
+            _ball = Shape(PrimitiveType.Sphere, "Ball", Root, Vector3.zero, Vector3.one * BallR * 2f, Make.Lit(Color.white, 0.65f, 0f, bc, bn)).transform;
+            _trail = Stroke(Root, "Trace", new Color(1f, 0.92f, 0.7f, 0.9f), 0.5f);
 
             Sun(Root, new Vector3(50f, 15f, 0f), new Color(1f, 0.85f, 0.65f), 0.3f);
             Lamp(Root, new Vector3(160f, 200f, -200f), new Vector3(70f, 40f, 24f), new Color(1f, 0.85f, 0.65f), 160000f, 30f, 900f);
@@ -218,8 +244,9 @@ namespace PuttrArcade
             Vector2 s = TeeAt(feet, tee);
             float baseDeg = Mathf.Atan2(s.x, -s.y) * Mathf.Rad2Deg;
             _fan.localRotation = Quaternion.Euler(0, -baseDeg, 0);
-            _ball.gameObject.SetActive(true);
-            _ball.localPosition = new Vector3(s.x, BallR + 0.45f, s.y);
+            // puttr-app-2: no ball waiting in the picture before the putt (Matt, 2026-11-21); it appears as the putt rolls in.
+            _ball.gameObject.SetActive(false);
+            _trail.positionCount = 0;
         }
 
         void Labels(ShotView v)
@@ -292,31 +319,48 @@ namespace PuttrArcade
             if (_litWedge >= 0) _wedges[_litWedge].sharedMaterial = _dim[_wedgeZone[_litWedge]];
             _litWedge = -1;
             Vector2 tee = TeeAt(v.Feet, v.Tee);
-            _fan.localRotation = Quaternion.Euler(0, -Mathf.Atan2(tee.x, -tee.y) * Mathf.Rad2Deg, 0);
+            float baseDeg = Mathf.Atan2(tee.x, -tee.y) * Mathf.Rad2Deg;
+            _fan.localRotation = Quaternion.Euler(0, -baseDeg, 0);
             List<Vector2> roll = RollOf(v);
+            // A make that scores comes in over the wedge it is scored by: straight to the cup at its entry, measured
+            // from the tee's line as the wedges are.
+            if (v.Made && !v.BackDoor)
+            {
+                Vector3 from = Dir(baseDeg + Mathf.Clamp(v.Num("rel", v.EntryDeg), -89f, 89f)) * Approach;
+                roll = new List<Vector2> { new Vector2(from.x, from.z), Vector2.zero };
+            }
+            Sound("ohone_throw", 0.6f);   // puttr-app-2: the dart is thrown (silent until recorded)
             var trace = new List<Vector3>();
             _ball.gameObject.SetActive(true);
-            float seconds = Mathf.Lerp(1.1f, 1.8f, Mathf.InverseLerp(3f, 11f, v.Feet));
+            float seconds = v.Made && !v.BackDoor ? 0.9f : Mathf.Lerp(1.1f, 1.8f, Mathf.InverseLerp(3f, 11f, v.Feet));
             for (float t = 0f; t < 1f; t += Time.deltaTime / seconds)
             {
                 Vector2 p = Along(roll, Roll(t, v.Made));
-                _ball.localPosition = new Vector3(p.x, BallR + 0.45f, p.y);
-                trace.Add(new Vector3(p.x, 0.9f, p.y));
+                _ball.localPosition = new Vector3(p.x, BallR + MatY, p.y);
+                trace.Add(new Vector3(p.x, MatY + 0.3f, p.y));
                 Points(_trail, trace);
                 yield return null;
             }
             Vector2 end = roll[roll.Count - 1];
-            _ball.localPosition = new Vector3(end.x, BallR + 0.45f, end.y);
+            _ball.localPosition = new Vector3(end.x, BallR + MatY, end.y);
 
             if (v.Made)
             {
                 // Down into the cup, then the wedge it came through lights.
-                for (float t = 0f; t < 1f; t += Time.deltaTime / 0.18f) { _ball.localPosition = new Vector3(0, Mathf.Lerp(BallR + 0.45f, -3f, t), 0); yield return null; }
+                // Down onto the cup's sloping floor, then out through the return at the back, as on the Puttr.
+                float floor = MatY + RampY(0f) + BallR;
+                for (float t = 0f; t < 1f; t += Time.deltaTime / 0.16f) { _ball.localPosition = new Vector3(0, Mathf.Lerp(BallR + MatY, floor, t * t), 0); yield return null; }
+                for (float t = 0f; t < 1f; t += Time.deltaTime / 0.3f)
+                {
+                    float z = Mathf.Lerp(0f, CupR + BallR, t);
+                    _ball.localPosition = new Vector3(0, MatY + RampY(z) + BallR, z);
+                    yield return null;
+                }
                 _ball.gameObject.SetActive(false);
                 Sound("dart_thud", 1f);
                 if (!v.BackDoor)
                 {
-                    float rel = Mathf.Clamp(v.Num("rel", v.EntryDeg), -79f, 79f);
+                    float rel = Mathf.Clamp(v.Num("rel", v.EntryDeg), -89f, 89f);
                     float off = Mathf.Abs(rel);
                     int zone = off <= 15f ? 0 : off <= 30f ? 1 : off <= 45f ? 2 : 3;
                     // Which wedge: centre, then (right, left) pairs.
@@ -324,8 +368,8 @@ namespace PuttrArcade
                     _litWedge = idx;
                     _wedges[idx].sharedMaterial = _lit[zone];
                     _pulse = 1f;
-                    if (v.Points > 0 && zone == 0) Arcade.Sparks(At(Dir(rel) * 20f + Vector3.up * 3f), 22);
-                    if (v.Title == "OH ONE!") { Arcade.Celebrate(60, At(0, 20f, 0)); Sound("rule_win", 0.8f); }
+                    if (v.Points > 0 && zone == 0) Arcade.Sparks(At(Dir(baseDeg + rel) * FanOut + Vector3.up * 2f), 22);
+                    if (v.Title == "OH ONE!") Arcade.Celebrate(60, At(0, 20f, 0));   // puttr-app-2: the checkout sound is the game's win (OhOneGame.SoundFor), played once
                 }
             }
             yield return new WaitForSeconds(0.9f);

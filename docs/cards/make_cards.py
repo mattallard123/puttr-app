@@ -100,9 +100,10 @@ def shapes(kind, accent):
     return draw
 
 ARCADE = {"ARCADESTREAK": "OnFire", "TARGET": "Archery", "CRICKET": "Cricket", "DERBY": "Derby", "MAJORLEAGUE": "MajorLeague",
-          "BOWLING": "Lanes", "BALLOONPOP": "BalloonPop", "ROCK": "PuttStar", "FREEPUTT": "FreePutt",
+          "BOWLING": "Lanes", "BALLOONPOP": "BalloonPop", "ROCK": "PuttStar", "FREEPUTT": "FreePutt", "BEERPONG": "BeerPong",
           "DEADWEIGHT": "DeadWeight", "SENDIT": "SendIt", "SLINGSHOT": "Slingshot", "SPOTKICK": "SpotKick",
-          "TUGOFWAR": "TugofWar", "TURFWAR": "TurfWar", "UNDERTHECUP": "UndertheCup", "WINDMILL": "Windmill"}
+          "TUGOFWAR": "TugofWar", "TURFWAR": "TurfWar", "UNDERTHECUP": "UndertheCup", "WINDMILL": "Windmill",
+          "PUTTBALL": "Putt-ball"}   # every arcade game: one left out keeps its old picture (Putt-ball did, 2026-11-23)
 
 COLOURS = {
     "TOURJUICE": "#ffb300", "SPEEDDEMON": "#ff5a3c", "METAL": "#c9ced6", "LAB": "#5687ff", "FULLWORKOUT": "#7ad446",

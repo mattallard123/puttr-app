@@ -61,13 +61,13 @@ namespace PuttrArcade
         public override void Build()
         {
             Make.Carpet(out Texture2D pile, out Texture2D pileNormal);
-            Material turf = Make.Lit(new Color(0.16f, 0.5f, 0.24f), 0.12f, 0f, pile, pileNormal, 0.9f);
+            Material turf = Make.Lit(new Color(0.04f, 0.13f, 0.1f), 0.12f, 0f, pile, pileNormal, 0.9f);   // the real mat's dark green (World's mat)
             const float uv = 1f / (10f * K);
             Make.MeshObject("Mat by the cup", Root, Make.HolePatch(FarEnd, CupR, uv, Vector3.zero, 1f, 96), turf);
             Make.MeshObject("Mat left", Root, Flat(-MatHalf, -FarEnd, -FarEnd, FarEnd, uv), turf);
             Make.MeshObject("Mat right", Root, Flat(FarEnd, MatHalf, -FarEnd, FarEnd, uv), turf);
             Make.MeshObject("Mat near", Root, Flat(-MatHalf, MatHalf, -1000f, -FarEnd, uv), turf);
-            Material edge = Make.Lit(new Color(0.05f, 0.2f, 0.1f), 0.2f);
+            Material edge = Make.Lit(new Color(0.02f, 0.06f, 0.045f), 0.2f);
             // The mat's edges, and the floor round it (nothing may cross the cup's column, or it would show in the hole).
             for (int sd = -1; sd <= 1; sd += 2)
                 Shape(PrimitiveType.Cube, "Mat edge", Root, new Vector3(sd * (MatHalf + 0.6f), -1.6f, -480f), new Vector3(1.2f, 3.2f, 1030f), edge);
@@ -162,13 +162,15 @@ namespace PuttrArcade
         // ── The window ───────────────────────────────────────────────────────
 
         // The share a make keeps at d degrees off the line: lime for the center cut, then green, amber, red. The back door is dark red.
+        // Deep tones on the dark mat (Matt: a darker theme); the lit segment still brightens over them.
+        static readonly Color BandLime = new Color(0.3f, 0.62f, 0.16f), BandMid = new Color(0.1f, 0.42f, 0.2f), BandAmb = new Color(0.6f, 0.4f, 0.05f), BandRed = new Color(0.58f, 0.15f, 0.13f);
         static Color ColourFor(float d)
         {
             float off = Mathf.Abs(Mathf.DeltaAngle(0f, d));
-            if (off >= 90f) return new Color(0.45f, 0.08f, 0.08f);
-            if (off < 18f) return Lime;
+            if (off >= 90f) return new Color(0.26f, 0.04f, 0.04f);
+            if (off < 18f) return BandLime;
             float keep = 1f - off / 90f;
-            return keep > 0.5f ? Color.Lerp(Amb, Mid, (keep - 0.5f) / 0.3f) : Color.Lerp(Red, Amb, keep / 0.5f);
+            return keep > 0.5f ? Color.Lerp(BandAmb, BandMid, (keep - 0.5f) / 0.3f) : Color.Lerp(BandRed, BandAmb, keep / 0.5f);
         }
         static Color Dim(Color c) => new Color(c.r, c.g, c.b, 0.5f);
 
@@ -334,8 +336,13 @@ namespace PuttrArcade
             const float dist = 40f;
             float half = dist * Mathf.Tan(_eye.fieldOfView * 0.5f * Mathf.Deg2Rad);
             Transform cam = _eye.transform;
-            // Up on the right, clear of the tee sign (top left) and the cup.
-            _hud.position = cam.position + cam.forward * dist + cam.right * (0.5f * _eye.aspect * half) + cam.up * ((Portrait ? 0.2f : 0.5f) * half);
+            // Upright: up on the right, clear of the tee sign (top left) and the cup. Wide, the ideal putt card is top
+            // right: over the cup, in the middle.
+            // Upright, the top of the picture lies under the app's title bar and score strip (and a phone's notch), and
+            // the cup is in the middle: the block sits low on the right, clear of all three. (Matt, 2026-11-24: each
+            // putt's score sat behind the title.)
+            float up = Portrait ? -0.6f : 0.5f;
+            _hud.position = cam.position + cam.forward * dist + cam.right * ((Portrait ? 0.5f : 0.12f) * _eye.aspect * half) + cam.up * (up * half);
             _hud.rotation = cam.rotation;
             float s = Root.lossyScale.x > 0f ? Root.lossyScale.x : 1f;
             _hud.localScale = Vector3.one * (half / s);
@@ -463,15 +470,15 @@ namespace PuttrArcade
                 Arcade.Shake(0.25f);
                 Pulse(2);
                 Sound("rule_bonus", 0.8f);
-                Sound("golf_clap", 0.55f);
-                Sound("bell_ding", 0.4f, 1.25f);
+                Sound("centercut_clap", "golf_clap", 0.55f);   // puttr-app-2: Center Cut's own applause and bell, the shared ones until recorded
+                Sound("centercut_bell", "bell_ding", 0.4f, 1.25f);
             }
             else if (share > 0.4)
             {
                 Arcade.Sparks(lip, 22);
                 Pulse(1);
                 Sound("rule_make", 0.7f);
-                Sound("golf_clap", 0.3f);
+                Sound("centercut_clap", "golf_clap", 0.3f);   // puttr-app-2: the game's own sound, the shared one until recorded
             }
             else
             {
@@ -721,7 +728,7 @@ namespace PuttrArcade
 
         // The return tunnel's mouth: an arch on the back of the cup's wall (radius r, half as wide as halfDeg either
         // side of straight back), from y0 up to y1 at its crown, both sides.
-        static Mesh Mouth(float r, float halfDeg, float y0, float y1)
+        internal static Mesh Mouth(float r, float halfDeg, float y0, float y1)
         {
             const int n = 24;
             var verts = new List<Vector3>();

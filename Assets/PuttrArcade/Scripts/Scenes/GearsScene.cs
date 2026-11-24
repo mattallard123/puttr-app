@@ -33,7 +33,7 @@ namespace PuttrArcade
         Renderer _bandFill;
         Transform _bandFar;
         Material _bandMat, _bandGood, _bandBad;
-        TextMesh _bandTag;
+        TextMesh _bandTag, _bandRange;
         LineRenderer _trail;
         Light _forge;
         Transform _box;
@@ -41,9 +41,11 @@ namespace PuttrArcade
         float _lo = -2f, _hi = 4f, _bandLo = -2f, _bandHi = 4f, _shake;
 
         static bool Portrait => Screen.height > Screen.width;
-        public override Vector3 CameraFrom => At(Portrait ? 10f : 40f, Portrait ? 300f : 240f, Portrait ? -300f : -270f);
-        public override Vector3 CameraLook => At(Portrait ? 60f : 40f, Portrait ? 50f : 30f, Portrait ? 60f : 60f);
-        public override float CameraFov => Portrait ? 58f : 44f;
+        // Upright the camera sits closer than it did, on the cup and the pace band past it: the band is the whole game
+        // and it was a thin stripe a long way off (Matt, 2026-11-23: the wanted speed has to be far clearer).
+        public override Vector3 CameraFrom => At(Portrait ? 14f : 40f, Portrait ? 235f : 240f, Portrait ? -215f : -270f);
+        public override Vector3 CameraLook => At(Portrait ? 34f : 40f, Portrait ? 30f : 30f, Portrait ? 52f : 60f);
+        public override float CameraFov => Portrait ? 54f : 44f;
 
         public override void Build()
         {
@@ -66,8 +68,8 @@ namespace PuttrArcade
             Shape(PrimitiveType.Cube, "Rail", Root, new Vector3(-LaneW - 4f, 2f, -40f), new Vector3(8f, 8f, 460f), steel);
             Shape(PrimitiveType.Cube, "Rail", Root, new Vector3(LaneW + 4f, 2f, -40f), new Vector3(8f, 8f, 460f), steel);
             GameObject hole = Make.MeshObject("Hole", Root, Make.Disc(CupR, 48), Make.Lit(new Color(0.01f, 0.01f, 0.01f), 0.1f));
-            hole.transform.localPosition = new Vector3(0, 0.1f, 0);
-            Hoop("Lip", Root, new Vector3(0, 0.15f, 0), CupR, CupR + 1.2f, Make.Lit(Color.white, 0.5f));
+            hole.transform.localPosition = new Vector3(0, 0.78f, 0);   // over the pace band, which runs across the cup in the low gears
+            Hoop("Lip", Root, new Vector3(0, 0.82f, 0), CupR, CupR + 1.2f, Make.Lit(Color.white, 0.5f));
             // Inches past the cup, on the right rail.
             for (int i = 0; i <= 5; i++)
             {
@@ -78,7 +80,7 @@ namespace PuttrArcade
             }
 
             // The pace band.
-            _bandMat = Make.Glow(new Color(1f, 0.55f, 0.1f, 0.32f));
+            _bandMat = Make.Glow(new Color(1f, 0.6f, 0.12f, 0.8f), false);
             _bandGood = Make.Glow(new Color(1f, 0.85f, 0.4f, 0.75f));
             _bandBad = Make.Glow(new Color(1f, 0.15f, 0.1f, 0.6f));
             _band = new GameObject("Band").transform;
@@ -89,8 +91,24 @@ namespace PuttrArcade
             Shape(PrimitiveType.Cube, "Near", _band, new Vector3(0, 0.6f, 0), new Vector3(LaneW * 2f, 0.5f, 1.4f), edge).GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
             _bandFar = Shape(PrimitiveType.Cube, "Far", _band, new Vector3(0, 0.6f, 1f), new Vector3(LaneW * 2f, 0.5f, 1.4f), edge).transform;
             _bandFar.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
-            _bandTag = Words(Root, "", Vector3.zero, 7f, new Color(1f, 0.75f, 0.3f));
-            _bandTag.transform.localRotation = Quaternion.Euler(55f, 0, 0);
+            // The band says what it is, in words on the lane: STOP HERE to the left of the ball's line, the inches past
+            // the cup to the right.
+            // (On the lane just past the band, never on it: in the low gears the cup sits in the band.)
+            _bandTag = Words(_band, "STOP HERE", Vector3.zero, 9.5f, Color.white);
+            _bandTag.transform.localRotation = Quaternion.Euler(90f, 0, 0);
+            _bandRange = Words(_band, "", Vector3.zero, 7.5f, new Color(1f, 0.85f, 0.5f));
+            _bandRange.transform.localRotation = Quaternion.Euler(90f, 0, 0);
+            // Drawn after the band's glow, or the glow washes the words out.
+            foreach (TextMesh t in new[] { _bandTag, _bandRange }) { MeshRenderer m = t.GetComponent<MeshRenderer>(); m.sharedMaterial = new Material(m.sharedMaterial) { renderQueue = 3600 }; }
+            // Arrows down both rails, pointing at the band from the Player's side.
+            Material arrow = Make.Emissive(new Color(1f, 0.6f, 0.15f), new Color(3f, 1.3f, 0.25f));
+            foreach (int sd in new[] { -1, 1 })
+                for (int k = 0; k < 3; k++)
+                {
+                    GameObject a = Make.MeshObject("Arrow", _band, Chevron(7f), arrow);
+                    a.transform.localPosition = new Vector3(sd * (LaneW - 9f), 0.7f, -10f - k * 11f);
+                    a.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+                }
 
             // The gearbox: a riveted plate standing at the end of the lane, six gears on it in a zigzag.
             _box = new GameObject("Gearbox").transform;
@@ -180,11 +198,25 @@ namespace PuttrArcade
             _lo = v.Num("lo", -2f);
             _hi = v.Num("hi", 4f);
             Paint(_gear, v.Int("won", -1) >= 0);
-            _bandTag.text = v.Over ? "" : "NEXT  G" + Mathf.Min(_gear + 1, Count);
+            _bandTag.text = v.Over ? "" : "STOP HERE";
+            _bandRange.text = v.Over ? "" : Inches(_lo) + " TO " + Inches(_hi) + " IN PAST THE HOLE";
         }
 
         public override void Begin(ShotView start) { Set(start); _bandLo = _lo; _bandHi = _hi; Band(); }
         public override void Ready(ShotView v) { Set(v); }
+
+        static string Inches(float v) => (v > 0f ? "+" : "") + Mathf.RoundToInt(v);
+
+        // A flat arrowhead pointing +Z (up the lane).
+        static Mesh Chevron(float size)
+        {
+            var mesh = new Mesh { name = "Chevron" };
+            mesh.SetVertices(new List<Vector3> { new Vector3(0, 0, size), new Vector3(size, 0, 0), new Vector3(size * 0.45f, 0, 0), new Vector3(0, 0, size * 0.55f), new Vector3(-size * 0.45f, 0, 0), new Vector3(-size, 0, 0) });
+            mesh.SetTriangles(new List<int> { 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5 }, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
 
         void Band()
         {
@@ -193,7 +225,8 @@ namespace PuttrArcade
             _bandFill.transform.localPosition = new Vector3(0, 0.5f, len / 2f);
             _bandFill.transform.localScale = new Vector3(LaneW * 2f, 0.4f, len);
             _bandFar.localPosition = new Vector3(0, 0.6f, len);
-            _bandTag.transform.localPosition = new Vector3(-LaneW * 0.45f, 2f, _bandHi * K + 8f);
+            _bandTag.transform.localPosition = new Vector3(0f, 1.2f, len + 22f);
+            _bandRange.transform.localPosition = new Vector3(0f, 1.2f, len + 9f);
         }
 
         public override void Tick()
@@ -226,7 +259,7 @@ namespace PuttrArcade
                 Lift(pts, BallR);
                 _ball.gameObject.SetActive(true);
                 yield return Roll(_ball, pts, 1.2f, _trail, BallR);
-                Sound("cup_plop", 0.6f); Sound("ratchet", 0.5f);
+                Sound("gears_make", "cup_plop", 0.6f); Sound("ratchet", 0.5f);   // puttr-app-2: the game's own sound, the shared one until recorded
                 yield return Drop(_ball, rim, BallR);
                 // Where the pace would have taken it.
                 _marker.localPosition = stop;

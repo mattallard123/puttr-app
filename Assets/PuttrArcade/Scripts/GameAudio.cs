@@ -59,32 +59,32 @@ namespace PuttrArcade
             _announcer = Source(go, false);
             _gameBed = Source(go, true);
 
-            _clack = Slot("knock", MakeClack());
-            _click = Slot("click", MakeClick());
-            _thud = Slot("thud", MakeThud());
-            _tick = Slot("ui_select", MakeTones(new[] { 1500f }, 0.03f, 0.05f, 0.5f));
-            _uiMove = Slot("ui_move", MakeUiMove());
-            _softMiss = Slot("miss", MakeSoftMiss());
-            _rollLoop = Slot("roll_loop", MakeRollLoop());
-            _whirLoop = Slot("probe_loop", MakeWhirLoop());
-            _engineLoop = Slot("engine_loop", MakeEngineLoop());
-            _roomTone = Slot("room_loop", MakeRoomTone());
-            _fireRoar = Slot("fire_big_loop", MakeFireRoar());
-            _fireCrackle = Slot("fire_small_loop", MakeFireCrackle());
-            _crowd = Slot("crowd_loop", MakeCrowd(false));
-            _crowdRoar = Slot("crowd_roar_loop", MakeCrowd(true));
-            _space = Slot("space_loop", MakeSpaceDrone());
-            _shimmer = Slot("space_shimmer_loop", MakeSpaceShimmer());
-            _kick = Slot("kick", MakeKick());
-            _net = Slot("net", MakeNet());
-            _ping = Slot("post", MakePing());
-            _whoosh = Slot("fire_whoosh", MakeWhoosh());
-            _douse = Slot("fire_out", MakeDouse());
-            _launch = Slot("launch", MakeLaunch());
-            _bell = Slot("gate", MakeBell());
-            _boom = Slot("boom", MakeBoom());
-            _land = Slot("land", MakeLand());
-            _crash = Slot("crash", MakeCrash());
+            _clack = SlotOr("knock", () => MakeClack());
+            _click = SlotOr("click", () => MakeClick());
+            _thud = SlotOr("thud", () => MakeThud());
+            _tick = SlotOr("ui_select", () => MakeTones(new[] { 1500f }, 0.03f, 0.05f, 0.5f));
+            _uiMove = SlotOr("ui_move", () => MakeUiMove());
+            _softMiss = SlotOr("miss", () => MakeSoftMiss());
+            _rollLoop = SlotOr("roll_loop", () => MakeRollLoop());
+            _whirLoop = SlotOr("probe_loop", () => MakeWhirLoop());
+            _engineLoop = SlotOr("engine_loop", () => MakeEngineLoop());
+            _roomTone = SlotOr("room_loop", () => MakeRoomTone());
+            _fireRoar = SlotOr("fire_big_loop", () => MakeFireRoar());
+            _fireCrackle = SlotOr("fire_small_loop", () => MakeFireCrackle());
+            _crowd = SlotOr("crowd_loop", () => MakeCrowd(false));
+            _crowdRoar = SlotOr("crowd_roar_loop", () => MakeCrowd(true));
+            _space = SlotOr("space_loop", () => MakeSpaceDrone());
+            _shimmer = SlotOr("space_shimmer_loop", () => MakeSpaceShimmer());
+            _kick = SlotOr("kick", () => MakeKick());
+            _net = SlotOr("net", () => MakeNet());
+            _ping = SlotOr("post", () => MakePing());
+            _whoosh = SlotOr("fire_whoosh", () => MakeWhoosh());
+            _douse = SlotOr("fire_out", () => MakeDouse());
+            _launch = SlotOr("launch", () => MakeLaunch());
+            _bell = SlotOr("gate", () => MakeBell());
+            _boom = SlotOr("boom", () => MakeBoom());
+            _land = SlotOr("land", () => MakeLand());
+            _crash = SlotOr("crash", () => MakeCrash());
             // Archery. Until sounds are dropped in, the nearest things the arcade already has.
             _arrowShot = Slot("arrow_shot", _whoosh);
             _arrowHit = Slot("arrow_hit", _thud);
@@ -92,9 +92,9 @@ namespace PuttrArcade
             _range = Slot("range_loop", _roomTone);
             // Baseball. The same: stand-ins until recordings are dropped in.
             _batCrack = Slot("bat_crack", _kick);
-            _batSwing = Slot("bat_swing", _whoosh);
+            _batSwing = SlotOr("bat_swing", () => MakeSwing());   // puttr-app-2: its own swish, not On Fire's whoosh
             _mitt = Slot("mitt", _thud);
-            _organ = Slot("organ", MakeOrgan());
+            _organ = SlotOr("organ", () => MakeOrgan());
             _ballpark = Slot("ballpark_loop", _crowd);
 
             _cup = Slot("cup", Recorded("effects_golfball"));
@@ -130,6 +130,10 @@ namespace PuttrArcade
         // that folder from SoundDrop/<slot>/.
         readonly Dictionary<AudioClip, AudioClip[]> _takes = new Dictionary<AudioClip, AudioClip[]>();
 
+        /// <summary>A slot's recording, or, only when none was dropped in, a synthesized stand-in. The stand-in is not
+        /// made otherwise: every slot but a few has a recording, and making them all cost a long first frame.</summary>
+        AudioClip SlotOr(string slot, System.Func<AudioClip> make) => Slot(slot, null) ?? make();
+
         AudioClip Slot(string slot, AudioClip made)
         {
             var found = new List<AudioClip>();
@@ -147,6 +151,7 @@ namespace PuttrArcade
         /// <summary>puttr-app-2: a library sound by slot (balloon_pop, golf_drive...), one of its takes at random. Silent if the slot is empty.</summary>
         public void Library(string slot, float volume = 0.9f, float pitch = 1f)
         {
+            if (string.IsNullOrEmpty(slot)) return;   // puttr-app-2: a game with no sound for this moment
             if (!_slots.TryGetValue(slot, out AudioClip clip)) { clip = Slot(slot, null); _slots[slot] = clip; }
             if (clip != null) Play(clip, volume, pitch);
         }
@@ -159,6 +164,59 @@ namespace PuttrArcade
             if (clip == null) return;
             if (_gameBed.clip != clip) { _gameBed.clip = clip; _gameBed.Play(); }
             _gameBed.volume = volume;
+        }
+
+        // ── Each game's own sounds, while they are still arriving ───────────
+        //
+        // puttr-app-2: every game is moving to sounds of its own (cricket_dart_hit, gears_grind...), recorded
+        // one slot at a time. Until a slot's recordings are imported (Library/<slot>_1.wav), the game plays
+        // what it played before, so the wiring can be in place first and each game changes over by itself
+        // as its files land.
+
+        const string LibraryPath = "PuttrArcade/Audio/Library/";
+        static readonly Dictionary<string, bool> Present = new Dictionary<string, bool>();
+        /// <summary>puttr-app-2: whether a slot has a first take. Swapped out by tests, which have no recordings to load.</summary>
+        public static System.Func<string, bool> Probe = slot => Resources.Load<AudioClip>(LibraryPath + slot + "_1") != null;
+
+        /// <summary>puttr-app-2: true once Library/&lt;slot&gt;_1 has been imported. Asked once a slot, then remembered.</summary>
+        public static bool Has(string slot)
+        {
+            if (string.IsNullOrEmpty(slot)) return false;
+            if (!Present.TryGetValue(slot, out bool has)) { has = Probe != null && Probe(slot); Present[slot] = has; }
+            return has;
+        }
+
+        /// <summary>puttr-app-2: the game's own slot once it has recordings, else what the game played before (which may be null: nothing).</summary>
+        public static string Own(string slot, string fallback) => Has(slot) ? slot : fallback;
+
+        /// <summary>puttr-app-2: forget what Has found (tests, or after a fresh import in the editor).</summary>
+        public static void ForgetSlots() => Present.Clear();
+
+        /// <summary>puttr-app-2: plays the slot and says true if it has recordings; says false (and plays nothing) if not, so the
+        /// caller can play the sound it used before.</summary>
+        public bool TryLibrary(string slot, float volume = 0.9f, float pitch = 1f)
+        {
+            if (!Has(slot)) return false;
+            Library(slot, volume, pitch);
+            return true;
+        }
+
+        /// <summary>puttr-app-2: the game's own slot, or the fallback slot until the game's own is imported.</summary>
+        public void Library(string slot, string fallback, float volume = 0.9f, float pitch = 1f) => Library(Own(slot, fallback), volume, pitch);
+
+        /// <summary>puttr-app-2: the game's own ambience, or the fallback loop until the game's own is imported (null: none).</summary>
+        public void GameBed(string loopSlot, string fallbackLoop, float volume = 0.35f) => GameBed(Own(loopSlot, fallbackLoop), volume);
+
+        /// <summary>puttr-app-2: the crowd (or the fire) lifts as if it had cheered, without the shared cheer: for a game whose
+        /// own recording carries the cheer.</summary>
+        public void Excite(float amount) => _excitement = Mathf.Max(_excitement, Mathf.Clamp01(amount));
+
+        // A game's own loop for the bed, the swell or the roll: null until it has a recording.
+        AudioClip Loop(string slot)
+        {
+            if (!Has(slot)) return null;
+            if (!_slots.TryGetValue(slot, out AudioClip clip)) { clip = Slot(slot, null); _slots[slot] = clip; }
+            return clip;
         }
 
         /// <summary>puttr-app-2: a recorded clip by name from Resources/PuttrArcade/Audio (Putt Star's crowd).</summary>
@@ -178,10 +236,17 @@ namespace PuttrArcade
 
         // ── Where we are ────────────────────────────────────────────────────
 
-        /// <summary>Change the bed. It fades across; nothing cuts.</summary>
-        public void SetScene(Scene scene)
+        // puttr-app-2: the game's own bed, swell and roll loops (GameMode.BedSlot, SwellSlot, RollSlot), and whether the bed
+        // playing is the game's own (it is then played up, not at the room's near-silence).
+        string _bedSlot, _swellSlot, _rollSlot;
+        bool _ownBed;
+
+        /// <summary>Change the bed. It fades across; nothing cuts. puttr-app-2: a game's own bed, swell and roll loops take the
+        /// place's once they have recordings.</summary>
+        public void SetScene(Scene scene, string bedSlot = null, string swellSlot = null, string rollSlot = null)
         {
-            if (scene == _scene && _bed.clip != null) return;
+            if (scene == _scene && _bed.clip != null && bedSlot == _bedSlot && swellSlot == _swellSlot && rollSlot == _rollSlot) return;   // puttr-app-2
+            _bedSlot = bedSlot; _swellSlot = swellSlot; _rollSlot = rollSlot;   // puttr-app-2
             _scene = scene;
             _level = 0f;
             _excitement = 0f;
@@ -200,11 +265,19 @@ namespace PuttrArcade
                 case Scene.Space: _bed.clip = _space; _swell.clip = _shimmer; break;
                 case Scene.Range: _bed.clip = _range; _swell.clip = null; break;
                 case Scene.Ballpark: _bed.clip = _ballpark; _swell.clip = _crowdRoar; break;
+                case Scene.Quiet: _bed.clip = null; _swell.clip = null; break;   // puttr-app-2: no room tone at all (Free Putt and the games it hosts)
                 default: _bed.clip = _roomTone; _swell.clip = null; break;
             }
             _roll.clip = scene == Scene.Space ? _whirLoop : _rollLoop;
+            // puttr-app-2: the game's own loops, where it has them. A game with its own bed and no swell of its own drops the
+            // shared crowd roar (its bed rises with the excitement instead: Tick).
+            AudioClip ownBed = Loop(bedSlot), ownSwell = Loop(swellSlot), ownRoll = Loop(rollSlot);
+            _ownBed = ownBed != null;
+            if (ownBed != null) { _bed.clip = ownBed; _bed.pitch = 1f; if (ownSwell == null) _swell.clip = null; }
+            if (ownSwell != null) { _swell.clip = ownSwell; _swell.pitch = 1f; }
+            if (ownRoll != null) _roll.clip = ownRoll;
             _engine.clip = _engineLoop;
-            if (_bed.clip != null) _bed.Play();
+            if (_bed.clip != null) _bed.Play(); else _bed.Stop();
             if (_swell.clip != null) _swell.Play(); else _swell.Stop();
         }
 
@@ -247,7 +320,9 @@ namespace PuttrArcade
                     _swellWanted = 0f;
                     break;
                 default:
-                    _bedWanted = 0.07f;
+                    // puttr-app-2: a game's own bed (a darts hall, an ice rink) is heard, and lifts a little with a good putt;
+                    // the room's own tone stays near silent.
+                    _bedWanted = _ownBed ? 0.26f + 0.1f * _excitement : 0.07f;
                     _swellWanted = 0f;
                     break;
             }
@@ -267,17 +342,33 @@ namespace PuttrArcade
 
         // ── The announcer ───────────────────────────────────────────────────
 
-        /// <summary>Say these recordings in turn (file names in Resources/PuttrArcade/Audio).</summary>
+        // puttr-app-2: the app's commentary. The Puttr app's announcer recordings (english_made_3, english_tee_left...)
+        // are not bundled here: the app fetches them, keeps them on the phone and plays them in turn (PuttrApp.GameVoice),
+        // and says here whether the Player has the Commentary switch on. Without the app (the arcade on its own) both are
+        // null: Say says nothing and Voice always speaks, as before.
+        /// <summary>puttr-app-2: plays the Puttr app's announcer recordings, by name, in turn. Set by the app.</summary>
+        public static System.Action<string[]> Speaker;
+        /// <summary>puttr-app-2: whether the Player has commentary on (the game page's Commentary switch). Set by the app.</summary>
+        public static System.Func<bool> Commentary;
+        /// <summary>puttr-app-2: turns the Player's commentary on or off (for a switch on the pause card). Set by the app.</summary>
+        public static System.Action<bool> SetCommentary;
+
+        static bool CommentaryOn => Commentary == null || Commentary();
+
+        /// <summary>Say these recordings of the Puttr app's announcer in turn (english_start_2, english_distance_8_feet...).</summary>
         public void Say(params string[] lines)
         {
-            // The voice-over is out for now: the recordings were removed, so
-            // this says nothing. Games still call it where a line would go.
+            // puttr-app-2: the recordings come from the app (GameVoice), which queues them so the announcer never talks
+            // over himself, and says nothing while the Player has commentary off.
+            if (Speaker == null || lines == null || lines.Length == 0 || !CommentaryOn) return;
+            Speaker(lines);
         }
 
         /// <summary>The announcer says these in turn, after anything already waiting. Each is a
         /// recording in Resources/PuttrArcade/Audio/Voice. One that is missing is passed over.</summary>
         public void Voice(params string[] names)
         {
+            if (!CommentaryOn) return;   // puttr-app-2: the Commentary switch silences every game's caller
             foreach (string name in names)
             {
                 if (string.IsNullOrEmpty(name)) continue;
@@ -310,7 +401,8 @@ namespace PuttrArcade
             float hard = Mathf.InverseLerp(4f, 45f, speed);
             if (_scene == Scene.Alley)
             {
-                Play(_clack, hard * 0.8f + 0.12f, Vary(1f, 0.15f));
+                // puttr-app-2: the alley is Ten Pin's: its own maple pin, the shared knock until it is recorded.
+                if (!TryLibrary("tenpin_pin_clack", hard * 0.8f + 0.12f, Vary(1f, 0.15f))) Play(_clack, hard * 0.8f + 0.12f, Vary(1f, 0.15f));
                 // The first good hit of a ball is a whole rack going over, as recorded.
                 if (hard > 0.35f && Time.unscaledTime - _pinsAt > 2.5f) { _pinsAt = Time.unscaledTime; Play(_pins, 0.35f + hard * 0.55f, Vary(1f, 0.05f)); }
             }
@@ -352,6 +444,14 @@ namespace PuttrArcade
         public void UiMove() => Play(_uiMove, 0.35f, Vary(1f, 0.04f));
         public void UiStart() => Play(_tick, 0.6f);
         public void GameOver() => Play(_over, 0.55f);
+        /// <summary>puttr-app-2: the game's own ending (GameMode.EndSlot), or the arcade's game-over until it has recordings.
+        /// An empty slot is a game that has already played its own ending.</summary>
+        public void GameOver(string endSlot)
+        {
+            if (endSlot == "") return;
+            if (endSlot != null && endSlot != "game_over" && TryLibrary(endSlot, 0.75f)) return;
+            Play(_over, 0.55f);
+        }
         public void Coin() => Play(_coin, 0.5f);
         public void Buzzer() => Play(_buzzer, 0.7f);
 
@@ -795,6 +895,25 @@ namespace PuttrArcade
                 s[i] *= Mathf.Min(1f, t * 30f) * Mathf.Exp(-t * 2.6f);
             }
             return Clip("Douse", s);
+        }
+
+        // puttr-app-2: a bat through the air and nothing else: a quick, thin swish, over in a quarter of a second
+        // (On Fire's whoosh is a slow breath of fire, and was standing in for it).
+        static AudioClip MakeSwing()
+        {
+            int n = (int)(Rate * 0.32f);
+            float[] src = Noise(n, 97);
+            var s = new float[n];
+            float y = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)n;
+                float cutoff = Mathf.Lerp(900f, 5200f, Mathf.Sin(t * Mathf.PI));
+                y += (src[i] - y) * (1f - Mathf.Exp(-2f * Mathf.PI * cutoff / Rate));
+                float env = Mathf.Pow(Mathf.Sin(t * Mathf.PI), 3f);
+                s[i] = (src[i] - y) * 0.4f * env + y * env * 0.6f;
+            }
+            return Clip("Swing", s);
         }
 
         // A thruster firing: a burst that drops in pitch as it dies.

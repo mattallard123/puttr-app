@@ -38,6 +38,9 @@ namespace PuttrArcade
         public override string ScoreWord(int n) => n == 1 ? "percent" : "percent";
         public override string ScoreUnit => "%";
         public override GameAudio.Scene Sound => GameAudio.Scene.Table;
+        // puttr-app-2: a paint studio of its own (the room tone until it is recorded); it ends on the big splat.
+        public override string BedSlot => "turfwar_studio_loop";
+        public override string EndSlot => "turfwar_big_splat";
         public override string Icon => "Target";
         public override Color Accent => Orange;
         public override string[] Tags => new[] { "Teams", "8 putts each" };
@@ -385,7 +388,7 @@ namespace PuttrArcade
             float peak = 46f + Vector3.Distance(from, to) * 0.22f;
             _ring.gameObject.SetActive(false);
             _ball.gameObject.SetActive(true);
-            Arcade.Audio.Whoosh();
+            if (!Arcade.Audio.TryLibrary("turfwar_throw", 0.75f, 1f + Random.Range(-0.05f, 0.05f))) Arcade.Audio.Whoosh();   // puttr-app-2: paint, not On Fire's whoosh
             bool shot = false;
             for (float t = 0; t < FlightTime; t += Time.deltaTime)
             {
@@ -400,7 +403,7 @@ namespace PuttrArcade
 
             MakeBlob(radius, Travel(tx, ty));
             Keep();
-            Arcade.Audio.Thump(radius > Radius ? 60f : 42f);
+            if (!Arcade.Audio.TryLibrary("turfwar_splat", radius > Radius ? 1f : 0.8f, 1f + Random.Range(-0.06f, 0.06f))) Arcade.Audio.Thump(radius > Radius ? 60f : 42f);   // puttr-app-2
             for (float t = 0; t < GrowTime; t += Time.deltaTime)
             {
                 float u = 1f - t / GrowTime;
@@ -533,7 +536,7 @@ namespace PuttrArcade
                 SetPaint(team);
                 yield return Slop();
                 hud.Banner("IN THE BUCKET", "The camera lost the ball: no paint thrown", Make.Red, 2f);
-                Arcade.Audio.Miss();
+                if (!Arcade.Audio.TryLibrary("turfwar_dribble", 0.75f)) Arcade.Audio.Miss();   // puttr-app-2
                 ShowPutt(Arcade.TruePutt(putt), "No paint", Make.Red);
                 hud.SetPip(team, index, Hud.Pip.Bad);
             }
@@ -547,7 +550,7 @@ namespace PuttrArcade
                 if (big)
                 {
                     hud.Banner("BIG SPLAT", "Holed: three times the paint   ·   " + Standing, TeamColor(team), 2.2f);
-                    Arcade.Audio.Strike();
+                    if (Arcade.Audio.TryLibrary("turfwar_big_splat", 0.95f)) Arcade.Audio.Excite(1f); else Arcade.Audio.Strike();   // puttr-app-2
                     Arcade.Shake(0.45f);
                     Arcade.Celebrate(70, At(tx - W * 0.5f, 6f, ty));
                 }

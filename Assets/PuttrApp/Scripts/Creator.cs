@@ -63,7 +63,7 @@ namespace PuttrApp
         void Draw(List<object> games)
         {
             _list.Clear();
-            if (games.Count == 0) { _list.Add(Ui.Box("col-full", Ui.Text("No games yet", "h2", Ui.Bold), Ui.Text("Create your first custom game by tapping the button above", "sub", Ui.Regular))); return; }
+            if (games.Count == 0) { _list.Add(Ui.Box("col-full", Ui.Title("No games yet", "title-20"), Ui.Text("Create your first custom game by tapping the button above", "sub", Ui.Regular))); return; }
             foreach (object g in games) _list.Add(Ui.Box("col", Card(_app, g, Shown)));
         }
 
@@ -74,14 +74,14 @@ namespace PuttrApp
             double difficulty = J.Num(game, "difficulty");
             int level = difficulty <= 3 ? 1 : difficulty <= 6 ? 2 : 3;
             VisualElement dots = Ui.Box("row");
-            for (int i = 1; i <= 3; i++) { VisualElement d = Ui.Box("diff-dot"); d.style.backgroundColor = i <= level ? (level == 1 ? Ui.Bright : level == 2 ? Ui.Amber : Ui.Red) : (Color)new Color32(44, 46, 48, 255); dots.Add(d); }
+            for (int i = 1; i <= 3; i++) { VisualElement d = Ui.Box("diff-dot"); d.style.backgroundColor = i <= level ? (level == 1 ? Ui.Green : level == 2 ? Ui.Amber : Ui.Red) : Ui.Surface2; dots.Add(d); }
             object g = game;
             return Ui.Box("glass creator-card",
-                Ui.Box("row", Ui.Bubble(type == "STREAK" ? "FillFire" : type == "CENTERCUT" ? "Target" : "FillJoystick", Ui.Bright), Ui.Box("grow"),
-                    Ui.Box("btn-small", Ui.Text("Edit", "btn-text", Ui.Bold)).OnTap(() => app.Push(new EditGameScreen(app, g))), FreePuttScreen.Space(0).Width(6),
-                    Ui.Box("btn-small", Ui.Text("Delete", "btn-text", Ui.Bold)).OnTap(() => Dialog.Ask(app.Toasts, "Delete game", "Are you sure you want to delete this game?", "Delete",
-                        () => App.Run(Api.Get("/creator/game/delete/" + J.Str(g, "id"), _ => changed(), _ => app.Toast("Couldn't delete it."))), true))),
-                Ui.Text(J.Str(game, "title"), "feed-name", Ui.Bold).Margin(8), Ui.Text(J.Str(game, "description"), "muted", Ui.Regular),
+                Ui.Box("row", Ui.Icon(type == "STREAK" ? "FillFire" : type == "CENTERCUT" ? "Target" : "FillJoystick", 24, Ui.Bright), Ui.Box("grow"),
+                    Ui.Button("Edit", () => app.Push(new EditGameScreen(app, g)), "btn btn-ghost creator-btn"), FreePuttScreen.Space(0).Width(8),
+                    Ui.Button("Delete", () => Dialog.Ask(app.Toasts, "Delete game", "Are you sure you want to delete this game?", "Delete",
+                        () => App.Run(Api.Get("/creator/game/delete/" + J.Str(g, "id"), _ => changed(), _ => app.Toast("Couldn't delete it."))), true), "btn btn-red creator-btn")),
+                Ui.Title(J.Str(game, "title"), "title-20").Margin(8), Ui.Text(J.Str(game, "description"), "sub", Ui.Regular),
                 Ui.Box("chips", Ui.Text(putts > 0 ? putts + " putts" : "Infinite", "chip"), distance > 0 ? Ui.Text(distance + " ft", "chip") : null, dots))
                 .OnTap(() =>
                 {
@@ -100,8 +100,8 @@ namespace PuttrApp
             var desc = new TextField { multiline = true }; desc.textEdition.placeholder = "Describe your game..."; desc.textEdition.hidePlaceholderOnFocus = false; desc.AddToClassList("field");
             Label error = Ui.Text("", "sub", Ui.Medium);
             error.style.color = Ui.Red;
-            VisualElement card = Ui.Box("modal", Ui.Text("New game", "h2", Ui.Bold), Ui.Text("Design your own putting challenge", "sub", Ui.Regular),
-                Ui.Text("GAME TYPE", "kick", Ui.Bold).Margin(12), FreePuttScreen.Choice(Array.ConvertAll(CreatorMath.Types, t => t.label), 0, i => type = i).Margin(6),
+            VisualElement card = Ui.Box("modal", Ui.Title("New game", "title-20"), Ui.Text("Design your own putting challenge", "sub", Ui.Regular),
+                Ui.Text("GAME TYPE", "kick", Ui.Bold).Margin(12), FreePuttScreen.Choice(Array.ConvertAll(CreatorMath.Types, t => t.label), 0, i => type = i).Margin(8),
                 Ui.Text("TITLE", "kick", Ui.Bold).Margin(12), title.Face(Ui.Medium), Ui.Text("DESCRIPTION", "kick", Ui.Bold).Margin(4), desc.Face(Ui.Medium), error);
             card.Add(Ui.Button("Create game", () =>
             {
@@ -158,8 +158,8 @@ namespace PuttrApp
             _body.Clear();
             CreatorMath.Stats(_putts, out double difficulty, out int distance);
             _body.Add(Ui.Box("pad", _title.Face(Ui.Medium), _desc.Face(Ui.Medium),
-                FreePuttScreen.Choice(Array.ConvertAll(CreatorMath.Types, t => t.label), _type, i => { _type = i; Changed(); }).Margin(6),
-                Ui.Box("glass row", FreePuttScreen.Stat(difficulty.ToString("0.0", CultureInfo.InvariantCulture), "Difficulty"), FreePuttScreen.Stat(distance + " ft", "Distance"), FreePuttScreen.Stat(_putts.Count.ToString(), "Putts")).Margin(12),
+                FreePuttScreen.Choice(Array.ConvertAll(CreatorMath.Types, t => t.label), _type, i => { _type = i; Changed(); }).Margin(8),
+                Ui.StatStrip((difficulty.ToString("0.0", CultureInfo.InvariantCulture), "Difficulty"), (distance + " ft", "Distance"), (_putts.Count.ToString(), "Putts")).Margin(12),
                 Ui.Button("Add putt", AddPutt).Margin(12)));
             _body.Add(Ui.Section("Putts"));
             VisualElement list = Ui.Box("glass set-card");
@@ -173,11 +173,11 @@ namespace PuttrApp
                 if (i < _putts.Count - 1) down.OnTap(() => { Swap(at, at + 1); }); else down.style.opacity = 0.3f;
                 Label remove = Ui.Text("Remove", "sec-link", Ui.Medium);
                 remove.style.color = Ui.Red;
-                list.Add(Ui.Box("board-row", Ui.Text((i + 1).ToString(), "board-place", Ui.Bold), Ui.Text(p.Feet + " ft · " + PracticeSession.TeeName(p.Tee), "feed-name grow", Ui.Medium),
-                    up, FreePuttScreen.Space(0).Width(4), down, FreePuttScreen.Space(0).Width(10), remove.OnTap(() => { _putts.RemoveAt(at); Changed(); Draw(); })));
+                list.Add(Ui.Box("board-row", Ui.Text((i + 1).ToString(), "board-place", Ui.Bold), Ui.Text(p.Feet + " ft · " + PracticeSession.TeeName(p.Tee), "g-name grow", Ui.Medium),
+                    up, FreePuttScreen.Space(0).Width(4), down, FreePuttScreen.Space(0).Width(12), remove.OnTap(() => { _putts.RemoveAt(at); Changed(); Draw(); })));
             }
             _body.Add(Ui.Box("pad", list));
-            _body.Add(Ui.Box("pad", Ui.Text("Changes save as you go.", "muted center", Ui.Regular).Margin(10)));
+            _body.Add(Ui.Box("pad", Ui.Text("Changes save as you go.", "muted center", Ui.Regular).Margin(12)));
         }
 
         void Swap(int a, int b) { TournamentMath.Dealt t = _putts[a]; _putts[a] = _putts[b]; _putts[b] = t; Changed(); Draw(); }
@@ -204,11 +204,11 @@ namespace PuttrApp
                 count.text = feet + " ft, " + PracticeSession.TeeName(tee) + " tee   ·   " + _putts.Count + " putts";
             }
             DrawGrid();
-            VisualElement card = Ui.Box("modal", Ui.Text("Add putt", "h2", Ui.Bold), grid.Margin(8), count,
-                Ui.Button("Add putt", () => { _putts.Add(new TournamentMath.Dealt { Feet = feet, Tee = tee }); Changed(); DrawGrid(); Draw(); }).Margin(10),
+            VisualElement card = Ui.Box("modal", Ui.Title("Add putt", "title-20"), grid.Margin(8), count,
+                Ui.Button("Add putt", () => { Haptics.Heavy(); _putts.Add(new TournamentMath.Dealt { Feet = feet, Tee = tee }); Changed(); DrawGrid(); Draw(); }).Margin(12),
                 Ui.Button("Done", () => dim.RemoveFromHierarchy(), "btn btn-ghost"));
             card.RegisterCallback<ClickEvent>(e => e.StopPropagation());
-            dim = Ui.Box("modal-dim", card).OnTap(() => dim.RemoveFromHierarchy());
+            dim = Ui.Box("modal-dim", card).OnBackdropTap(() => dim.RemoveFromHierarchy());
             App.Layer(Root).Add(dim);
         }
 

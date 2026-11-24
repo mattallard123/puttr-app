@@ -26,8 +26,12 @@ namespace PuttrArcade
     public sealed class CricketMode : StageMode
     {
         public override string Name => "Cricket";
+        public override bool Branded => true;
         public override bool DealsTee => false;
         public override string Tee => "Center tee"; // the distance is the number being thrown at
+        // puttr-app-2: the putt is saved with the distance of the number being thrown at (the bull is 11 ft), from the center tee.
+        public override int PuttFeet => _target != null && _side >= 0 && _side < _target.Length ? Feet(_target[_side]) : 0;
+        public override int PuttTee => 2;
         public override int Putter => _members[_side].Count > 0 ? _members[_side][_thrower[_side] % _members[_side].Count] : 0; // whose difficulty applies to this putt
         public override string Blurb => "Darts, with a putter.\nHole it to hit your number.\nClose them all to win.";
         public override string Rule => "Three darts a turn. Hole the putt to hit the number you are putting from.";
@@ -37,6 +41,9 @@ namespace PuttrArcade
         public override string SoloOpponent => "Puttr";
         public override int Difficulty => 2;
         public override GameAudio.Scene Sound => GameAudio.Scene.Table;
+        // puttr-app-2: a darts hall of its own (the room tone until it is recorded), and its own ending.
+        public override string BedSlot => "cricket_arena_loop";
+        public override string EndSlot => "cricket_treble";
         public override string[] HowTo => new[]
         {
             "Putt from the distance that is lit, 3 to 11 feet. Hole it and a dart hits that number. " + Hud.Choose("The left and right arrows change the distance.", "Swipe left or right to change the distance.", "Left and right on the remote change the distance."),
@@ -58,8 +65,11 @@ namespace PuttrArcade
         // lands, close enough to read the number and see the triple or double ring. The spot
         // sits a little above the middle of the screen, clear of the result banner.
         Vector3? _zoom;
-        public override Vector3 CameraPosition => _zoom is Vector3 z ? At(z.x, z.y - 6f, -120f) : At(9f, 13f, -218f);
-        public override Vector3 CameraLook => _zoom is Vector3 z ? At(z.x, z.y - 6f, 0f) : At(9f, 13f, 0f);
+        // puttr-app-2 (walk, 2026-11-23): a tablet held upright is squarer than a phone, so the board came up under the
+        // scoreboard. The squarer the upright screen, the higher the camera looks, which sets the board lower.
+        static float Lift => Portrait ? Mathf.Lerp(0f, 30f, Mathf.InverseLerp(0.5f, 0.7f, Screen.width / Mathf.Max(1f, (float)Screen.height))) : 0f;
+        public override Vector3 CameraPosition => _zoom is Vector3 z ? At(z.x, z.y - 6f, -120f) : At(9f, 13f + Lift, -218f);
+        public override Vector3 CameraLook => _zoom is Vector3 z ? At(z.x, z.y - 6f, 0f) : At(9f, 13f + Lift, 0f);
         public override float CameraFov => _zoom.HasValue ? 26f : 34f;
 
         // The close-up is on the dart itself, a little above the middle of the screen so the
@@ -277,13 +287,13 @@ namespace PuttrArcade
             {
                 float y = RowY(i);
                 bool bull = i == Numbers - 1;
-                Texture2D mark = bull ? Resources.Load<Texture2D>("PuttrArcade/LogoMarkWhite") : null;
+                Texture2D mark = bull ? Brand.Mark : null;
                 _slateNumber[i] = Words(root, mark != null ? "" : Label(i), new Vector3(0f, y, -0.05f), bull ? 2.6f : 3.6f, chalk, TextAnchor.MiddleCenter, 80);
                 if (mark != null)
                 {
                     const float tall = 5.8f;
-                    _slateBull = Make.Glow(chalk, false, mark);
-                    Card("Bull", root, new Vector3(0f, y, -0.05f), new Vector2(tall * mark.width / mark.height, tall), _slateBull);
+                    _slateBull = Make.Glow(Brand.MarkIsTinted ? chalk : new Color(1f, 1f, 1f, chalk.a), false, mark);
+                    Card("Bull", root, new Vector3(0f, y, -0.05f), new Vector2(Mathf.Min(tall * Brand.Aspect(mark), 18f), Mathf.Min(tall, 18f / Brand.Aspect(mark))), _slateBull);
                 }
                 for (int s = 0; s < 2; s++)
                 {
@@ -455,7 +465,9 @@ namespace PuttrArcade
             if (marks == 0)
             {
                 hud.Banner(missWord, missSub, Make.Red, 1.4f);
-                Arcade.Audio.Miss();
+                // puttr-app-2: with the hall's own sounds the dart's flight has already said it (the bounce-out, or a dull
+                // landing): the shared miss only until they are recorded.
+                if (!GameAudio.Has("cricket_bounce_out")) Arcade.Audio.Miss();
                 result = missWord.Substring(0, 1) + missWord.Substring(1).ToLowerInvariant();
             }
             else
@@ -470,9 +482,10 @@ namespace PuttrArcade
                 bool closed = before < 3 && total >= 3;
                 string sub = scored > 0 ? "+" + scored + " points" : closed ? (Dead(index) ? "Closed, and dead" : "Closed") : marks + (marks == 1 ? " mark" : " marks");
                 hud.Banner(word + " " + number, sub, marks == 3 ? Make.Bright : Color.white, 1.5f);
-                if (marks == 3) { Arcade.Audio.Strike(); Arcade.Celebrate(40, At(BoardAt.x, BoardAt.y, -6f)); }
-                else if (marks == 2) Arcade.Audio.Spare();
-                else Arcade.Audio.Coin();
+                // puttr-app-2: the hall's own reactions (the shared stings until they are recorded).
+                if (marks == 3) { if (Arcade.Audio.TryLibrary("cricket_treble", 0.85f)) Arcade.Audio.Excite(1f); else Arcade.Audio.Strike(); Arcade.Celebrate(40, At(BoardAt.x, BoardAt.y, -6f)); }
+                else if (marks == 2) { if (!Arcade.Audio.TryLibrary("cricket_mark", 0.8f, 1.08f)) Arcade.Audio.Spare(); }
+                else if (!Arcade.Audio.TryLibrary("cricket_mark", 0.6f)) Arcade.Audio.Coin();
                 result = word.Substring(0, 1) + word.Substring(1).ToLowerInvariant() + " " + number.ToLowerInvariant();
                 // On to the next number once this one is closed, unless it still pays.
                 if (_marks[side, index] >= 3 && !open) Advance(side);
@@ -486,9 +499,9 @@ namespace PuttrArcade
             if (_dart == 3 && _triples == 3)
             {
                 hud.Banner("NINE MARK!", "Three triples in one turn   ·   " + _sideName[side], Make.Amber, 3.4f);
-                Arcade.Audio.Strike();
-                Arcade.Audio.Roar(true);
-                Arcade.Audio.Bell();
+                // puttr-app-2: the hall's roar, pitched up for the best a turn can be (the shared stings until it is recorded).
+                if (Arcade.Audio.TryLibrary("cricket_treble", 1f, 1.12f)) Arcade.Audio.Excite(1f);
+                else { Arcade.Audio.Strike(); Arcade.Audio.Roar(true); Arcade.Audio.Bell(); }
                 Arcade.SlowMotion(1.2f);
                 Arcade.Shake(0.5f);
                 Arcade.Celebrate(220, At(BoardAt.x, BoardAt.y, -8f));
@@ -659,7 +672,7 @@ namespace PuttrArcade
             Vector3 from = new Vector3(BoardAt.x + 50f, BoardAt.y - 24f, -205f);
             ZoomOn(to, index, miss);
             dart.gameObject.SetActive(true);
-            Arcade.Audio.Whoosh();
+            if (!Arcade.Audio.TryLibrary("cricket_dart_throw", 0.7f, 1f + Random.Range(-0.05f, 0.05f))) Arcade.Audio.Whoosh();   // puttr-app-2
             const float flight = 0.34f;
             Vector3 last = from;
             for (float t = 0f; t < 1f; t += Time.deltaTime / flight)
@@ -671,7 +684,7 @@ namespace PuttrArcade
                 last = p;
                 yield return null;
             }
-            Arcade.Audio.Thump(marks > 0 ? 46f : 24f);
+            if (!Arcade.Audio.TryLibrary("cricket_dart_hit", marks > 0 ? 0.85f : 0.55f, 1f + Random.Range(-0.06f, 0.06f))) Arcade.Audio.Thump(marks > 0 ? 46f : 24f);   // puttr-app-2
             Arcade.Shake(0.12f);
             if (miss != 1)
             {
@@ -687,7 +700,7 @@ namespace PuttrArcade
                 yield break;
             }
             // Off the wire: it drops out of the board.
-            Arcade.Audio.PinKnock(30f);
+            if (!Arcade.Audio.TryLibrary("cricket_bounce_out", 0.6f)) Arcade.Audio.PinKnock(30f);   // puttr-app-2
             Vector3 v = new Vector3(6f, 22f, -34f);
             Vector3 at = to + new Vector3(0f, 0f, -2f);
             for (float t = 0f; t < 0.9f; t += Time.deltaTime)

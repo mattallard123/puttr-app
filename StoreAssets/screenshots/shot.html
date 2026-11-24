@@ -1,0 +1,71 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- One App Store screenshot. Query: img (the capture), h (headline, <em> = accent word), k (kicker), s (sub line),
+     a (accent colour), c (classes: tv | phone | tablet, plus top / right), pos (background-position), hs (headline size).
+     tv     full-bleed gameplay, headline on a dark slab (the sports-game look).
+     phone / tablet  the app screen as a lit panel under the headline, its own blurred picture behind. -->
+<style>
+@font-face{font-family:M;src:url(Montserrat-Bold.ttf);font-weight:700}
+@font-face{font-family:M;src:url(Montserrat-Medium.ttf);font-weight:500}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:M;color:#fff}
+#bg{position:absolute;inset:0;background-size:cover;background-position:center}
+#slab{position:absolute;left:-10vw;right:-10vw;bottom:-12vh;height:50vh;
+  background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.78) 34%,rgba(0,0,0,.97) 58%,#000 100%)}
+body.top #slab{top:-12vh;bottom:auto;transform:scaleY(-1)}
+#vig{position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 45%,rgba(0,0,0,0) 55%,rgba(0,0,0,.55) 100%)}
+#text{position:absolute;left:5.2vw;right:5.2vw;bottom:6.2vh}
+body.top #text{bottom:auto;top:6.5vh}
+body.right #text{text-align:right}
+.kicker{display:inline-flex;align-items:center;gap:.9vw;font-weight:700;font-size:1.25vw;letter-spacing:.42em;text-transform:uppercase;color:var(--a);margin-bottom:1.4vh}
+.kicker:before{content:"";width:3.4vw;height:.42vw;background:var(--a);transform:skewX(-24deg)}
+.kicker:empty{display:none}
+body.right .kicker{flex-direction:row-reverse}
+h1{font-weight:700;font-size:var(--h,5.6vw);line-height:.9;letter-spacing:-.035em;text-transform:uppercase;max-width:88vw;
+  transform:skewX(-9deg);transform-origin:left bottom;-webkit-text-stroke:.022em #fff;text-shadow:0 .5vw 2.4vw rgba(0,0,0,.65)}
+body.right h1{transform-origin:right bottom}
+h1 em{font-style:normal;color:var(--a);-webkit-text-stroke:.022em var(--a)}
+.sub{margin-top:2.2vh;font-weight:500;font-size:1.72vw;line-height:1.3;color:rgba(255,255,255,.86);max-width:60vw;text-shadow:0 .2vw 1vw #000}
+.sub:empty{display:none}
+#lock{position:absolute;right:5.2vw;bottom:6.6vh;display:flex;align-items:center}
+#lock img{height:2.5vw}
+#stripes{position:absolute;right:-3vw;top:0;width:22vw;height:1.1vh;display:flex;gap:.8vw;transform:skewX(-24deg)}
+#stripes i{flex:1;background:var(--a)}#stripes i+i{flex:.18}#stripes i+i+i{flex:.08}
+body.top #stripes{top:auto;bottom:0}
+#panel{display:none}
+
+/* phone and tablet: headline on top, the app screen below as a lit panel bleeding off the bottom */
+body.phone #bg,body.tablet #bg{filter:blur(5vw) brightness(.32) saturate(1.4);transform:scale(1.25)}
+body.phone #slab,body.tablet #slab{display:none}
+body.phone #text,body.tablet #text{top:5.2vh;bottom:auto;left:6vw;right:6vw;text-align:center}
+body.phone h1,body.tablet h1{transform-origin:center;max-width:none}
+body.phone .kicker,body.tablet .kicker{margin-bottom:1.6vh}
+body.phone #panel,body.tablet #panel{display:block;position:absolute;left:50%;transform:translateX(-50%);
+  background-size:cover;background-position:top center;border:.35vw solid rgba(255,255,255,.16);
+  box-shadow:0 0 0 1vw rgba(0,0,0,.6),0 0 16vw color-mix(in srgb,var(--a) 50%,transparent),0 -2vw 10vw rgba(0,0,0,.85)}
+body.phone h1{font-size:var(--h,8.6vw)} body.phone .kicker{font-size:3.1vw;gap:2vw} body.phone .kicker:before{width:7vw;height:.9vw}
+body.phone .sub{font-size:3.9vw;max-width:none;margin-top:1.6vh}
+body.phone #panel{top:var(--pt,27vh);width:84vw;aspect-ratio:var(--ar,1206/2622);border-radius:9vw}
+body.phone #stripes{width:46vw;height:.75vh;right:-6vw}
+body.tablet h1{font-size:var(--h,7.4vw)} body.tablet .kicker{font-size:2vw;gap:1.4vw} body.tablet .kicker:before{width:5vw;height:.6vw}
+body.tablet .sub{font-size:2.6vw;max-width:none;margin-top:1.4vh}
+body.tablet #panel{top:var(--pt,25vh);width:84vw;aspect-ratio:var(--ar,1640/2360);border-radius:3.4vw}
+body.tablet #stripes{width:34vw;height:.6vh}
+body.phone #lock,body.tablet #lock{display:none}
+body.tv #lock{display:flex}
+body:not(.tv) #lock{display:none}
+</style></head><body>
+<div id="bg"></div><div id="vig"></div><div id="slab"></div><div id="stripes"><i></i><i></i><i></i></div>
+<div id="panel"></div><div id="text"><div class="kicker" id="k"></div><h1 id="h"></h1><div class="sub" id="s"></div></div>
+<div id="lock"><img src="LogoHeader.png"></div>
+<script>
+const q=new URLSearchParams(location.search);
+document.body.className=q.get('c')||'tv';
+document.body.style.setProperty('--a',q.get('a')||'#7ad446');
+if(q.get('hs'))document.body.style.setProperty('--h',q.get('hs'));
+if(q.get('ar'))document.body.style.setProperty('--ar',q.get('ar'));
+if(q.get('pt'))document.body.style.setProperty('--pt',q.get('pt'));
+bg.style.backgroundImage=`url("${q.get('img')}")`;panel.style.backgroundImage=bg.style.backgroundImage;
+if(q.get('pos'))bg.style.backgroundPosition=q.get('pos');
+k.textContent=q.get('k')||'';h.innerHTML=q.get('h')||'';s.innerHTML=q.get('s')||'';
+</script></body></html>

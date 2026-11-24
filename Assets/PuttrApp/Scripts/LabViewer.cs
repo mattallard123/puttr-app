@@ -1,5 +1,7 @@
-// A finished 3D session: the stroke as a 3D mannequin, the replay video, each putt's phases, and a
-// review in the coach's voice. Ported from puttr-app's lab viewer:
+// A finished 3D session (puttr-app lab/LabSessionView.js): how it was filmed, the way into the coach's review
+// (CoachedReview.cs) and the manual replay (LabExplore.cs), what the coach found and the drills for it, the Ball and
+// Body overviews, the 3D stroke model (lab/StrokeModel3DCard.js: the Pose3D frames on the BodyViewer mannequin), and
+// every putt with its body reads. The mannequin is ported from puttr-app's lab viewer:
 //
 //   viewer/strokeModelData.js   processFrames, hasWorldData, toWorldFrames, windowFrames
 //   viewer/poseSmoothing.js     smoothFrames (One-Euro: min cutoff 1.2, beta 3, d cutoff 1; frozen under visibility 0.15)
@@ -13,6 +15,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UIElements;
@@ -293,7 +296,7 @@ namespace PuttrApp
             _camera = cam.AddComponent<Camera>();
             _camera.cullingMask = 1 << Layer;
             _camera.clearFlags = CameraClearFlags.SolidColor;
-            _camera.backgroundColor = new Color32(0x10, 0x14, 0x18, 0xFF);
+            _camera.backgroundColor = Ui.Surface;   // the window's own ground (Lab.uss .lab-model-stage)
             _camera.fieldOfView = 42f;
             _camera.nearClipPlane = 0.05f;
             _camera.farClipPlane = 50f;
@@ -303,8 +306,10 @@ namespace PuttrApp
             light.type = LightType.Directional;
             light.intensity = 1.6f;
             light.transform.localRotation = Quaternion.Euler(40f, 30f, 0f);
+            // Light only the mannequin, never the arcade's own scene.
+            light.cullingMask = 1 << Layer;
 
-            Material body = Paint(new Color(0.78f, 0.8f, 0.82f)), joint = Paint(new Color32(0x2D, 0x8C, 0x3C, 0xFF)), floor = Paint(new Color32(0x1A, 0x1F, 0x24, 0xFF));
+            Material body = Paint(new Color(0.78f, 0.8f, 0.82f)), joint = Paint(Ui.Green), floor = Paint(new Color32(0x1A, 0x1F, 0x24, 0xFF));
             foreach (var limb in Limbs) _limbs.Add(Part(PrimitiveType.Cylinder, body, (limb.wa + limb.wb) / 2));
             foreach (var ball in Balls) _balls.Add(Part(PrimitiveType.Sphere, joint, ball.r * 2));
             _head = Part(PrimitiveType.Sphere, body, 0.18f);
@@ -317,7 +322,7 @@ namespace PuttrApp
             _hands.transform.SetParent(_root, false);
             _hands.useWorldSpace = false;
             _hands.widthMultiplier = 0.012f;
-            _hands.material = Paint(new Color32(0x7A, 0xD4, 0x46, 0xFF));
+            _hands.material = Paint(Ui.Bright);
             _hands.positionCount = 0;
             return this;
         }
@@ -441,278 +446,662 @@ namespace PuttrApp
         void OnDestroy() { if (Texture != null) Texture.Release(); }
     }
 
-    /// <summary>One 3D session: the mannequin or the video, the putts, the phases, and the coach's review.</summary>
+    /// <summary>
+    /// What a 3D session's screens read, loaded once and shared: the session row (refreshed from the status route while
+    /// the cloud works), its putts, the pose file and the body reads made from it, and puttr-ai's per-putt record (the
+    /// coach's findings). Changed fires after each piece arrives.
+    ///
+    ///   GET /lab/session/status/:id     the row (status 4: the 3D annotation is ready, blazePoseUrl and replayUrl set)
+    ///   GET /lab/session/putts/:id      the Player's own putts (a coach reads /coaching/session/putts/:id)
+    ///   blazePoseUrl                    the pose file: every frame's landmarks
+    ///   GET ai.puttr.co/v2/lab/session/:id/record   insights (label, confidence, evidence, lessonIds); may be missing
+    /// </summary>
+    public sealed class LabSessionData
+    {
+        public object Row;
+        public readonly string Id;
+        public readonly bool Coach;
+        public List<object> Putts;
+        public object Blaze;
+        public BodyFaults.Pose Pose;
+        public BodyFaults.Session Body;
+        public object Record;
+        public bool PoseTried;
+        public event Action Changed;
+        int _polls;
+        bool _gone;
+
+        public LabSessionData(object row, bool coach)
+        {
+            Row = row;
+            Id = J.Str(row, "id");
+            Coach = coach;
+        }
+
+        public int Status => J.Get(Row, "status") != null ? J.Int(Row, "status") : 4;
+        public bool Ready => Status >= 4;
+        /// <summary>The Player's side as it was stamped on the session at capture (a coach must not read a lefty as a righty).</summary>
+        public bool Lefty => Side.StartsWith("L", StringComparison.OrdinalIgnoreCase);
+        public string Side => J.Str(Row, "handedness").Length > 0 ? J.Str(Row, "handedness") : Coach ? "RIGHTY" : J.Str(App.I != null ? App.I.Profile : null, "handedness", "RIGHTY");
+        public int PuttCount => Putts != null && Putts.Count > 0 ? Putts.Count : 6;
+
+        void Fire() { if (!_gone) Changed?.Invoke(); }
+
+        /// <summary>Stops every callback (the screen has gone).</summary>
+        public void Close() { _gone = true; Changed = null; }
+
+        public void Start()
+        {
+            App.Run(LoadPutts());
+            if (Ready) { App.Run(LoadPose()); App.Run(LoadRecord()); }
+            else App.Run(Poll());
+        }
+
+        IEnumerator LoadPutts()
+        {
+            List<object> rows = null;
+            if (!Coach) yield return Api.Get("/lab/session/putts/" + Id, d => rows = J.List(d), _ => { });
+            if (rows == null || rows.Count == 0) yield return Api.Get("/coaching/session/putts/" + Id, d => rows = J.List(d), _ => { });
+            Putts = rows ?? new List<object>();
+            if (Pose != null) Body = BodyFaults.ReadSession(Pose, Lefty, PuttCount);
+            Fire();
+        }
+
+        IEnumerator LoadPose()
+        {
+            string url = J.Str(Row, "blazePoseUrl");
+            if (url.StartsWith("http"))
+                using (UnityWebRequest req = UnityWebRequest.Get(url))
+                {
+                    req.timeout = 60;
+                    yield return req.SendWebRequest();
+                    if (_gone) yield break;
+                    if (req.result == UnityWebRequest.Result.Success)
+                    {
+                        Blaze = J.Parse(req.downloadHandler.text);
+                        try { Pose = BodyFaults.Pose.Read(Blaze); Body = BodyFaults.ReadSession(Pose, Lefty, PuttCount); }
+                        catch (Exception e) { Perf.Note("lab: pose file unreadable (" + e.Message + ")"); Pose = null; Body = null; }
+                    }
+                }
+            PoseTried = true;
+            Fire();
+        }
+
+        IEnumerator LoadRecord()
+        {
+            long status = 0; string text = null;
+            yield return ChatUi.Get(ChatUi.Ai + "/v2/lab/session/" + UnityWebRequest.EscapeURL(Id) + "/record", (s, t) => { status = s; text = t; });
+            if (status == 200) { Record = J.Parse(text); Fire(); }
+        }
+
+        // checkAnnotationStatus: every 2 s until the cloud has finished (status 4), then the pose file and the record.
+        IEnumerator Poll()
+        {
+            while (!_gone && !Ready && _polls++ < 900)
+            {
+                yield return new WaitForSecondsRealtime(2f);
+                if (_gone) yield break;
+                object row = null;
+                yield return Api.Get("/lab/session/status/" + Id, d => row = J.First(d), _ => { });
+                if (row == null) continue;
+                Row = row;
+                Fire();
+            }
+            if (_gone || !Ready) yield break;
+            App.Run(LoadPose());
+            App.Run(LoadRecord());
+        }
+
+        /// <summary>puttr-ai's insights with a label, strongest first.</summary>
+        public List<object> Insights => J.List(J.Get(Record, "insights")).FindAll(i => J.Str(i, "label").Length > 0);
+
+        /// <summary>Putt j's body reading, or null.</summary>
+        public BodyFaults.Reading Reading(int j) => Body != null && j >= 0 && j < Body.Putts.Count ? Body.Putts[j] : null;
+    }
+
+    /// <summary>
+    /// One 3D session for the Player who filmed it (puttr-app LabSessionView): the coach's face beside the session's day, the
+    /// capture banner, Review with the coach and Explore manually (members), COACH FOUND, DRILLS TO FIX THIS, the Ball and
+    /// Body overviews, the 3D Stroke Model, Club data when a Vertex rode along, and All putts with their body chips.
+    /// A coach opens a Player's session with ForCoach (SessionOverview.cs).
+    /// </summary>
     public sealed class LabSessionScreen : AppScreen
     {
-        static readonly string[] PhaseNames = { "Setup", "Backstroke", "Impact", "Follow through" };
-        static readonly float[] PhaseFallback = { 0.10f, 0.35f, 0.55f, 0.75f };
-
         readonly App _app;
-        readonly object _row;
-        readonly string _id;
-        readonly VisualElement _stage, _controls, _putts, _review;
-        readonly Image _picture;
-        readonly Label _note;
-        List<Pose3D.Frame> _all;
-        object _blaze;
-        List<object> _puttRows = new List<object>();
-        BodyViewer _viewer;
-        VideoPlayer _video;
-        RenderTexture _videoTexture;
-        int _putt, _view; // view 0 the 3D body, 1 the video
-        int[] _phases;
-        bool _lefty;
+        readonly LabSessionData _data;
+        readonly VisualElement _banner, _actions, _found, _drills, _ball, _body, _model, _club, _putts;
+        StrokeModel _stroke;
+        List<object> _faultLessons;
+        string _faultKey;
+        bool _left, _modelTried;
+
+        /// <summary>A coach's view of a Player's session (Player Review, the lesson workspace): see SessionOverview.cs.</summary>
+        public static AppScreen ForCoach(App app, string sessionId, string playerName, Func<VisualElement> playerPane = null) => new CoachSessionScreen(app, sessionId, playerName, playerPane);
+
+        /// <summary>The same, from a session row already in hand.</summary>
+        public static AppScreen ForCoach(App app, object session, string playerName, Func<VisualElement> playerPane = null) => new CoachSessionScreen(app, session, playerName, playerPane);
 
         public LabSessionScreen(App app, object row)
         {
             _app = app;
-            _row = row;
-            _id = J.Str(row, "id");
-            _lefty = J.Str(row, "handedness").ToUpperInvariant().StartsWith("L");
-            _picture = new Image { scaleMode = ScaleMode.ScaleToFit };
-            _picture.AddToClassList("lab-picture");
-            _note = Ui.Text("Loading your 3D session...", "muted center", Ui.Regular);
-            _stage = Ui.Box("lab-stage", _picture, _note);
-            _controls = new VisualElement(); _putts = new VisualElement(); _review = new VisualElement();
+            _data = new LabSessionData(row, false);
+            _banner = new VisualElement(); _actions = new VisualElement(); _found = new VisualElement(); _drills = new VisualElement();
+            _ball = new VisualElement(); _body = new VisualElement(); _model = new VisualElement(); _club = new VisualElement(); _putts = new VisualElement();
+
+            // The session's day as the page's title, beside the coach who reviews it (their name is on the review button).
+            Coaches.Persona coach = CoachVoice.Persona;
+            VisualElement face = Coaches.Avatar(coach);
+            face.AddToClassList("lab-head-face");
+            string day = ProfileMath.Date(row, "created_at")?.ToLocalTime().ToString("MMM d", System.Globalization.CultureInfo.InvariantCulture);
+            VisualElement head = Ui.Box("lab-who", face, Ui.Box("lab-who-words", Ui.Title(day ?? "Session", "title-20"), Ui.Text(LabUi.Ago(row), "body-2 lab-line", Ui.Medium)));
+
             ScrollView scroll = Ui.Scroll();
             scroll.Add(Ui.Header("3D session", Leave));
-            scroll.Add(Ui.Box("pad", _stage, _controls, _review));
+            scroll.Add(head);
+            scroll.Add(Ui.Box("pad", _banner, _actions));
+            scroll.Add(_found);
+            scroll.Add(_drills);
+            scroll.Add(_ball);
+            scroll.Add(_body);
+            scroll.Add(_model);
+            scroll.Add(_club);
             scroll.Add(_putts);
-            var foot = new VisualElement();
-            foot.style.height = 28;
-            scroll.Add(foot);
-            Root = scroll;
-            DrawControls();
-            Load();
+            scroll.Add(FreePuttScreen.Space(32));
+            Root = LabUi.Style(scroll);
+
+            // The Player's coach: the face, the name on the review button.
+            App.Run(Api.Get("/coach/settings", d =>
+            {
+                CoachVoice.Load(d);
+                Coaches.Persona p = CoachVoice.Persona;
+                VisualElement fresh = Coaches.Avatar(p);
+                fresh.AddToClassList("lab-head-face");
+                head.Insert(0, fresh);
+                head.Remove(face);
+                face = fresh;
+                DrawActions();
+            }, _ => { }));
+
+            _data.Changed += Draw;
+            _data.Start();
+            Draw();
+        }
+
+        void Close()
+        {
+            if (_left) return;
+            _left = true;
+            _data.Close();
+            _stroke?.Dispose();
+            _stroke = null;
         }
 
         void Leave()
         {
-            if (_viewer != null) UnityEngine.Object.Destroy(_viewer.gameObject);
-            if (_video != null) UnityEngine.Object.Destroy(_video.gameObject);
-            if (_videoTexture != null) _videoTexture.Release();
+            Close();
             CoachVoice.Hush();
             _app.Pop();
         }
 
-        void Load()
+        // The mannequin's camera rests while another screen is in front (and stays resting if the stack is cleared).
+        public override void Hidden() => _stroke?.Sleep();
+        public override void Shown() => _stroke?.Wake();
+
+        void Draw()
         {
-            int status = J.Int(_row, "status");
-            string poseUrl = J.Str(_row, "blazePoseUrl");
-            // A coach reviewing a Player's session reads the putts from the coaching side.
-            App.Run(Api.Get("/lab/session/putts/" + _id, data => { _puttRows = J.List(data); if (_puttRows.Count == 0) Coaching(); else DrawPutts(); }, _ => Coaching()));
-            if (status < 4 || !poseUrl.StartsWith("http")) { _note.text = status < 4 ? "Still processing in the cloud. Check back in a few minutes." : "This session has no 3D data."; return; }
-            App.Run(FetchPose(poseUrl));
+            if (_left) return;
+            DrawBanner();
+            DrawActions();
+            DrawFound();
+            DrawDrills();
+            DrawBall();
+            DrawBody();
+            DrawModel();
+            DrawClub();
+            DrawPutts();
         }
 
-        IEnumerator FetchPose(string url)
+        // How the session was filmed, as a flat card: a green label when both views landed, an amber one with the setup
+        // guide and Record again when not.
+        void DrawBanner()
         {
-            using (UnityWebRequest req = UnityWebRequest.Get(url))
+            _banner.Clear();
+            LabCapture.Info cap = LabCapture.Describe(LabCapture.Parse(_data.Row));
+            if (cap == null) return;
+            if (cap.Ok)
             {
-                req.timeout = 60;
-                yield return req.SendWebRequest();
-                if (req.result != UnityWebRequest.Result.Success) { _note.text = "Could not load the 3D data. Check your connection."; yield break; }
-                _blaze = J.Parse(req.downloadHandler.text);
-                _all = Pose3D.Read(_blaze, out bool world);
-                if (!world) _note.text = "Filmed before 3D depth. Your next session unlocks the full 3D view.";
-                else _note.text = "";
+                _banner.Add(Ui.Box("card lab-banner", Ui.Caps(string.IsNullOrEmpty(cap.Short) ? "Good capture" : cap.Short, "caps caps-green"), Ui.Text(cap.Detail, "body-2 lab-banner-text", Ui.Medium)));
+                return;
             }
-            _viewer = BodyViewer.Make();
-            _picture.image = _viewer.Texture;
-            ShowPutt(0);
+            Label title = Ui.Caps(cap.Title);
+            title.style.color = Ui.Amber;
+            title.style.whiteSpace = WhiteSpace.Normal;
+            VisualElement guide = Ui.Secondary("Setup guide", () => SetupGuide.Play(Root, "https://storage.googleapis.com/images.puttr.co/howto/Session_Setup_Final.mp4"));
+            VisualElement again = Ui.Button("Record again", () => Club.Require(_app, "3D sessions", () => _app.Push(new LabIntroScreen(_app))), "btn btn-ghost lab-banner-next");
+            _banner.Add(Ui.Box("card lab-banner", title, Ui.Text(cap.Detail, "body-2 lab-banner-text", Ui.Medium), Ui.Box("lab-banner-btns", guide, again)));
         }
 
-        // Putt j's stroke: replay seconds 3 + 5j + 2 to 3 + 5j + 5.
-        void ShowPutt(int j)
+        // Review with the coach (lean-back) and Explore manually: members only, and only once the cloud has finished.
+        void DrawActions()
         {
-            _putt = j;
-            if (_all == null || _viewer == null) return;
-            float start = 3 + 5 * j + 2;
-            List<Pose3D.Frame> window = Pose3D.Window(_all, start, start + 3);
-            if (window.Count < 8) { _note.text = "Putt " + (j + 1) + " was not seen clearly enough to model."; return; }
-            _note.text = "";
-            _phases = Pose3D.Phases(window, _lefty);
-            _viewer.Show(window);
-            if (_video != null) { _video.time = 3 + 5 * j; _video.Play(); }
-            DrawControls();
-        }
-
-        void DrawControls()
-        {
-            _controls.Clear();
-            _controls.Add(FreePuttScreen.Choice(new[] { "3D body", "Video" }, _view, i => { _view = i; Switch(); }));
-            ScrollView putts = Ui.Scroll(true);
-            putts.style.marginTop = 10;
-            for (int i = 0; i < LabMath.Putts; i++)
+            _actions.Clear();
+            if (!_data.Ready) return;
+            bool member = Club.Member(_app.Profile);
+            Coaches.Persona coach = CoachVoice.Persona;
+            // The page's one main button; a lock before its words until the Player is a member.
+            VisualElement review = Ui.Button("Review with " + coach.Name, () => Club.Require(_app, "Video analysis", () =>
             {
-                int index = i;
-                putts.Add(Ui.Box(i == _putt ? "scope scope-on" : "scope", Ui.Text("Putt " + (i + 1), "scope-text", Ui.Bold)).OnTap(() => ShowPutt(index)));
+                _stroke?.Pause();
+                _app.Push(new CoachedReviewScreen(_app, _data.Row, _data.Putts != null && _data.Putts.Count > 0 ? _data.Putts : null));
+            }), "btn lab-review");
+            if (!member)
+            {
+                Image locked = Ui.Icon("Lock", 16, Color.white);
+                locked.style.marginRight = 8;
+                review.Insert(0, locked);
             }
-            _controls.Add(putts);
-            if (_view == 0)
+            VisualElement explore = Ui.Button("Explore manually", () => Club.Require(_app, "Video analysis", () => { _stroke?.Pause(); _app.Push(new LabReplayScreen(_app, _data)); }), "btn btn-ghost lab-explore");
+            _actions.Add(review);
+            _actions.Add(explore);
+        }
+
+        // COACH FOUND: the record's top two insights, the confidence as a tag, and the evidence lines it has.
+        void DrawFound()
+        {
+            _found.Clear();
+            List<object> insights = _data.Insights;
+            if (insights.Count == 0) return;
+            VisualElement card = Ui.Box("lab-block");
+            for (int i = 0; i < Math.Min(2, insights.Count); i++)
             {
-                VisualElement phases = Ui.Box("row");
-                phases.style.marginTop = 8;
-                for (int i = 0; i < 4; i++)
+                object ins = insights[i];
+                string conf = J.Str(ins, "confidence").ToLowerInvariant();
+                Color c = conf == "high" ? Ui.Bright : conf == "medium" ? Ui.Amber : Ui.Faint;
+                VisualElement row = Ui.Box("row", Ui.Text(J.Str(ins, "label"), "lab-item-title", Ui.Bold));
+                if (conf.Length > 0)
                 {
-                    int p = i;
-                    phases.Add(Ui.Box("grow phase", Ui.Text(PhaseNames[i], "phase-text", Ui.Bold)).OnTap(() => Phase(p)));
+                    Label tag = Ui.Caps(conf, "caps lab-sev");
+                    tag.style.color = c;
+                    row.Add(tag);
                 }
-                _controls.Add(phases);
-                _controls.Add(Ui.Box("row",
-                    Ui.Box("btn-small", Ui.Text(_viewer != null && !_viewer.Playing ? "Play" : "Pause", "btn-text", Ui.Bold)).OnTap(() => { if (_viewer != null) { _viewer.Playing = !_viewer.Playing; DrawControls(); } }),
-                    FreePuttScreen.Space(8),
-                    FreePuttScreen.Choice(new[] { "1x", "0.5x", "0.25x" }, _viewer == null ? 0 : _viewer.Speed >= 1 ? 0 : _viewer.Speed >= 0.5f ? 1 : 2, i => { if (_viewer != null) _viewer.Speed = new[] { 1f, 0.5f, 0.25f }[i]; DrawControls(); }).Width(190)).Margin(8));
-                // The camera angle on a row of its own (beside the speeds it was squeezed to a letter a line).
-                _controls.Add(FreePuttScreen.Choice(new[] { "Side", "Front", "Top" }, 0, i => View(i)).Margin(8));
-            }
-            DrawReview();
-        }
-
-        void Phase(int p)
-        {
-            if (_viewer == null) return;
-            _viewer.Playing = false;
-            _viewer.Time01 = _phases != null ? _viewer.TimeOf(_phases[p]) : _viewer.Length * PhaseFallback[p];
-            DrawControls();
-        }
-
-        // The app's camera presets: down the line, face on, from above.
-        void View(int i)
-        {
-            if (_viewer == null) return;
-            _viewer.Yaw = i == 0 ? Mathf.PI / 2 : 0f;
-            _viewer.Pitch = i == 2 ? 1.35f : 0.08f;
-            _viewer.Zoom = i == 2 ? 1.05f : 1f;
-        }
-
-        void Switch()
-        {
-            if (_view == 1)
-            {
-                string url = J.Str(_row, "replayUrl");
-                if (!url.StartsWith("http")) url = J.Str(_row, "videoUrl");
-                if (!url.StartsWith("http")) { _app.Toast("This session's video is not ready."); _view = 0; DrawControls(); return; }
-                if (_video == null)
+                VisualElement item = Ui.Box(i > 0 ? "lab-item" : "lab-item lab-item-first", row);
+                foreach (var (key, label) in new[] { ("result", "Ball"), ("club", "Club"), ("body", "Body") })
                 {
-                    var go = new GameObject("Session video");
-                    UnityEngine.Object.DontDestroyOnLoad(go);
-                    _video = go.AddComponent<VideoPlayer>();
-                    _videoTexture = new RenderTexture(720, 1280, 0);
-                    _video.renderMode = VideoRenderMode.RenderTexture;
-                    _video.targetTexture = _videoTexture;
-                    _video.source = VideoSource.Url;
-                    _video.url = url;
-                    _video.audioOutputMode = VideoAudioOutputMode.None;
-                    _video.isLooping = false;
-                    _video.prepareCompleted += v => { v.time = 3 + 5 * _putt; v.Play(); };
-                    _video.Prepare();
+                    string words = J.Str(J.Get(ins, "evidence"), key).Trim();
+                    if (words.Length == 0) continue;
+                    Label line = Ui.Text("<b>" + label + ":</b> " + words.Replace("<", "‹"), "body-2 lab-item-line", Ui.Medium);
+                    line.enableRichText = true;
+                    item.Add(line);
                 }
-                else { _video.time = 3 + 5 * _putt; _video.Play(); }
-                _picture.image = _videoTexture;
+                card.Add(item);
             }
-            else
+            _found.Add(Ui.Section("Coach found"));
+            _found.Add(Ui.Box("pad", card));
+        }
+
+        // DRILLS TO FIX THIS: the top insight's lessons when the lesson list has them, else the drills tagged to the
+        // session's top setup fault (GET /coach/lessons/:fault).
+        void DrawDrills()
+        {
+            if (_left) return;
+            _drills.Clear();
+            List<object> insights = _data.Insights;
+            object top = insights.Count > 0 ? insights[0] : null;
+            var insightLessons = new List<object>();
+            List<object> ids = J.List(J.Get(top, "lessonIds"));
+            if (ids.Count > 0)
             {
-                if (_video != null) _video.Pause();
-                if (_viewer != null) _picture.image = _viewer.Texture;
+                if (Library.Lessons == null) { Library.Load(DrawDrills); return; }
+                foreach (object id in ids)
+                {
+                    string want = id is double d ? d.ToString(System.Globalization.CultureInfo.InvariantCulture) : id as string ?? "";
+                    object lesson = Library.Lessons.Find(l => J.Str(l, "id") == want);
+                    if (lesson != null) insightLessons.Add(lesson);
+                }
             }
-            DrawControls();
+            bool useInsight = insightLessons.Count > 0;
+            BodyFaults.Fault fault = useInsight ? null : BodyFaults.SessionFaults(_data.Body, _data.Lefty).FirstOrDefault();
+            if (!useInsight && fault != null && fault.Key != _faultKey)
+            {
+                _faultKey = fault.Key;
+                _faultLessons = null;
+                App.Run(Api.Get("/coach/lessons/" + UnityWebRequest.EscapeURL(fault.Key), d => { _faultLessons = J.List(d); if (!_left) DrawDrills(); }, _ => { _faultLessons = new List<object>(); }));
+            }
+            string title = useInsight ? J.Str(top, "label") : fault?.Label;
+            List<object> lessons = useInsight ? insightLessons : fault != null && fault.Key == _faultKey ? _faultLessons : null;
+            if (string.IsNullOrEmpty(title) || lessons == null || lessons.Count == 0) return;
+            VisualElement card = Ui.Box("lab-block", Ui.Box("lab-item lab-item-first",
+                Ui.Text(title, "lab-item-title", Ui.Bold),
+                Ui.Text(useInsight ? "Your biggest leak this session, read across ball, club and body. Work these to clean it up." : "Your biggest setup leak this session. Work these to clean it up.", "body-2 lab-item-line", Ui.Medium)));
+            foreach (object lesson in lessons)
+            {
+                object l = lesson;
+                VisualElement words = Ui.Box("lab-drill-words", Ui.Text(J.Str(l, "title"), "lab-item-title", Ui.Bold));
+                if (J.Str(l, "description").Length > 0) words.Add(Ui.Text(J.Str(l, "description"), "body-2 lab-drill-desc", Ui.Medium));
+                Image play = Ui.Icon("Play", 20, Color.white), go = Ui.Icon("CaretRight", 16, Ui.Faint);
+                play.AddToClassList("lab-drill-icon");
+                go.AddToClassList("lab-drill-end");
+                card.Add(Ui.Box("lab-item lab-drill", play, words, go).OnTap(() => { _stroke?.Pause(); _app.Push(new LessonScreen(_app, l)); }));
+            }
+            _drills.Add(Ui.Section("Drills to fix this"));
+            _drills.Add(Ui.Box("pad", card));
+        }
+
+        void DrawBall()
+        {
+            _ball.Clear();
+            if (_data.Putts == null) { _ball.Add(Page.Loading()); return; }
+            _ball.Add(Ui.Section("Ball overview"));
+            _ball.Add(Ui.Box("pad", LabUi.BallOverview(_data.Putts, Root)));
+        }
+
+        void DrawBody()
+        {
+            _body.Clear();
+            bool processing = !_data.Ready;
+            if (_data.Body == null || !_data.Body.Any)
+            {
+                if (!processing) return;
+                int st = _data.Status;
+                string words = st == 1 ? "Uploading video..." : st == 2 ? "Analyzing video..." : st == 3 ? "Building 3D annotation..." : "Processing 3D annotation...";
+                _body.Add(Ui.Section("Body overview"));
+                _body.Add(Ui.Box("pad", Ui.Box("card lab-processing", Spinner.Small(), Ui.Text(words, "body-2 lab-processing-text", Ui.Medium))));
+                return;
+            }
+            _body.Add(Ui.Section("Body overview"));
+            _body.Add(Ui.Box("pad", LabUi.BodyOverview(_data.Body, _data.Lefty, false)));
+        }
+
+        void DrawModel()
+        {
+            if (_stroke != null || _data.Blaze == null || _modelTried) return;
+            _modelTried = true; // reading the frames is costly: once per screen
+            var model = new StrokeModel(_app, _data.Blaze, _data.Pose, _data.Lefty, _data.Putts != null ? _data.Putts.Count : 0);
+            if (!model.Available) { model.Dispose(); return; }
+            _stroke = model;
+            _model.Add(Ui.Section("3D stroke model", "Full screen", model.Full));
+            _model.Add(Ui.Box("pad", model.Card()));
+        }
+
+        // Club data: the Vertex summary, when any putt carries the putter sensor's stroke.
+        void DrawClub()
+        {
+            _club.Clear();
+            if (_data.Putts == null || !_data.Putts.Exists(p => J.Str(p, "sensorData").Length > 2)) return;
+            VisualElement summary = VertexSummary.Build(_data.Putts);
+            if (summary == null) return;
+            _club.Add(Ui.Section("Club data · from your Vertex"));
+            _club.Add(Ui.Box("pad", summary));
         }
 
         void DrawPutts()
         {
             _putts.Clear();
-            if (_puttRows.Count == 0) return;
-            _putts.Add(Ui.Section("Putts"));
-            VisualElement card = Ui.Box("glass");
-            for (int i = 0; i < _puttRows.Count; i++)
+            if (_data.Putts == null || _data.Putts.Count == 0) return;
+            _putts.Add(Ui.Section("All putts"));
+            // One bordered block: a row a putt, its body reads under it.
+            VisualElement list = Ui.Box("lab-block");
+            for (int i = 0; i < _data.Putts.Count; i++)
+                list.Add(Ui.Box(i == 0 ? "lab-pitem lab-pitem-first" : "lab-pitem", LabUi.PuttCard(_data.Putts[i], i, false, Root), LabUi.BodyChips(_data.Reading(i), _data.Lefty)));
+            _putts.Add(Ui.Box("pad", list));
+        }
+    }
+
+    /// <summary>
+    /// The 3D Stroke Model (puttr-app StrokeModel3DCard): one putt's stroke on the mannequin, chosen with the putt chips,
+    /// dragged to turn, played, scrubbed, slowed (1x, 0.5x, 0.25x) and jumped to Setup, Backstroke, Impact or Follow
+    /// Through. The mannequin is a picture in a window; every control is on the solid bar under it. "Full screen" (the
+    /// section's link) opens it over the whole screen. Sessions filmed before world landmarks show the flat projection
+    /// with the app's note.
+    /// </summary>
+    public sealed class StrokeModel
+    {
+        static readonly (string label, float pct)[] Phases = { ("Setup", 0.1f), ("Backstroke", 0.35f), ("Impact", 0.55f), ("Follow Through", 0.75f) };
+        static readonly float[] Speeds = { 1f, 0.5f, 0.25f };
+
+        readonly App _app;
+        readonly bool _lefty, _world;
+        readonly List<Pose3D.Frame> _frames;
+        readonly BodyViewer _viewer;
+        readonly BodyFaults.Pose _pose;
+        public readonly List<int> Putts = new List<int>();
+        readonly List<Action> _views = new List<Action>();
+        int _putt = -1, _speed;
+        readonly float[] _phases = new float[4];
+
+        public bool Available => Putts.Count > 0 && _viewer != null;
+
+        public StrokeModel(App app, object blaze, BodyFaults.Pose pose, bool lefty, int puttCount)
+        {
+            _app = app;
+            _lefty = lefty;
+            _frames = Pose3D.Read(blaze, out _world);
+            _pose = pose ?? BodyFaults.Pose.Read(blaze);
+            if (_frames.Count == 0) return;
+            float total = _frames[_frames.Count - 1].T;
+            int max = puttCount > 0 ? puttCount : Mathf.Max(0, Mathf.RoundToInt((total - 3f) / 5f));
+            for (int j = 0; j < max; j++)
             {
-                object row = _puttRows[i];
-                bool made = J.Get(row, "entry") is string e && e.StartsWith("[") && !e.StartsWith("[0,0");
-                double? rollout = J.Get(row, "rollout") != null ? J.Num(row, "rollout") : (double?)null;
-                Label result = Ui.Text(made ? "Made" : "Missed", "sub", Ui.Bold);
-                result.style.color = made ? Ui.Bright : Ui.Red;
-                int index = i;
-                card.Add(Ui.Box("board-row", Ui.Text((i + 1).ToString(), "board-place", Ui.Bold), Ui.Box("grow", result), Ui.Text(AppPutt.FmtRollout(rollout) ?? "", "muted", Ui.Regular)).OnTap(() => ShowPutt(index)));
+                (double s, double e) = BodyFaults.Window(j);
+                int n = 0;
+                foreach (Pose3D.Frame f in _frames) if (f.T >= s && f.T <= e && f.J.Count > 0) n++;
+                if (n >= 8) Putts.Add(j);
             }
-            _putts.Add(Ui.Box("pad", card));
+            if (Putts.Count == 0) return;
+            _viewer = BodyViewer.Make();
+            _viewer.Playing = false;
+            Show(Putts[0]);
         }
 
-        // ── The coach's review ───────────────────────────────────────────────
-
-        void Coaching() => App.Run(Api.Get("/coaching/session/putts/" + _id, data => { _puttRows = J.List(data); DrawPutts(); }, _ => { }));
-
-        void DrawReview()
+        public void Dispose()
         {
-            _review.Clear();
-            Coaches.Persona coach = CoachVoice.Persona;
-            VisualElement button = Ui.Button("Review with " + coach.Name, () => Club.Require(_app, "Coach review", () => App.Run(Review())), "btn btn-ghost");
-            _review.Add(button);
+            if (_viewer != null) UnityEngine.Object.Destroy(_viewer.gameObject);
         }
 
-        /// <summary>
-        /// The coach talks through the session (CoachedReview, simplified): what was made, then a word on each putt
-        /// while it plays. The words come from ai.puttr.co /v2/coach/narrate; the app's own lines stand in when it
-        /// cannot be reached. The body faults the app adds (shoulders, eye line) are not computed here yet.
-        /// </summary>
-        IEnumerator Review()
+        public void Pause() { if (_viewer != null) _viewer.Playing = false; Refresh(); }
+
+        /// <summary>Stops drawing the mannequin (no screen shows it now).</summary>
+        public void Sleep() { Pause(); if (_viewer != null) _viewer.gameObject.SetActive(false); }
+
+        /// <summary>Draws it again (a screen that shows it is in front).</summary>
+        public void Wake() { if (_viewer != null) _viewer.gameObject.SetActive(true); }
+
+        void Show(int j)
         {
-            int made = 0;
-            var moments = new List<object>();
-            var faultsOf = new List<BodyFaults.Result>();
-            for (int i = 0; i < _puttRows.Count; i++)
+            _putt = j;
+            (double s, double e) = BodyFaults.Window(j);
+            _viewer.Show(Pose3D.Window(_frames, (float)s, (float)e));
+            float dur = _viewer.Length;
+            // The detected phases (analyzePuttingStroke on this putt's window), else fixed shares of the stroke.
+            BodyFaults.Stroke a = BodyFaults.Analyze(_pose, s, e, _lefty);
+            bool any = false;
+            double[] at = a == null ? new double[4] { double.NaN, double.NaN, double.NaN, double.NaN } : new[] { a.Setup, a.Back, a.Impact, a.Follow };
+            for (int i = 0; i < 4; i++)
             {
-                object row = _puttRows[i];
-                bool m = J.Get(row, "entry") is string e && e.StartsWith("[") && !e.StartsWith("[0,0");
-                if (m) made++;
-                // The setup faults the camera saw on this putt (shoulders, eyes, knees; ball, weight, stance).
-                BodyFaults.Result setup = _blaze != null ? BodyFaults.Analyze(_blaze, i, _lefty) : null;
-                faultsOf.Add(setup);
-                var labels = new List<object>();
-                if (setup != null) foreach (BodyFaults.Fault f in setup.Faults) labels.Add(f.Label);
-                string side = m ? null : AppPutt.MissSide(PuttAssessment.Bp(row), PuttAssessment.Hb(row));
-                moments.Add(m && labels.Count == 0
-                    ? new Dictionary<string, object> { { "kind", "good" }, { "putt", i + 1 }, { "distance", J.Int(row, "distance") }, { "made", true } }
-                    : new Dictionary<string, object> { { "kind", "fix" }, { "putt", i + 1 }, { "made", m }, { "miss", side != null ? side.ToLowerInvariant() : "line" }, { "faults", labels } });
+                _phases[i] = double.IsNaN(at[i]) ? -1 : Mathf.Clamp((float)(at[i] - s), 0, dur);
+                if (_phases[i] >= 0) any = true;
             }
-            moments.Insert(0, new Dictionary<string, object> { { "kind", "intro" }, { "made", made }, { "total", _puttRows.Count } });
-            string first = HomeScreen.FirstName(_app.Profile);
-            List<object> lines = null;
-            string token = null;
-            yield return Auth.Token(t => token = t);
-            var body = new Dictionary<string, object> { { "personaId", CoachVoice.Persona.Id }, { "firstName", first }, { "moments", moments } };
-            yield return Api.Send("POST", "https://ai.puttr.co/v2/coach/narrate", J.Write(body), token, (s, text) => { if (s == 200) lines = J.List(J.Get(J.Parse(text), "lines")); });
-            var said = new List<string>();
-            if (lines != null && lines.Count > 0) foreach (object l in lines) said.Add(l as string);
-            else
+            if (!any) for (int i = 0; i < 4; i++) _phases[i] = dur * Phases[i].pct;
+            // Open on the angle it was filmed from: face on looks at the chest, down the line along the target line.
+            if (a != null) _viewer.Yaw = a.DownTheLine ? Mathf.PI / 2 : 0f;
+            _viewer.Pitch = 0.08f;
+            _viewer.Time01 = 0;
+            Refresh();
+        }
+
+        void Refresh() { foreach (Action a in _views.ToArray()) a(); }
+
+        int ActivePhase()
+        {
+            int active = 0;
+            for (int i = 0; i < 4; i++) if (_phases[i] >= 0 && _phases[i] <= _viewer.Time01 + 0.01f) active = i;
+            return active;
+        }
+
+        /// <summary>The card on the session page.</summary>
+        public VisualElement Card() => Build(false, null);
+
+        /// <summary>The viewer, its chips and controls. full: the whole screen (with close).</summary>
+        VisualElement Build(bool full, Action close)
+        {
+            VisualElement root = Ui.Box(full ? "lab-model-full" : "lab-model");
+            var picture = new Image { image = _viewer.Texture, scaleMode = ScaleMode.ScaleAndCrop };
+            picture.AddToClassList(full ? "lab-model-picture-full" : "lab-model-picture");
+            // No words on the picture: the hint is the last line of the bar under it.
+            Label hint = Ui.Caps("Drag the model to turn it", "caps lab-model-hint");
+            VisualElement stage = Ui.Box(full ? "lab-model-stage-full" : "lab-model-stage", picture);
+            Drag(stage);
+
+            VisualElement putts = Ui.Box("lab-model-chips");
+            VisualElement phases = Ui.Box("lab-model-phases");
+            VisualElement play = LabUi.Round("Play", 44, Ui.Surface2, () => { _viewer.Playing = !_viewer.Playing; if (_viewer.Playing && _viewer.Time01 >= _viewer.Length) _viewer.Time01 = 0; Refresh(); }, 16);
+            var track = new Scrub(t => { _viewer.Time01 = t * _viewer.Length; Refresh(); });
+            Label speed = Ui.Text("1x", "lab-model-speed-text", Ui.Bold);
+            VisualElement speedBox = Ui.Box("lab-model-speed", speed).OnTap(() => { _speed = (_speed + 1) % Speeds.Length; _viewer.Speed = Speeds[_speed]; Refresh(); });
+            VisualElement controls = Ui.Box("row lab-model-controls", play, track, speedBox);
+
+            string drawn = null;
+            void Draw()
             {
-                said.Add("Nice work, " + (first.Length > 0 ? first : "golfer") + ". You made " + made + " of " + _puttRows.Count + " this session.");
-                for (int i = 0; i < _puttRows.Count; i++)
+                track.Value = _viewer.Length > 0 ? _viewer.Time01 / _viewer.Length : 0;
+                // The chips are built again only when something on them changed (this runs every frame while it plays).
+                string key = _putt + "|" + ActivePhase() + "|" + _viewer.Playing + "|" + _speed;
+                if (key == drawn) return;
+                drawn = key;
+                putts.Clear();
+                if (Putts.Count >= 2)
+                    foreach (int j in Putts) { int pick = j; putts.Add(LabUi.Pill("Putt " + (j + 1), j == _putt, () => { if (pick != _putt) Show(pick); })); }
+                phases.Clear();
+                int active = ActivePhase();
+                for (int i = 0; i < 4; i++)
                 {
-                    var d = (Dictionary<string, object>)moments[i + 1];
-                    bool m = (bool)d["made"];
-                    BodyFaults.Result setup = faultsOf[i];
-                    if (setup != null && setup.Faults.Count > 0) said.Add(BodyFaults.Line(m, d.TryGetValue("miss", out object ms) && (string)ms != "line" ? (string)ms : null, setup.Faults));
-                    else said.Add("Putt " + (i + 1) + ". " + (m ? "That's the stroke." : "Stay with it. Same line again."));
+                    int k = i;
+                    bool on = _phases[i] >= 0;
+                    VisualElement pill = LabUi.Pill(Phases[i].label, active == i, on ? () => { _viewer.Time01 = _phases[k]; Refresh(); } : (Action)null);
+                    if (!on) pill.AddToClassList("lab-pill-off");
+                    phases.Add(pill);
                 }
+                play.Clear();
+                play.Add(LabUi.Icon(_viewer.Playing ? "Pause" : "Play", 16, Color.white));
+                speed.text = _speed == 0 ? "1x" : _speed == 1 ? "0.5x" : "0.25x";
+                speed.style.color = _speed == 0 ? Color.white : (Color)Ui.Bright;
             }
-            for (int i = 0; i < said.Count; i++)
+            // Kept in step only while on screen (the card comes back when the screen in front of it goes).
+            _views.Add(Draw);
+            root.RegisterCallback<DetachFromPanelEvent>(_ => _views.Remove(Draw));
+            root.RegisterCallback<AttachToPanelEvent>(_ => { if (!_views.Contains(Draw)) _views.Add(Draw); drawn = null; Draw(); });
+
+            // The picture, then one solid bar: play, scrub and speed, the phases, the putts, the hint.
+            VisualElement bar = Ui.Box(full ? "lab-model-bottom" : "lab-model-bar", controls, phases, Ui.Scroll(true).With(putts), hint);
+            if (!full && !_world) bar.Add(Ui.Text("Filmed before 3D depth. Your next session unlocks the full 3D view.", "body-2 lab-model-note", Ui.Medium));
+            root.Add(stage);
+            root.Add(bar);
+            if (full)
             {
-                if (i > 0 && i - 1 < LabMath.Putts) ShowPutt(i - 1);
-                // The faults on screen while the coach talks about them.
-                _review.Clear();
-                if (i > 0 && i - 1 < faultsOf.Count && faultsOf[i - 1] is BodyFaults.Result shown)
-                {
-                    VisualElement chips = Ui.Box("chips", Ui.Text("Putt " + i + " · " + (shown.DownTheLine ? "down the line" : "face on"), "chip", Ui.Bold));
-                    foreach (BodyFaults.Fault f in shown.Faults) chips.Add(Ui.Text(f.Label, "chip chip-red", Ui.Bold));
-                    if (shown.Faults.Count == 0) chips.Add(Ui.Text(shown.DownTheLine ? "Setup looks clean" : "Setup checks out", "chip chip-green", Ui.Bold));
-                    _review.Add(chips);
-                }
-                CoachVoice.Say(said[i]);
-                while (CoachVoice.Speaking) yield return null;
-                yield return new WaitForSecondsRealtime(0.4f);
+                VisualElement x = LabUi.Round("X", 44, Ui.Surface2, close, 20);
+                x.AddToClassList("lab-model-close");
+                root.Add(x);
             }
-            DrawReview();
+
+            // The picture is drawn by the viewer's camera, not UI Toolkit: repaint it, and keep the controls in step while it plays.
+            root.schedule.Execute(() =>
+            {
+                picture.MarkDirtyRepaint();
+                if (_viewer.Playing) Draw();
+            }).Every(33);
+            Draw();
+            return root;
+        }
+
+        /// <summary>Full screen opens playing, as the app's does.</summary>
+        public void Full() => _app.Push(new FullScreen(this));
+
+        void Play() { if (_viewer == null) return; _viewer.Playing = true; Refresh(); }
+
+        sealed class FullScreen : AppScreen
+        {
+            readonly StrokeModel _model;
+
+            public FullScreen(StrokeModel model)
+            {
+                _model = model;
+                Root = LabUi.Style(Ui.Box("lab-model-screen"));
+                Root.Add(model.Build(true, () => { model.Pause(); model._app.Pop(); }));
+            }
+
+            public override void Shown() { _model.Wake(); _model.Play(); }
+            public override void Hidden() => _model.Sleep();
+        }
+
+        // Drag to turn the model: across turns it round, up and down tips the camera.
+        void Drag(VisualElement stage)
+        {
+            Vector2? last = null;
+            stage.RegisterCallback<PointerDownEvent>(e => { last = e.position; stage.CapturePointer(e.pointerId); });
+            stage.RegisterCallback<PointerMoveEvent>(e =>
+            {
+                if (last == null || !stage.HasPointerCapture(e.pointerId)) return;
+                Vector2 d = (Vector2)e.position - last.Value;
+                last = e.position;
+                _viewer.Yaw -= d.x * 0.012f;
+                _viewer.Pitch = Mathf.Clamp(_viewer.Pitch + d.y * 0.008f, -0.3f, 1.3f);
+                Perf.Wake(0.3f);
+            });
+            stage.RegisterCallback<PointerUpEvent>(e => { last = null; if (stage.HasPointerCapture(e.pointerId)) stage.ReleasePointer(e.pointerId); });
+        }
+    }
+
+    /// <summary>A scrub bar (the app's Slider): a track, its fill and a thumb; dragging or tapping sets 0 to 1.</summary>
+    public sealed class Scrub : VisualElement
+    {
+        readonly VisualElement _fill, _thumb;
+        readonly Action<float> _moved;
+        float _value;
+
+        public Scrub(Action<float> moved)
+        {
+            _moved = moved;
+            AddToClassList("lab-scrub");
+            _fill = Ui.Box("lab-scrub-fill");
+            _thumb = Ui.Box("lab-scrub-thumb");
+            VisualElement track = Ui.Box("lab-scrub-track", _fill);
+            // Only the bar itself takes the pointer, so positions are measured across its whole width.
+            track.pickingMode = _fill.pickingMode = _thumb.pickingMode = PickingMode.Ignore;
+            Add(track);
+            Add(_thumb);
+            RegisterCallback<PointerDownEvent>(e => { this.CapturePointer(e.pointerId); Set(e.localPosition.x); });
+            RegisterCallback<PointerMoveEvent>(e => { if (this.HasPointerCapture(e.pointerId)) Set(e.localPosition.x); });
+            RegisterCallback<PointerUpEvent>(e => { if (this.HasPointerCapture(e.pointerId)) this.ReleasePointer(e.pointerId); });
+        }
+
+        void Set(float x)
+        {
+            float w = contentRect.width;
+            if (w <= 0) return;
+            Value = Mathf.Clamp01(x / w);
+            _moved?.Invoke(_value);
+            Perf.Wake(0.3f);
+        }
+
+        public float Value
+        {
+            get => _value;
+            set
+            {
+                _value = Mathf.Clamp01(float.IsNaN(value) ? 0 : value);
+                _fill.style.width = Length.Percent(_value * 100f);
+                _thumb.style.left = Length.Percent(_value * 100f);
+            }
+        }
+    }
+
+    static class LabElements
+    {
+        /// <summary>Adds the children and gives the element back (for a horizontal scroll of chips).</summary>
+        public static T With<T>(this T element, params VisualElement[] children) where T : VisualElement
+        {
+            foreach (VisualElement c in children) if (c != null) element.Add(c);
+            return element;
         }
     }
 }

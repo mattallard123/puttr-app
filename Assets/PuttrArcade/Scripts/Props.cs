@@ -104,7 +104,16 @@ namespace PuttrArcade
         /// Turf, mown in two bands across v, with the blades standing up in
         /// the normal map. One tile is two bands: 24 feet.
         /// </summary>
+        // Made once and shared: every scene that asks gets the same pair (they used to be painted again, pixel by
+        // pixel, for every scene and every rebuild of one, and never freed).
+        static Texture2D _grassColor, _grassNormal;
         public static void Grass(out Texture2D color, out Texture2D normal)
+        {
+            if (_grassColor == null || _grassNormal == null) GrassMade(out _grassColor, out _grassNormal);
+            color = _grassColor; normal = _grassNormal;
+        }
+
+        static void GrassMade(out Texture2D color, out Texture2D normal)
         {
             const int n = 512;
             var px = new Color[n * n];
@@ -127,12 +136,21 @@ namespace PuttrArcade
             }
             color = Make.NewTexture(n, n, true);
             color.SetPixels(px);
-            color.Apply(true);
+            color.Apply(true, true);
             normal = Make.NormalFromHeight(h, n, n, 1.1f);
         }
 
         /// <summary>Poured concrete: pale, blotched and a little pitted.</summary>
+        // Made once and shared: every scene that asks gets the same pair (they used to be painted again, pixel by
+        // pixel, for every scene and every rebuild of one, and never freed).
+        static Texture2D _concreteColor, _concreteNormal;
         public static void Concrete(out Texture2D color, out Texture2D normal)
+        {
+            if (_concreteColor == null || _concreteNormal == null) ConcreteMade(out _concreteColor, out _concreteNormal);
+            color = _concreteColor; normal = _concreteNormal;
+        }
+
+        static void ConcreteMade(out Texture2D color, out Texture2D normal)
         {
             const int n = 512;
             var px = new Color[n * n];
@@ -151,7 +169,7 @@ namespace PuttrArcade
             }
             color = Make.NewTexture(n, n, true);
             color.SetPixels(px);
-            color.Apply(true);
+            color.Apply(true, true);
             normal = Make.NormalFromHeight(h, n, n, 1.6f);
         }
 
@@ -189,7 +207,7 @@ namespace PuttrArcade
             }
             Texture2D tex = Make.NewTexture(w, ht, true);
             tex.SetPixels(px);
-            tex.Apply(true);
+            tex.Apply(true, true);
             return tex;
         }
 
@@ -233,7 +251,7 @@ namespace PuttrArcade
             }
             color = Make.NewTexture(w, ht, true);
             color.SetPixels(px);
-            color.Apply(true);
+            color.Apply(true, true);
             normal = Make.NormalFromHeight(h, w, ht, banded ? 1.2f : 5f);
         }
 
@@ -255,7 +273,7 @@ namespace PuttrArcade
             }
             Texture2D tex = Make.NewTexture(n, n, false);
             tex.SetPixels(px);
-            tex.Apply(true);
+            tex.Apply(true, true);
             return tex;
         }
 
@@ -278,7 +296,7 @@ namespace PuttrArcade
             }
             Texture2D tex = Make.NewTexture(n, n, false);
             tex.SetPixels(px);
-            tex.Apply(true);
+            tex.Apply(true, true);
             return tex;
         }
 
@@ -299,7 +317,7 @@ namespace PuttrArcade
             }
             Texture2D tex = Make.NewTexture(n, n, false);
             tex.SetPixels(px);
-            tex.Apply(true);
+            tex.Apply(true, true);
             return tex;
         }
     }

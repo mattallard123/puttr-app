@@ -2,7 +2,7 @@
 //
 //   The green          Bluetooth and the Puttr, in one row
 //   Tools              Setup guide, Green level, Connect Puttr to Wi-Fi, Vertex sensor, Notifications, App settings
-//   Developer          the Phase 0 gate switches (performance numbers, low power, entering competition scores, export)
+//   Developer          testers and admins only: the Phase 0 gate switches (performance numbers, low power, entering competition scores, export)
 //   Account            Sign out, Delete account (not for a managed profile)
 //
 // Also here: the level (the phone's own tilt, as LevelScreen.js), Wi-Fi setup over Bluetooth
@@ -25,12 +25,13 @@ namespace PuttrApp
         public static void Ask(VisualElement over, string title, string text, string yes, Action onYes, bool danger = false)
         {
             VisualElement dim = null;
-            VisualElement go = Ui.Button(yes, () => { dim.RemoveFromHierarchy(); onYes(); });
-            if (danger) go.style.backgroundColor = (Color)new Color32(0x8A, 0x22, 0x22, 0xFF);
-            VisualElement card = Ui.Box("modal", Ui.Text(title, "h2", Ui.Bold), Ui.Text(text, "sub", Ui.Regular).Margin(6), go,
+            // A destructive yes is the red button (the slanted shape is drawn in the style sheet's --fill, so the class
+            // colours it: an inline background would only tint the box behind the shape).
+            VisualElement go = Ui.Button(yes, () => { dim.RemoveFromHierarchy(); onYes(); }, danger ? "btn btn-red" : "btn");
+            VisualElement card = Ui.Box("modal", Ui.Title(title, "title-20"), Ui.Text(text, "body-2", Ui.Regular).Margin(8), go,
                 Ui.Button("Cancel", () => dim.RemoveFromHierarchy(), "btn btn-ghost"));
             card.RegisterCallback<ClickEvent>(e => e.StopPropagation());
-            dim = Ui.Box("modal-dim", card).OnTap(() => dim.RemoveFromHierarchy());
+            dim = Ui.Box("modal-dim", card).OnBackdropTap(() => dim.RemoveFromHierarchy());
             App.Layer(over).Add(dim);
         }
 
@@ -57,10 +58,11 @@ namespace PuttrApp
         /// <summary>One settings row: icon, words, and what sits on the right (a chevron by default).</summary>
         public static VisualElement Row(string icon, string label, Action tap, VisualElement right = null, Color? colour = null)
         {
-            Color tint = colour ?? new Color(1, 1, 1, 0.55f);
-            Label words = Ui.Text(label, "feed-name", Ui.Medium);
+            Color tint = colour ?? Ui.Faint;
+            Label words = Ui.Text(label, "set-title", Ui.Bold);
             if (colour != null) words.style.color = colour.Value;
-            VisualElement row = Ui.Box("set-row", Ui.Icon(icon, 20, tint), Ui.Box("grow set-words", words), right ?? Ui.Icon("CaretRight", 16, new Color(1, 1, 1, 0.3f)));
+            // A plain stroke icon (no tile behind it), the row's title, then a chevron unless something else sits there.
+            VisualElement row = Ui.Box("set-row", Ui.Icon(Cards.Stroke(icon), 24, tint), Ui.Box("grow set-words", words), right ?? Ui.Icon("CaretRight", 16, Ui.Faint));
             if (tap != null) row.OnTap(tap);
             return row;
         }
@@ -69,6 +71,8 @@ namespace PuttrApp
         {
             VisualElement card = Ui.Box("glass set-card");
             foreach (VisualElement r in rows) if (r != null) card.Add(r);
+            // One bordered block, a divider between rows and none under the last.
+            if (card.childCount > 0) card[card.childCount - 1].AddToClassList("set-row-last");
             return Ui.Box("pad", card);
         }
 
@@ -78,8 +82,8 @@ namespace PuttrApp
             dot.style.width = dot.style.height = 8;
             dot.style.borderTopLeftRadius = dot.style.borderTopRightRadius = dot.style.borderBottomLeftRadius = dot.style.borderBottomRightRadius = 4;
             dot.style.backgroundColor = colour;
-            dot.style.marginRight = 6;
-            Label words = Ui.Text(text, "muted", Ui.Medium);
+            dot.style.marginRight = 8;
+            Label words = Ui.Text(text, "set-sub", Ui.Medium);
             words.style.color = colour;
             return Ui.Box("row set-right", dot, words);
         }
@@ -106,7 +110,7 @@ namespace PuttrApp
             _app = app;
             _green = new VisualElement(); _tools = new VisualElement(); _developer = new VisualElement();
             ScrollView scroll = Ui.Scroll();
-            scroll.Add(Ui.Header("Settings", app.Pop));
+            VisualElement header = Ui.Header("Settings", app.Pop);
             scroll.Add(_green);
             scroll.Add(_tools);
             scroll.Add(_developer);
@@ -115,18 +119,28 @@ namespace PuttrApp
                 Color red = Ui.Red;
                 scroll.Add(Ui.Section("Account"));
                 scroll.Add(Rows.Card(
-                    Rows.Row("SignOut", "Sign out", () => Dialog.Ask(Root, "Sign out?", "You can sign back in any time.", "Sign out", app.SignedOut), Ui.Box("set-right"), red),
+                    Rows.Row("SignOut", "Sign out", () => Dialog.Ask(Root, "Sign out?", "You can sign back in any time.", "Sign out", app.SignedOut), Ui.Box("set-right")),
                     Rows.Row("Trash", "Delete account", DeleteAccount, Ui.Box("set-right"), red)));
             }
             scroll.Add(Ui.Box("row set-links",
-                Ui.Text("Terms & Conditions", "muted", Ui.Regular).OnTap(() => Application.OpenURL("https://puttr.co/terms")),
+                Ui.Text("Terms & Conditions", "sec-link", Ui.Regular).OnTap(() => Application.OpenURL("https://puttr.co/terms")),
                 FreePuttScreen.Space(0).Width(24),
-                Ui.Text("Privacy Policy", "muted", Ui.Regular).OnTap(() => Application.OpenURL("https://puttr.co/privacy"))));
-            scroll.Add(Ui.Text("Version " + Config.Version, "muted center", Ui.Regular).Margin(8));
-            // The app's "Need help?" bar: the Caddie.
-            scroll.Add(Ui.Box("pad", Ui.Box("glass row", Ui.Text("Need help?", "sub grow", Ui.Medium), Ui.IconButton("ChatCircle", "Chat", () => app.Push(new CaddieScreen(app))))).Margin(12));
+                Ui.Text("Privacy Policy", "sec-link", Ui.Regular).OnTap(() => Application.OpenURL("https://puttr.co/privacy"))));
+            // The bundle's own version (Player Settings), so it cannot drift from what the store shows.
+            scroll.Add(Ui.Caps("Version " + Application.version, "caps set-center").Margin(12));
             scroll.Add(FreePuttScreen.Space(28));
-            Root = scroll;
+            // The page as App.PinHeader builds one (the header fixed above the scroll), with one more fixed bar under
+            // the scroll: the app's "Need help?" bar, the Caddie. The settings scroll behind it, so help is always
+            // there (Matt, 2026-11-22).
+            var top = new VisualElement();
+            top.AddToClassList("page-viewport");
+            top.AddToClassList("pinned-top");
+            header.AddToClassList("page-column");
+            top.Add(header);
+            VisualElement help = Ui.Box("page-viewport set-help", Ui.Box("page-column pad",
+                Ui.Box("glass row set-help-card", Ui.Text("Need help?", "set-title grow", Ui.Bold), Ui.IconButton("ChatCircle", "Chat", () => app.Push(new CaddieScreen(app))))));
+            help.style.paddingBottom = app.SafeInsets().y + 12f;
+            Root = Ui.Box("screen pinned-page", top, scroll, help);
             Tools();
             Developer();
             Root.schedule.Execute(Green).Every(1000);
@@ -148,7 +162,7 @@ namespace PuttrApp
             else if (ble.State == BluetoothState.Scanning || ble.State == BluetoothState.Connecting) { colour = Ui.Amber; words = "Looking for your Puttr"; }
             else { colour = Ui.Faint; words = "Not connected"; }
             _green.Add(Ui.Section("Your Puttr"));
-            _green.Add(Rows.Card(Rows.Row("Bluetooth", link ?? "Puttr green", tap, Rows.Dot(colour, words))));
+            _green.Add(Rows.Card(Rows.Row("Bluetooth", link ?? "Puttr console", tap, Rows.Dot(colour, words))));
         }
 
         void Tools()
@@ -157,12 +171,19 @@ namespace PuttrApp
             VisualElement vertexRight = Vertex.Enabled ? Rows.Dot(Vertex.Connected ? Ui.Bright : Ui.Faint, Vertex.Connected ? "Connected" : "On") : null;
             _tools.Add(Rows.Card(
                 Rows.Row("FilmReel", "Setup guide", () => SetupGuide.Play(Root)),
-                Rows.Row("Ruler", "Green level", () => _app.Push(new LevelScreen(_app))),
+                Rows.Row("Ruler", "Console level", () => _app.Push(new LevelScreen(_app))),
                 Rows.Row("WifiHigh", "Connect Puttr to Wi-Fi", () => _app.Push(new WifiScreen(_app))),
                 Rows.Row("Lightning", "Vertex sensor", () => _app.Push(new VertexScreen(_app)), vertexRight),
                 Rows.Row("BellSimple", "Notifications", () => _app.Push(new NotificationPrefsScreen(_app))),
                 Rows.Row("VideoCamera", "Camera setup", () => _app.Push(new CameraSetupScreen(_app))),
-                Rows.Row("GearSix", "App settings", Dialog.OpenAppSettings)));
+                Rows.Row("GearSix", "App settings", Dialog.OpenAppSettings),
+                Rows.Row("ChatCircle", "Send feedback", () => Feedback.Open(_app, "settings"))));
+            // Hosting (Host.cs): Event Mode and Venue Mode, for Puttr Club. Never on a Kid profile.
+            if (Host.Offered(_app.Profile))
+            {
+                _tools.Add(Ui.Section("Host"));
+                _tools.Add(Rows.Card(Host.SettingsRows(_app)));
+            }
             Programs();
         }
 
@@ -186,18 +207,20 @@ namespace PuttrApp
             _tools.Add(Rows.Card(rows.ToArray()));
         }
 
-        // The Phase 0 gate switches that used to sit at the bottom of Profile.
+        // The Phase 0 gate switches that used to sit at the bottom of Profile. For testers and Puttr staff
+        // only (and the sample data the screen checks run on): a Player has no use for any of them.
         void Developer()
         {
-            _power = Ui.Text("", "muted", Ui.Medium);
-            _enter = Ui.Text("", "muted", Ui.Medium);
+            if (!J.Flag(_app.Profile, "isTester") && !Adm.IsAdmin(_app.Profile) && !Fixtures.On) return;
+            _power = Ui.Text("", "set-sub", Ui.Medium);
+            _enter = Ui.Text("", "set-sub", Ui.Medium);
             _developer.Add(Ui.Section("Developer"));
             _developer.Add(Rows.Card(
                 Rows.Row("Flask", "Performance numbers", _app.TogglePerf),
                 Rows.Row("Lightning", "Low power when idle", null, Rows.Switch(Perf.LowPower, on => Perf.LowPower = on)),
-                Rows.Row("Medal", "Enter competition scores", null, Rows.Switch(CompetitionRound.Enter, on => CompetitionRound.Enter = on)),
+                Rows.Row("Medal", "Rehearsal mode", null, Rows.Switch(CompetitionRound.Rehearse, on => CompetitionRound.Rehearse = on)),
                 Rows.Row("Flask", "Export my putts for the parity check", () => App.Run(Export(_app)))));
-            _developer.Add(Ui.Box("pad", Ui.Text("Competition scores off: tournament and League Night rounds are played as practice and entered nowhere. On: they go on the live leaderboards, and a tournament round can be played once.", "muted", Ui.Regular).Margin(8)));
+            _developer.Add(Ui.Box("pad", Ui.Text("Rehearsal mode on: tournament and League Night rounds are played as practice and entered nowhere. Off (as for every Player): they go on the live leaderboards, and a tournament round can be played once.", "body-2", Ui.Regular).Margin(8)));
         }
 
         // Documents/putts-export.json, which the Mac reads off the phone (xcrun devicectl ... copy from).
@@ -293,7 +316,7 @@ namespace PuttrApp
                 loading.RemoveFromHierarchy();
             }).Every(50);
             player.loopPointReached += _ => Close();
-            player.errorReceived += (_, __) => { loading.Clear(); loading.Add(Ui.Text("Could not load the video.", "muted", Ui.Regular)); };
+            player.errorReceived += (_, __) => { loading.Clear(); loading.Add(Ui.Text("Could not load the video.", "body-2", Ui.Regular)); };
             player.Prepare();
             App.Layer(over).Add(dim);
             Perf.Wake(600f);
@@ -311,17 +334,18 @@ namespace PuttrApp
         public LevelScreen(App app)
         {
             _bubble = new Bubble();
-            _total = Ui.Text("0.0°", "level-big", Ui.Bold);
-            _totalWords = Ui.Text("off level", "sub", Ui.Medium);
-            _lr = Ui.Text("0.0°", "level-axis", Ui.Bold);
-            _fb = Ui.Text("0.0°", "level-axis", Ui.Bold);
+            _total = Ui.Text("0.0°", "level-big ital", Ui.Bold);
+            _totalWords = Ui.Caps("off level");
+            _lr = Ui.Text("0.0°", "level-axis ital", Ui.Bold);
+            _fb = Ui.Text("0.0°", "level-axis ital", Ui.Bold);
             _pill = Ui.Text("LEVEL", "level-pill", Ui.Bold);
             VisualElement root = Ui.Box("level-root",
-                Ui.Header("Green level", app.Pop),
-                Ui.Box("pad", Ui.Box("glass center-box", _total, _totalWords)),
+                Ui.Header("Console level", app.Pop),
+                Ui.Box("pad", Ui.Box("card center-box", _total, _totalWords)),
                 Ui.Box("grow level-stage", _bubble, _pill),
-                Ui.Box("pad", Ui.Box("row", Ui.Box("glass grow center-box", Ui.Text("L / R", "kick", Ui.Bold), _lr), FreePuttScreen.Space(0).Width(10), Ui.Box("glass grow center-box", Ui.Text("F / B", "kick", Ui.Bold), _fb))),
-                Ui.Text("Lay your phone flat on the mat, screen up.", "muted center", Ui.Regular).Margin(12),
+                // Left to right and front to back: one strip, two cells.
+                Ui.Box("pad", Ui.Box("strip", Ui.Box("strip-cell strip-cell-first", _lr, Ui.Caps("L / R", "strip-cap")), Ui.Box("strip-cell", _fb, Ui.Caps("F / B", "strip-cap")))),
+                Ui.Text("Lay your phone flat on the mat, screen up.", "body-2 center", Ui.Regular).Margin(12),
                 FreePuttScreen.Space(24));
             Root = root;
             root.schedule.Execute(Read).Every(40);
@@ -341,7 +365,7 @@ namespace PuttrApp
             if (meter == null)
             {
                 _total.text = "–";
-                _totalWords.text = "This device has no tilt sensor";
+                _totalWords.text = "THIS DEVICE HAS NO TILT SENSOR";
                 _lr.text = _fb.text = "–";
                 _pill.style.visibility = Visibility.Hidden;
                 _bubble.Set(0, 0, false, false);
@@ -355,12 +379,10 @@ namespace PuttrApp
             bool level = total < 1f;
             _total.text = level ? "0.0°" : total.ToString("0.0") + "°";
             _total.style.color = level ? Ui.Bright : Color.white;
-            _totalWords.text = level ? "Perfectly level" : "off level";
+            _totalWords.text = level ? "PERFECTLY LEVEL" : "OFF LEVEL";
             _lr.text = Signed(x);
             _fb.text = Signed(y);
             _pill.style.visibility = level ? Visibility.Visible : Visibility.Hidden;
-            float pulse = 1f + 0.075f * (1f - Mathf.Cos(Time.realtimeSinceStartup * Mathf.PI / 0.8f));
-            _pill.style.scale = new Scale(new Vector3(pulse, pulse, 1));
             _bubble.Set(x, y, level, total < 3f);
         }
 
@@ -384,24 +406,24 @@ namespace PuttrApp
                 float cx = r.width / 2, cy = r.height / 2, R = Mathf.Min(r.width, r.height) * 0.32f;
                 if (R <= 0) return;
                 Painter2D p = context.painter2D;
-                Color line = new Color(1, 1, 1, 0.12f), green = Ui.Green;
+                Color line = Ui.Line, green = Ui.Green;
                 p.lineWidth = 1.5f;
                 p.strokeColor = line;
                 p.BeginPath(); p.MoveTo(new Vector2(cx - R * 1.15f, cy)); p.LineTo(new Vector2(cx + R * 1.15f, cy)); p.Stroke();
                 p.BeginPath(); p.MoveTo(new Vector2(cx, cy - R * 1.15f)); p.LineTo(new Vector2(cx, cy + R * 1.15f)); p.Stroke();
-                p.strokeColor = new Color(1, 1, 1, 0.25f);
+                p.strokeColor = Ui.Faint;
                 p.BeginPath(); p.Arc(new Vector2(cx, cy), R, 0, 360); p.Stroke();
                 p.strokeColor = line;
                 p.BeginPath(); p.Arc(new Vector2(cx, cy), R * 0.66f, 0, 360); p.Stroke();
-                p.strokeColor = _level ? green : new Color(1, 1, 1, 0.3f);
+                p.strokeColor = _level ? green : Ui.Faint;
                 p.lineWidth = 2f;
                 p.BeginPath(); p.Arc(new Vector2(cx, cy), R * 0.48f, 0, 360); p.Stroke();
                 float bubble = R * 0.32f, move = R - bubble;
                 Vector2 o = new Vector2(_x / 45f * move, -_y / 45f * move);
                 if (o.magnitude > move) o = o.normalized * move;
-                p.fillColor = _level ? green : new Color(1, 1, 1, _close ? 0.9f : 0.7f);
+                p.fillColor = _level ? green : _close ? Color.white : Ui.Soft;
                 p.BeginPath(); p.Arc(new Vector2(cx, cy) + o, bubble, 0, 360); p.Fill();
-                p.fillColor = new Color(1, 1, 1, 0.5f);
+                p.fillColor = Ui.Faint;
                 p.BeginPath(); p.Arc(new Vector2(cx, cy), 3, 0, 360); p.Fill();
             }
         }
@@ -468,7 +490,7 @@ namespace PuttrApp
             PuttrConsole console = Green.Console;
             bool ble = console.Bluetooth.Connected;
             _status.Add(Ui.Section("Your Puttr"));
-            _status.Add(Rows.Card(Rows.Row("Bluetooth", ble ? console.Bluetooth.ConnectedName ?? "Puttr" : "Puttr green", ble ? null : (Action)Dialog.OpenAppSettings,
+            _status.Add(Rows.Card(Rows.Row("Bluetooth", ble ? console.Bluetooth.ConnectedName ?? "Puttr" : "Puttr console", ble ? null : (Action)Dialog.OpenAppSettings,
                 Rows.Dot(ble ? Ui.Bright : Ui.Faint, ble ? "Connected" + (string.IsNullOrEmpty(console.Bluetooth.Version) ? "" : " · v" + console.Bluetooth.Version) : "Not connected"))));
         }
 
@@ -476,7 +498,7 @@ namespace PuttrApp
         {
             Status();
             _body.Clear();
-            VisualElement card = Ui.Box("glass");
+            VisualElement card = Ui.Box("card");
             switch (_step)
             {
                 case Step.Form:
@@ -486,22 +508,22 @@ namespace PuttrApp
                     VisualElement send = Ui.Button("Send Wi-Fi to Puttr", Send);
                     send.SetEnabled(ble);
                     card.Add(send);
-                    if (!ble) { Label need = Ui.Text("Connect to your Puttr over Bluetooth first.", "sub", Ui.Medium).Margin(8); need.style.color = Ui.Red; card.Add(need); }
-                    card.Add(Ui.Text("Puttr joins 2.4 GHz networks only.", "muted", Ui.Regular).Margin(8));
+                    if (!ble) { Label need = Ui.Text("Connect to your Puttr over Bluetooth first.", "body-2", Ui.Medium).Margin(8); need.style.color = Ui.Red; card.Add(need); }
+                    card.Add(Ui.Text("Puttr joins 2.4 GHz networks only.", "body-2", Ui.Regular).Margin(8));
                     break;
                 case Step.Waiting:
                     int left = Mathf.Max(0, Mathf.CeilToInt(Wait - (Time.realtimeSinceStartup - _started)));
-                    card.Add(Ui.Text(left / 60 + ":" + (left % 60).ToString("00"), "score-big", Ui.Bold));
-                    card.Add(Ui.Text("Your Puttr is rebooting to join \"" + _ssid.value + "\"...", "sub", Ui.Regular).Margin(6));
-                    if (_checks > 0) card.Add(Ui.Text("Checked " + _checks + (_checks == 1 ? " time" : " times"), "muted", Ui.Regular).Margin(4));
+                    card.Add(Ui.Num(left / 60 + ":" + (left % 60).ToString("00"), "num-44 set-center"));
+                    card.Add(Ui.Text("Your Puttr is rebooting to join \"" + _ssid.value + "\"...", "body-2", Ui.Regular).Margin(8));
+                    if (_checks > 0) card.Add(Ui.Caps("Checked " + _checks + (_checks == 1 ? " time" : " times")).Margin(4));
                     break;
                 case Step.Joined:
-                    card.Add(Ui.Text("Your Puttr is on your local Wi-Fi", "h2", Ui.Bold));
+                    card.Add(Ui.Title("Your Puttr is on your local Wi-Fi", "title-20"));
                     card.Add(Ui.Button("Change network", () => { _step = Step.Form; Draw(); }, "btn btn-ghost"));
                     break;
                 case Step.Failed:
-                    card.Add(Ui.Text("Puttr didn't reconnect", "h2", Ui.Bold));
-                    card.Add(Ui.Text("Double-check the password and make sure your network is 2.4 GHz.", "sub", Ui.Regular).Margin(6));
+                    card.Add(Ui.Title("Puttr didn't reconnect", "title-20"));
+                    card.Add(Ui.Text("Double-check the password and make sure your network is 2.4 GHz.", "body-2", Ui.Regular).Margin(8));
                     card.Add(Ui.Button("Try again", () => { _step = Step.Form; Draw(); }));
                     break;
             }
@@ -512,19 +534,23 @@ namespace PuttrApp
         // A still from the Puttr's own camera, which support can be sent (BleStatus.js "Camera check").
         void Camera()
         {
-            VisualElement card = Ui.Box("glass");
+            VisualElement card = Ui.Box("card");
             card.style.marginTop = 12;
-            card.Add(Ui.Text("CAMERA CHECK", "kick", Ui.Bold));
+            card.Add(Ui.Text("CAMERA CHECK", "caps caps-green", Ui.Bold));
             if (_snapshot != null)
             {
+                // The Puttr's own picture, in a bordered window, with its buttons under it.
                 var image = new Image { image = _snapshot, scaleMode = ScaleMode.ScaleToFit };
-                image.style.width = 240; image.style.height = 180; image.style.marginTop = 8;
-                card.Add(image);
+                image.style.width = 240; image.style.height = 180;
+                VisualElement window = Ui.Box("window", image);
+                window.style.alignSelf = Align.FlexStart;
+                window.style.marginTop = 8;
+                card.Add(window);
             }
-            card.Add(Ui.Box("row",
-                Ui.Button("Update snapshot", () => App.Run(Snapshot()), "btn btn-ghost grow"),
-                FreePuttScreen.Space(0).Width(8),
-                Ui.Button("Send to support", () => App.Run(Support()), "btn btn-ghost grow")).Margin(8));
+            card.Add(Ui.Box("row connect-pair",
+                Ui.Button("Update snapshot", () => App.Run(Snapshot()), "btn btn-ghost"),
+                Ui.Box("connect-gap"),
+                Ui.Button("Send to support", () => App.Run(Support()), "btn btn-ghost")).Margin(12));
             _body.Add(card);
             if (_snapshot == null) App.Run(Snapshot());
         }
@@ -640,7 +666,7 @@ namespace PuttrApp
             ScrollView scroll = Ui.Scroll();
             scroll.Add(Ui.Header("Notifications", app.Pop));
             scroll.Add(_list);
-            scroll.Add(Ui.Box("pad", Ui.Text("Messages about your account, lessons and orders always send.", "muted", Ui.Regular).Margin(10)));
+            scroll.Add(Ui.Box("pad", Ui.Text("Messages about your account, lessons and orders always send.", "body-2", Ui.Regular).Margin(12)));
             Root = scroll;
             _list.Add(Ui.Box("pad", Spinner.Small()));
         }
@@ -650,7 +676,7 @@ namespace PuttrApp
             App.Run(Api.Get("/notifications/prefs/", data => { _prefs = data; Draw(); }, _ =>
             {
                 _list.Clear();
-                _list.Add(Ui.Box("pad", Ui.Text("Could not load your notification settings. Check your connection.", "sub", Ui.Regular)));
+                _list.Add(Ui.Box("pad", Ui.Text("Could not load your notification settings. Check your connection.", "body-2", Ui.Regular)));
             }));
         }
 
@@ -663,7 +689,7 @@ namespace PuttrApp
                 string key = kind.key;
                 bool on = J.Get(_prefs, key) == null || J.Flag(_prefs, key);
                 VisualElement row = Ui.Box("set-row",
-                    Ui.Box("grow set-words", Ui.Text(kind.title, "feed-name", Ui.Bold), Ui.Text(kind.words, "muted", Ui.Regular)),
+                    Ui.Box("grow set-words", Ui.Text(kind.title, "set-title", Ui.Bold), Ui.Text(kind.words, "set-sub", Ui.Regular)),
                     Rows.Switch(on, value => App.Run(Api.Post("/notifications/prefs/", new Dictionary<string, object> { { key, value } },
                         data => _prefs = data,
                         _ => { _app.Toast("Could not save that. Try again."); Draw(); }))));

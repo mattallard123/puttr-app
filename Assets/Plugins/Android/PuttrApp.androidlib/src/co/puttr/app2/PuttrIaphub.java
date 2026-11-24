@@ -60,7 +60,7 @@ public final class PuttrIaphub {
         target = unityTarget;
         if (started) return;
         started = true;
-        Iaphub.INSTANCE.start(activity.getApplicationContext(), appId, apiKey, null, false, true, "production", "", "unity", "1.0");
+        Iaphub.INSTANCE.start(activity.getApplicationContext(), appId, apiKey, null, false, true, "production", "", "", ""); // no sdk name: IAPHUB rejects "unity" (library_name_invalid)
         Iaphub.INSTANCE.setOnUserUpdateListener(() -> { send("update"); return Unit.INSTANCE; });
     }
 

@@ -23,7 +23,7 @@ namespace PuttrApp
     public static class TracksArt
     {
         public const int CardW = 1024, CardH = 512;
-        const string Rev = "r6";   // bump to repaint every cached still after a change to the painter
+        const string Rev = "r7";   // bump to repaint every cached still after a change to the painter (r7: framed tight on the holes)
 
         /// <summary>A painted course: the picture and where each hole's number goes (0..1 across, 0..1 down).</summary>
         public sealed class Still
@@ -155,6 +155,9 @@ namespace PuttrApp
             var sb = new StringBuilder();
             foreach (var hole in s.Holes) sb.Append(hole.n).Append(',').Append(hole.at.x.ToString("0.####", CultureInfo.InvariantCulture)).Append(',').Append(hole.at.y.ToString("0.####", CultureInfo.InvariantCulture)).Append('\n');
             string marks = sb.ToString();
+#if UNITY_WEBGL && !UNITY_EDITOR
+            return; // WebGL has no threads: a still is painted again rather than cached
+#endif
             // The JPEG is made off the main thread, so caching a still never costs a frame.
             System.Threading.Tasks.Task.Run(() =>
             {
@@ -244,27 +247,46 @@ namespace PuttrApp
             int sliceFrame = Time.frameCount;
             bool Slice() { float now = Time.realtimeSinceStartup; if (Time.frameCount != sliceFrame) { sliceFrame = Time.frameCount; sliceAt = now; } return now - sliceAt >= 0.006f; }
 
-            // Frame on the holes (their lines, tees and pins), or the turf when there are none.
+            // Frame on the course itself: the holes (their lines, tees and pins) and the greens and fairways that belong to
+            // them, or the turf when there are no holes. A fairway or green far from every hole (a neighbouring course in
+            // the same map) is left out, so it does not widen the frame.
             var pts = new List<Vector2>();
             foreach (TracksCourse.Hole h in c.Holes) { pts.AddRange(h.Line); pts.Add(h.Tee); pts.Add(h.Pin); }
             bool holes = pts.Count > 0;
-            if (!holes) foreach (string k in new[] { "fairway", "green" }) foreach (Vector2[] poly in c.F(k)) pts.AddRange(poly);
+            if (holes)
+            {
+                foreach (string k in new[] { "fairway", "green" })
+                    foreach (Vector2[] poly in c.F(k))
+                    {
+                        if (poly.Length == 0) continue;
+                        Vector2 mid = Vector2.zero;
+                        foreach (Vector2 p in poly) mid += p;
+                        mid /= poly.Length;
+                        bool near = false;
+                        foreach (TracksCourse.Hole h in c.Holes) if (h.Line != null && h.Line.Length > 1 && TracksCourse.Closest(h, mid).d < 60f) { near = true; break; }
+                        if (near) pts.AddRange(poly);
+                    }
+            }
+            else foreach (string k in new[] { "fairway", "green" }) foreach (Vector2[] poly in c.F(k)) pts.AddRange(poly);
             if (pts.Count < 2) foreach (Vector2[] poly in c.F("boundary")) pts.AddRange(poly);
             if (pts.Count < 2) { done(null); yield break; }
-            float margin = holes ? 45f : 20f;
+            // A small margin in pixels (room for the hole numbers by the outermost tees), not a band of yards of grass.
+            float pad = Mathf.Round(Mathf.Min(W, H * (bottom - top)) * 0.045f);
+            float availW = Mathf.Max(8f, W - pad * 2), availH = Mathf.Max(8f, H * (bottom - top) - pad * 2);
             // The turn: the course lying along the card (its thinnest way up), unless another turn fills the frame far
             // better; then hole 1 on the left, so every card reads the same way.
-            float bestS = 0, bestA = 0, flatS = 0, flatA = 0, flatH = float.MaxValue; Vector2 bestC = Vector2.zero, flatC = Vector2.zero;
+            float bestS = 0, bestA = 0, flatS = 0, flatA = 0, flatH = float.MaxValue; Vector2 bestC = Vector2.zero, flatC = Vector2.zero, bestE = Vector2.one, flatE = Vector2.one;
             for (int deg = 0; deg < 180; deg += 5)
             {
                 float a = deg * Mathf.Deg2Rad, cs = Mathf.Cos(a), sn = Mathf.Sin(a);
                 float x0 = float.MaxValue, x1 = float.MinValue, y0 = float.MaxValue, y1 = float.MinValue;
                 foreach (Vector2 p in pts) { float rx = p.x * cs - p.y * sn, ry = p.x * sn + p.y * cs; x0 = Mathf.Min(x0, rx); x1 = Mathf.Max(x1, rx); y0 = Mathf.Min(y0, ry); y1 = Mathf.Max(y1, ry); }
-                float s = Mathf.Min(W / (x1 - x0 + margin * 2), H * (bottom - top) / (y1 - y0 + margin * 2));
-                if (s > bestS) { bestS = s; bestA = a; bestC = new Vector2((x0 + x1) / 2, (y0 + y1) / 2); }
-                if ((y1 - y0) / Mathf.Max(1f, x1 - x0) < flatH) { flatH = (y1 - y0) / Mathf.Max(1f, x1 - x0); flatS = s; flatA = a; flatC = new Vector2((x0 + x1) / 2, (y0 + y1) / 2); }
+                Vector2 ext = new Vector2(Mathf.Max(1f, x1 - x0), Mathf.Max(1f, y1 - y0));
+                float s = Mathf.Min(availW / ext.x, availH / ext.y);
+                if (s > bestS) { bestS = s; bestA = a; bestC = new Vector2((x0 + x1) / 2, (y0 + y1) / 2); bestE = ext; }
+                if (ext.y / ext.x < flatH) { flatH = ext.y / ext.x; flatS = s; flatA = a; flatC = new Vector2((x0 + x1) / 2, (y0 + y1) / 2); flatE = ext; }
             }
-            if (bestS < flatS * 1.25f) { bestS = flatS; bestA = flatA; bestC = flatC; }
+            if (bestS < flatS * 1.25f) { bestS = flatS; bestA = flatA; bestC = flatC; bestE = flatE; }
             if (holes)
             {
                 // Half a turn more when hole 1 would start on the right.
@@ -272,7 +294,12 @@ namespace PuttrApp
                 float t1x = t1.x * Mathf.Cos(bestA) - t1.y * Mathf.Sin(bestA);
                 if (t1x > bestC.x) { bestA += Mathf.PI; bestC = -bestC; }
             }
-            float scale = bestS, cosA = Mathf.Cos(bestA), sinA = Mathf.Sin(bestA);
+            // Zoomed in to fill the card: a course whose shape is not the card's would sit in a wide band of grass when it
+            // only fits, so it is enlarged toward filling the card the other way, by up to MaxZoom (the far ends of its
+            // longer side may go just off the card; the hole numbers stay on it).
+            const float MaxZoom = 1.3f;
+            float cover = Mathf.Max(availW / bestE.x, availH / bestE.y);
+            float scale = Mathf.Min(cover, bestS * MaxZoom), cosA = Mathf.Cos(bestA), sinA = Mathf.Sin(bestA);
             Vector2 cen = bestC;
             // The course sits in its band (top..bottom, from the top of the picture): the middle of the band is this far up from the middle.
             float lift = (0.5f - (top + bottom) / 2f) * H;

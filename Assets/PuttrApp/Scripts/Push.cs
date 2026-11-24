@@ -2,6 +2,7 @@
 //   once signed in: ask permission, get the FCM token, POST /profile/pushToken/ {token, deviceId, saveType: 'ADD'}
 //   on sign-out:    POST /profile/pushToken/ {deviceId, token, saveType: 'REMOVE'}
 //   a push while open: a toast, and the bell refreshed;  a push tapped: pushPressed's routing.
+//   the app icon's badge: the inbox's unread count (Inbox.Load), cleared when the inbox is opened or on sign-out.
 // deviceId is what DeviceInfo.getUniqueIdSync gives (identifierForVendor on iOS, ANDROID_ID on Android),
 // so the API's dedupe by device keeps working across the update.
 // Native: Plugins/iOS/PuttrPush.m, Plugins/Android PuttrPush.java + PuttrMessagingService.java.
@@ -30,7 +31,9 @@ namespace PuttrApp
             if (Puttr.AndroidPermissions.AndroidVersion() >= 33) Puttr.AndroidPermissions.Ask(new[] { "android.permission.POST_NOTIFICATIONS" }, () => Java.CallStatic("token", target));
             else Java.CallStatic("token", target);
         }
-        static void PuttrPush_Badge(int count) { }
+        // Android has no number to set: the launcher's dot follows the notifications in the shade, so
+        // "nothing unread" clears those.
+        static void PuttrPush_Badge(int count) { if (count == 0) Java.CallStatic("clear", Activity()); }
         static string DeviceId() => Java.CallStatic<string>("deviceId", Activity());
         static string PendingTap() => Java.CallStatic<string>("pendingTap", Activity());
         public static bool Supported => true;
@@ -45,6 +48,7 @@ namespace PuttrApp
         static Push _one;
         static string _token;
         static object _pendingTap;
+        static int _badge = -1;
         App _app;
 
         static string Device() { string id = DeviceId() ?? ""; return id.Length > 64 ? id.Substring(0, 64) : id; }
@@ -66,13 +70,22 @@ namespace PuttrApp
             if (!Supported || _one == null) return;
             App.Run(Api.Post("/profile/pushToken/", new Dictionary<string, object> { { "deviceId", Device() }, { "token", _token ?? "" }, { "saveType", "REMOVE" } }, null, null));
             _token = null;
+            Badge(0);
+        }
+
+        /// <summary>The app icon's badge: how many inbox messages are unread (none clears it). Told to the phone only when it changes.</summary>
+        public static void Badge(int count)
+        {
+            if (!Supported || Fixtures.On || count == _badge) return;
+            _badge = count;
+            PuttrPush_Badge(count);
         }
 
         void OnPushToken(string token)
         {
             if (string.IsNullOrEmpty(token) || token == _token) return;
             _token = token;
-            App.Run(Api.Post("/profile/pushToken/", new Dictionary<string, object> { { "token", token }, { "deviceId", Device() }, { "saveType", "ADD" } },
+            App.Run(Api.Post("/profile/pushToken/", new Dictionary<string, object> { { "token", token }, { "deviceId", Device() }, { "saveType", "ADD" }, { "iconBadge", true } },
                 _ => Perf.Note("push: token saved"), why => Perf.Note("push: token not saved (" + why + ")")));
         }
 
@@ -92,7 +105,15 @@ namespace PuttrApp
             Route(_app, data);
         }
 
-        void OnApplicationFocus(bool focus) { if (focus) { CheckTap(); Inbox.Load(); } }
+        void OnApplicationFocus(bool focus)
+        {
+            if (!focus) return;
+#if UNITY_IOS
+            _badge = -1;   // a push may have set the icon while the app was away: tell it the real count again
+#endif
+            CheckTap();
+            Inbox.Load();
+        }
 
         void CheckTap()
         {

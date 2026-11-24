@@ -38,6 +38,8 @@ namespace PuttrArcade
         public override int PuttFeet => Feet;
         public override int PuttTee => TeeNow;
         public override bool WatchesMat => true;
+        // puttr-app-2: silent under the putt (no room tone): the Lab and the other games played on this view included.
+        public override GameAudio.Scene Sound => GameAudio.Scene.Quiet;
         public override bool OwnReadout => true;
         public override bool QuietBall => true;
         /// <summary>Whether a putt counts as made for the call, when the app has its own rule (a back door scores nothing in a round). Null: holed is made.</summary>
@@ -46,17 +48,29 @@ namespace PuttrArcade
         public static bool Silent;
 
         // The cup's own sound comes first (the arcade plays it as the ball drops); then a bright coin
-        // for a putt that counts and the buzzer for one that does not.
+        // for a putt that counts. puttr-app-2: the buzzer is Puttr's back-door sound, so it is kept for a holed
+        // putt the round does not count (in the back door); an ordinary miss gets Free putt's own soft miss
+        // (the arcade's soft miss until it is recorded).
         public override void Called(PuttResult putt)
         {
             if (Arcade == null || Silent) return;
             bool good = putt.Made && (Counts == null || Counts(putt));
-            if (good) Arcade.Audio.Coin(); else Arcade.Audio.Buzzer();
+            if (good) Arcade.Audio.Coin();
+            else if (putt.Made) Arcade.Audio.Buzzer();
+            else if (!Arcade.Audio.TryLibrary("freeputt_miss", 0.6f)) Arcade.Audio.Miss();
         }
         public override bool HasPortrait => true;
         public override string Prompt => "";       // the app's panel says where to putt from
 
-        public override Rect Viewport => Portrait ? new Rect(0f, 1f - UprightShare, 1f, UprightShare) : new Rect(0f, 0f, WideShare, 1f);
+        /// <summary>Set while a rule game's panel is up (RulePanel): wide, its cards lie over the picture, so the mat is
+        /// drawn across the whole screen and framed in the part left of them. The app's other panels are solid columns.</summary>
+        public static bool Layered;
+        public override Rect Viewport => Portrait ? new Rect(0f, 1f - UprightShare, 1f, UprightShare) : Layered ? new Rect(0f, 0f, 1f, 1f) : new Rect(0f, 0f, WideShare, 1f);
+        public override Rect Picture => Portrait || !Layered ? Viewport : Middle;
+        /// <summary>The middle of a wide screen: where a game drawn across all of it frames itself.</summary>
+        public static Rect Middle => new Rect((1f - MiddleShare) * 0.5f, 0f, MiddleShare, 1f);
+        /// <summary>How much of a wide screen's width that middle is: what the cards docked at either side leave clear.</summary>
+        public const float MiddleShare = 0.5f;
 
         // One framing, held through every putt (no following, no zoom): the closest the camera used to come
         // as a ball reached the hole. The arcade sets the lens so the console fills most of the picture's
@@ -65,6 +79,11 @@ namespace PuttrArcade
         public override Vector3 CameraPosition => Portrait ? new Vector3(0f, 18.5f, -33f) : new Vector3(0f, 14.5f, -39f);
         public override Vector3 CameraLook => Portrait ? new Vector3(0f, -0.3f, -0.5f) : new Vector3(0f, 0.2f, 0.5f);
         public override float CameraFov => Portrait ? 30f : 31f;
+        // The card stands back from the whole Puttr box (the play camera sits close over the mat), so it is mostly
+        // the dark box with the lit mat inside, not a bright green field.
+        public override Vector3 CardFrom => new Vector3(0f, 34f, -92f);
+        public override Vector3 CardLook => new Vector3(0f, 3f, 2f);
+        public override float CardFov => 30f;
 
         // The arcade's room is dark, lit by the console's hood alone, so a game behind it stands out.
         // Here the mat is the game: a soft light from over the Player's shoulder and a lift to the

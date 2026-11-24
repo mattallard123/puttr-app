@@ -25,6 +25,7 @@ namespace PuttrArcade
         int[] _feet = { 4, 4, 5, 6, 6, 7, 8, 8, 9, 10, 10, 11 }, _tees = { 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2 };
 
         static bool Portrait => Screen.height > Screen.width;
+        public override float WideFrame => 0.74f;   // a lane down the middle: nothing of it is under the side cards
         public override Vector3 CameraFrom => At(Portrait ? new Vector3(8f, 196f, -212f) : new Vector3(-10f, 200f, -230f));
         public override Vector3 CameraLook => At(Portrait ? new Vector3(-8f, 6f, -60f) : new Vector3(-36f, 0f, -60f));
         public override float CameraFov => Portrait ? 46f : 40f;
@@ -207,7 +208,7 @@ namespace PuttrArcade
 
             // The grade stands up.
             string g = v.Title;
-            Sound("door_slam", 0.25f, 1.6f);
+            Sound("assessment_grade", "door_slam", 0.25f, 1.6f);   // puttr-app-2: the game's own sound, the shared one until recorded
             for (float t = 0f; t < 1f; t += Time.deltaTime / 0.55f) { Grade(station, g, t); yield return null; }
             Grade(station, g, 1f);
             if (g.StartsWith("A")) Arcade.Sparks(At(_plaques[station].localPosition + new Vector3(0, 20f, 0)), 18);

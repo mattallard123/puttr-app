@@ -4,9 +4,10 @@
 // slowing evenly under the ice's friction until it stops, curling a little as it slows. Where it
 // stops is the pace and line of the putt, scaled up onto the ice:
 //
-//   pace   how far. A putt that dies in the hole stops on the button. Every inch it would have
-//          rolled past (the putt card's "in past", v*v/128) puts the stone 6 in past the button;
-//          a putt left short stops short of the button by 6 in for every inch it was short.
+//   pace   how far. A putt that dies in the hole stops on the middle of the button: a make with
+//          up to DiesIn inches of rollout (the putt card's "in past", v*v/128) is dead weight.
+//          Every inch firmer than that puts the stone 6 in past the button; a putt left short
+//          stops short of the button by 6 in for every inch it was short.
 //   line   across: 6 in of ice for every inch off the middle of the hole.
 //   tee    which way it curls: off the left tee it bends right, off the right tee left.
 //
@@ -27,6 +28,14 @@ namespace PuttrArcade
     public sealed class DeadWeightMode : StageMode
     {
         public override string Name => "Dead Weight";
+        public override bool Branded => true;
+        // puttr-app-2: the rink's cheer ends the game. Neither of the rink's own loops is played (Matt, 2026-11-23, twice:
+        // "that truck background sound"): the bed (deadweight_rink_loop) droned behind the game, and the stone's slide
+        // (deadweight_slide_loop) was a low rumble for the whole of every throw. The rink is quiet between stones, and a
+        // sliding stone has the shared soft roll. The rink's horn (deadweight_button) is the end of the game only, never
+        // after a putt (Matt, 2026-11-23): a stone that scores has the shared cheer.
+        public override GameAudio.Scene Sound => GameAudio.Scene.Quiet;
+        public override string EndSlot => "deadweight_button";
         public override string VoicePrefix => "deadweight";
         public override int Putter => Active; // whose difficulty applies to this putt
         public override string Blurb => "Curling, with a putter.\nDie it on the button.\nKnock the others out.";
@@ -40,13 +49,14 @@ namespace PuttrArcade
             "Rings score 10, 6, 3 and 1 from the button out. Three stones each a round, and they stay where they stop.",
             "Hit a stone with pace and it is knocked on, or out of play. Gentle, and you only nudge it. Three rounds, most points wins.",
         };
-        public override int Score(int player) => _banked[player];
+        public override int Score(int player) => _banked != null && player < _banked.Length ? _banked[player] : 0;
+        public override string SoloOpponent => "Puttr";
         public override string Rule => "Curling: slide your stone to the button, and knock theirs away. Three stones a round.";
 
         // Pace: the window that stops on the button, on a bar from soft to firm (the ideal-putt card).
         public override bool AimPace(out float low, out float high, out float min, out float max)
         {
-            low = 4f; high = Mathf.Sqrt(2f * PuttrAnalysis.RampDecelInPerSec2 * (ButtonR + StoneR) / Scale); min = 0f; max = 60f;
+            low = 4f; high = Mathf.Sqrt(2f * PuttrAnalysis.RampDecelInPerSec2 * (DiesIn + (ButtonR + StoneR) / Scale)); min = 0f; max = 60f;
             return true;
         }
 
@@ -57,6 +67,9 @@ namespace PuttrArcade
         const float HogLine = -252f, Hack = -1150f, SheetFarZ = 150f;
         const float StoneR = 5.7f, StoneH = 4.6f;
         const float Scale = 6f;                 // inches of ice for each inch of mat
+        // A make that dies into the hole still has a few inches of rollout left as it drops: up to this much is dead
+        // weight, the middle of the button (Matt, 2026-11-23: it was stopping past the button).
+        const float DiesIn = 6f;
         const float Friction = 140f;            // in/s^2: the ice's even slowing
         const float Bounce = 0.86f;             // granite on granite
         const float CurlInches = 16f;           // how far a full slide bends
@@ -65,20 +78,30 @@ namespace PuttrArcade
         static readonly int[] RingPoints = { 10, 6, 3, 1 };
         static readonly Color[] Handle = { new Color(0.86f, 0.16f, 0.16f), new Color(0.98f, 0.78f, 0.1f), new Color(0.22f, 0.46f, 0.96f), new Color(0.32f, 0.8f, 0.3f) };
 
-        // Camera: over the house between throws; behind the stone, following it, while it slides.
+        // Camera: behind the stone, following it, while it slides. Between throws it looks at the house from the Player's
+        // end; once a stone lies in play it sits right above the house, looking down, so every stone (the other
+        // side's too) can be seen where it lies (Matt, 2026-11-23).
         Vector3? _follow;
-        public override Vector3 CameraPosition => _follow is Vector3 f ? At(f.x * 0.6f, 74f, Mathf.Min(f.z - 210f, -150f)) : At(0f, 205f, -255f);
-        public override Vector3 CameraLook => _follow is Vector3 f ? At(f.x * 0.6f, 0f, Mathf.Min(f.z + 260f, 20f)) : At(0f, 0f, -14f);
+        static bool Upright => Screen.height > Screen.width;
+        bool Lying => _stones.Count > 0 && !_clear;
+        public override Vector3 CameraPosition => _follow is Vector3 f ? At(f.x * 0.6f, 74f, Mathf.Min(f.z - 210f, -150f)) : Lying ? At(0f, Upright ? 235f : 330f, Upright ? -32f : -44f) : At(0f, 205f, -255f);
+        public override Vector3 CameraLook => _follow is Vector3 f ? At(f.x * 0.6f, 0f, Mathf.Min(f.z + 260f, 20f)) : Lying ? At(0f, 0f, -2f) : At(0f, 0f, -14f);
         public override float CameraFov => 36f;
         public override float ShadowDistance => 1400f;
 
         class Stone { public Transform T; public int Player; public Vector2 At, V; public bool Out; public float Spin; }
         readonly List<Stone> _stones = new List<Stone>();
+        // _players is how many sides throw: the Players, and Puttr when it was added on the game page (_house: Puttr is
+        // the last side, and throws its own stones).
         int _players, _round, _thrown;
+        bool _house;
+        string Who(int i) => _house && i == _players - 1 ? "Puttr" : Arcade.PlayerName(i);
         int[] _banked;
         int[,] _roundScore;
         bool _clear;
         Material _granite, _shine;
+        Color _roomBefore;
+        bool _lit;
         readonly Material[] _handlePaint = new Material[4];
 
         int Active => _thrown % _players;
@@ -89,12 +112,12 @@ namespace PuttrArcade
         {
             // The ice: pale blue-white, pebbled, a little glossy.
             float len = SheetFarZ - (Hack - 60f), mid = (SheetFarZ + Hack - 60f) * 0.5f;
-            Material ice = Make.Lit(new Color(0.86f, 0.92f, 0.96f), 0.82f, 0f, Pebble());
+            Material ice = Make.Lit(new Color(0.84f, 0.9f, 0.95f), 0.42f, 0f, Pebble());   // matt enough that the lamps do not glare back off it
             ice.SetTextureScale("_BaseMap", new Vector2(8f, 8f * len / (HalfWidth * 2f)));
             Shape(PrimitiveType.Cube, "Ice", Root, new Vector3(0f, -1f, mid), new Vector3(HalfWidth * 2f, 2f, len), ice);
 
             // Boards along both sides and across the back; a dark arena beyond.
-            Material board = Make.Lit(new Color(0.05f, 0.06f, 0.07f), 0.5f);
+            Material board = Make.Lit(new Color(0.5f, 0.53f, 0.56f), 0.4f);
             Material cap = Make.Emissive(Color.black, Make.Green * 2.4f);
             for (int side = -1; side <= 1; side += 2)
             {
@@ -102,7 +125,7 @@ namespace PuttrArcade
                 Shape(PrimitiveType.Cube, "Board light", Root, new Vector3(side * (HalfWidth + 0.4f), 8.1f, mid), new Vector3(0.6f, 0.3f, len), cap);
             }
             Shape(PrimitiveType.Cube, "Back board", Root, new Vector3(0f, 4f, SheetFarZ + 3f), new Vector3(HalfWidth * 2f + 12f, 8f, 6f), board);
-            Shape(PrimitiveType.Cube, "Arena floor", Root, new Vector3(0f, -3f, mid), new Vector3(4000f, 2f, 4000f), Make.Lit(new Color(0.02f, 0.022f, 0.026f), 0.3f));
+            Shape(PrimitiveType.Cube, "Arena floor", Root, new Vector3(0f, -3f, mid), new Vector3(4000f, 2f, 4000f), Make.Lit(new Color(0.035f, 0.075f, 0.15f), 0.25f));   // the blue carpet round a televised sheet
 
             // The house: painted under the ice, 12-ft blue, 8-ft white, 4-ft red, white button.
             Color[] paint = { new Color(0.12f, 0.36f, 0.86f), new Color(0.95f, 0.97f, 1f), new Color(0.86f, 0.14f, 0.14f), new Color(0.95f, 0.97f, 1f) };
@@ -120,27 +143,27 @@ namespace PuttrArcade
             Line("Hog line", new Vector3(0f, 0.07f, HogLine), new Vector2(HalfWidth * 2f, 4f), red);
             Line("Far hog line", new Vector3(0f, 0.07f, Hack + 252f), new Vector2(HalfWidth * 2f, 4f), blue);
 
-            // The Puttr lockup set into the ice between the hog lines, as the sponsor's would be.
-            var logo = Resources.Load<Texture2D>("PuttrArcade/LogoHeader");
+            // The brand's lockup (Puttr's with no kit) set into the ice between the hog lines, as the sponsor's would be.
+            var logo = Brand.Logo;
             if (logo != null)
             {
                 Material mark = Make.Glow(new Color(0.95f, 0.95f, 0.95f, 0.9f), false, logo);
-                GameObject c = Card("Puttr in the ice", Root, new Vector3(0f, 0.08f, (HogLine + Hack + 252f) * 0.5f), new Vector2(120f, 120f * logo.height / logo.width), mark);
+                GameObject c = Card("Puttr in the ice", Root, new Vector3(0f, 0.08f, (HogLine + Hack + 252f) * 0.5f), Brand.Size(logo, 120f), mark);
                 c.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             }
 
             // The hack the stones are thrown from.
             Shape(PrimitiveType.Cube, "Hack", Root, new Vector3(0f, 0.6f, Hack - 14f), new Vector3(14f, 1.2f, 5f), black);
 
-            // Lights: a bank over the house and a long wash down the sheet.
-            Light lamp = World.NewLight(Root, "House light", LightType.Spot, new Color(1f, 0.98f, 0.95f), 2400f);
-            lamp.transform.localPosition = new Vector3(0f, 260f, -60f);
-            lamp.transform.localRotation = Quaternion.Euler(80f, 0f, 0f);
-            lamp.spotAngle = 70f; lamp.innerSpotAngle = 40f; lamp.range = 600f;
-            Light wash = World.NewLight(Root, "Sheet light", LightType.Spot, new Color(0.9f, 0.95f, 1f), 1800f);
-            wash.transform.localPosition = new Vector3(0f, 320f, -700f);
-            wash.transform.localRotation = Quaternion.Euler(70f, 0f, 0f);
-            wash.spotAngle = 80f; wash.innerSpotAngle = 50f; wash.range = 1200f;
+            // Lights, as curling is lit for television (Matt, 2026-11-23: "very bright and well lit"): the whole sheet
+            // evenly bright from straight overhead, no pools of light and no dark corners. A key from just off vertical
+            // gives each stone a small soft shadow; a fill from the other side and a lifted room keep the far side of
+            // every stone, and the colour of its handle, readable.
+            Light key = World.NewLight(Root, "Arena key", LightType.Directional, new Color(1f, 0.99f, 0.97f), 1.15f);
+            key.transform.localRotation = Quaternion.Euler(78f, 20f, 0f);
+            Light fill = World.NewLight(Root, "Arena fill", LightType.Directional, new Color(0.92f, 0.96f, 1f), 0.35f);
+            fill.transform.localRotation = Quaternion.Euler(60f, 200f, 0f);
+            fill.shadows = LightShadows.None;
 
             _granite = Make.Lit(new Color(0.34f, 0.35f, 0.37f), 0.55f, 0f, Granite());
             _shine = Make.Lit(new Color(0.75f, 0.77f, 0.8f), 0.85f, 0.6f);
@@ -211,6 +234,10 @@ namespace PuttrArcade
         public override void Begin(int players)
         {
             _players = Mathf.Clamp(players, 1, 4);
+            // Against Puttr (added as the second Player on the game page): one Player comes in, and Puttr takes the other side.
+            _house = _players == 1 && Arcade.Embedded && Arcade.EmbeddedPuttr;
+            if (_house) _players = 2;
+            if (!_lit) { _lit = true; _roomBefore = RenderSettings.ambientLight; RenderSettings.ambientLight = new Color(0.2f, 0.215f, 0.235f); }
             _round = 0;
             _thrown = 0;
             _banked = new int[_players];
@@ -218,7 +245,7 @@ namespace PuttrArcade
             _follow = null;
             ClearStones();
             var names = new List<string>();
-            for (int i = 0; i < _players; i++) names.Add(Arcade.PlayerName(i));
+            for (int i = 0; i < _players; i++) names.Add(Who(i));
             Arcade.Hud.BuildBoard(names, Rounds, "TOTAL", true, "ROUNDS", 34f);
             ShowScores();
         }
@@ -241,7 +268,7 @@ namespace PuttrArcade
         {
             get
             {
-                string who = _players > 1 ? Arcade.PlayerName(Active) + "   ·   " : "";
+                string who = _players > 1 ? Who(Active) + "   ·   " : "";
                 return who + "Round " + (_round + 1) + "   ·   Stone " + (_thrown / _players + 1) + " of " + StonesEach + "   ·   Die it on the button";
             }
         }
@@ -257,6 +284,8 @@ namespace PuttrArcade
             {
                 float v = launch.HandoffSpeedInPerSec > 0f ? launch.HandoffSpeedInPerSec : launch.SpeedInPerSec;
                 pastIn = PaceWords.Past(v);
+                // Holed: the stone is on the centre line's side of the button too (half the cup's width of ice, not all of it).
+                if (putt.Made) { pastIn = Mathf.Max(0f, pastIn - DiesIn); acrossIn *= 0.5f; }
             }
             else
             {
@@ -266,16 +295,41 @@ namespace PuttrArcade
                 pastIn = -nearest;
             }
             var target = new Vector2(Mathf.Clamp(acrossIn * Scale, -HalfWidth + StoneR, HalfWidth - StoneR), Mathf.Clamp(pastIn * Scale, HogLine - 120f, SheetFarZ - StoneR - 1f)); // a firm one stops on the back boards
+            yield return Throw(player, target, Mathf.Clamp(DealtTee, 1, 3), launch.HeadingDeg, putt);
 
+            // Puttr needs no putt: it throws as soon as it is its turn.
+            while (_house && !Over && Active == _players - 1 && _thrown > 0)
+            {
+                yield return new WaitForSecondsRealtime(0.9f);
+                Arcade.Hud.SetPrompt("Puttr is throwing");
+                yield return Throw(Active, PuttrTarget(), 1 + _dice.Next(3), _dice.Next(2) == 0 ? -1f : 1f, null);
+            }
+        }
+
+        readonly System.Random _dice = new System.Random();
+
+        // Where Puttr's stone stops: aimed at the button, off by a few inches of putt either way (less on Hard, more on
+        // Easy), and now and then left short or sent through.
+        Vector2 PuttrTarget()
+        {
+            float spread = Arcade.Level == Arcade.Easy ? 1.5f : Arcade.Level == Arcade.Hard ? 0.7f : 1f;
+            float across = ((float)_dice.NextDouble() - (float)_dice.NextDouble()) * 3.2f * spread;
+            float past = ((float)_dice.NextDouble() + (float)_dice.NextDouble() - 1f) * 5f * spread + 0.5f;
+            if (_dice.Next(10) == 0) past += _dice.Next(2) == 0 ? -8f : 9f;
+            return new Vector2(Mathf.Clamp(across * Scale, -HalfWidth + StoneR, HalfWidth - StoneR), Mathf.Clamp(past * Scale, HogLine - 120f, SheetFarZ - StoneR - 1f));
+        }
+
+        // One stone, from the hack to where it and everything it hits come to rest, then the score.
+        IEnumerator Throw(int player, Vector2 target, int tee, float heading, PuttResult putt)
+        {
             var stone = new Stone { T = NewStone(player), Player = player, At = new Vector2(0f, Hack) };
             Place(stone);
-            Arcade.Audio.Kick(0.2f);
+            if (!Arcade.Audio.TryLibrary("deadweight_release", 0.75f)) Arcade.Audio.Kick(0.2f);   // puttr-app-2: its own release, Spot Kick's kick until recorded
 
             // The slide: even slowing to a stop on the target, bending a little as it slows.
             float distance = target.y - Hack;
             float T = Mathf.Sqrt(2f * distance / Friction);
-            int tee = Mathf.Clamp(DealtTee, 1, 3);
-            float curl = tee == 1 ? CurlInches : tee == 3 ? -CurlInches : (launch.HeadingDeg >= 0f ? -CurlInches : CurlInches) * 0.6f;
+            float curl = tee == 1 ? CurlInches : tee == 3 ? -CurlInches : (heading >= 0f ? -CurlInches : CurlInches) * 0.6f;
             curl *= Mathf.Clamp01(distance / (BackLine - Hack));
             Vector2 Path(float u) // u: how far along in time, 0 to 1
             {
@@ -344,7 +398,7 @@ namespace PuttrArcade
         // momentum along the line of their centres.
         IEnumerator Knocks()
         {
-            Arcade.Audio.PinKnock(60f);
+            if (!Arcade.Audio.TryLibrary("deadweight_clack", 0.9f)) Arcade.Audio.PinKnock(60f);   // puttr-app-2
             Arcade.Shake(0.25f);
             for (float time = 0f; time < 8f; time += Time.deltaTime)
             {
@@ -382,7 +436,8 @@ namespace PuttrArcade
                             a.V += (na - va) * n;
                             b.V += (nb - vb) * n;
                             Separate(a, b, n, dist);
-                            Arcade.Audio.PinKnock(Mathf.Clamp(Mathf.Abs(va - vb), 10f, 80f));
+                            float knock = Mathf.Clamp(Mathf.Abs(va - vb), 10f, 80f);   // puttr-app-2: granite on granite, the shared click until recorded
+                            if (!Arcade.Audio.TryLibrary("deadweight_clack", Mathf.InverseLerp(4f, 45f, knock) * 0.7f + 0.2f, 1f + Random.Range(-0.08f, 0.08f))) Arcade.Audio.PinKnock(knock);
                         }
                 }
                 foreach (Stone s in _stones)
@@ -419,11 +474,11 @@ namespace PuttrArcade
             int points = inPlay ? Points(stone.At) : 0;
             float from = inPlay ? stone.At.y / Scale : 0f;
             string where = !inPlay ? "Out of play" : Mathf.Abs(from) < 0.5f && Mathf.Abs(stone.At.x) < ButtonR ? "Dead weight" : Mathf.Abs(from).ToString("0.0") + (from < 0 ? " in short" : " in past");
-            if (!inPlay) { hud.Banner("OUT", stone.At.y > BackLine ? "Through the house" : "Into the boards", Make.Red, 1.8f); Arcade.Audio.Miss(); }
+            if (!inPlay) { hud.Banner("OUT", stone.At.y > BackLine ? "Through the house" : "Into the boards", Make.Red, 1.8f); if (!Arcade.Audio.TryLibrary("deadweight_out", 0.8f)) Arcade.Audio.Miss(); }   // puttr-app-2: the rink's own sounds, the shared ones until recorded
             else if (points == RingPoints[0]) { hud.Banner("ON THE BUTTON", hit ? "And knocked one away" : "Dead weight", Make.Bright, 2.2f); Arcade.Audio.Strike(); Arcade.Celebrate(80, At(stone.At.x, 10f, stone.At.y)); }
             else if (points > 0) { hud.Banner(points.ToString(), hit ? "Knocked on: " + where : where, Color.white, 1.6f); Arcade.Audio.Spare(); }
-            else { hud.Banner(hit ? "KNOCK" : "SHORT", hit ? "Moved the stones" : where, Make.Amber, 1.6f); Arcade.Audio.Miss(); }
-            ShowPutt(putt, !inPlay ? "Out" : points + (points == 1 ? " point" : " points"), !inPlay ? Make.Red : points > 0 ? Make.Bright : Make.Amber);
+            else { hud.Banner(hit ? "KNOCK" : "SHORT", hit ? "Moved the stones" : where, Make.Amber, 1.6f); if (!Arcade.Audio.TryLibrary("deadweight_out", 0.6f)) Arcade.Audio.Miss(); }
+            if (putt != null) ShowPutt(putt, !inPlay ? "Out" : points + (points == 1 ? " point" : " points"), !inPlay ? Make.Red : points > 0 ? Make.Bright : Make.Amber);
         }
 
         public override bool Over => _round >= Rounds;
@@ -436,11 +491,12 @@ namespace PuttrArcade
             for (int i = 0; i < _players; i++) if (_banked[i] > _banked[best]) best = i;
             if (_players > 1)
                 for (int i = 0; i < _players; i++)
-                    body += Arcade.PlayerName(i) + "     " + _banked[i] + (i == best ? "     winner" : "") + "\n";
+                    body += Who(i) + "     " + _banked[i] + (i == best ? "     winner" : "") + "\n";
         }
 
         public override void End()
         {
+            if (_lit) { _lit = false; RenderSettings.ambientLight = _roomBefore; }
             _follow = null;
             ClearStones();
         }

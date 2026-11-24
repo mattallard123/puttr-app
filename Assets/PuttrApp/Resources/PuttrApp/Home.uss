@@ -1,0 +1,144 @@
+/* Home (docs/design-guidelines.md, "Broadcast"), the session brief, the Play tab's search, and the Profiles PIN pad.
+   Loaded by HomeScreen, SessionBriefScreen, PlayScreen and the Profiles screens.
+   Solid colours only, from the guidelines' table. Type 44, 28, 20, 15, 13, 11. Spacing 4, 8, 12, 16, 24, 32. Radius 4.
+   Home's scroll view carries .home: the ".home ..." rules restyle, on this tab only, shared classes from App.uss and
+   the cards other files build for Home (Live, Versus, League Night, Tracks, tournaments, challenges). */
+
+/* ── Header: logo, connection pill, bell (Ui.TabHeader) ──────────── */
+.home .home-pill { height: 44px; padding: 0 12px; border-width: 0; background-color: rgb(21, 24, 27); flex-shrink: 0; }
+.home .home-pill:active { background-color: rgb(34, 38, 42); }
+.home .home-pill > .dot { width: 8px; height: 8px; border-radius: 4px; margin-right: 8px; background-color: rgb(139, 147, 153); }
+.home .home-pill > .dot-on { background-color: rgb(45, 140, 60); }
+.home .home-pill-t { color: rgb(255, 255, 255); }
+.home .tab-head .head-icon { margin-left: 8px; border-radius: 4px; background-color: rgb(21, 24, 27); }
+.home .tab-head .head-icon:active { background-color: rgb(34, 38, 42); }
+.home .bell-count { font-size: 11px; }
+
+/* ── Greeting, with the profile switch on its right ──────────────── */
+.home-greet-row { margin-top: 16px; }
+.home-greet-words { flex-grow: 1; flex-shrink: 1; flex-basis: 0; min-width: 0; }
+.home .player-switch { flex-shrink: 0; margin-left: 12px; min-height: 44px; padding: 4px 12px 4px 4px; border-radius: 4px; border-width: 0; background-color: rgb(34, 38, 42); }
+.home .player-switch:active { background-color: rgb(48, 53, 58); }
+.home .player-switch > .avatar { margin-right: 0; }
+.home .player-switch > Label { font-size: 13px; color: rgb(255, 255, 255); margin-left: 8px; }
+
+/* ── Today's session (the session card) ──────────────────────────── */
+.home-lead { margin-top: 12px; }
+.home-lead-head { flex-direction: row; align-items: center; }
+.home-lead-eyebrow { margin-left: 12px; }
+.lead-face { width: 44px; height: 44px; border-radius: 4px; margin-right: 0; border-width: 1px; border-color: rgb(38, 42, 46); flex-shrink: 0; }
+.lead-faces { flex-direction: row; }
+.lead-faces > .avatar { width: 32px; height: 32px; border-radius: 4px; margin-right: 4px; }
+.home-lead-stats { flex-direction: row; align-items: flex-end; justify-content: space-between; margin-top: 16px; }
+.home-lead-progress { flex-direction: row; align-items: flex-end; }
+.home-lead-cap { margin-left: 8px; margin-bottom: 4px; }
+.home-streak { flex-direction: row; align-items: center; margin-bottom: 4px; }
+.home .home-streak-t { color: rgb(255, 179, 0); margin-left: 4px; }
+.home-week { flex-direction: row; margin-top: 16px; }
+.home-day { flex-grow: 1; flex-basis: 0; margin-right: 4px; }
+.home-day-last { margin-right: 0; }
+.home-day-bar { height: 4px; background-color: rgb(34, 38, 42); }
+.home-day-bar-on { background-color: rgb(45, 140, 60); }
+.home .home-day-letter { margin-top: 4px; letter-spacing: 0; -unity-text-align: middle-center; }
+.home .home-day-today { color: rgb(255, 255, 255); }
+.home .home-lead-btn { margin-top: 16px; padding: 12px 16px; }
+
+/* ── You might like: flat cards, an icon, the name and one line ──── */
+.home-pick { width: 200px; margin-left: 12px; flex-shrink: 0; }
+.home-pick-first { margin-left: 16px; }
+.home-pick-title { margin-top: 12px; }
+.home-pick-line { margin-top: 4px; }
+
+/* ── The Home feed ───────────────────────────────────────────────── */
+.home-feed-tabs { margin-bottom: 12px; }
+.home .home-feed { padding: 0 16px; }
+.feed-line { flex-direction: row; align-items: center; padding: 8px 0; border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); }
+.feed-line-last { border-bottom-width: 0; }
+.feed-line > .avatar { width: 32px; height: 32px; border-radius: 4px; margin-right: 12px; }
+.feed-line .avatar-letter { font-size: 13px; }
+.home-feed-sk { width: 32px; height: 32px; margin-right: 12px; flex-shrink: 0; }
+.feed-words { min-width: 0; margin-right: 8px; }
+.feed-what { font-size: 15px; color: rgb(255, 255, 255); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.feed-when { font-size: 13px; color: rgb(139, 147, 153); margin-top: 4px; }
+.feed-play { min-width: 44px; min-height: 44px; align-items: flex-end; justify-content: center; flex-shrink: 0; }
+
+/* ── Cards other files build for Home: one flat card, one chip ───── */
+.home .glass { padding: 16px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; }
+.home .live-card { border-color: rgb(38, 42, 46); }
+.home .versus-card { margin-right: 12px; }
+.home .feed-name { font-size: 15px; }
+.home .tile-title { font-size: 15px; }
+.home .chips { margin-top: 8px; }
+.home .chip { font-size: 11px; letter-spacing: 1.5px; padding: 4px 8px; margin-right: 4px; margin-top: 4px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); background-color: rgba(0, 0, 0, 0); color: rgb(139, 147, 153); }
+.home .chip-green { color: rgb(122, 212, 70); }
+.home .chip-amber { color: rgb(255, 179, 0); }
+/* Live is the one filled pill. */
+.home .chip-red { background-color: rgb(255, 82, 82); border-color: rgb(255, 82, 82); color: rgb(255, 255, 255); }
+.home .bar { height: 4px; border-radius: 0; margin-top: 12px; background-color: rgb(34, 38, 42); }
+.home .bar-fill { height: 4px; border-radius: 0; background-color: rgb(45, 140, 60); }
+/* Start session is Home's one main button: the buttons inside these cards (League Night, Tracks) are the secondary. */
+.home .glass .btn, .home .totw .btn { --fill: rgb(34, 38, 42); min-height: 44px; margin-top: 16px; padding: 12px; }
+.home .glass .btn:hover, .home .totw .btn:hover { --fill: rgb(48, 53, 58); }
+.home .glass .btn:active, .home .totw .btn:active { --fill: rgb(21, 24, 27); }
+.home .challenge { margin-left: 12px; }
+.home .chip-join { background-color: rgb(34, 38, 42); border-radius: 4px; padding: 8px 12px; font-size: 11px; letter-spacing: 1.5px; color: rgb(255, 255, 255); }
+
+/* Tournaments: the picture, then the name and details on a solid bar under it. */
+.home .poster { border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; }
+.home .poster-panel { background-color: rgb(21, 24, 27); border-top-width: 1px; border-top-color: rgb(38, 42, 46); padding: 12px; }
+.home .poster-line .muted { color: rgb(139, 147, 153); }
+.home .poster-chip { left: 8px; top: 8px; background-color: rgb(10, 12, 13); }
+
+/* Track of the week: the course in a window on top (the art joins the flow), then a solid bar with its words.
+   No raised edge, no shade over the picture. */
+.home .gcard.gcard-3d.totw { padding-bottom: 0; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; overflow: hidden; }
+.home .totw > .gcard-shadow { display: none; }
+.home .totw > .gcard-lip { display: none; }
+.home .totw > .gcard-face { min-height: 0; justify-content: flex-start; border-radius: 0; background-color: rgb(21, 24, 27); }
+.home .totw.gcard-pressed > .gcard-face { translate: 0 0; }
+.home .totw .gcard-art { position: relative; height: 200px; flex-shrink: 0; background-color: rgb(0, 0, 0); border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); }
+.home .totw .gcard-fade { display: none; }
+.home .totw-top { padding: 16px 16px 0 16px; }
+.home .totw-kick { background-color: rgba(0, 0, 0, 0); border-radius: 0; padding: 0; }
+.home .totw .kick { font-size: 11px; letter-spacing: 1.5px; color: rgb(122, 212, 70); }
+.home .totw-bottom { padding: 4px 16px 16px 16px; }
+.home .totw .tracks-inspired { font-size: 11px; color: rgb(139, 147, 153); }
+.home .totw .gcard-name { font-size: 20px; letter-spacing: 0.5px; text-shadow: 0 0 0 rgba(0, 0, 0, 0); }
+.home .totw .gcard-line { font-size: 13px; color: rgb(139, 147, 153); text-shadow: 0 0 0 rgba(0, 0, 0, 0); }
+.home .totw .totw-btn { margin-top: 12px; }
+
+/* ── The session brief ───────────────────────────────────────────── */
+.brief-page { flex-grow: 1; }
+.brief-who { flex-direction: row; align-items: center; margin-top: 4px; }
+.brief-who-t { margin-left: 12px; }
+.brief-card { margin-top: 16px; }
+.brief-card > .h1 { margin-top: 0; }
+.brief-tiles { flex-direction: row; margin-top: 16px; }
+.brief-tile { flex-grow: 1; flex-basis: 0; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 12px 4px; align-items: center; margin-right: 8px; }
+.brief-tile-last { margin-right: 0; }
+.brief-tile-v { font-size: 15px; color: rgb(255, 255, 255); -unity-text-align: middle-center; }
+.brief-tile-l { font-size: 11px; letter-spacing: 1.5px; color: rgb(139, 147, 153); margin-top: 4px; -unity-text-align: middle-center; }
+.brief-watch { flex-direction: row; align-items: center; margin-top: 16px; }
+.brief-watch-t { margin-left: 8px; font-size: 13px; flex-shrink: 1; }
+.brief-preview { margin-top: 16px; }
+.brief-label { color: rgb(139, 147, 153); }
+.brief-line { flex-direction: row; align-items: center; margin-top: 8px; }
+.brief-line > .sub { font-size: 13px; }
+.brief-count { font-size: 13px; color: rgb(255, 255, 255); }
+.brief-foot { flex-shrink: 0; padding-top: 12px; padding-bottom: 16px; background-color: rgb(10, 12, 13); border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.brief-connect { margin-bottom: 12px; }
+.brief-btn { margin-top: 0; }
+.wide .brief-foot { padding-left: 15%; padding-right: 15%; }
+
+/* ── The Play tab's search ───────────────────────────────────────── */
+.play-search-btn { width: 34px; height: 34px; border-radius: 4px; background-color: rgb(21, 24, 27); align-items: center; justify-content: center; margin-right: 8px; flex-shrink: 0; }
+.play-search { flex-direction: row; align-items: center; height: 38px; border-radius: 4px; background-color: rgb(21, 24, 27); padding: 0 14px; margin-top: 10px; margin-bottom: 12px; }
+.play-search-field { flex-grow: 1; flex-shrink: 1; margin: 0 0 0 10px; }
+.play-search-field .unity-base-text-field__input { background-color: rgb(21, 24, 27); border-width: 0; padding: 0; color: rgb(255, 255, 255); font-size: 14px; min-height: 30px; }
+.play-search-field .unity-base-text-field__input--placeholder { color: rgb(139, 147, 153); }
+
+/* ── Profiles: the PIN pad ───────────────────────────────────────── */
+.pin-sub { margin-top: 8px; }
+.pin-error { font-size: 13px; color: rgb(255, 82, 82); height: 16px; margin-top: 8px; -unity-text-align: middle-center; }
+.pin-forgot { font-size: 13px; color: rgb(122, 212, 70); margin-top: 12px; -unity-text-align: middle-center; }
+.profiles-full { margin-top: 12px; }

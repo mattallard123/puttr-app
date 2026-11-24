@@ -34,6 +34,11 @@ namespace PuttrArcade
         public override int Putter => _player; // whose difficulty applies to this putt
         public override string Blurb => "Crazy golf, six holes.\nPace sets the distance, line bends it.\nFewest strokes wins.";
         public override GameAudio.Scene Sound => GameAudio.Scene.Table;
+        // puttr-app-2: a mini-golf park of its own (the room tone until it is recorded); the round ends on the little fanfare.
+        public override string BedSlot => "windmill_park_loop";
+        public override string EndSlot => "windmill_ace";
+        // puttr-app-2: the ball into the pond: Windmill's own splash once recorded (On Fire's hiss was standing in for it).
+        void Splash() { if (!Arcade.Audio.TryLibrary("windmill_splash", 0.85f)) Arcade.Audio.Douse(); }
         public override int Score(int player) => Totals()[player];
         public override string ScoreWord(int n) => n == 1 ? "stroke" : "strokes";
         public override bool LowerIsBetter => true;
@@ -541,6 +546,9 @@ namespace PuttrArcade
         }
 
         public override string Tee => Over || _matFt == 0 ? null : _matFt + " feet, center tee";
+        // puttr-app-2: the stroke is saved with the mat putt it was played as (3 to 11 ft, always the center tee).
+        public override int PuttFeet => _matFt;
+        public override int PuttTee => 2;
 
         // Work out this stroke's mat putt from where the ball lies, put it up, and call it.
         void PlanShot(bool aloud)
@@ -776,7 +784,7 @@ namespace PuttrArcade
                 shown = p;
                 PlaceBall(p, 0f);
                 Arcade.Audio.SetRoll(v.magnitude * 0.5f);
-                if (ping) Arcade.Audio.Post();
+                if (ping) { if (!Arcade.Audio.TryLibrary("windmill_blade", 0.8f, 1f + Random.Range(-0.05f, 0.05f))) Arcade.Audio.Post(); }   // puttr-app-2: a wooden sail, Spot Kick's post until recorded
                 else if (knock > 0f && clock - lastKnock > 0.06f) { lastKnock = clock; Arcade.Audio.Thump(knock * 0.5f); }
                 if (!shot && clock > 0.5f) { shot = true; Arcade.Shot("action"); }
                 yield return null;
@@ -817,21 +825,23 @@ namespace PuttrArcade
                 ShowPutt(putt, gimme ? "Gimme" : "In the cup", Make.Bright);
                 hud.Banner(gimme ? "GIMME" : "IN THE CUP", (gimme ? "Under 3 feet: tapped in   ·   " : "") + Verdict(_strokes, hole.Par), Make.Bright, 2.2f);
                 Arcade.Audio.Holed();
-                if (_strokes <= hole.Par) Arcade.Audio.Coin();
+                // puttr-app-2: its own chime, and a fanfare for a hole in one (the shared coin until they are recorded).
+                bool ace = _strokes == 1 && !gimme && Arcade.Audio.TryLibrary("windmill_ace", 0.9f);
+                if (!ace && _strokes <= hole.Par && !Arcade.Audio.TryLibrary("windmill_par", 0.8f)) Arcade.Audio.Coin();
                 Arcade.Celebrate(_strokes <= hole.Par ? 90 : 40, At(hole.Cup.x, FeltY + 2f, hole.Cup.y));
             }
             else if (pickedUp)
             {
                 ShowPutt(putt, "Picked up", Make.Red);
                 hud.Banner("Picked up", (fate == Fate.Splash ? "In the water.   " : "") + "Five strokes is the most: that is a " + (MaxStrokes + 1), Make.Red, 2.2f);
-                if (fate == Fate.Splash) Arcade.Audio.Douse();
-                Arcade.Audio.Miss();
+                if (fate == Fate.Splash) Splash();   // puttr-app-2
+                if (fate != Fate.Splash || !GameAudio.Has("windmill_splash")) Arcade.Audio.Miss();
             }
             else if (fate == Fate.Splash)
             {
                 ShowPutt(putt, "In the water", blue);
                 hud.Banner("SPLASH", "One stroke penalty. Play it again from the same spot", blue, 2.2f);
-                Arcade.Audio.Douse();
+                Splash();   // puttr-app-2
                 Arcade.Shake(0.3f);
             }
             else if (fate == Fate.Lost)
@@ -844,7 +854,7 @@ namespace PuttrArcade
             {
                 ShowPutt(putt, feet, Make.Bright);
                 hud.Banner("Through the mill!", feet, Make.Bright, 2f);
-                Arcade.Audio.Coin();
+                if (!Arcade.Audio.TryLibrary("windmill_par", 0.65f, 1.08f)) Arcade.Audio.Coin();   // puttr-app-2
             }
             else
             {

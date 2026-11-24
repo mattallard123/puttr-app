@@ -1,6 +1,6 @@
-// Train & learn (puttr-app ImproveScreen.js "LearnScreen", improve/LessonView, LessonDrill): warm-ups,
-// putting stretches, strength and mobility (GET /improve/workouts/, category BODY) and putting
-// lessons (GET /improve/lessons/, category LEARN), each a video with an optional drill on the 3D ramp.
+// Train & learn (puttr-app ImproveScreen.js "LearnScreen", improve/LessonView, LessonDrill): putting
+// lessons (GET /improve/lessons/, category LEARN) first, then warm-ups, putting stretches, strength and
+// mobility (GET /improve/workouts/, category BODY), each a video with an optional drill on the 3D ramp.
 // The first two in each section are free; the rest are Puttr Club. Drills are saved nowhere, as in the app.
 using System;
 using System.Collections.Generic;
@@ -14,13 +14,14 @@ namespace PuttrApp
     {
         public const string VideoRoot = "https://storage.googleapis.com/improve.puttr.co/";
         // LearnScreen sections, in order: key, title, words, from workouts (BODY) or lessons (LEARN).
+        // The putting lessons lead, then the body work (Matt, 2026-11-17).
         public static readonly (string key, string title, string words, bool body, string icon, Color colour)[] Sections =
         {
-            ("WARMUP", "Warm up", "Get warmed up before your practice session", true, "FillFire", Ui.Bright),
-            ("PUTTING", "Putting stretches", "Train to putt at the highest level", true, "Target", Ui.Blue),
-            ("MOBILITY", "Strength & mobility", "Focus on parts of your body that help with golf", true, "Lightning", new Color32(0xC0, 0x8C, 0xFF, 0xFF)),
-            ("BASICS", "Putting basics", "Basic fundamentals of putting", false, "GraduationCap", new Color32(0xFF, 0xCF, 0x66, 0xFF)),
-            ("ADVANCED", "Advanced putting", "Advanced concepts to improve your putting", false, "Lightning", Ui.Amber),
+            ("BASICS", "Putting basics", "Basic fundamentals of putting", false, "GraduationCap", Color.white),
+            ("ADVANCED", "Advanced putting", "Advanced concepts to improve your putting", false, "Lightning", Color.white),
+            ("WARMUP", "Warm up", "Get warmed up before your practice session", true, "FillFire", Color.white),
+            ("PUTTING", "Putting stretches", "Train to putt at the highest level", true, "Target", Color.white),
+            ("MOBILITY", "Strength & mobility", "Focus on parts of your body that help with golf", true, "Lightning", Color.white),
         };
 
         public static List<object> Lessons, Workouts;
@@ -49,9 +50,9 @@ namespace PuttrApp
             foreach (var s in Sections)
             {
                 string key = s.key;
-                grid.Add(Ui.Box("glass lib-tile", Ui.Bubble(s.icon, s.colour), Ui.Text(s.title, "lib-title", Ui.Bold)).OnTap(() => app.Push(new LearnScreen(app, key))));
+                grid.Add(Ui.Box("card lib-tile", Form.Glyph(s.icon), Ui.Text(s.title, "lib-title", Ui.Bold)).OnTap(() => app.Push(new LearnScreen(app, key))));
             }
-            grid.Add(Ui.Box("glass lib-tile", Ui.Bubble("GraduationCap", Ui.Faint), Ui.Text("Browse all", "lib-title", Ui.Bold)).OnTap(() => app.Push(new LearnScreen(app, null))));
+            grid.Add(Ui.Box("card lib-tile", Form.Glyph("GraduationCap"), Ui.Text("Browse all", "lib-title", Ui.Bold)).OnTap(() => app.Push(new LearnScreen(app, null))));
             return grid;
         }
 
@@ -71,7 +72,7 @@ namespace PuttrApp
             _focus = focus;
             _scroll = Page.Make(app, "Train & learn", out _body);
             Root = _scroll;
-            _body.Add(Ui.Box("pad", Ui.Text("Warm-ups, putting drills, mobility and lessons.", "sub", Ui.Regular)));
+            _body.Add(Ui.Box("pad", Ui.Text("Putting lessons, warm-ups, stretches and mobility.", "sub", Ui.Regular)));
             _body.Add(Page.Loading());
             Library.Load(Draw);
         }
@@ -79,26 +80,29 @@ namespace PuttrApp
         void Draw()
         {
             _body.Clear();
-            _body.Add(Ui.Box("pad", Ui.Text("Warm-ups, putting drills, mobility and lessons.", "sub", Ui.Regular)));
+            _body.Add(Ui.Box("pad", Ui.Text("Putting lessons, warm-ups, stretches and mobility.", "sub", Ui.Regular)));
             VisualElement focused = null;
             foreach (var s in Library.Sections)
             {
                 List<object> lessons = Library.In(s.key);
                 VisualElement section = Ui.Box("");
                 section.Add(Ui.Section(s.title));
-                section.Add(Ui.Box("pad", Ui.Text(s.words, "muted", Ui.Regular)));
+                section.Add(Ui.Box("pad", Ui.Text(s.words, "body-2", Ui.Regular)));
                 ScrollView row = Ui.Scroll(true);
                 row.style.marginTop = 8;
-                if (lessons.Count == 0) row.Add(Ui.Box("pad", Ui.Text("Nothing here yet.", "muted", Ui.Regular)));
+                if (lessons.Count == 0) row.Add(Ui.Box("pad", Ui.Text("Nothing here yet.", "body-2", Ui.Regular)));
                 for (int i = 0; i < lessons.Count; i++)
                 {
                     object lesson = lessons[i];
                     int index = i;
-                    VisualElement card = Ui.Box("lesson-card", Ui.Box("lesson-words", Ui.Text(J.Str(lesson, "title"), "feed-name", Ui.Bold), Ui.Text(J.Str(lesson, "description"), "muted lesson-desc", Ui.Regular)));
-                    Images.Into(card, J.Str(lesson, "thumbnail"));
+                    // The thumbnail in a bordered window, and everything said about it under the picture, never over it.
+                    VisualElement thumb = Ui.Box("window learn-thumb");
+                    Images.Into(thumb, J.Str(lesson, "thumbnail"));
+                    VisualElement tags = Ui.Box("chips");
                     object meta = J.Parse(J.Str(lesson, "meta", "{}"));
-                    if (J.Flag(meta, "equipmentRequired")) card.Add(Ui.Text("Equipment", "chip lesson-chip", Ui.Bold));
-                    if (Library.Locked(_app, i)) card.Add(Ui.Box("quest-lock", Ui.Text("Puttr Club", "feed-name", Ui.Bold), Ui.Text("Join now", "chip chip-amber", Ui.Bold)));
+                    if (J.Flag(meta, "equipmentRequired")) tags.Add(Ui.Text("Equipment", "chip", Ui.Bold));
+                    if (Library.Locked(_app, i)) tags.Add(Ui.Text("Puttr Club", "chip chip-amber", Ui.Bold));
+                    VisualElement card = Ui.Box("learn-card", thumb, Ui.Text(J.Str(lesson, "title"), "body learn-name", Ui.Bold), Ui.Text(J.Str(lesson, "description"), "body-2 lesson-desc", Ui.Regular), tags.childCount > 0 ? tags : null);
                     card.OnTap(() => { if (Library.Locked(_app, index)) Club.Require(_app, "Lessons", () => { }); else _app.Push(new LessonScreen(_app, lesson)); });
                     row.Add(card);
                 }
@@ -124,18 +128,18 @@ namespace PuttrApp
             _lesson = lesson;
             Root = Page.Make(app, J.Str(lesson, "title", "Lesson"), out VisualElement body);
             string path = J.Str(lesson, Screen.width > Screen.height && J.Str(lesson, "videoPathWide").Length > 0 ? "videoPathWide" : "videoPath");
-            VisualElement hero = Ui.Box("lesson-hero", Ui.Box("lesson-play", Ui.Text("▶", "lesson-play-mark", Ui.Bold)));
+            VisualElement hero = Ui.Box("window lesson-hero", Ui.Box("lesson-play", Ui.Icon("Play", 22, Color.white)));
             Images.Into(hero, J.Str(lesson, "thumbnail"));
             if (path.Length > 0) hero.OnTap(() => SetupGuide.Play(Root, path.StartsWith("http") ? path : Library.VideoRoot + path));
-            body.Add(Ui.Box("pad", hero, Ui.Text(J.Str(lesson, "description"), "sub", Ui.Regular).Margin(10)));
+            body.Add(Ui.Box("pad", hero, Ui.Text(J.Str(lesson, "description"), "sub", Ui.Regular).Margin(12)));
 
             // The recommended drill, played on the 3D ramp.
             string drillType = J.Str(lesson, "drillType"), drillWords = J.Str(lesson, "drillDescription");
             if (drillType.Length > 0 || drillWords.Length > 0)
             {
-                VisualElement card = Ui.Box("glass", Ui.Text("RECOMMENDED DRILL", "kick", Ui.Bold), Ui.Text(drillWords, "sub", Ui.Regular).Margin(4));
-                if (drillType.ToUpperInvariant() == "TEMPO") card.Add(Ui.Box("", Ui.Text("Metronome", "feed-name", Ui.Bold), Metronome.Pill()).Margin(10));
-                if (drillType.ToUpperInvariant() == "VIDEO") card.Add(Ui.Button("Camera setup", () => app.Push(new CameraSetupScreen(app)), "btn btn-ghost").Margin(10));
+                VisualElement card = Ui.Box("card", Ui.Text("RECOMMENDED DRILL", "caps caps-green", Ui.Bold), Ui.Text(drillWords, "sub", Ui.Regular).Margin(4));
+                if (drillType.ToUpperInvariant() == "TEMPO") card.Add(Ui.Box("", Ui.Text("Metronome", "body", Ui.Bold), Metronome.Pill()).Margin(12));
+                if (drillType.ToUpperInvariant() == "VIDEO") card.Add(Ui.Button("Camera setup", () => app.Push(new CameraSetupScreen(app)), "btn btn-ghost").Margin(12));
                 if (drillType.Length > 0 && J.Str(lesson, "drillPutts").Length > 2) card.Add(Ui.Button("Start drill", () => app.Games.PlayLessonDrill(lesson)));
                 body.Add(Ui.Box("pad", card).Margin(12));
             }
@@ -146,7 +150,7 @@ namespace PuttrApp
             if (next != null)
             {
                 bool locked = J.Int(lesson, "orderNum") >= 1 && !Club.Member(app.Profile);
-                VisualElement row = Ui.Box("glass list-row", Ui.Box("grow", Ui.Text(J.Str(next, "title"), "feed-name", Ui.Bold), Ui.Text(J.Str(next, "description"), "muted lesson-desc", Ui.Regular)),
+                VisualElement row = Ui.Box("card list-row", Ui.Box("grow", Ui.Text(J.Str(next, "title"), "body", Ui.Bold), Ui.Text(J.Str(next, "description"), "body-2 lesson-desc", Ui.Regular)),
                     locked ? Ui.Text("Club", "chip chip-amber", Ui.Bold) : Ui.Icon("CaretRight", 16, Ui.Faint));
                 row.OnTap(() => { if (locked) Club.Require(app, "Lessons", () => { }); else { app.Pop(); app.Push(new LessonScreen(app, next)); } });
                 body.Add(row);
@@ -166,14 +170,14 @@ namespace PuttrApp
 
         VisualElement Rating()
         {
-            VisualElement box = Ui.Box("pad");
+            VisualElement box = Ui.Box("");
             box.Add(Ui.Section("How was this lesson?"));
             VisualElement row = Ui.Box("row");
             Label said = Ui.Text("", "sub", Ui.Regular);
             for (int i = 1; i <= 5; i++)
             {
                 int stars = i;
-                VisualElement star = Ui.Box("rate-star", Ui.Text(stars.ToString(), "btn-text", Ui.Bold));
+                VisualElement star = Ui.Box("rate-star", Ui.Num(stars.ToString(), "num-20"));
                 star.OnTap(() =>
                 {
                     for (int k = 0; k < row.childCount; k++) row[k].EnableInClassList("rate-on", k < stars);

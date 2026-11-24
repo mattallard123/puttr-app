@@ -67,7 +67,7 @@ namespace PuttrApp
         /// <summary>"Step 2 of 6" and its bar, with a back arrow.</summary>
         public static VisualElement Steps(int step, int total, Action back)
         {
-            VisualElement top = Ui.Box("top", Ui.Text("‹", "back back-chevron", Ui.Medium).OnTap(back), Ui.Text("Step " + step + " of " + total, "sec-title", Ui.Bold), Ui.Box("back-balance"));
+            VisualElement top = Ui.Box("top", Ui.Text("‹", "back back-chevron", Ui.Medium).OnTap(back), Ui.Text("Step " + step + " of " + total, "top-title", Ui.Bold), Ui.Box("back-balance"));
             return Ui.Box("", top, Ui.Box("pad", Ui.Progress(step / (float)total)));
         }
 
@@ -103,6 +103,12 @@ namespace PuttrApp
 
         public static string Duration(double seconds) { int s = Mathf.Max(0, (int)Math.Round(seconds)); return (s / 60) + ":" + (s % 60).ToString("00"); }
 
+        /// <summary>A plain 24 point stroke icon at the start of a row (no tinted square behind it).</summary>
+        public static VisualElement Glyph(string icon) => Ui.Box("coach-glyph", Ui.Icon(icon, 24, Color.white));
+
+        /// <summary>A small secondary button at the end of a row (Join, Submit, Play).</summary>
+        public static VisualElement Mini(string text, Action onTap) => Ui.Button(text, onTap, "btn btn-ghost coach-mini");
+
         public static VisualElement Bottom(params VisualElement[] children) => Ui.Box("pad", children).Margin(12);
 
         /// <summary>A photo from the library to a multipart POST; done(the response, or null).</summary>
@@ -132,7 +138,7 @@ namespace PuttrApp
         {
             Root = Page.Make(app, "Puttr Coaching", out VisualElement body);
             if (Kid.Blocked(app, Kid.Owner, body)) return;
-            body.Add(Ui.Box("pad", Ui.Text("Coach players anywhere", "display wrap", Ui.Bold), Ui.Text("Give paid video lessons, run your studio with Puttr data, and grow your players with practice plans.", "sub wrap", Ui.Regular).Margin(6)));
+            body.Add(Ui.Box("pad", Ui.Title("Coach players anywhere", "title"), Ui.Text("Give paid video lessons, run your studio with Puttr data, and grow your players with practice plans.", "sub wrap", Ui.Regular).Margin(8)));
             string[,] features =
             {
                 { "VideoCamera", "Paid video lessons", "Players book you, submit a session, and you send a personal video breakdown." },
@@ -140,14 +146,14 @@ namespace PuttrApp
                 { "ListChecks", "Practice plans", "Assign games and drills and watch your players work them." },
                 { "GameController", "Custom games & drills", "Build your own and share them with your players." },
             };
-            VisualElement list = Ui.Box("glass");
+            VisualElement list = Ui.Box("card");
             for (int i = 0; i < features.GetLength(0); i++)
-                list.Add(Ui.Box("row", Ui.Bubble(features[i, 0], Ui.Bright), Ui.Box("grow set-words", Ui.Text(features[i, 1], "feed-name", Ui.Bold), Ui.Text(features[i, 2], "muted wrap", Ui.Regular))).Margin(i == 0 ? 0 : 12));
+                list.Add(Ui.Box("row", Form.Glyph(features[i, 0]), Ui.Box("grow set-words", Ui.Text(features[i, 1], "body", Ui.Bold), Ui.Text(features[i, 2], "body-2 wrap", Ui.Regular))).Margin(i == 0 ? 0 : 12));
             body.Add(Ui.Box("pad", list));
             body.Add(Ui.Box("pad", Ui.Button("Apply to coach online", () => CoachApplyScreen.Open(app))).Margin(4));
             body.Add(Ui.Section("Puttr Pro for Coaches"));
             body.Add(Ui.Box("pad", new ClubPlans(app, true).Root));
-            body.Add(Ui.Box("pad", Ui.Text("$39.99/month after a free trial. Cancel any time in your App Store or Google Play account settings at least 24 hours before the trial ends.", "muted wrap", Ui.Regular)));
+            body.Add(Ui.Box("pad", Ui.Text("$39.99/month after a free trial. Cancel any time in your App Store or Google Play account settings at least 24 hours before the trial ends.", "body-2 wrap", Ui.Regular)));
         }
     }
 
@@ -187,7 +193,7 @@ namespace PuttrApp
             _app = app;
             _top = new VisualElement(); _body = new VisualElement(); _foot = new VisualElement();
             ScrollView scroll = Ui.Scroll();
-            scroll.Add(_top); scroll.Add(_body); scroll.Add(_foot); scroll.Add(FreePuttScreen.Space(28));
+            scroll.Add(_top); scroll.Add(_body); scroll.Add(_foot); scroll.Add(FreePuttScreen.Space(32));
             Root = scroll;
             if (Kid.Blocked(app, Kid.Owner, _body)) return;
             _location = J.Str(app.Profile, "homeTown");
@@ -263,9 +269,9 @@ namespace PuttrApp
 
         void Basics(VisualElement p)
         {
-            p.Add(Ui.Text("Tell us about your coaching", "h2 wrap", Ui.Bold));
+            p.Add(Ui.Title("Tell us about your coaching", "title-20"));
             p.Add(Form.Label("Where are you based?"));
-            p.Add(Ui.Box("glass row", Ui.Icon("MapPin", 18, _location?.Length > 0 ? Ui.Green : Ui.Faint), Ui.Text(_location?.Length > 0 ? _location : "Search your city", "feed-name grow", Ui.Medium).Margin(0)).OnTap(() =>
+            p.Add(Ui.Box("card row", Ui.Icon("MapPin", 18, _location?.Length > 0 ? Ui.Bright : Ui.Faint), Ui.Text(_location?.Length > 0 ? _location : "Search your city", "body grow", Ui.Medium).Margin(0)).OnTap(() =>
                 _app.Push(new CityScreen(_app, _location ?? "", (name, lat, lng) => { _location = name; _country = CityScreen.LastCountry ?? _country; Draw(); }))));
             p.Add(Form.Label("Years coaching"));
             TextField years = Form.Field("e.g. 8", _years, 2);
@@ -283,23 +289,23 @@ namespace PuttrApp
 
         void Credentials(VisualElement p)
         {
-            p.Add(Ui.Text("Credentials", "h2 wrap", Ui.Bold));
-            p.Add(Ui.Text("Optional, but verified credentials earn the Certified Coach badge. Select any you hold and add a photo of each certificate or membership card.", "sub wrap", Ui.Regular).Margin(6));
+            p.Add(Ui.Title("Credentials", "title-20"));
+            p.Add(Ui.Text("Optional, but verified credentials earn the Certified Coach badge. Select any you hold and add a photo of each certificate or membership card.", "sub wrap", Ui.Regular).Margin(8));
             for (int i = 0; i < CredTypes.Length; i++)
             {
                 string type = CredTypes[i], label = CredLabels[i];
                 Dictionary<string, object> held = _credentials.Find(c => J.Str(c, "type") == type);
-                VisualElement card = Ui.Box("glass");
-                card.Add(Ui.Box("row", Ui.Icon("Certificate", 20, held != null ? Ui.Green : Ui.Faint), Ui.Text(label, "feed-name grow", Ui.Medium).Margin(0), held != null ? Ui.Icon("CheckCircle", 20, Ui.Green) : null)
+                VisualElement card = Ui.Box("card");
+                card.Add(Ui.Box("row", Ui.Icon("Certificate", 20, held != null ? Ui.Bright : Ui.Faint), Ui.Text(label, "body grow", Ui.Medium).Margin(0), held != null ? Ui.Icon("CheckCircle", 20, Ui.Bright) : null)
                     .OnTap(() => { if (held != null) _credentials.Remove(held); else _credentials.Add(new Dictionary<string, object> { { "type", type }, { "label", label }, { "proofUrl", null } }); Draw(); }));
                 if (held != null)
                 {
                     string words = J.Str(held, "proofUrl").Length > 0 ? "Proof added. Tap to replace." : _proofBusy == type ? "Uploading..." : "+ Add a photo of your credential";
-                    Label proof = Ui.Text(words, "muted", Ui.Regular);
-                    proof.style.color = J.Str(held, "proofUrl").Length > 0 ? Ui.Green : Ui.Blue;
-                    card.Add(proof.Margin(10).OnTap(() => AddProof(held)));
+                    Label proof = Ui.Text(words, "body-2", Ui.Regular);
+                    proof.style.color = J.Str(held, "proofUrl").Length > 0 ? Ui.Bright : Color.white;
+                    card.Add(proof.Margin(12).OnTap(() => AddProof(held)));
                 }
-                p.Add(card.Margin(10));
+                p.Add(card.Margin(12));
             }
         }
 
@@ -322,10 +328,10 @@ namespace PuttrApp
 
         void Response(VisualElement p)
         {
-            p.Add(Ui.Text("Your putting philosophy", "h2 wrap", Ui.Bold));
-            p.Add(Ui.Text("Describe how you coach putting and how you would use data like make percentage, pace, and start line in a lesson.", "sub wrap", Ui.Regular).Margin(6));
+            p.Add(Ui.Title("Your putting philosophy", "title-20"));
+            p.Add(Ui.Text("Describe how you coach putting and how you would use data like make percentage, pace, and start line in a lesson.", "sub wrap", Ui.Regular).Margin(8));
             TextField text = Form.Field("Write in full sentences, not a resume...", _response, 4000, true);
-            Label count = Ui.Text("", "muted", Ui.Regular);
+            Label count = Ui.Text("", "body-2", Ui.Regular);
             void Count() { count.text = Words + " words" + (Words > 400 ? " (maximum 400)" : ""); count.style.color = Words > 400 ? Ui.Red : Ui.Faint; }
             text.RegisterValueChangedCallback(e => { _response = e.newValue; Count(); Foot(); });
             Count();
@@ -335,14 +341,14 @@ namespace PuttrApp
 
         void Video(VisualElement p)
         {
-            p.Add(Ui.Text("Intro video", "h2 wrap", Ui.Bold));
-            p.Add(Ui.Text("Record a 60 to 90 second video on your phone: who you are, who you coach, and why putting. Then upload it here. If you are approved, this becomes the intro video players see on your coach profile.", "sub wrap", Ui.Regular).Margin(6));
+            p.Add(Ui.Title("Intro video", "title-20"));
+            p.Add(Ui.Text("Record a 60 to 90 second video on your phone: who you are, who you coach, and why putting. Then upload it here. If you are approved, this becomes the intro video players see on your coach profile.", "sub wrap", Ui.Regular).Margin(8));
             if (_uploading)
-                p.Add(Ui.Box("glass center-box", Ui.Text(Mathf.RoundToInt(_progress * 100) + "%", "display center wrap", Ui.Bold), Ui.Text("Uploading your intro...", "muted center", Ui.Regular), Ui.Progress(_progress).Margin(8)).Margin(12));
+                p.Add(Ui.Box("card center-box", Ui.Num(Mathf.RoundToInt(_progress * 100) + "%", "num center"), Ui.Text("Uploading your intro...", "body-2 center", Ui.Regular), Ui.Progress(_progress).Margin(8)).Margin(12));
             else if (_video != null)
-                p.Add(Ui.Box("", VideoBox.Make(_video, 210).Margin(12), Ui.Text("Replace video", "sec-link center", Ui.Medium).Margin(10).OnTap(PickVideo)));
+                p.Add(Ui.Box("", VideoBox.Make(_video, 210).Margin(12), Ui.Text("Replace video", "sec-link center", Ui.Medium).Margin(12).OnTap(PickVideo)));
             else
-                p.Add(Ui.Box("dashed", Ui.Icon("VideoCamera", 40, Ui.Faint), Ui.Text("Upload from your camera roll", "muted", Ui.Bold).Margin(12)).Margin(12).OnTap(PickVideo));
+                p.Add(Ui.Box("dashed", Ui.Icon("VideoCamera", 40, Ui.Faint), Ui.Text("Upload from your camera roll", "body-2", Ui.Bold).Margin(12)).Margin(12).OnTap(PickVideo));
         }
 
         void PickVideo()
@@ -367,7 +373,7 @@ namespace PuttrApp
 
         void Rate(VisualElement p)
         {
-            p.Add(Ui.Text("Rate and availability", "h2 wrap", Ui.Bold));
+            p.Add(Ui.Title("Rate and availability", "title-20"));
             p.Add(Form.Label("Lesson price (USD, minimum $50)"));
             TextField price = Form.Field("e.g. 75", _price, 4);
             price.keyboardType = TouchScreenKeyboardType.NumberPad;
@@ -384,8 +390,8 @@ namespace PuttrApp
 
         void Terms(VisualElement p)
         {
-            p.Add(Ui.Text("Almost done", "h2 wrap", Ui.Bold));
-            p.Add(Ui.Box("glass", Ui.Text("What happens next", "feed-name", Ui.Bold),
+            p.Add(Ui.Title("Almost done", "title-20"));
+            p.Add(Ui.Box("card", Ui.Text("What happens next", "body", Ui.Bold),
                 Ui.Text("1. Our team reviews your application within 5 business days.\n2. If approved, you complete the Coach Academy: short training modules plus a practice lesson.\n3. Set your profile and payouts, then go live to players.", "sub wrap", Ui.Regular).Margin(8)).Margin(12));
             p.Add(Form.Check(_tos, "I agree to the Puttr Coach Terms of Service and understand that coaches are independent contractors, not Puttr employees.", on => { _tos = on; Foot(); }).Margin(12));
             p.Add(Ui.Text("Read the Puttr Coach Terms of Service", "sec-link", Ui.Medium).OnTap(() => Application.OpenURL("https://puttr.co/coach-terms")));
@@ -424,7 +430,7 @@ namespace PuttrApp
             VisualElement box = Ui.Box("thumb-big");
             box.style.height = height;
             if (!string.IsNullOrEmpty(thumb)) Images.Load(thumb, t => { if (t != null) { box.style.backgroundImage = new StyleBackground(t); box.style.unityBackgroundScaleMode = ScaleMode.ScaleAndCrop; } });
-            VisualElement play = Ui.Box("ring", Ui.Icon("Play", 22, Color.white));
+            VisualElement play = Ui.Box("coach-play", Ui.Icon("Play", 22, Color.white));
             box.Add(play);
             if (length > 0) { Label len = Ui.Text(Form.Duration(length), "chip", Ui.Bold); len.style.position = Position.Absolute; len.style.right = 8; len.style.bottom = 8; box.Add(len); }
             box.OnTap(() =>
@@ -480,9 +486,9 @@ namespace PuttrApp
 
         VisualElement Step(string state, string title, string body)
         {
-            Color c = state == "done" ? Ui.Green : state == "current" ? Color.white : new Color(1, 1, 1, 0.3f);
+            Color c = state == "done" ? Ui.Bright : state == "current" ? Color.white : Ui.Faint;
             string icon = state == "done" ? "CheckCircle" : state == "current" ? "MagnifyingGlass" : "Circle";
-            return Ui.Box("timeline-row", Ui.Icon(icon, 22, c), Ui.Box("grow set-words", Ui.Text(title, "feed-name", Ui.Bold), body != null ? Ui.Text(body, "muted wrap", Ui.Regular) : null));
+            return Ui.Box("timeline-row", Ui.Icon(icon, 22, c), Ui.Box("grow set-words", Ui.Text(title, "body", Ui.Bold), body != null ? Ui.Text(body, "body-2 wrap", Ui.Regular) : null));
         }
 
         void Draw(object a, object gl)
@@ -492,7 +498,7 @@ namespace PuttrApp
             int st = J.Int(a, "status");
             if (st == 0 || st == 1)
             {
-                VisualElement card = Ui.Box("glass");
+                VisualElement card = Ui.Box("card");
                 card.Add(Step("done", "Application submitted " + Form.Date(a, "submittedAt"), "Thanks for applying. Sit tight."));
                 card.Add(Step("current", st == 1 ? "Under review now" : "In the review queue", "Our team reviews every application personally. You will hear back within 5 business days by email and push."));
                 card.Add(Step("todo", "Coach Academy", "If approved, you complete short training modules and a practice lesson before going live."));
@@ -501,24 +507,24 @@ namespace PuttrApp
             }
             if (st == 3)
             {
-                _body.Add(Ui.Box("pad", Ui.Box("glass", Ui.Icon("PauseCircle", 40, Ui.Amber), Ui.Text("You're on the waitlist", "h2 wrap", Ui.Bold).Margin(10),
-                    Ui.Text("Your application looks good. Right now we are matching new coaches to player demand, and we will reach out as soon as a spot opens. No action needed.", "sub wrap", Ui.Regular).Margin(6))));
+                _body.Add(Ui.Box("pad", Ui.Box("card", Ui.Icon("PauseCircle", 40, Ui.Amber), Ui.Title("You're on the waitlist", "title-20").Margin(12),
+                    Ui.Text("Your application looks good. Right now we are matching new coaches to player demand, and we will reach out as soon as a spot opens. No action needed.", "sub wrap", Ui.Regular).Margin(8))));
                 return;
             }
             if (st == 4)
             {
                 string again = Form.Date(a, "reapplyAfter", "MMMM d, yyyy");
-                _body.Add(Ui.Box("pad", Ui.Box("glass", Ui.Icon("XCircle", 40, Ui.Red), Ui.Text("Not this time", "h2 wrap", Ui.Bold).Margin(10),
-                    Ui.Text("After review, we are not able to bring you on right now." + (again.Length > 0 ? " You are welcome to apply again after " + again + "." : ""), "sub wrap", Ui.Regular).Margin(6))));
+                _body.Add(Ui.Box("pad", Ui.Box("card", Ui.Icon("XCircle", 40, Ui.Red), Ui.Title("Not this time", "title-20").Margin(12),
+                    Ui.Text("After review, we are not able to bring you on right now." + (again.Length > 0 ? " You are welcome to apply again after " + again + "." : ""), "sub wrap", Ui.Regular).Margin(8))));
                 return;
             }
             // Approved: the path to going live.
             bool live = J.Flag(gl, "live"), academy = J.Flag(gl, "academyComplete"), certPassed = J.Flag(gl, "certPassed"), certPending = J.Flag(gl, "certPending");
             bool profile = J.Flag(gl, "profileComplete"), payouts = J.Flag(gl, "payoutsEnabled");
             object progress = J.Get(gl, "academyProgress");
-            _body.Add(Ui.Box("pad", Ui.Box("glass", Ui.Text("You're approved", "h2 wrap", Ui.Bold), Ui.Text("Welcome to Puttr coaching. Work through the steps below to go live.", "sub wrap", Ui.Regular).Margin(6))));
-            VisualElement path = Ui.Box("glass");
-            path.Add(Ui.Text("Your path to going live", "feed-name", Ui.Bold));
+            _body.Add(Ui.Box("pad", Ui.Box("card", Ui.Title("You're approved", "title-20"), Ui.Text("Welcome to Puttr coaching. Work through the steps below to go live.", "sub wrap", Ui.Regular).Margin(8))));
+            VisualElement path = Ui.Box("card");
+            path.Add(Ui.Text("Your path to going live", "body", Ui.Bold));
             path.Add(Step("done", "Application approved", null));
             path.Add(Step(academy ? "done" : "current", "Coach Academy", academy ? "Complete" : J.Int(progress, "passed") + " of " + J.Int(progress, "total") + " modules done"));
             path.Add(Step(certPassed ? "done" : academy ? "current" : "todo", "Certification lesson", certPassed ? "Passed" : certPending ? "Delivered. Puttr is grading it." : academy ? "Ready: coach a practice lesson, graded by Puttr" : "Unlocks after you finish the Academy"));
@@ -584,34 +590,34 @@ namespace PuttrApp
             List<object> counted = onlinePath ? online : modules;
             int passed = counted.FindAll(m => J.Int(m, "status") == 2).Count, total = counted.Count;
             bool academyDone = total > 0 && passed == total;
-            _body.Add(Ui.Box("pad", Ui.Box("glass row", Ui.Bubble("GraduationCap", Ui.Bright), Ui.Box("grow set-words",
-                Ui.Text(passed + " of " + total + (onlinePath ? " online coaching" : "") + " modules complete", "feed-name wrap", Ui.Bold),
-                onlinePath ? Ui.Text("Finish these to unlock certification. The in-studio modules are optional.", "muted wrap", Ui.Regular) : null,
+            _body.Add(Ui.Box("pad", Ui.Box("card row", Form.Glyph("GraduationCap"), Ui.Box("grow set-words",
+                Ui.Text(passed + " of " + total + (onlinePath ? " online coaching" : "") + " modules complete", "body wrap", Ui.Bold),
+                onlinePath ? Ui.Text("Finish these to unlock certification. The in-studio modules are optional.", "body-2 wrap", Ui.Regular) : null,
                 Ui.Progress(total > 0 ? passed / (float)total : 0).Margin(8)))));
             if (onlinePath && academyDone)
             {
-                if (J.Flag(gl, "certPending")) _body.Add(Ui.Box("pad", Ui.Box("glass row", Ui.Icon("Medal", 26, Ui.Amber), Ui.Box("grow set-words", Ui.Text("Certification submitted", "feed-name", Ui.Bold), Ui.Text("Puttr is grading it. You will get a push and an email with the result.", "muted wrap", Ui.Regular)))));
-                else if (J.Flag(gl, "certPassed")) _body.Add(Ui.Box("pad", Ui.Box("glass row", Ui.Icon("Medal", 26, Ui.Green), Ui.Box("grow set-words", Ui.Text("Certified", "feed-name", Ui.Bold), Ui.Text("You can come back here to review any module at any time.", "muted wrap", Ui.Regular)))));
-                else _body.Add(Ui.Box("pad", Ui.Box("glass row choice-on", Ui.Icon("Medal", 26, Color.white), Ui.Box("grow set-words", Ui.Text("Start your certification lesson", "feed-name", Ui.Bold), Ui.Text("Modules done. Coach one practice lesson end to end and Puttr grades it.", "muted wrap", Ui.Regular)), Ui.Icon("CaretRight", 18, Color.white)).OnTap(() => BeginCertification(_app, Root))));
+                if (J.Flag(gl, "certPending")) _body.Add(Ui.Box("pad", Ui.Box("card row", Ui.Icon("Medal", 24, Ui.Amber), Ui.Box("grow set-words", Ui.Text("Certification submitted", "body", Ui.Bold), Ui.Text("Puttr is grading it. You will get a push and an email with the result.", "body-2 wrap", Ui.Regular)))));
+                else if (J.Flag(gl, "certPassed")) _body.Add(Ui.Box("pad", Ui.Box("card row", Ui.Icon("Medal", 24, Ui.Bright), Ui.Box("grow set-words", Ui.Text("Certified", "body", Ui.Bold), Ui.Text("You can come back here to review any module at any time.", "body-2 wrap", Ui.Regular)))));
+                else _body.Add(Ui.Box("pad", Ui.Box("card row", Ui.Icon("Medal", 24, Color.white), Ui.Box("grow set-words", Ui.Text("Start your certification lesson", "body", Ui.Bold), Ui.Text("Modules done. Coach one practice lesson end to end and Puttr grades it.", "body-2 wrap", Ui.Regular)), Ui.Icon("CaretRight", 18, Color.white)).OnTap(() => BeginCertification(_app, Root))));
             }
             if (onlinePath) { Section("Online Coaching · Required", online); Section("In-Studio Coaching · Optional", studio); }
             else Section("In-Studio Coaching", studio.Count > 0 ? studio : modules);
-            _body.Add(Ui.Box("pad", Ui.Box("glass row", Ui.Icon("Play", 18, Ui.Green), Ui.Box("grow set-words", Ui.Text("Practice space", "feed-name", Ui.Bold), Ui.Text("A sandbox session to play with the review tools. Nothing you do here reaches a real player.", "muted wrap", Ui.Regular)), Ui.Icon("CaretRight", 16, Ui.Faint)).OnTap(() => OpenPractice(_app, Root))));
+            _body.Add(Ui.Box("pad", Ui.Box("card row", Ui.Icon("Play", 18, Ui.Bright), Ui.Box("grow set-words", Ui.Text("Practice space", "body", Ui.Bold), Ui.Text("A sandbox session to play with the review tools. Nothing you do here reaches a real player.", "body-2 wrap", Ui.Regular)), Ui.Icon("CaretRight", 16, Ui.Faint)).OnTap(() => OpenPractice(_app, Root))));
         }
 
         void Section(string title, List<object> modules)
         {
             if (modules.Count == 0) return;
             _body.Add(Ui.Section(title));
-            VisualElement card = Ui.Box("glass set-card");
+            VisualElement card = Ui.Box("coach-list");
             foreach (object m in modules)
             {
                 object module = m;
                 int status = J.Int(m, "status");
                 string chip = status == 2 ? "Passed" + (J.Get(m, "quizScore") != null ? " · " + J.Int(m, "quizScore") + "%" : "") : status == 1 ? "Take quiz" : "Start";
-                Label right = Ui.Text(chip, "muted", Ui.Bold);
-                right.style.color = status == 2 ? Ui.Green : status == 1 ? Ui.Amber : Ui.Faint;
-                VisualElement row = Ui.Box("set-row", Ui.Text(J.Int(m, "num").ToString(), "stat-value", Ui.Bold).Width(30), Ui.Box("grow set-words", Ui.Text(J.Str(m, "title"), "feed-name", Ui.Bold), Ui.Text(J.Str(m, "summary"), "muted wrap", Ui.Regular)), right);
+                Label right = Ui.Text(chip, "chip coach-chip", Ui.Bold);
+                right.style.color = status == 2 ? Ui.Bright : status == 1 ? Ui.Amber : Ui.Faint;
+                VisualElement row = Ui.Box("set-row", Ui.Num(J.Int(m, "num").ToString(), "num-20").Width(32), Ui.Box("grow set-words", Ui.Text(J.Str(m, "title"), "body", Ui.Bold), Ui.Text(J.Str(m, "summary"), "body-2 wrap", Ui.Regular)), right);
                 card.Add(row.OnTap(() => _app.Push(new AcademyModuleScreen(_app, module))));
             }
             _body.Add(Ui.Box("pad", card));
@@ -625,22 +631,22 @@ namespace PuttrApp
             Root = Page.Make(app, "Module " + J.Int(m, "num"), out VisualElement body);
             VisualElement p = Ui.Box("pad");
             body.Add(p);
-            p.Add(Ui.Text(J.Str(m, "title"), "h2 wrap", Ui.Bold));
-            if (J.Int(m, "status") == 2) p.Add(Ui.Box("row", Ui.Icon("CheckCircle", 16, Ui.Green), Ui.Text("Passed" + (J.Get(m, "quizScore") != null ? " · " + J.Int(m, "quizScore") + "%" : ""), "muted", Ui.Bold).Margin(0)).Margin(6));
+            p.Add(Ui.Title(J.Str(m, "title"), "title-20"));
+            if (J.Int(m, "status") == 2) p.Add(Ui.Box("row", Ui.Icon("CheckCircle", 16, Ui.Bright), Ui.Text("Passed" + (J.Get(m, "quizScore") != null ? " · " + J.Int(m, "quizScore") + "%" : ""), "body-2", Ui.Bold).Margin(0)).Margin(8));
             if (J.Str(m, "videoUrl").Length > 0) p.Add(VideoBox.Make(J.Str(m, "videoUrl"), 210).Margin(12));
             foreach (object l in J.List(J.Get(m, "lessons")))
             {
-                VisualElement card = Ui.Box("glass", Ui.Text(J.Str(l, "heading"), "feed-name wrap", Ui.Bold), Ui.Text(J.Str(l, "body"), "sub wrap", Ui.Regular).Margin(6));
+                VisualElement card = Ui.Box("card", Ui.Text(J.Str(l, "heading"), "body wrap", Ui.Bold), Ui.Text(J.Str(l, "body"), "sub wrap", Ui.Regular).Margin(8));
                 if (J.Str(l, "imageUrl").Length > 0)
                 {
-                    VisualElement img = Ui.Box("thumb-big").Margin(10);
+                    VisualElement img = Ui.Box("thumb-big").Margin(12);
                     img.style.height = 180;
                     Images.Load(J.Str(l, "imageUrl"), t => { if (t != null) { img.style.backgroundImage = new StyleBackground(t); img.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit; } });
                     card.Add(img);
                 }
-                if (J.Str(l, "videoUrl").Length > 0) card.Add(VideoBox.Make(J.Str(l, "videoUrl"), 180).Margin(10));
+                if (J.Str(l, "videoUrl").Length > 0) card.Add(VideoBox.Make(J.Str(l, "videoUrl"), 180).Margin(12));
                 string yt = J.Str(l, "youtubeUrl");
-                if (yt.Length > 0) card.Add(Ui.Box("row", Ui.Icon("YoutubeLogo", 18, Ui.Red), Ui.Text("Watch on YouTube", "sec-link", Ui.Medium).Margin(0)).Margin(10).OnTap(() => Application.OpenURL(yt)));
+                if (yt.Length > 0) card.Add(Ui.Box("row", Ui.Icon("YoutubeLogo", 18, Ui.Red), Ui.Text("Watch on YouTube", "sec-link", Ui.Medium).Margin(0)).Margin(12).OnTap(() => Application.OpenURL(yt)));
                 p.Add(card.Margin(12));
             }
             if (J.List(J.Get(m, "quiz")).Count > 0)
@@ -679,17 +685,17 @@ namespace PuttrApp
         void Draw()
         {
             _body.Clear();
-            _body.Add(Ui.Box("", Ui.Box("top", Ui.Text("‹", "back back-chevron", Ui.Medium).OnTap(() => { if (_at > 0) { _at--; Draw(); } else _app.Pop(); }), Ui.Text("Question " + (_at + 1) + " of " + _quiz.Count, "sec-title", Ui.Bold), Ui.Box("back-balance")),
+            _body.Add(Ui.Box("", Ui.Box("top", Ui.Text("‹", "back back-chevron", Ui.Medium).OnTap(() => { if (_at > 0) { _at--; Draw(); } else _app.Pop(); }), Ui.Text("Question " + (_at + 1) + " of " + _quiz.Count, "top-title", Ui.Bold), Ui.Box("back-balance")),
                 Ui.Box("pad", Ui.Progress((_at + 1) / (float)Math.Max(1, _quiz.Count)))));
             object q = _quiz[_at];
-            VisualElement p = Ui.Box("pad", Ui.Text(J.Str(q, "q"), "h2 wrap", Ui.Bold));
+            VisualElement p = Ui.Box("pad", Ui.Text(J.Str(q, "q"), "body wrap", Ui.Bold));
             List<object> options = J.List(J.Get(q, "options"));
             for (int i = 0; i < options.Count; i++)
             {
                 int index = i;
                 bool on = _answers[_at] == i;
-                p.Add(Ui.Box(on ? "glass row choice-on" : "glass row", Ui.Icon(on ? "RadioButton" : "Circle", 20, on ? Ui.Bright : Ui.Faint), Ui.Text(options[i] as string ?? J.Str(options[i], "text"), "feed-name grow wrap", Ui.Medium).Margin(0))
-                    .Margin(10).OnTap(() => { _answers[_at] = index; Draw(); }));
+                p.Add(Ui.Box(on ? "card row coach-on" : "card row", Ui.Icon(on ? "RadioButton" : "Circle", 20, on ? Ui.Bright : Ui.Faint), Ui.Text(options[i] as string ?? J.Str(options[i], "text"), "body grow wrap", Ui.Medium).Margin(0))
+                    .Margin(12).OnTap(() => { _answers[_at] = index; Draw(); }));
             }
             _body.Add(p);
             bool last = _at == _quiz.Count - 1, chosen = _answers[_at] != null;
@@ -714,10 +720,10 @@ namespace PuttrApp
             if (result == null) { _body.Clear(); _body.Add(Page.Note("We could not save your quiz. Check your connection and try again.")); _body.Add(Form.Bottom(Ui.Button("Try again", () => App.Run(Send())))); yield break; }
             bool passed = J.Flag(result, "passed");
             _body.Clear();
-            _body.Add(FreePuttScreen.Space(60));
-            _body.Add(Ui.Box("pad center-box", Ui.Icon(passed ? "CheckCircle" : "XCircle", 56, passed ? Ui.Green : Ui.Amber),
-                Ui.Text(passed ? "Module passed" : "Not quite", "display center wrap", Ui.Bold).Margin(12),
-                Ui.Text(J.Int(result, "score") + "%   ·   " + J.Int(result, "correct") + " of " + J.Int(result, "total") + " correct", "feed-name center", Ui.Bold).Margin(6),
+            _body.Add(FreePuttScreen.Space(32));
+            _body.Add(Ui.Box("pad center-box", Ui.Icon(passed ? "CheckCircle" : "XCircle", 56, passed ? Ui.Bright : Ui.Amber),
+                Ui.Title(passed ? "Module passed" : "Not quite", "title center").Margin(12),
+                Ui.Text(J.Int(result, "score") + "%   ·   " + J.Int(result, "correct") + " of " + J.Int(result, "total") + " correct", "body center", Ui.Bold).Margin(8),
                 Ui.Text(passed ? "Nice work. Your progress is saved." : "You need 80% to pass. Review the module and give it another go, retakes are free.", "sub center wrap", Ui.Regular).Margin(8)));
             _body.Add(Form.Bottom(Ui.Button(passed ? "Back to Academy" : "Review the module", () =>
             {

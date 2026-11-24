@@ -192,7 +192,7 @@ namespace PuttrApp
                 _field.textEdition.hidePlaceholderOnFocus = false;
                 _field.textEdition.hideMobileInput = true; // the composer is the input: no system text bar over the keyboard
                 _field.textSelection.cursorColor = Ui.Bright;
-                _field.textSelection.selectionColor = new Color(0.48f, 0.83f, 0.27f, 0.35f);
+                _field.textSelection.selectionColor = Ui.Green;   // solid: see-through colours blend too bright here
                 _field.AddToClassList("chat-field");
                 _field.Face(Ui.Regular);
                 _field.RegisterValueChangedCallback(_ => Refresh());
@@ -209,7 +209,7 @@ namespace PuttrApp
                 }, TrickleDown.TrickleDown);
                 _pill = Ui.Box("chat-pill-input", _field);
                 _pill.RegisterCallback<PointerDownEvent>(_ => _field.Focus()); // the whole pill is the target, not only the text
-                _send = Ui.Box("chat-send-btn chat-send-off", Ui.Icon("PaperPlaneRight", 18, Color.white)).OnTap(Go);
+                _send = Ui.Box("chat-send-btn chat-send-off", Ui.Icon("PaperPlaneRight", 22, Color.white)).OnTap(Go);
                 composer = Ui.Box("chat-bar", _pill, _send);
                 DevDrive(_field);
             }
@@ -473,7 +473,20 @@ namespace PuttrApp
             else app.Push(new ClubScreen(app, "Your putting coach"));
         }
 
-        public CoachChatScreen(App app, string conversationId, bool readOnly)
+        /// <summary>
+        /// "Continue conversation" on a coach's analysis (CoachPlan): the chat opens on that conversation with the
+        /// answer the Player just read as the coach's message, so it shows without a round trip (PuttrProChat
+        /// continueFromAnalysis). A Kid profile or a non-member is turned away as Open does.
+        /// </summary>
+        public static void Continue(App app, string conversationId, string answer)
+        {
+            if (Kid.IsKid(app.Profile)) { app.Toast("Chat is off for Kid profiles."); return; }
+            if (!Club.Member(app.Profile)) { app.Push(new ClubScreen(app, "Your putting coach")); return; }
+            app.Push(new CoachChatScreen(app, conversationId, false, answer ?? ""));
+        }
+
+        /// <param name="handover">An analysis answer to open on (Continue); the conversation is not read back from the server.</param>
+        public CoachChatScreen(App app, string conversationId, bool readOnly, string handover = null)
         {
             _app = app;
             Coaches.Persona coach = CoachVoice.Persona;
@@ -481,15 +494,21 @@ namespace PuttrApp
                 Ui.IconButton("Clock", "History", () => app.Push(new CoachHistoryScreen(app))),
                 Ui.Box("grow"),
                 readOnly ? null : Ui.IconButton("ChatCircle", "New chat", () => { if (_sending) return; _conversationId = null; Greet(); }));
-            VisualElement intro = Ui.Box("pad center-box chat-intro", Ui.Avatar(coach.Name, null, true), Ui.Text("Putting Coach", "feed-name", Ui.Bold).Margin(6),
-                Ui.Text("Get personalized coaching on grip, stance, stroke mechanics, green reading, and more.", "muted center", Ui.Regular).Margin(4));
+            VisualElement intro = Ui.Box("pad center-box chat-intro", Coaches.Avatar(coach, true), Ui.Text("Putting Coach", "body", Ui.Bold).Margin(8),
+                Ui.Text("Get personalized coaching on grip, stance, stroke mechanics, green reading, and more.", "body-2 center", Ui.Regular).Margin(4));
             VisualElement locked = readOnly
                 ? Ui.Box("chat-locked", Ui.Text("This chat is read-only. Become a member again to keep talking with your coach.", "sub", Ui.Medium)).OnTap(() => app.Push(new ClubScreen(app, "Your putting coach")))
                 : null;
-            _thread = new ChatThread(() => Ui.Avatar(CoachVoice.Persona.Name, null), intro, "Message your coach", readOnly ? null : (Action<string>)Send, locked);
+            _thread = new ChatThread(() => Coaches.Avatar(CoachVoice.Persona), intro, "Message your coach", readOnly ? null : (Action<string>)Send, locked);
             Root = Ui.Box("chat-screen", Ui.Header(coach.Name, app.Pop), top, _thread.Root);
             App.Run(Api.Get("/coach/settings", d => CoachVoice.Load(d), _ => { }));
-            if (conversationId != null) App.Run(LoadConversation(conversationId));
+            if (handover != null)
+            {
+                _conversationId = string.IsNullOrEmpty(conversationId) ? null : conversationId;
+                _thread.Clear();
+                _thread.Theirs(handover, DateTime.Now);
+            }
+            else if (conversationId != null) App.Run(LoadConversation(conversationId));
             else { Greet(); App.Run(ResumeLatest()); } // the greeting at once; the last chat replaces it if there is one
         }
 
@@ -621,26 +640,35 @@ namespace PuttrApp
         // CoachRecCards: the lessons and games the coach pointed to.
         void Recs(object m)
         {
+            VisualElement box = RecCards(_app, m);
+            if (box != null) _thread.Append(box);
+        }
+
+        /// <summary>The lessons and games a coach's answer recommends (recommendedLessons, recommendedGames), or null when none. before runs ahead of opening one (a modal closing itself).</summary>
+        public static VisualElement RecCards(App app, object m, Action before = null)
+        {
             List<object> lessons = J.List(J.Get(m, "recommendedLessons")), games = J.List(J.Get(m, "recommendedGames"));
-            if (lessons.Count + games.Count == 0) return;
-            VisualElement box = Ui.Box("chat-recs", Ui.Text("COACH RECOMMENDATIONS", "kick", Ui.Bold));
+            if (lessons.Count + games.Count == 0) return null;
+            VisualElement box = Ui.Box("chat-recs", Ui.Text("COACH RECOMMENDATIONS", "caps caps-green", Ui.Bold));
             foreach (object l in lessons)
             {
                 string id = J.Str(l, "id");
-                box.Add(Ui.Box("glass list-row", Ui.Box("grow", Ui.Text("LESSON", "kick", Ui.Bold), Ui.Text(J.Str(l, "title"), "feed-name", Ui.Bold), Ui.Text("Watch and practice", "muted", Ui.Regular)), Ui.Icon("CaretRight", 16, Ui.Faint))
+                box.Add(Ui.Box("card list-row", Ui.Box("grow", Ui.Text("LESSON", "caps caps-green", Ui.Bold), Ui.Text(J.Str(l, "title"), "body", Ui.Bold), Ui.Text("Watch and practice", "body-2", Ui.Regular)), Ui.Icon("CaretRight", 16, Ui.Faint))
                     .OnTap(() => Library.Load(() =>
                     {
                         object lesson = (Library.Lessons ?? new List<object>()).Find(x => J.Str(x, "id") == id) ?? (Library.Workouts ?? new List<object>()).Find(x => J.Str(x, "id") == id);
-                        if (lesson != null) _app.Push(new LessonScreen(_app, lesson));
+                        if (lesson == null) return;
+                        before?.Invoke();
+                        app.Push(new LessonScreen(app, lesson));
                     })));
             }
             foreach (object g in games)
             {
                 string id = J.Str(g, "id");
-                box.Add(Ui.Box("glass list-row", Ui.Box("grow", Ui.Text("DRILL GAME", "kick", Ui.Bold), Ui.Text(J.Str(g, "title"), "feed-name", Ui.Bold), Ui.Text("Play it now", "muted", Ui.Regular)), Ui.Icon("CaretRight", 16, Ui.Faint))
-                    .OnTap(() => App.Run(Api.Get("/games/ALL", d => { object game = J.List(d).Find(x => J.Str(x, "id") == id); if (game != null) _app.Push(new GameScreen(_app, game)); }))));
+                box.Add(Ui.Box("card list-row", Ui.Box("grow", Ui.Text("DRILL GAME", "caps caps-green", Ui.Bold), Ui.Text(J.Str(g, "title"), "body", Ui.Bold), Ui.Text("Play it now", "body-2", Ui.Regular)), Ui.Icon("CaretRight", 16, Ui.Faint))
+                    .OnTap(() => App.Run(Api.Get("/games/ALL", d => { object game = J.List(d).Find(x => J.Str(x, "id") == id); if (game == null) return; before?.Invoke(); app.Push(new GameScreen(app, game)); }))));
             }
-            _thread.Append(box);
+            return box;
         }
     }
 
@@ -659,7 +687,7 @@ namespace PuttrApp
             Root = Page.Make(app, "Chat history", out VisualElement body);
             body.Add(Ui.Box("pad", Ui.Text(member ? "Pick up any conversation with your coach where you left off." : "Everything your coach has told you so far.", "sub", Ui.Regular)));
             if (member) body.Add(Ui.Box("pad", Ui.Button("New chat", () => { app.Pop(); app.Push(new CoachChatScreen(app, null, false)); })));
-            else body.Add(Ui.Box("pad", Ui.Box("glass", Ui.Text("Your chats are read-only", "feed-name", Ui.Bold), Ui.Text("Become a member again to keep talking with your coach.", "sub", Ui.Regular)).OnTap(() => app.Push(new ClubScreen(app, "Your putting coach")))));
+            else body.Add(Ui.Box("pad", Ui.Box("card", Ui.Text("Your chats are read-only", "body", Ui.Bold), Ui.Text("Become a member again to keep talking with your coach.", "sub", Ui.Regular)).OnTap(() => app.Push(new ClubScreen(app, "Your putting coach")))));
             _list = new VisualElement();
             body.Add(_list);
         }
@@ -683,7 +711,7 @@ namespace PuttrApp
         void Draw()
         {
             _list.Clear();
-            if (_rows.Count == 0) { _list.Add(Ui.Box("pad center-box", Ui.Text("No chats yet", "h2", Ui.Bold).Margin(30), Ui.Text("Conversations with your coach are saved here so you can come back to them.", "sub center", Ui.Regular))); return; }
+            if (_rows.Count == 0) { _list.Add(Ui.Box("pad center-box", Ui.Title("No chats yet", "title-20").Margin(32), Ui.Text("Conversations with your coach are saved here so you can come back to them.", "sub center", Ui.Regular))); return; }
             DateTime now = DateTime.Now;
             string section = null;
             VisualElement card = null;
@@ -691,10 +719,10 @@ namespace PuttrApp
             {
                 DateTime at = ProfileMath.Date(r, "lastTurnAt")?.ToLocalTime() ?? now;
                 string s = at.Date == now.Date ? "TODAY" : at.Date > now.Date.AddDays(-6) ? "THIS WEEK" : "EARLIER";
-                if (s != section) { section = s; _list.Add(Ui.Section(s)); card = Ui.Box("glass set-card"); _list.Add(Ui.Box("pad", card)); }
+                if (s != section) { section = s; _list.Add(Ui.Section(s)); card = Ui.Box("coach-list"); _list.Add(Ui.Box("pad", card)); }
                 string when = at.Date == now.Date ? at.ToString("h:mm tt", CultureInfo.InvariantCulture) : at.Date > now.Date.AddDays(-6) ? at.ToString("dddd", CultureInfo.InvariantCulture) : at.ToString(at.Year == now.Year ? "MMM d" : "MMM d, yyyy", CultureInfo.InvariantCulture);
                 string id = J.Str(r, "conversationId");
-                card.Add(Ui.Box("note-row", Ui.Box("grow set-words", Ui.Box("row", Ui.Text(J.Str(r, "title", "Chat with your coach"), "feed-name grow", Ui.Bold), Ui.Text(when, "muted", Ui.Regular)),
+                card.Add(Ui.Box("note-row", Ui.Box("grow set-words", Ui.Box("row", Ui.Text(J.Str(r, "title", "Chat with your coach"), "body grow", Ui.Bold), Ui.Text(when, "body-2", Ui.Regular)),
                     Ui.Text((J.Str(r, "previewRole") == "user" ? "You: " : "") + J.Str(r, "preview"), "sub", Ui.Regular))).OnTap(() => _app.Push(new CoachChatScreen(_app, id, !Club.Member(_app.Profile)))));
             }
             if (_more) _list.Add(Ui.Box("pad", Ui.Button("Load more", () => App.Run(Load(J.Str(_rows[_rows.Count - 1], "lastTurnAt"))), "btn btn-ghost")));
@@ -711,16 +739,16 @@ namespace PuttrApp
 
         static VisualElement Face()
         {
-            VisualElement face = Ui.Box("avatar chat-caddie-face", Ui.Icon("FillTarget", 15, Ui.Bright));
-            face.style.backgroundColor = Color.Lerp(Ui.Ink, Ui.Bright, 0.2f);
+            VisualElement face = Ui.Box("avatar chat-caddie-face", Ui.Icon("FillTarget", 16, Color.white));
+            face.style.backgroundColor = Ui.Green;   // the avatar ground: brand green, a white mark
             return face;
         }
 
         public CaddieScreen(App app)
         {
             _app = app;
-            VisualElement intro = Ui.Box("pad center-box chat-intro", Ui.Bubble("FillTarget", Ui.Bright), Ui.Text("Puttr Caddie", "feed-name", Ui.Bold).Margin(6),
-                Ui.Text("Ask me anything about using Puttr, game rules, or getting the most out of your practice.", "muted center", Ui.Regular).Margin(4));
+            VisualElement intro = Ui.Box("pad center-box chat-intro", Form.Glyph("FillTarget"), Ui.Text("Puttr Caddie", "body", Ui.Bold).Margin(8),
+                Ui.Text("Ask me anything about using Puttr, game rules, or getting the most out of your practice.", "body-2 center", Ui.Regular).Margin(4));
             bool kid = Kid.IsKid(app.Profile);
             _thread = new ChatThread(Face, intro, "Message the Caddie", kid ? null : (Action<string>)Send, Ui.Box("chat-locked", Ui.Text("Chat is off for Kid profiles.", "sub", Ui.Medium)));
             string first = HomeScreen.FirstName(app.Profile);

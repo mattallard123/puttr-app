@@ -129,6 +129,14 @@ namespace PuttrApp
             object check = null;
             yield return Api.Get("/coach/checkin/resolve/" + UnityWebRequest.EscapeURL(token), d => check = d, _ => { });
             if (check == null) { app.Toast("That check-in link has expired."); yield break; }
+            // A venue's Puttr (Venue Mode): the member takes a seat under their own name.
+            if (J.Flag(check, "venue") || J.Get(check, "venue") is bool at && at)
+            {
+                string venue = J.Str(J.Get(check, "coach"), "displayName", "this venue");
+                Dialog.Ask(app.Toasts, "Play as you?", "Take a seat at " + venue + " under your own name. Your putts and games there save to your profile.", "Join",
+                    () => App.Run(Api.Post("/coach/checkin/claim", new Dictionary<string, object> { { "token", token } }, _ => app.Toast("You're in. Look up at the screen."), _ => app.Toast("Couldn't join. Try again."))));
+                yield break;
+            }
             Dialog.Ask(app.Toasts, "Check in?", "Check in to " + J.Str(check, "locationName", J.Str(check, "coachName", "this studio")) + ".", "Check in",
                 () => App.Run(Api.Post("/coach/checkin/claim", new Dictionary<string, object> { { "token", token } }, _ => app.Toast("Checked in."), _ => app.Toast("Couldn't check in. Try again."))));
         }

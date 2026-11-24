@@ -1,0 +1,211 @@
+spotkick_save <- Sports, Field, Football, Gloves, Hands, Catching Ball SND58890.wav
+deadweight_release <- Rocks, Movement, Slide On Wood 02 SND18118.wav
+deadweight_slide_loop <- Ice, Impact, Stone, Impacts, Slides, Frozen Lake, Schoeps CCM4 (XY)  SND147042.wav
+deadweight_rink_loop <- Ambience, Sport, Ice Rink, Interior, Voices, Skates SND151837.wav
+deadweight_out <- Sports, Winter, Ice Hockey, Puck, Hit Rink 02 SND168981.wav
+doors_miss <- Rocks, Impact, Stone, On Marble Floor SND170019.wav
+deadweight_clack <- Rocks, Impact, Stone Impacts On Rock Surface SND75240.wav
+horse_cheer <- Crowds, Cheering, Applause, Youth Audience, Big, Clapping, Large Hall SND8557.wav
+deadweight_button <- Ambience, Sport, Ice Skating Rink, Indoor, Horn, Goal Scored SND166814.wav
+sendit_arena_loop <- Vehicles, Motorcycle, Motocross, Closed Circuit Race (ORTF) SND164209.wav
+sendit_landing <- Vehicles, Motorcycle, Motorocross, KTM SX 150, Revs, Departing 02 MKH8060 (Shotgun) SND143342.wav
+reducer_alarm <- Scifi, Alarm, Futuristic Technology, Motion Detected, Loopable 02 SND58774.wav
+lab_scan <- Scifi, Computer, Futuristic UI, Droid Interface, Robotic 01 SND121423.wav
+slingshot_pulled_in <- Explosions, Designed, Futuristic Explosion 04 SND73980.wav
+theyips_crit <- Scifi, Impact, Explosion, Futuristic, Growl SND164652.wav
+squareup_miss <- Electricity, Arc, Futuristic, Arc, Impact SND164659.wav
+lab_make <- User Interface, Beep, Notification, Confirm, Positive SND138207 1.wav
+compare_pick <- User Interface, Motion, Soft Confirm SND112784.wav
+freeputt_goal <- User Interface, Alert, Notification, Confirmation, Short, Melodic SND129770.wav
+reducer_pass <- User Interface, Alert, Notification, Confirmation, Positive, Chirp, Message SND129771.wav
+centercut_bell <- User Interface, Alert, Notification, Confirmation, Joyful, Happy 02 SND129772.wav
+slingshot_relay_lock <- User Interface, Alert, Notification, Shimmery, Confirmation, Digital, Synthetic SND129685.wav
+lab_miss <- User Interface, Beep, Error Tone, Digital SND57545.wav
+switchback_miss <- User Interface, Alert, Error, Bass SND85101.wav
+freeputt_miss <- User Interface, Alert, Error, Dull SND85094.wav
+assessment_miss <- User Interface, Alert, Notification, Message, Error, Wrong, Subtle, Fast 01 SND87151.wav
+compare_miss <- User Interface, Beep, Error, Fail, Tonal, Negative SND138057.wav
+matchplay_hole_won <- Crowds, Applause, Outdoor, Medium Group, Norwegian Walla SND1350.wav
+groove_win <- Crowds, Applause, Applause, Cheers, Interior Venue, Spain SND166330.wav
+matchplay_win <- Crowds, Applause, Crowd Applause, Street Show, Spain SND166131.wav
+centercut_clap <- Crowds, Applause, Hall, Clap, Enthusiastic, Reaction SND160159.wav
+archery_bullseye <- Crowds, Applause, Applause Crowd, Shouts, Street, Event Show, Traffic, Georgia SND166331.wav
+tracks_roar <- Crowds, Sport, Football, Norway, Celebration, Massive Crowd, Drums, Bell Ringing, Screams and Cheers, Clapping, Perspective 01 SND161976.wav
+matchplay_halved <- Crowds, Applause, Hands, Clap, Small Group, People SND163008.wav
+archery_ring <- Crowds, Cheering, Applause, Small Crowd, Theater, Montreal, Canada 01 SND166634.wav
+tenpin_spare <- Crowds, Reaction, Cheltenham Festival, Applause, Small Crowd, Between Races, United Kingdom SND158763.wav
+windmill_ace <- Crowds, Cheering, Small Awards Ceremony, 25 People, Cheers, Clapping, Reactions 03 SND133516.wav
+balloonpop_fair_loop <- Crowds, Walla, Crowd, British, Fairground, Exterior SND148439.wav
+balloonpop_score <- Rubber, Misc, Balloon, Snaps SND159815.wav
+balloonpop_no_pop <- Toys, Misc, Rocket Balloon, Deflate in Hand, Continuous Whine, Descending SND134782.wav
+balloonpop_sink <- Objects, Household, Plastic Bucket, Small, Down On Hard Floor SND24038.wav
+turfwar_splat <- Toys, Misc, Water Balloon, Splash, Impact 03 SND114285.wav
+windmill_splash <- Water, Splash, Splat, Single, Small SND58962.wav
+turfwar_big_splat <- Gore, Source, Creature Transformation Sounds, Splats & Impacts 01 SND145524.wav
+turfwar_throw <- Water, Splash, Throw Water From Bucket Into Water, Lake, MKH8060 MS 01 SND114429.wav
+turfwar_dribble <- Water, Drip, Drip, Glugs SND138199.wav
+pure_cavern_loop <- Ambience, Underground, Rock Cavity, Water Trickle, Mid Far Echo SND168796.wav
+doors_temple_loop <- Ambience, Underground, Cave Temple, Water Trickles, Distant Voices SND168791.wav
+turfwar_studio_loop <- Ambience, Room Tone, Large Room, With Exposed AC Ducts SND137286.wav
+slingshot_adrift <- Scifi, Energy, Switch Off, Power Out, Station, No Energy, Ramping Down 01 SND133280.wav
+lab_hum_loop <- Ambience, Industrial, Warehouse, Aeration, Loud Fan SND168723.wav
+squareup_arena_loop <- Wind, Designed, Spooky, Haunting, Warehouse, Abandoned, Designed SND134406.wav
+fullworkout_make <- Metal, Impact, Dumbbell, Various Weights, Thrown On Each Other SND169929.wav
+fullworkout_gym_loop <- Sports, Gym, High Ceiling, Some People, Weights, Machine Noises, Montreal, Canada 02 SND166706.wav
+horse_gym_loop <- Doors, Sliding, Shower, Glass Panel, Open, Shut SND162832.wav
+fullworkout_big <- Metal, Impact, Metal Bar, Hit, Place Down, Heavy SND28580.wav
+lockdown_alarm <- Alarms, Bell, Ringing, School, Boxing SND47605.wav
+fullworkout_win <- Bells, Misc, Boxing Bell, Brass, Start Fight, End Of Round SND46122.wav
+horse_letter <- Alarms, Bell, Fire Alarm Buzzer Inside Box 02 (50) SND163834.wav
+horse_gym_loop <- Sports, Court, Basketball, Interior, Basketball Game, Behind Players Perspective, No Voices SND60890.wav
+underthecup_zero <- Alarms, Buzzer, Wrong Answer Buzzer SND81649.wav
+horse_win <- Alarms, Buzzer, Console 01 SND32470.wav
+assessment_station <- Bells, Doorbell, Classic, Ding Dong SND162323.wav
+underthecup_pocket <- Games, Arcade, Pinball, Elvira House Of Horrors, 6 Balls Draining Down To Ball Trof SND51921.wav
+underthecup_pin <- Games, Arcade, Pinball Machine, Flipper, Quadruplets, Interior SND144671.wav
+underthecup_jackpot <- Games, Arcade, Pinball Machine, Startup Sequence, Interior SND144608.wav
+underthecup_machine_loop <- Ambience, Public Place, Arcade, Game Hall SND12987.wav
+tugofwar_heave <- Rope, Creak, Long Rope Creak, Rope Tension, Rope Stretching 07 SND109073.wav
+tugofwar_slip <- Footsteps, Human, Walking Through Mud SND76906.wav
+tugofwar_mud_splat <- Liquid & Mud, Impact, Mud Squelch, Splatter, Impact, Wet SND153962.wav
+tugofwar_win <- Horns, Air Powered, Air Horn, Blast, Various SND38716.wav
+speeddemon_win <- Horns, Air Powered, Air Horn, Blast, Long And Short SND32590.wav
+highside_win <- Air, Blow, Bamboo Horn, Blow, Long SND147425.wav
+speeddemon_make <- Vehicles, Racing, Car, Drag Race, Pass Bys 02 SND47700.wav
+speeddemon_strip_loop <- Vehicles, Racing, Car, Drag Race, Burnout, Walla, Cheering SND47677.wav
+speeddemon_miss <- Vehicles, Jalopy, Vehicle, Backfire, Failure, Engine Failure, Designed 01 SND144248.wav
+metal_forge_loop <- Ambience, Industrial, Forge, Activity, Distant 02 SND151542.wav
+metal_bellows <- Fire, Burning, Forge Burner, Fireplace, Chimney 01 SND122308.wav
+gears_make <- Machines, Industrial, Factory, Drop Forge 04 SND13172.wav
+clock_study_loop <- Clocks, Tick, Old Desk Clock, Ticking SND102393.wav
+pendulum_hall_loop <- Clocks, Mechanics, Huge, Clockwork, Vibration SND86024.wav
+pendulum_multiplier <- Clocks, Chime, Hall Clock, Chimes Ringing SND102462.wav
+pendulum_beat <- Clocks, Tick, Grandfather Clock, 1920, Pendulum Ticking SND102394.wav
+clock_hour <- Clocks, Chime, Antique Grandfather Clock, Chimes Ringing SND102340.wav
+clock_make <- Clocks, Mechanics, Wall Clock, Winding SND153270.wav
+windmill_park_loop <- Ambience, Park, People, Movement, Sunny Day, Quiet, Noon, Distant Traffic and Birds, Cemetary, Rye, England 01 SND158153.wav
+tugofwar_field_loop <- Ambience, Park, People, Movement, Sunny Day, Quiet, Noon, Distant Traffic and Birds, Cemetary, Rye, England 02 SND158122.wav
+arrow_miss <- Weapons, Arrow, Impact, Vibrating, Rattling Only 01 SND125075.wav
+highstriker_dud <- Cartoon, Boing, Boing, Bend, Pitch Down SND154452.wav
+clock_miss <- Metal, Impact, Massage Bed, Short Spring SND169935.wav
+leapfrog_make <- Animals, Amphibian, Frogs, Tree Frog, Single SND53972.wav
+leapfrog_win <- Animals, Amphibian, Frog Croaks, Frogs 03 SND116255.wav
+waltz_beat <- Musical, Plucked, Short Phrase, Musical Accent, Warm, Kora Harp 03 SND96947.wav
+waltz_make <- Musical, Stringed, Orchestral Harp, Glissando, Up, Phrygian SND166763.wav
+waltz_swell <- Musical, Stinger, Phrase Medieval, Violin, Sentimental 01 SND112615.wav
+pure_perfect <- Glass, Tonal, Bowed, Singing Glasses, Whisky Glass, Long SND159877.wav
+pure_make <- Glass, Tonal, Bowed, Singing Glasses, Wine Glass, Short 01 SND159874.wav
+pure_fill <- Glass, Impact, Ringing, Sparkling Wine Glass SND159778.wav
+tourjuice_make <- Food & Drink, Glassware, Cheers, Toast, Glass Hitting Glass, Resonant  SND167210.wav
+tourjuice_pour <- Water, Pour, Glass, Fill, Pour, From Plastic Bottle SND122645.wav
+tourjuice_fizzle <- Food & Drink, Pour, Soda, Pouring, Liquid, Fizz SND167604.wav
+tourjuice_miss <- Food & Drink, Drinking, Loud Sipping, Straw 02 SND123974.wav
+tourjuice_bar_loop <- Ambience, Restaurant & Bar, Cafe, Casual, Not Busy, Montreal, Canada, Loop SND166503.wav
+tourjuice_tour_quality <- Machines, Appliance, Espresso Machine, Foamer Steam Wand, Hissing SND168895.wav
+lockdown_open <- Doors, Metal, Doors, Safe, Electronic, Digital, Open  01 SND81731.wav
+lockdown_break <- Metal, Movement, Locker, Safe, Impact, Shake, Rumble, Rattle 01 SND162405.wav
+lockdown_corner <- Mechanical, Click, Metalic Selector, Safe SND6561.wav
+lockdown_bolt <- Doors, Metal, Electronic Safe, Close, Lock, Whirr, Hotel SND83859.wav
+theyips_stage <- Creatures, Monster, Roar SND0730.wav
+theyips_hit <- Creatures, Humanoid, Giant, Troll, Reactions, Angry, Grunt, Pain SND134581.wav
+theyips_defeat <- Creatures, Monster, Ominous, Awoken, Slow Groan, Inside Cave SND167259.wav
+theyips_victory <- Creatures, Dinosaur, Processed Camel, Grunt, Groan, Roar, Harsh SND166333.wav
+theyips_block <- Weapons, Armor, Metal Shield, Block, Parry, Deflect SND117357.wav
+squareup_beam <- Scifi, Energy, Activate Protective Energy Shield SND73976.wav
+squareup_level <- Scifi, Misc, Power Up 01 SND81669.wav
+slingshot_win <- Scifi, Machine, Power Up 10 SND7111.wav
+carboncopy_office_loop <- Ambience, Office, Medium Public Building, Office, Photocopier, Edinburgh SND133601.wav
+carboncopy_scan <- Machines, Office, HP Laser MFP 135w Photocopier Scanning SND88328.wav
+carboncopy_copy <- Machines, Office, HP Laser MFP 135w Photocopier Printing, One Page SND88329.wav
+carboncopy_match <- Objects, Office, Stamp Hand, Press, Mark, Short SND96256.wav
+carboncopy_miss <- Paper, Misc, Paper Crumple, Toss SND123930.wav
+stretch_short <- Rubber, Misc, Rubber Band, Boink, Tight, Slap SND120557.wav
+stretch_band <- Rubber, Misc, Rubber Band, Boink, Pitch Up SND120566.wav
+stretch_ok <- Metal, Movement, Tape Measure, Retract SND111250.wav
+stretch_studio_loop <- Ambience, Room Tone, Living Room A SND103905.wav
+compare_bay_loop <- Ambience, Room Tone, Office Room Tone, AC SND124071.wav
+assessment_floor_loop <- Ambience, Room Tone, Office Kitchen Room Tone 02 SND124073.wav
+lockdown_vault_loop <- Ambience, Room Tone, Hum, Ventilation 07 SND78338.wav
+centercut_bed_loop <- Ambience, Room Tone, Meeting Room, Rumbling Ventilation 02 SND124076.wav
+waltz_miss <- Musical, Stringed, Double Bass, Hit, Bow Impact, Muted String, Bounce SND169986.wav
+deadcenter_make <- Bullets, Ricochet, Metal SND158698.wav
+deadcenter_miss <- Bullets, Ricochet, Airy SND56485.wav
+deadcenter_scope <- Guns, Rifle, Sniper, Scope, Zoom In, Zoom Out SND117322.wav
+highstriker_puck <- Mechanical, Ratchet, Old Camera, Scope Adjust, Rotate, Click, Turning Gear, Slow 01 SND142513.wav
+groove_scratch <- Communications, Phonograph, Vinyl, Record Scratch, Stop SND13860.wav
+gears_grind <- Weapons, Sword, Plate Scratching, Short, Metal Friction, Source Recording 01 SND147778.wav
+groove_make <- Musical, Percussion, Snare Drum, Snares Off, Rolls, Crescendo SND45807.wav
+groove_stage_loop <- Crowds, Misc, Crowd Blur, Slow Motion Concert Crowd SND79125.wav
+ohone_checkout <- Crowds, Cheering, Concert Crowd, Small, British, Reacting To Music 03 SND131039.wav
+ohone_throw <- Sports, Indoor, Dart, Hit Dartboard SND32650.wav
+ohone_bounce_out <- Sports, Indoor, Dart Impacts, Wooden Playboard, Multiple SND99712.wav
+switchback_make <- Games, Video, Rising, Building Up, Upgrade, Level Up, Positive, Synth SND113053.wav
+reducer_arena_loop <- Scifi, Machine, Tremolo Synth SND124469.wav
+switchback_win <- Designed, Stinger, Digital, Electronic SND169829.wav
+switchback_drive_loop <- Vehicles, Interior, Audi A4 Allroad Tfsi, Driving, Thorugh City, Night 01 SND71991.wav
+pendulum_make <- Clocks, Chime, Church Tower, Bell Ringing 01 SND102465.wav
+windmill_blade <- Windows, Wood, Knock, Hollow, Hit, Box, Rattle SND163094.wav
+pendulum_miss <- Doors, Knock, Hand, Hit, Wood SND162785.wav
+windmill_par <- User Interface, Misc, Completions, Xylophone SND115457.wav
+highstriker_win <- Cartoon, Musical, Xylophone, Mallet, Melodic, Percussive, Happy SND129841.wav
+assessment_make <- Cartoon, Musical, Xylophone, Wink, Twinkle SND62996.wav
+assessment_grade <- Objects, Book, Book, Notebook, Page, Flip SND135409.wav
+highside_low_side <- Rocks, Crash & Debris, Ground Fall, Small Chunks, Constant, Wide, Dense, Distant SND168969.wav
+metal_win <- Musical, Loop, Cinema, Games, Electric Guitar, Distorted Guitar, Rock SND66930.wav
+metal_miss <- Musical, Stinger, Guitar, String, Pitchdown SND139757.wav
+fullworkout_miss <- Sports, Misc, Deflated Ball, Football, Volleyball, Bounce SND170021.wav
+squareup_block <- Designed, Stinger, Impact, Hit, Deep, Boom, Thud SND121186.wav
+doors_make <- Machines, Antique, Printing Press, Heidelberg OHZ, Mechanics, No Engine 04 SND69402.wav
+gears_machine_loop <- Machines, Industrial, Machinery, Repeating Servo Motors, Resonant SND166202.wav
+matchplay_board <- Wood, Impact, Thud, Deep, Dark, Reverb SND30339.wav
+theyips_lair_loop <- Creatures, Ethereal, Ghost, Group, Breathe, Moaning, Around Us, Dungeon SND166595.wav
+deadcenter_bullseye <- Scifi, Weapon, Scout Rifle, ADS, Target Acquisition SND74036.wav
+compare_make <- Sports, Misc, Golf, Putter, Ball Impact, Long Put 02 SND59162.wav
+highside_make <- Sports, Misc, Golf, Putter Pxg10 M, Ball Impact 01 SND59167.wav
+compare_result <- Designed, Stinger, Sudden Tech Reveal, Positive SND169843.wav
+reducer_shrink <- Robots, Movement, Transformer, Servo, Movement, Rotation SND45986.wav
+tenpin_gutter <- Sports, Indoor, Bowling, Throw, Fast, Miss 02 SND39848.wav
+pure_miss <- Glass, Tonal, Singing Bowl, Impact SND124594.wav
+leapfrog_lilypad <- Liquid & Mud, Impact, Lake, Swoosh, Seaweed Hit, Wide SND166678.wav
+deadcenter_scope_loop <- Wind, Vegetation, Dry Grass Rustling, Wind, Desert, Chile SND81338.wav
+tugofwar_big_pull <- Voices, Male, Male Group, Shout, Achievement, Ta Dam SND158244.wav
+tenpin_ball_roll_loop <- Rubber, Movement, Rubber Ball On Carpet In Leather, Roll, Constant, QTC50 SND154842 1.wav
+_reel_cinematic <- Musical, Loop, Cinematic Drums, Abstract SND68823.wav
+_reel_electric <- Musical, Loop, Electric Drum 01 SND68748.wav
+_reel_148 <- Musical, Loop, Drum Loop, Crunchy, Organic and Percussive, 148 BPM 01 SND165232.wav
+_reel_hit <- Designed, Stinger, Classic, Hit, Trailer, Drop SND84397.wav
+puttball_arcade_loop <- Ambience, Public Place, Arcade, Fruit Machines, Video Games, Walla SND50825.wav
+puttball_roll <- Games, Arcade, Ball Bearings, Roll on Drum SND124610.wav
+gl_meadow_loop <- Ambience, Grassland, Meadow, Insects, Birds, Quiet, Calm, Distant Dogs 01 SND116394.wav
+gl_boss_down <- Games, Video, Retro, Music, Level Complete SND29804.wav
+gl_clear <- Games, Video, Retro, 8 Bit, Level Complete Tone SND15046.wav
+gl_out <- Games, Video, Retro, Game Over SND58374.wav
+gl_miss <- User Interface, Alert, Game Over, Defeat, Loss, Negative, Notification 01 SND99707.wav
+gl_make <- Games, Video, Retro, 8 Bit, Coin Collect, Positive SND129890.wav
+gl_boss_hit <- Cartoon, Impact, Bonk, Hit, Weak, Meme Redesign SND140181.wav
+gl_side_door <- Cartoon, Boing, Jump, Bonk SND11766.wav
+gl_w2_loop <- Wood, Movement, Windmill Outside, Spinning SND154661.wav
+gl_w3_loop <- Wind, General, Desert, Light Whistling, Wind Gusts SND81192.wav
+gl_w4_loop <- Wind, General, Gusts, Snow, Rustling, Howling 01 SND11623.wav
+gl_w5_loop <- Ambience, Desert, Desolation, Canyon, Wind SND68626.wav
+gl_w6_loop <- Geothermal, Lava, Jurassic Period, Volcano, Flowing Lava Layer, Loop SND168850.wav
+gl_w7_loop <- Ambience, Alpine, High Mountain Silence, Mountain Top, Calm Wind, Fluttering SND133935.wav
+gl_w8_loop <- Creatures, Ethereal, Ghost, Group, Breathe, Moaning, Around Us, Dungeon SND166595 1.wav
+gl_w3_boss_hit <- Fight, Impact, Cartoon Punch, Hit, Fight 02 SND83936.wav
+gl_w8_boss_hit <- Musical, Stinger, Cartoon, Squeal, Marimba Hits SND138010.wav
+gl_w7_boss_hit <- Cartoon, Warble, Wobble Hit SND73351.wav
+gl_w5_boss_hit <- Cartoon, Impact, Thud, Anvil Hit, Goofy, Meme Redesign SND140180.wav
+gl_w4_boss_hit <- Ice, Break, Thin Ice Cracks SND43021.wav
+gl_w6_boss_hit <- Swooshes, Whoosh, Fast, Movement, Fire, Flames 02 SND115692 1.wav
+gl_w2_boss_hit <- Wood, Break, Snap, Hollow SND158911.wav
+tracks_gallery_polite <- Crowds, Applause, Small Group, Small, Applause 01 SND131049 1.wav
+tracks_gallery_polite <- Crowds, Applause, Small Group, Small, Applause 02 SND131048.wav
+tracks_gallery_rise <- Crowds, Applause, Crowd, Small, Applause 01 SND131056 1.wav
+tracks_gallery_rise <- Crowds, Applause, Crowd, Small, Applause 02 SND131055.wav
+tracks_gallery_cheer <- Crowds, Applause, Crowd, Small, Applause 07 SND131050.wav
+tracks_gallery_cheer <- Crowds, Applause, Crowd, Small, Applause 06 SND131051.wav
+tracks_gallery_aww <- Crowds, Reaction, Disappointed, Large Audience, Medium 07 SND41282.wav
+tracks_gallery_aww <- Crowds, Reaction, Disappointed, Large Audience, Medium 04 SND41285.wav
+tracks_gallery_aww <- Crowds, Reaction, Disappointed, Large Audience, Short 02 SND41278.wav
+tracks_gallery_ooh <- Crowds, Reaction, Disappointed, Large Audience, Medium 05 SND41284.wav
+tracks_gallery_ooh <- Crowds, Reaction, Disappointed, Large Audience, Medium 03 SND41286.wav

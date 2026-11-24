@@ -1,0 +1,443 @@
+{
+ "appId": "1528616307",
+ "name": "PuttrCo",
+ "versions": [
+  {
+   "id": "47fb920c-7081-481e-b350-8863fa83364c",
+   "platform": "IOS",
+   "version": "2.9.6",
+   "state": "PREPARE_FOR_SUBMISSION",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "iPhone Duo Support is here plus TV sign in and other enhancements for Tracks! "
+   },
+   "screenshotSets": [
+    "APP_WATCH_SERIES_4",
+    "APP_IPHONE_61",
+    "APP_IPHONE_67",
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_IPHONE_DUO",
+    "APP_IPHONE_65"
+   ]
+  },
+  {
+   "id": "629f16f8-1409-402c-923b-a21dfa4ddd76",
+   "platform": "TV_OS",
+   "version": "1.0",
+   "state": "PREPARE_FOR_SUBMISSION",
+   "listing": {
+    "description": null,
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": null
+   },
+   "screenshotSets": []
+  },
+  {
+   "id": "aefeb33b-7981-41b5-98e2-71cd4adb870d",
+   "platform": "IOS",
+   "version": "2.9.5",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "iPhone Duo Support is here plus TV sign in and other enhancements for Tracks! "
+   },
+   "screenshotSets": [
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_IPHONE_67",
+    "APP_IPHONE_65",
+    "APP_WATCH_SERIES_4",
+    "APP_IPHONE_61",
+    "APP_IPHONE_DUO"
+   ]
+  },
+  {
+   "id": "df41464a-3d2a-4544-b4e1-486726ae670d",
+   "platform": "IOS",
+   "version": "2.9.4",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "New deep links, updates to Tracks skill levels, and iPhone Duo support! "
+   },
+   "screenshotSets": [
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_IPHONE_65",
+    "APP_WATCH_SERIES_4",
+    "APP_IPHONE_67"
+   ]
+  },
+  {
+   "id": "46661ba5-3d81-4347-8270-a3181dc2fe44",
+   "platform": "IOS",
+   "version": "2.9.3",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "Tracks! Now you can play any course in the world on your Puttr. Updates to Driver distances and levels as well as customizable settings for difficulty"
+   },
+   "screenshotSets": [
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_WATCH_SERIES_4",
+    "APP_IPHONE_65",
+    "APP_IPHONE_67"
+   ]
+  },
+  {
+   "id": "96eebb9e-c8cd-49db-b5c0-fd24bd952eaf",
+   "platform": "IOS",
+   "version": "2.9.2",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "Introducing Tracks, a new way to play any course in the world with putts! Single or multiplayer at all the top courses, and you can even add your own!  "
+   },
+   "screenshotSets": [
+    "APP_IPHONE_67",
+    "APP_IPHONE_65",
+    "APP_WATCH_SERIES_4",
+    "APP_IPAD_PRO_3GEN_129"
+   ]
+  },
+  {
+   "id": "804d1702-b206-4e7f-8bec-5b0cd596255e",
+   "platform": "IOS",
+   "version": "2.9.1",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "Coach video updates and Vertex sensor data now integrated to AI coaching video sessions, plus other fixes and enhancements"
+   },
+   "screenshotSets": [
+    "APP_IPHONE_65",
+    "APP_IPHONE_67",
+    "APP_WATCH_SERIES_4",
+    "APP_IPAD_PRO_3GEN_129"
+   ]
+  },
+  {
+   "id": "a5bbaa19-b1ed-492b-8fe5-d4ce0441f6a1",
+   "platform": "IOS",
+   "version": "2.9.0",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "Major coach improvements, coaching chat history and other fixes and enhancements"
+   },
+   "screenshotSets": [
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_IPHONE_65",
+    "APP_WATCH_SERIES_4",
+    "APP_IPHONE_67"
+   ]
+  },
+  {
+   "id": "65414a14-6b21-42fb-8b5e-41fdd4f905fd",
+   "platform": "IOS",
+   "version": "2.8.9",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "Tons of updates to Party mode, coach chat, league play and Vertex sensor games! "
+   },
+   "screenshotSets": [
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_IPHONE_65",
+    "APP_WATCH_SERIES_4",
+    "APP_IPHONE_67"
+   ]
+  },
+  {
+   "id": "88cef6fc-3c04-4118-9000-c6769b314699",
+   "platform": "IOS",
+   "version": "2.8.8",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "Sensor based games are here! Go to Play -> Sensor and connect your Vertex to get everything dialed! "
+   },
+   "screenshotSets": [
+    "APP_IPHONE_65",
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_WATCH_SERIES_4",
+    "APP_IPHONE_67"
+   ]
+  },
+  {
+   "id": "4e8edf0b-3247-4e44-8b05-9a757134976d",
+   "platform": "IOS",
+   "version": "2.8.7",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "Vertex sensor fixes and new tournament and league leaderboards, plus other enhancements"
+   },
+   "screenshotSets": [
+    "APP_WATCH_SERIES_4",
+    "APP_IPHONE_67",
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_IPHONE_65"
+   ]
+  },
+  {
+   "id": "1c760a06-abd5-4e11-b80f-db2acdb01530",
+   "platform": "IOS",
+   "version": "2.8.6",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "Coach dashboard and other enhancements and critical fixes"
+   },
+   "screenshotSets": [
+    "APP_IPHONE_65",
+    "APP_WATCH_SERIES_4",
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_IPHONE_67"
+   ]
+  },
+  {
+   "id": "4093e582-e222-48be-8c4f-c6828424b98a",
+   "platform": "IOS",
+   "version": "2.8.5",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "New coach application and lots of profile enhancements and updates! "
+   },
+   "screenshotSets": [
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_IPHONE_65",
+    "APP_IPHONE_67",
+    "APP_WATCH_SERIES_4"
+   ]
+  },
+  {
+   "id": "10b938d2-6048-430e-bada-db2e538833a0",
+   "platform": "IOS",
+   "version": "2.8.4",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "Speed improvements, video quality improvements for 3D lab sessions, league night and other enhancements"
+   },
+   "screenshotSets": [
+    "APP_IPHONE_67",
+    "APP_IPHONE_65",
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_WATCH_SERIES_4"
+   ]
+  },
+  {
+   "id": "c5ff7259-29a6-4198-9cb2-6e53e88c0abe",
+   "platform": "IOS",
+   "version": "2.8.3",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "Major Party mode updates and new branding features"
+   },
+   "screenshotSets": [
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_WATCH_SERIES_4",
+    "APP_IPHONE_65",
+    "APP_IPHONE_67"
+   ]
+  },
+  {
+   "id": "e796a782-6a85-4448-80e4-2cd624d58fae",
+   "platform": "IOS",
+   "version": "2.8.2",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "New branding and party mode updates for venues and events, and enhancements on speed data"
+   },
+   "screenshotSets": [
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_IPHONE_67",
+    "APP_IPHONE_65",
+    "APP_WATCH_SERIES_4"
+   ]
+  },
+  {
+   "id": "2afe1f7c-304e-4ec1-a135-abde1d5c6cbd",
+   "platform": "IOS",
+   "version": "2.8.1",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "Fix for recording sessions and a bunch of coach updates! "
+   },
+   "screenshotSets": [
+    "APP_IPHONE_65",
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_IPHONE_67",
+    "APP_WATCH_SERIES_4"
+   ]
+  },
+  {
+   "id": "3705bb95-3096-4078-aa03-d626f011b856",
+   "platform": "IOS",
+   "version": "2.8.0",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "All new coaching platform with online lessons and player reviews plus other enhancements."
+   },
+   "screenshotSets": [
+    "APP_WATCH_SERIES_4",
+    "APP_IPHONE_67",
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_IPHONE_65"
+   ]
+  },
+  {
+   "id": "87906c94-9730-4a58-a75b-15d8260bccab",
+   "platform": "IOS",
+   "version": "2.7.9",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "Better speed readings, improved coaching dashboard, Vertex sensor fixes and other enhancements. "
+   },
+   "screenshotSets": [
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_IPHONE_65",
+    "APP_WATCH_SERIES_4",
+    "APP_IPHONE_67"
+   ]
+  },
+  {
+   "id": "15327f75-1d90-4d2a-a23a-7875d0a4803c",
+   "platform": "IOS",
+   "version": "2.7.8",
+   "state": "READY_FOR_SALE",
+   "listing": {
+    "description": "The Puttr app is the companion app for your Puttr green! \n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "locale": "en-US",
+    "keywords": "Golf, putting, sports",
+    "marketingUrl": "https://puttr.co",
+    "promotionalText": null,
+    "supportUrl": "https://puttr.co",
+    "whatsNew": "Major updates for coaches platform as well as other enhancements and improvements"
+   },
+   "screenshotSets": [
+    "APP_WATCH_SERIES_4",
+    "APP_IPAD_PRO_3GEN_129",
+    "APP_IPHONE_65",
+    "APP_IPHONE_67"
+   ]
+  }
+ ],
+ "appInfo": [
+  {
+   "locale": "en-US",
+   "name": "PuttrCo",
+   "subtitle": "Putt Better.",
+   "privacyPolicyUrl": "https://puttr.co/pages/privacy-policy",
+   "privacyChoicesUrl": null,
+   "privacyPolicyText": null
+  },
+  {
+   "locale": "en-US",
+   "name": "PuttrCo",
+   "subtitle": "Putt Better.",
+   "privacyPolicyUrl": "https://puttr.co/pages/privacy-policy",
+   "privacyChoicesUrl": null,
+   "privacyPolicyText": null
+  }
+ ]
+}

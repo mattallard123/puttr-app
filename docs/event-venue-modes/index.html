@@ -1,0 +1,404 @@
+<title>Event and Venue Modes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,700;0,900;1,900&display=swap">
+<style>
+/* Layout: one reading column; every mockup is a 16:9 (or phone) frame sized in container units so it scales as a unit. Single dark look, the Puttr 2 sports UI. */
+:root{
+  color-scheme:dark;
+  --ink:#07090a; --page:#0b0d0e; --panel:#111314; --card:#181a1c; --card2:#202325; --line:#2a2d30;
+  --green:#7ad446; --deep:#2d8c3c; --amber:#ffb300; --red:#ff5252; --blue:#4aa8ff;
+  --text:#fff; --sub:#b8b9b9; --mute:#848586;
+  --b1:#7ad446; --b2:#2d8c3c; --bink:#07090a;
+  --font:"Montserrat",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+body{background:var(--page);color:var(--text);font:400 15px/1.6 var(--font)}
+.wrap{max-width:1080px;margin:0 auto;padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:56px}
+section{display:flex;flex-direction:column;gap:20px;min-width:0}
+h1,h2,h3{margin:0;text-wrap:balance;text-transform:uppercase;font-style:italic;font-weight:900;line-height:1.05}
+h1{font-size:clamp(34px,6vw,60px)}
+h2{font-size:clamp(24px,3.6vw,34px)}
+h3{font-size:17px;font-style:normal;letter-spacing:.02em}
+p{margin:0;max-width:68ch;color:var(--sub)}
+p b,li b{color:var(--text);font-weight:700}
+.eyebrow{font:700 12px var(--font);letter-spacing:.2em;text-transform:uppercase;color:var(--b1)}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.item{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.item p{font-size:14px;line-height:1.5}
+.tag{align-self:flex-start;font:700 10px var(--font);letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px;background:var(--card2);color:var(--sub)}
+.tag.new{background:var(--b1);color:var(--bink)}
+.tag.chg{background:var(--amber);color:#07090a}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:700 11px var(--font);letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+td:first-child{color:var(--text);font-weight:700;white-space:nowrap}
+td{color:var(--sub)}
+ol,ul{margin:0;padding-left:20px;color:var(--sub);display:flex;flex-direction:column;gap:8px;max-width:72ch}
+.kits{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.kits span{font:700 11px var(--font);letter-spacing:.16em;text-transform:uppercase;color:var(--mute);margin-right:4px}
+.kits button{font:700 13px var(--font);color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;display:flex;gap:8px;align-items:center}
+.kits button i{width:12px;height:12px;border-radius:50%}
+.kits button[aria-pressed=true]{border-color:var(--text);background:var(--card2)}
+.kits button:focus-visible{outline:2px solid var(--b1);outline-offset:2px}
+.sticky{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--page);padding:10px 0;border-bottom:1px solid var(--line)}
+figure{margin:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+figcaption{font-size:13px;color:var(--mute)}
+figcaption b{color:var(--text);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-right:6px}
+.fw{overflow-x:auto;border-radius:12px}
+.shots{display:grid;gap:24px}
+.phones{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;max-width:760px}
+
+/* ---- mock frames ---- */
+.scr{position:relative;aspect-ratio:16/9;min-width:660px;container-type:inline-size;overflow:hidden;background:var(--ink);border:1px solid var(--line);border-radius:12px;font-family:var(--font)}
+.ph{position:relative;aspect-ratio:9/18;container-type:inline-size;overflow:hidden;background:var(--ink);border:1px solid var(--line);border-radius:22px}
+.stage{position:absolute;inset:0;width:100%;height:100%}
+.abs{position:absolute}
+.T{font-weight:900;font-style:italic;text-transform:uppercase;line-height:1}
+.L{font-weight:700;text-transform:uppercase;letter-spacing:.18em;color:var(--sub);font-size:1.05cqw}
+.pn{background:var(--panel);border:1px solid var(--line);border-radius:1cqw;padding:1.4cqw}
+.btn{display:inline-block;background:var(--b1);color:var(--bink);font-weight:900;font-style:italic;text-transform:uppercase;border-radius:.8cqw;padding:1cqw 2cqw;font-size:1.5cqw}
+.qr{display:block;border-radius:.5cqw}
+.row{display:flex;align-items:center;gap:1cqw;padding:.7cqw 0;border-bottom:1px solid var(--line);font-size:1.35cqw;font-weight:700}
+.row:last-child{border-bottom:0}
+.row .rk{width:2cqw;font-weight:900;font-style:italic;color:var(--mute)}
+.row:first-of-type .rk{color:var(--b1)}
+.row .nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .sc{font-weight:900;font-style:italic;font-variant-numeric:tabular-nums}
+.vf{display:inline-block;width:1.1cqw;height:1.1cqw;border-radius:50%;background:var(--b1);margin-left:.5cqw;vertical-align:middle}
+.bug{left:50%;top:1.2cqw;transform:translateX(-50%);display:flex;align-items:stretch;background:var(--panel);border:1px solid var(--line);border-radius:.8cqw;overflow:hidden;font-size:1.3cqw;font-weight:700;white-space:nowrap}
+.bug>div{padding:.8cqw 1.3cqw;display:flex;align-items:center;gap:.7cqw}
+.bug .br{background:var(--b1);color:var(--bink);font-weight:900;font-style:italic}
+.bug .on{background:var(--card2)}
+.bug b{font-weight:900;font-style:italic;font-size:1.7cqw}
+.dot{width:1cqw;height:1cqw;border-radius:50%}
+.pin{position:absolute;display:flex;align-items:center;gap:.5cqw;background:var(--ink);border:1px solid var(--text);border-radius:99px;padding:.3cqw .9cqw .3cqw .3cqw;font-size:1.05cqw;font-weight:700;white-space:nowrap;transform:translate(-1.2cqw,-50%)}
+.pin i{font-style:normal;width:1.8cqw;height:1.8cqw;border-radius:50%;background:var(--text);color:var(--ink);display:grid;place-items:center;font-weight:900}
+.seat{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:1cqw;padding:1.6cqw;display:flex;flex-direction:column;align-items:center;gap:.9cqw;text-align:center}
+.av{width:6cqw;height:6cqw;border-radius:50%;display:grid;place-items:center;font-weight:900;font-style:italic;font-size:2.4cqw;color:var(--ink)}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:1cqw;overflow:hidden;display:flex;flex-direction:column}
+.tile .art{height:7.5cqw;display:grid;place-items:center}
+.tile .tx{padding:.9cqw 1.1cqw;display:flex;flex-direction:column;gap:.3cqw}
+.fld{display:flex;justify-content:space-between;gap:1cqw;padding:.75cqw 0;border-bottom:1px solid var(--line);font-size:1.25cqw}
+.fld span{color:var(--sub)} .fld b{font-weight:700;text-align:right}
+.stat{flex:1;background:var(--card);border-radius:.8cqw;padding:1.1cqw}
+.stat b{display:block;font-weight:900;font-style:italic;font-size:2.8cqw;line-height:1.1}
+.in{background:var(--card);border:1px solid var(--line);border-radius:3cqw;padding:3.6cqw 4cqw;font-size:4.4cqw;color:var(--sub)}
+@media (prefers-reduced-motion:no-preference){.ballm{animation:roll 3.2s ease-out infinite}@keyframes roll{0%{transform:translateY(300px);opacity:0}10%{opacity:1}80%,100%{transform:translateY(0)}}}
+</style>
+
+<style>
+.ph .pc{position:absolute;inset:0;padding:8cqw 5cqw;display:flex;flex-direction:column;gap:3.2cqw;font-size:3.9cqw}
+.ph .nav{display:flex;align-items:center;gap:3cqw;font-weight:900;font-style:italic;text-transform:uppercase;font-size:5.4cqw}
+.ph .nav s{text-decoration:none;color:var(--sub);font-style:normal;font-weight:700;font-size:6cqw}
+.ph .sec{font:700 2.9cqw var(--font);letter-spacing:.18em;text-transform:uppercase;color:var(--mute);margin-top:1.5cqw}
+.ph .card{background:var(--panel);border:1px solid var(--line);border-radius:3cqw;overflow:hidden;flex:none}
+.ph .pr{display:flex;align-items:center;gap:3cqw;padding:3.2cqw 3.6cqw;border-bottom:1px solid var(--line)}
+.ph .pr:last-child{border-bottom:0}
+.ph .pr .g{flex:1;min-width:0}
+.ph .pr .g small{display:block;color:var(--mute);font-size:3.1cqw;margin-top:.6cqw}
+.ph .pr .v{color:var(--sub);font-size:3.4cqw}
+.ph .ic{width:5.5cqw;height:5.5cqw;border-radius:1.4cqw;background:var(--card2);flex:none}
+.ph .hi{border-color:var(--b1)}
+.ph .club{font:900 2.6cqw var(--font);font-style:italic;letter-spacing:.06em;background:var(--b1);color:var(--bink);padding:.8cqw 1.8cqw;border-radius:99px}
+.ph .sw{width:9cqw;height:5.2cqw;border-radius:99px;background:var(--card2);position:relative;flex:none}
+.ph .sw::after{content:"";position:absolute;top:.6cqw;left:.6cqw;width:4cqw;height:4cqw;border-radius:50%;background:var(--sub)}
+.ph .sw.on{background:var(--b1)} .ph .sw.on::after{left:4.4cqw;background:var(--bink)}
+.ph .mode{background:var(--panel);border:1px solid var(--line);border-radius:3cqw;padding:4cqw;display:flex;flex-direction:column;gap:1.6cqw}
+.ph .mode b{font-weight:900;font-style:italic;text-transform:uppercase;font-size:5.6cqw}
+.ph .mode span{color:var(--sub);font-size:3.4cqw;line-height:1.45}
+.ph .mode.sel{border:2px solid var(--b1)}
+.ph .slot{width:15cqw;height:7cqw;border-radius:1.4cqw;border:1px dashed var(--mute);display:grid;place-items:center;font-size:2.6cqw;color:var(--mute);flex:none}
+.ph .slot.full{border:0;background:var(--card2);color:var(--b1);font-weight:900;font-style:italic;font-size:2.6cqw}
+.ph .sws{display:flex;gap:1.6cqw} .ph .sws i{width:6cqw;height:6cqw;border-radius:50%;border:1px solid var(--line)}
+.ph .prev{border-radius:3cqw;overflow:hidden;aspect-ratio:16/9;position:relative;container-type:inline-size;border:1px solid var(--line);flex:none}
+.ph .bbtn{margin-top:auto;text-align:center;background:var(--b1);color:var(--bink);font-weight:900;font-style:italic;text-transform:uppercase;border-radius:3cqw;padding:3.6cqw;font-size:4.4cqw}
+.ph .note{font-size:3.1cqw;color:var(--mute);line-height:1.45}
+.dec{display:grid;grid-template-columns:auto 1fr;gap:10px 16px;max-width:780px}
+.dec b{font:700 11px var(--font);letter-spacing:.16em;text-transform:uppercase;color:var(--b1);padding-top:3px;white-space:nowrap}
+.dec span{color:var(--sub)}
+@media (max-width:520px){.dec{grid-template-columns:1fr;gap:2px}.dec span{margin-bottom:10px}}
+.nameIn{background:var(--card);border:1px solid var(--line);border-radius:.8cqw;padding:1cqw 1.4cqw;font-size:1.6cqw;font-weight:700;display:flex;align-items:center;gap:1cqw}
+</style>
+
+<div class="wrap">
+
+<section>
+  <div class="eyebrow">Puttr 2 · proposal, version 2 · 20 Nov 2026</div>
+  <h1>Event Mode and Venue Mode</h1>
+  <p>Legacy Party mode splits into two modes for Puttr Club members. <b>Event Mode</b> is for a one-off corporate day; <b>Venue Mode</b> is for a screen that runs every night in a bar or simulator venue. Both are set up from Settings, branded from the app, and saved to the host's profile as before. In the 3D worlds the brand goes onto in-world surfaces instead of background photos.</p>
+  <p>Nothing here is built. Brands in the mockups are invented; switch kits to see every screen re-skin.</p>
+</section>
+
+<div class="sticky"><div class="kits" id="kits" role="group" aria-label="Sample brand kit"><span>Sample kit</span></div></div>
+
+<section>
+  <div class="eyebrow">Decided 20 Nov</div>
+  <h2>Your calls</h2>
+  <div class="dec">
+    <b>Custom games</b><span>Hosts add their own custom games, as on the Improve tab. Standard comes back as a custom type next to Center Cut. The Unity creator already offers both; they just need to show up in the host's game list.</span>
+    <b>Players</b><span>Type a name and play, like legacy. No phone check-in, no line.</span>
+    <b>Members</b><span>A member who signs in by QR plays as themselves: games and putts go to their own profile.</span>
+    <b>Who can host</b><span>Puttr Club only, for both modes. Players never need Club.</span>
+    <b>Emails</b><span>None for now. Boards show Player names only.</span>
+    <b>Puttr's presence</b><span>One LED panel in every scene is always Puttr, plus the console lid.</span>
+    <b>Bay timer</b><span>Left out.</span>
+    <b>Kits</b><span>One kit per profile, used by both modes. The mode is a setting on it.</span>
+    <b>QR sign-in</b><span>Venue Mode only. Event Mode is typed names.</span>
+    <b>Legacy kits</b><span>Carry over automatically: logos, colours, text and games. Background photos are dropped.</span>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Entry and set-up</div>
+  <h2>From Settings, saved to your profile</h2>
+  <p>A new <b>Host</b> section in Settings has one row, <b>Event &amp; Venue mode</b>, shown to every adult account. Non-members get the Club page. Members pick a mode, then land in the brand kit editor. The kit saves to the profile through the same <code>/party/brandkit</code> route legacy uses, so any device signed in to that account picks it up. <b>Start</b> turns the device over to the mode; hold the logo and enter the staff PIN to get back.</p>
+  <figure><div class="phones" id="setup1"></div><figcaption><b>Entry</b>Settings row, then the mode choice. Without Club the row opens the Club page instead.</figcaption></figure>
+  <figure><div class="phones" id="setup2"></div><figcaption><b>Brand kit</b>The live preview at the top is the real 3D stage with the kit applied, so there is no separate screen guide.</figcaption></figure>
+  <div class="grid">
+    <div class="item"><span class="tag chg">From legacy</span><h3>Kept</h3><p>Brand and co-host logos, primary and secondary colours, title, one line under it, leaderboard title, QR link and message, game list with order and a featured game, clear leaderboard.</p></div>
+    <div class="item"><span class="tag chg">Dropped</span><h3>Background photos</h3><p>Attract, menu and in-game backgrounds and their dim levels. The colours light the 3D stage instead. Existing legacy kits carry over without them.</p></div>
+    <div class="item"><span class="tag new">New</span><h3>Partner logos</h3><p>Up to five, rotating on one LED panel. The last panel is always Puttr.</p></div>
+    <div class="item"><span class="tag new">New</span><h3>Staff PIN</h3><p>Four digits, replacing the five-tap exit. Unlocks: exit, remove a score, new event, volume.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">The brand in the world</div>
+  <h2>Eight places a kit shows up</h2>
+  <p>Most scenes already have places where a sponsor would be in real life, and today they show the Puttr logo. The engine paints the kit onto them in every game. Scenes without boards (Balloon Pop, Turf War) use the video board and tee mark only.</p>
+  <figure><div class="fw"><div class="scr" id="s-brand"></div></div>
+  <figcaption><b>Brand map</b>LED panels run brand, brand, partner, brand, brand, Puttr.</figcaption></figure>
+</section>
+
+<section>
+  <div class="eyebrow">Shared by both modes</div>
+  <h2>The foundation</h2>
+  <div class="grid">
+    <div class="item"><span class="tag">From legacy</span><h3>Typed names</h3><p>The Player picker in host mode shows typed names only (no profiles on the host's account), 1 to 4 seats. Guest putts save under the host's account, as in legacy.</p></div>
+    <div class="item"><span class="tag chg">Changed</span><h3>Private leaderboard</h3><p>On the in-world video board, the attract screen and the web signage page. Keyed to a fixed id for the host instead of the display name, so a rename never breaks the link.</p></div>
+    <div class="item"><span class="tag chg">Changed</span><h3>Custom games</h3><p>The host's Standard and Center Cut custom games appear in the game list alongside catalogue games, each switchable and orderable like any other.</p></div>
+    <div class="item"><span class="tag new">New</span><h3>Attract loop</h3><p>After 90 seconds idle the screen returns to a slow camera move around the branded stage with the board. A putt wakes it.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">One-off corporate day</div>
+  <h2>Event Mode</h2>
+  <p>For an operator like Dryvebox or Wego Golf running a client day. Someone is at the screen, guests have never used Puttr, and the client wants a winner at the end.</p>
+  <div class="grid">
+    <div class="item"><span class="tag new">New</span><h3>One board per event</h3><p>Start new event (staff PIN) archives the current board and starts an empty one. The kit stays.</p></div>
+    <div class="item"><span class="tag">From legacy</span><h3>Featured challenge</h3><p>The featured game leads the attract screen. Usually a custom game, like the Zero Torque Challenge.</p></div>
+    <div class="item"><span class="tag">From legacy</span><h3>QR to the board</h3><p>The attract and final screens show a QR to the event's web leaderboard so guests can follow along on their phones.</p></div>
+  </div>
+  <div class="shots">
+    <figure><div class="fw"><div class="scr" id="e-attract"></div></div><figcaption><b>Attract</b>Featured challenge and the QR to the web board. Leaders are on the video board.</figcaption></figure>
+    <figure><div class="fw"><div class="scr" id="e-names"></div></div><figcaption><b>Who is playing</b>Type a name and go.</figcaption></figure>
+    <figure><div class="fw"><div class="scr" id="e-play"></div></div><figcaption><b>In play</b>Score bug carries the brand. The score to beat is on the video board.</figcaption></figure>
+    <figure><div class="fw"><div class="scr" id="e-final"></div></div><figcaption><b>Final</b>Rank on the event board.</figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Every night, unattended</div>
+  <h2>Venue Mode</h2>
+  <p>For a simulator bar or entertainment venue with one or more bays. Regulars come back, so members play as themselves and the house records are worth chasing.</p>
+  <div class="grid">
+    <div class="item"><span class="tag new">New</span><h3>Scan to play as you</h3><p>The seat screen shows a QR. A member scans it in the Puttr app and takes a seat with their name, picture and level. Their games and putts save to their own profile. Others type a name.</p></div>
+    <div class="item"><span class="tag new">New</span><h3>Sign-out</h3><p>Members are signed out when the group taps End session, or after five minutes idle.</p></div>
+    <div class="item"><span class="tag new">New</span><h3>Rolling boards</h3><p>Tonight, This week and All time per game. Member scores carry a verified mark.</p></div>
+    <div class="item"><span class="tag new">New</span><h3>Several bays</h3><p>Every device signed in to the host's account shares the kit and the board. Each one can be named (Bay 1, Bay 2) in its own settings.</p></div>
+  </div>
+  <div class="shots">
+    <figure><div class="fw"><div class="scr" id="v-attract"></div></div><figcaption><b>Attract</b>Featured game, tonight's leaders, and the way in.</figcaption></figure>
+    <figure><div class="fw"><div class="scr" id="v-seats"></div></div><figcaption><b>Seats</b>Two members joined by QR, one typed guest, one open seat.</figcaption></figure>
+    <figure><div class="fw"><div class="scr" id="v-pick"></div></div><figcaption><b>Game picker</b>The venue's list, custom games included, each with the house record.</figcaption></figure>
+    <figure><div class="fw"><div class="scr" id="v-play"></div></div><figcaption><b>In play</b>Members by name in the score bug; the house record on the video board.</figcaption></figure>
+    <figure><div class="fw"><div class="scr" id="v-board"></div></div><figcaption><b>Board</b>Also the web signage page for a spare TV behind the bar.</figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Side by side</div>
+  <h2>How they differ</h2>
+  <div class="tbl"><table>
+    <tr><th></th><th>Event Mode</th><th>Venue Mode</th></tr>
+    <tr><td>Staffing</td><td>A host at the screen.</td><td>Unattended; staff PIN for exceptions.</td></tr>
+    <tr><td>Who plays</td><td>Typed names.</td><td>Members by QR, plus typed names.</td></tr>
+    <tr><td>Where putts save</td><td>Host's account and the event board.</td><td>Members: their own profile. Guests: host's account.</td></tr>
+    <tr><td>Leaderboard</td><td>One board per event, archived on New event.</td><td>Tonight, This week, All time.</td></tr>
+    <tr><td>Attract screen</td><td>Featured challenge, QR to the web board.</td><td>Featured game, QR to sign in.</td></tr>
+    <tr><td>Host needs</td><td colspan="2">Puttr Club. Set up in Settings, kit saved to the profile.</td></tr>
+  </table></div>
+</section>
+
+<section>
+  <div class="eyebrow">If this is right</div>
+  <h2>Build order</h2>
+  <ol>
+    <li><b>Brand layer in the 3D engine.</b> One source for logo, partner logos and palette in place of the Puttr logo paths repeated across about twelve scene files and the colour constants in <code>Make.cs</code>.</li>
+    <li><b>Settings entry and kit editor.</b> Club gate, mode choice, the editor with live preview, reading and writing the existing <code>/party/brandkit</code> kit.</li>
+    <li><b>Host shell.</b> Attract loop, typed-name picker, curated game list with custom games, staff PIN, leaderboard on a fixed host id.</li>
+    <li><b>Event Mode.</b> Event board, New event, web board QR.</li>
+    <li><b>Venue Mode.</b> Multi-seat QR sign-in (built on the TV sign-in), member saves, rolling boards, bay names.</li>
+  </ol>
+</section>
+
+<section>
+  <div class="eyebrow">Still open</div>
+  <h2>Questions</h2>
+  <ol>
+    <li><b>Club lapses.</b> If the host's Club ends, the device goes back to the normal app at next launch. The kit is kept for when they renew.</li>
+  </ol>
+</section>
+</div>
+
+<script>
+const KITS={
+  puttr:{label:'Puttr default',name:'PUTTR',c1:'#7ad446',c2:'#2d8c3c',ink:'#07090a',event:'Seven Putt Challenge',venue:'Puttr House',line:'Seven putts. One board.',partner:'PARTNER'},
+  alder:{label:'Alder & Co.',name:'ALDER & CO.',c1:'#e2bd6b',c2:'#f4efe4',ink:'#141006',event:'The Alder Invitational',venue:'Alder Club Lounge',line:'Client day, Scottsdale',partner:'NORTHFIELD'},
+  lucky:{label:'Lucky Lie',name:'LUCKY LIE',c1:'#ff4fa3',c2:'#3fd7ff',ink:'#1a0410',event:'Lucky Lie Open',venue:'Lucky Lie Sim Bar',line:'Top score Sunday wins a bar tab',partner:'KITE SELTZER'}
+};
+let K=KITS.alder;
+const $=id=>document.getElementById(id);
+
+function qr(seed,size){let s=seed;const r=()=>(s=(s*16807)%2147483647)/2147483647;let o='';
+  for(let y=0;y<21;y++)for(let x=0;x<21;x++){let v=-1;
+    for(const[a,b]of[[0,0],[14,0],[0,14]]){const i=x-a,j=y-b;if(i>=0&&i<7&&j>=0&&j<7)v=(i==0||i==6||j==0||j==6||(i>1&&i<5&&j>1&&j<5))?1:0;}
+    if(v<0)v=((x<8&&y<8)||(x>12&&y<8)||(x<8&&y>12))?0:(r()>.5?1:0);
+    if(v)o+=`<rect x="${x}" y="${y}" width="1.02" height="1.02"/>`;}
+  return `<svg class="qr" style="width:${size}" viewBox="-2 -2 25 25" role="img" aria-label="QR code placeholder"><rect x="-2" y="-2" width="25" height="25" fill="#fff"/><g fill="#07090a">${o}</g></svg>`;}
+
+function stage(o={}){const b=K;
+  const led=Array.from({length:6},(_,i)=>{const p=i==2,px=i==5;
+    const fill=px?'#2d8c3c':p?'#15181a':b.c1, tf=px?'#fff':p?b.c2:b.ink, t=px?'PUTTR':p?b.partner:b.name;
+    return `<g transform="translate(${i*270-10},292)"><rect width="262" height="56" fill="${fill}"/><text x="131" y="38" text-anchor="middle" font-size="25" font-weight="900" font-style="italic" fill="${tf}">${t}</text></g>`}).join('');
+  const vb=o.board?o.board.map((r,i)=>`<text x="590" y="${152+i*42}" font-size="26" font-weight="${i?700:900}" fill="${i?'#fff':b.c1}">${r[0]}</text><text x="1010" y="${152+i*42}" text-anchor="end" font-size="26" font-weight="900" font-style="italic" fill="#fff">${r[1]}</text>`).join('')
+    :`<text x="800" y="180" text-anchor="middle" font-size="46" font-weight="900" font-style="italic" fill="${b.c1}">${b.name}</text><text x="800" y="228" text-anchor="middle" font-size="20" font-weight="700" letter-spacing="4" fill="#b8b9b9">${(o.sub||'').toUpperCase()}</text>`;
+  return `<svg class="stage" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" font-family="Montserrat,sans-serif">
+  <rect width="1600" height="900" fill="#07090a"/><rect width="1600" height="350" fill="#0d1012"/>
+  <polygon points="360,0 470,0 770,470 540,540" fill="${b.c1}" opacity=".08"/><polygon points="1240,0 1130,0 830,470 1060,540" fill="${b.c1}" opacity=".08"/>
+  ${led}
+  <rect x="560" y="88" width="480" height="186" rx="8" fill="#15181a" stroke="#2a2d30" stroke-width="3"/>${o.board?`<text x="590" y="114" font-size="13" font-weight="700" letter-spacing="3" fill="#848586">${o.boardTitle||''}</text>`:''}${vb}
+  <polygon points="540,900 1060,900 880,455 720,455" fill="#1b5f29"/><polygon points="700,900 900,900 827,455 773,455" fill="#217230"/>
+  <rect x="690" y="398" width="220" height="60" rx="6" fill="#1a1d1f" stroke="#2a2d30" stroke-width="2"/><text x="752" y="436" text-anchor="middle" font-size="18" font-weight="900" font-style="italic" fill="#fff">PUTTR</text>
+  <ellipse cx="800" cy="488" rx="30" ry="10" fill="#000" stroke="${b.c1}" stroke-width="4"/>
+  <line x1="836" y1="488" x2="836" y2="366" stroke="#d8d8d8" stroke-width="3"/><polygon points="836,366 896,382 836,398" fill="${b.c1}"/>
+  <ellipse cx="800" cy="852" rx="70" ry="17" fill="none" stroke="${b.c1}" stroke-width="4"/><text x="800" y="858" text-anchor="middle" font-size="13" font-weight="900" fill="${b.c1}">${b.name}</text>
+  ${o.ball?`<g class="ballm"><line x1="802" y1="840" x2="805" y2="590" stroke="${b.c1}" stroke-width="7" stroke-linecap="round" opacity=".55"/><circle cx="805" cy="580" r="13" fill="#fff"/></g>`:''}
+  ${o.dim?`<rect width="1600" height="900" fill="#07090a" opacity="${o.dim}"/>`:''}</svg>`;}
+
+const rows=(a,ver)=>a.map((r,i)=>`<div class="row"><span class="rk">${i+1}</span><span class="nm">${r[0]}${ver&&r[2]?'<i class="vf" title="Puttr member"></i>':''}</span><span class="sc">${r[1]}</span></div>`).join('');
+const pin=(n,t,x,y)=>`<div class="pin" style="left:${x}%;top:${y}%"><i>${n}</i>${t}</div>`;
+const EV=[['Priya S.','6 of 7'],['Marcus T.','6 of 7'],['Dana W.','5 of 7'],['Jo L.','5 of 7'],['Sam R.','4 of 7']];
+const VN=[['Renee K.','31',1],['Big Tom','28',0],['A. Okafor','27',1],['Chip','24',0],['Maya D.','22',1]];
+const PC=['#5687FF','#FF8A3D','#B36BFF','#7AD446'];
+
+const ph=inner=>`<div class="ph"><div class="pc">${inner}</div></div>`;
+const pr=(label,right='',sub='',hi='')=>`<div class="pr ${hi}"><span class="ic"></span><span class="g">${label}${sub?`<small>${sub}</small>`:''}</span>${right}</div>`;
+const chev='<span class="v">›</span>';
+
+function render(){
+  const r=document.documentElement.style;r.setProperty('--b1',K.c1);r.setProperty('--b2',K.c2);r.setProperty('--bink',K.ink);
+
+  $('setup1').innerHTML=
+    ph(`<div class="nav"><s>‹</s>Settings</div>
+      <div class="sec">Your Puttr</div><div class="card">${pr('Puttr green','<span class="v">Connected</span>')}</div>
+      <div class="sec">Tools</div><div class="card">${pr('Setup guide',chev)}${pr('Green level',chev)}${pr('Vertex sensor',chev)}${pr('Notifications',chev)}</div>
+      <div class="sec">Host</div><div class="card" style="border-color:var(--b1)">${pr('Event &amp; Venue mode','<span class="club">CLUB</span>','Brand the Puttr for an event or venue')}</div>
+      <div class="sec">Coaching</div><div class="card">${pr('My lessons',chev)}</div>`)+
+    ph(`<div class="nav"><s>‹</s>Host mode</div>
+      <div class="note">Turns this device into a branded Puttr for other people. Your brand kit is saved to your profile.</div>
+      <div class="mode sel"><b>Event</b><span>A one-off day. Players type a name and play. One board per event; start a new one for the next client.</span></div>
+      <div class="mode"><b>Venue</b><span>Runs every night. Members scan to play as themselves; anyone can type a name. Tonight, week and all-time boards.</span></div>
+      <div class="bbtn">Continue</div>`)+
+    ph(`<div style="margin:auto 0;display:flex;flex-direction:column;gap:3.2cqw;text-align:center;align-items:center">
+      <span class="club" style="font-size:3.4cqw;padding:1.4cqw 3cqw">PUTTR CLUB</span>
+      <div class="T" style="font-size:7.4cqw">Host events and venues</div>
+      <div class="note" style="font-size:3.6cqw">Your logo and colours on every 3D stage, a private leaderboard and your own games. Included with Puttr Club.</div></div>
+      <div class="bbtn">Join Puttr Club</div>`);
+
+  $('setup2').innerHTML=
+    ph(`<div class="nav"><s>‹</s>Brand kit</div>
+      <div class="prev">${stage({sub:K.event})}</div>
+      <div class="sec">Text</div><div class="card">${pr('Title',`<span class="v">${K.event}</span>`)}${pr('Line under it',`<span class="v">${K.line.length>18?K.line.slice(0,16)+'…':K.line}</span>`)}</div>
+      <div class="sec">Logos</div><div class="card">${pr('Brand logo',`<span class="slot full">${K.name}</span>`,'900 × 300 transparent PNG')}${pr('Co-host logo','<span class="slot">Add</span>')}</div>
+      <div class="sec">Colours</div><div class="card">${pr('Primary',`<span class="sws"><i style="background:${K.c1}"></i></span>`)}${pr('Secondary',`<span class="sws"><i style="background:${K.c2}"></i></span>`)}</div>`)+
+    ph(`<div class="nav"><s>‹</s>Brand kit</div>
+      <div class="sec">Partner logos</div><div class="card">${pr(K.partner.charAt(0)+K.partner.slice(1).toLowerCase(),`<span class="slot full">${K.partner}</span>`)}${pr('Add a partner','<span class="slot">Add</span>','Up to 5, rotate on one LED panel')}</div>
+      <div class="sec">QR</div><div class="card">${pr('Link','<span class="v">Web leaderboard</span>')}${pr('Message','<span class="v">Follow the board</span>')}</div>
+      <div class="sec">Staff</div><div class="card">${pr('Staff PIN','<span class="v">••••</span>')}${pr('Clear leaderboard',chev)}</div>
+      <div class="bbtn">Start Event Mode</div>`)+
+    ph(`<div class="nav"><s>‹</s>Games</div>
+      <div class="sec">Featured</div><div class="card hi">${pr('Zero Torque Challenge','<span class="v">★</span>','Custom · Standard · 7 putts')}</div>
+      <div class="sec">Your custom games</div><div class="card">${pr('Zero Torque Challenge','<span class="sw on"></span>','Standard · 7 putts')}${pr('House Nine','<span class="sw on"></span>','Standard · 9 putts')}${pr('Dead Centre Five','<span class="sw"></span>','Center Cut · 5 putts')}${pr('New custom game',chev)}</div>
+      <div class="sec">Puttr games</div><div class="card">${pr('On Fire','<span class="sw on"></span>')}${pr('Lanes','<span class="sw on"></span>')}${pr('Beer Pong','<span class="sw on"></span>')}${pr('Derby','<span class="sw"></span>')}</div>`);
+
+  $('s-brand').innerHTML=stage({ball:1,sub:K.event})+
+    `<div class="abs bug"><div class="br">${K.name}</div><div class="on">Priya S. <b>3</b></div><div>Putt 4 of 7</div></div>`+
+    pin(1,'Score bug',36,5)+pin(2,'Video board',66,20)+pin(3,'LED boards',6,29)+pin(4,'Partner panel',36,42)+pin(5,'Puttr panel',86,42)+pin(6,'Stage lights',27,20)+pin(7,'Flag and cup ring',58,46)+pin(8,'Tee mark and ball trail',56,94.5);
+
+  $('e-attract').innerHTML=stage({board:EV.slice(0,3),boardTitle:'LEADERBOARD'})+
+    `<div class="abs" style="left:4cqw;bottom:4cqw;max-width:36cqw"><div class="L" style="color:var(--b1)">${K.line}</div><div class="T" style="font-size:4.6cqw;margin:.8cqw 0 1.6cqw">${K.event}</div><span class="btn">Putt to start</span></div>
+     <div class="abs pn" style="right:3cqw;bottom:3cqw;width:22cqw;display:flex;gap:1.4cqw;align-items:center">${qr(7,'8cqw')}<div><div class="T" style="font-size:1.7cqw">Follow the board</div><div style="font-size:1.15cqw;color:var(--sub);margin-top:.5cqw">Live on your phone, no app.</div></div></div>`;
+
+  $('e-names').innerHTML=stage({dim:.86})+
+    `<div class="abs" style="left:4cqw;top:3.5cqw"><div class="L" style="color:var(--b1)">${K.event}</div><div class="T" style="font-size:3.2cqw;margin-top:.6cqw">Who is playing</div></div>
+     <div class="abs" style="left:4cqw;width:44cqw;top:13cqw;display:flex;flex-direction:column;gap:1.2cqw">
+       ${['Dana W.','Jo L.'].map((n,i)=>`<div class="nameIn"><span class="dot" style="background:${PC[i]};width:1.4cqw;height:1.4cqw"></span>${n}</div>`).join('')}
+       <div class="nameIn" style="color:var(--mute);border-style:dashed">+ Add a Player</div></div>
+     <div class="abs pn" style="right:4cqw;top:13cqw;width:36cqw"><div class="L">Up now</div><div class="T" style="font-size:2.4cqw;margin:.6cqw 0">Zero Torque Challenge</div><div style="font-size:1.25cqw;color:var(--sub)">7 putts, 5 to 11 ft. Most makes wins.</div></div>
+     <div class="abs" style="right:4cqw;bottom:4cqw"><span class="btn">Play</span></div>`;
+
+  $('e-play').innerHTML=stage({ball:1,board:[['To beat','6 of 7'],['Priya S.','11:42']],boardTitle:'LEADER'})+
+    `<div class="abs bug"><div class="br">${K.name}</div><div class="on"><span class="dot" style="background:${PC[0]}"></span>Dana <b>3</b></div><div><span class="dot" style="background:${PC[1]}"></span>Jo <b>2</b></div><div>Putt 5 of 7 · 9 ft</div></div>
+     <div class="abs pn" style="right:3cqw;bottom:3cqw;width:17cqw"><div class="L">Last putt</div><div class="T" style="font-size:2.2cqw;margin-top:.5cqw;color:var(--b1)">Made</div><div style="font-size:1.1cqw;color:var(--sub);margin-top:.3cqw">Line 0.4° right · Pace firm</div></div>`;
+
+  $('e-final').innerHTML=stage({dim:.88,sub:K.event})+
+    `<div class="abs" style="left:6cqw;top:16cqw"><div class="L">Dana W.</div><div class="T" style="font-size:11cqw;margin:.6cqw 0">5 <span style="font-size:4cqw;color:var(--sub)">of 7</span></div><div class="T" style="font-size:2.4cqw;color:var(--b1)">3rd of 41</div></div>
+     <div class="abs pn" style="right:5cqw;top:13cqw;width:34cqw"><div class="L" style="margin-bottom:.4cqw">Leaderboard</div>${rows(EV)}</div>
+     <div class="abs" style="left:6cqw;bottom:4cqw;display:flex;gap:1.6cqw;align-items:center">${qr(7,'7cqw')}<div style="font-size:1.25cqw;color:var(--sub);max-width:18cqw">Follow the board on your phone.</div></div>
+     <div class="abs" style="right:5cqw;bottom:4cqw;display:flex;gap:1cqw"><span class="btn" style="background:var(--card2);color:var(--text)">Done</span><span class="btn">Play again</span></div>`;
+
+  $('v-attract').innerHTML=stage({board:VN.slice(0,3),boardTitle:'TONIGHT · ON FIRE'})+
+    `<div class="abs T" style="left:4cqw;top:3cqw;font-size:2.2cqw;color:var(--b1)">${K.venue}</div>
+     <div class="abs" style="left:4cqw;bottom:4cqw;max-width:34cqw"><div class="L" style="color:var(--b1)">Featured</div><div class="T" style="font-size:5.4cqw;margin:.8cqw 0">On Fire</div><div style="font-size:1.4cqw;color:var(--sub)">${K.label==='Lucky Lie'?K.line:'House record 34, Renee K.'}</div></div>
+     <div class="abs pn" style="right:3cqw;bottom:3cqw;width:24cqw;display:flex;gap:1.4cqw;align-items:center">${qr(23,'8cqw')}<div><div class="T" style="font-size:1.7cqw">Play as you</div><div style="font-size:1.15cqw;color:var(--sub);margin-top:.5cqw">Scan with the Puttr app, or putt to start as a guest.</div></div></div>
+     <div class="abs L" style="right:3cqw;top:3cqw;font-size:.9cqw">Bay 3</div>`;
+
+  const seat=(i,n,sub,init)=>`<div class="seat"><div class="av" style="background:${PC[i]}">${init}</div><div class="T" style="font-size:1.8cqw">${n}</div><div class="L" style="font-size:.9cqw">${sub}</div></div>`;
+  $('v-seats').innerHTML=stage({dim:.8})+
+    `<div class="abs" style="left:4cqw;top:3.5cqw"><div class="L" style="color:var(--b1)">${K.venue} · Bay 3</div><div class="T" style="font-size:3.2cqw;margin-top:.6cqw">Who is playing</div></div>
+     <div class="abs" style="left:4cqw;right:4cqw;top:13cqw;display:flex;gap:1.4cqw">
+       ${seat(0,'Renee K.','Member · Tour 34','RK')}${seat(1,'A. Okafor','Member · Fairway 12','AO')}${seat(2,'Big Tom','Guest','BT')}
+       <div class="seat" style="border-style:dashed">${qr(23,'6cqw')}<div class="T" style="font-size:1.5cqw">Scan to join</div><div class="L" style="font-size:.9cqw">or type a name</div></div></div>
+     <div class="abs" style="left:4cqw;right:4cqw;bottom:4cqw;display:flex;justify-content:space-between;align-items:center"><div style="font-size:1.2cqw;color:var(--sub)">Member games save to their own profile.</div><span class="btn">Pick a game</span></div>`;
+
+  const tile=(n,who,rec,c)=>`<div class="tile"><div class="art" style="background:${c}"><span class="T" style="font-size:2cqw;color:#07090a">${n}</span></div><div class="tx"><span class="L" style="font-size:.85cqw">${who}</span><span style="font-size:1.15cqw;font-weight:700">Record ${rec}</span></div></div>`;
+  $('v-pick').innerHTML=stage({dim:.85})+
+    `<div class="abs" style="left:4cqw;top:3.5cqw;right:4cqw;display:flex;justify-content:space-between;align-items:flex-end"><div class="T" style="font-size:3.2cqw">Pick a game</div><div style="display:flex;gap:.6cqw">${['RK','AO','BT'].map((x,i)=>`<div class="av" style="width:3.2cqw;height:3.2cqw;font-size:1.2cqw;background:${PC[i]}">${x}</div>`).join('')}</div></div>
+     <div class="abs" style="left:4cqw;right:4cqw;top:10.5cqw;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;grid-template-rows:auto auto;gap:1.2cqw">
+       <div class="tile" style="grid-row:span 2;border-color:var(--b1)"><div class="art" style="flex:1;background:var(--b1)"><span class="T" style="font-size:4.4cqw;color:var(--bink)">On Fire</span></div><div class="tx"><span class="L" style="font-size:.85cqw;color:var(--b1)">Featured · 1 to 4 Players</span><span style="font-size:1.3cqw;font-weight:700">Record 34, Renee K.</span></div></div>
+       ${tile('Lanes','1 to 4 · 10 min','212, Maya D.','#4aa8ff')}${tile('Beer Pong','2 Players · 8 min','6 cups, Chip','#ffb300')}${tile('Derby','2 to 4 · 6 min','1:08, A. Okafor','#ff8a3d')}
+       ${tile('Cricket','2 Players · 12 min','9 rounds, Big Tom','#b36bff')}${tile('Spot Kick','1 to 4 · 5 min','8 of 10, Renee K.','#7ad446')}${tile('House Nine','Custom · 9 putts','8 of 9, Maya D.','#e9e9e9')}
+     </div>`;
+
+  $('v-play').innerHTML=stage({ball:1,board:[['House record','34'],['Renee K.','12 Nov']],boardTitle:'ON FIRE'})+
+    `<div class="abs bug"><div class="br">${K.name}</div><div class="on"><span class="dot" style="background:${PC[0]}"></span>Renee <b>18</b></div><div><span class="dot" style="background:${PC[1]}"></span>Okafor <b>14</b></div><div><span class="dot" style="background:${PC[2]}"></span>Big Tom <b>9</b></div></div>
+     <div class="abs pn" style="left:3cqw;bottom:3cqw;width:17cqw"><div class="L">Streak</div><div class="T" style="font-size:3.4cqw;margin-top:.4cqw;color:var(--b1)">5 in a row</div></div>`;
+
+  $('v-board').innerHTML=`<div class="abs" style="inset:0;padding:3cqw 4cqw">
+     <div style="display:flex;justify-content:space-between;align-items:flex-end"><div><div class="T" style="font-size:1.8cqw;color:var(--b1)">${K.venue}</div><div class="T" style="font-size:3.6cqw;margin-top:.5cqw">This week</div></div>
+       <div style="display:flex;gap:.6cqw;font-size:1.15cqw;font-weight:700">${['Tonight','This week','All time'].map((t,i)=>`<span style="padding:.6cqw 1.2cqw;border-radius:99px;${i==1?'background:var(--b1);color:var(--bink)':'background:var(--card);color:var(--sub)'}">${t}</span>`).join('')}</div></div>
+     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.4cqw;margin-top:2cqw">
+       <div class="pn"><div class="L" style="color:var(--b1)">On Fire · featured</div>${rows(VN,1)}</div>
+       <div class="pn"><div class="L">Lanes</div>${rows([['Maya D.','212',1],['Renee K.','198',1],['J. Park','187',1],['Lou','171',0],['Big Tom','160',0]],1)}</div>
+       <div class="pn"><div class="L">House Nine</div>${rows([['Maya D.','8 of 9',1],['A. Okafor','7 of 9',1],['Chip','7 of 9',0],['Renee K.','6 of 9',1],['Dev','6 of 9',0]],1)}</div>
+     </div>
+     <div style="margin-top:1.6cqw;font-size:1.15cqw;color:var(--sub)"><i class="vf" style="margin:0 .5cqw 0 0"></i>Puttr member, score on their profile</div></div>`;
+}
+
+const kb=$('kits');
+Object.entries(KITS).forEach(([k,v])=>{const b=document.createElement('button');b.type='button';b.id='kit-'+k;b.innerHTML=`<i style="background:${v.c1}"></i>${v.label}`;b.setAttribute('aria-pressed',v===K);
+  b.onclick=()=>{K=v;[...kb.querySelectorAll('button')].forEach(x=>x.setAttribute('aria-pressed',x===b));render();};kb.appendChild(b);});
+render();
+</script>

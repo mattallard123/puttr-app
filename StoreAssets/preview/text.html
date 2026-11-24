@@ -1,0 +1,34 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- A reel text card on a transparent ground (rendered by text.py). Query: h (headline, <em> = accent), k (kicker),
+     a (accent), s (size in vw), c (classes: logo | end | low). -->
+<style>
+@font-face{font-family:M;src:url(../screenshots/Montserrat-Bold.ttf);font-weight:700}
+@font-face{font-family:M;src:url(../screenshots/Montserrat-Medium.ttf);font-weight:500}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100vw;height:100vh;overflow:hidden;background:transparent;font-family:M;color:#fff}
+#wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+body.low #wrap{justify-content:flex-end;padding-bottom:9vh}
+.kicker{display:inline-flex;align-items:center;gap:1.2vw;font-weight:700;font-size:calc(var(--s)*.22);letter-spacing:.42em;text-transform:uppercase;color:var(--a);margin-bottom:1.6vh;
+  text-shadow:0 .3vw 1.6vw rgba(0,0,0,.9)}
+.kicker:before,.kicker:after{content:"";width:calc(var(--s)*.5);height:calc(var(--s)*.06);background:var(--a);transform:skewX(-24deg)}
+.kicker:empty{display:none}
+h1{font-weight:700;font-size:var(--s);line-height:.88;letter-spacing:-.035em;text-transform:uppercase;transform:skewX(-9deg);
+  -webkit-text-stroke:.024em #fff;text-shadow:0 .6vw 3vw rgba(0,0,0,.85),0 0 1.4vw rgba(0,0,0,.6);max-width:92vw}
+h1 em{font-style:normal;color:var(--a);-webkit-text-stroke:.024em var(--a)}
+#logo{display:none;height:calc(var(--s)*.9)}
+body.logo #logo,body.end #logo{display:block}
+body.logo h1,body.logo .kicker{display:none}
+body.end #logo{height:calc(var(--s)*.55);margin-bottom:3vh}
+body.end h1{font-size:calc(var(--s)*.62)}
+.sub{margin-top:2.4vh;font-weight:500;font-size:calc(var(--s)*.2);letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.85);text-shadow:0 .2vw 1vw #000}
+.sub:empty{display:none}
+</style></head><body>
+<div id="wrap"><img id="logo" src="../screenshots/LogoHeader.png"><div class="kicker" id="k"></div><h1 id="h"></h1><div class="sub" id="s"></div></div>
+<script>
+const q=new URLSearchParams(location.search);
+document.body.className=q.get('c')||'';
+document.body.style.setProperty('--a',q.get('a')||'#7ad446');
+document.body.style.setProperty('--s',(q.get('size')||'12')+'vw');
+k.textContent=q.get('k')||'';h.innerHTML=q.get('h')||'';s.textContent=q.get('sub')||'';
+</script></body></html>

@@ -158,7 +158,7 @@ namespace PuttrArcade
         {
             int who = Mathf.Clamp(v.Player, 0, 3);
             Color hue = Hues[who];
-            Sound("lab_beep", 0.35f, 0.8f + who * 0.15f);
+            Sound("compare_pick", "lab_beep", 0.35f, 0.8f + who * 0.15f);   // puttr-app-2: the game's own sound, the shared one until recorded
             _trail.positionCount = 0;
             Paint(_trail, hue, 1f);
             int feet = v.Feet > 0 ? v.Feet : 6, tee = v.Tee > 0 ? v.Tee : 2;

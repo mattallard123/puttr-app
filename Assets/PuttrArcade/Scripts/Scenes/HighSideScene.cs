@@ -27,8 +27,9 @@ namespace PuttrArcade
         int _side = 1;   // +1: the high side is right (right tee); -1: left
 
         static bool Portrait => Screen.height > Screen.width;
+        public override float WideFrame => 0.74f;   // a lane down the middle: nothing of it is under the side cards
         public override Vector3 CameraFrom => At(Portrait ? 130f : 190f, Portrait ? 290f : 250f, Portrait ? -470f : -460f);
-        public override Vector3 CameraLook => At(Portrait ? 10f : 0f, Portrait ? 40f : 0f, Portrait ? 120f : 60f);
+        public override Vector3 CameraLook => At(Portrait ? -35f : 0f, Portrait ? 40f : 0f, Portrait ? 120f : 60f);
         public override float CameraFov => Portrait ? 56f : 42f;
 
         public override void Build()
@@ -188,7 +189,7 @@ namespace PuttrArcade
             if (v.Made)
             {
                 bool low = v.Title == "LOW SIDE";
-                Sound("cup_plop", 0.7f);
+                Sound("highside_make", "cup_plop", 0.7f);   // puttr-app-2: the game's own sound, the shared one until recorded
                 yield return Drop(_ball, rim, BallR);
                 Renderer arc = (low ? _lowArc : _highArc).GetComponent<Renderer>();
                 arc.sharedMaterial = low ? _redHot : _iceHot;

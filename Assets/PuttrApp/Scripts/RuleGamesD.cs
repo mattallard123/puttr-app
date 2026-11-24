@@ -14,7 +14,7 @@ namespace PuttrApp
         /// <summary>getEntryDescription's center cut: within 18 degrees of the line.</summary>
         public const double CenterDeg = 18;
 
-        public override string Title => "Center Cut";
+        protected override string OwnTitle => "Center Cut";
         public override string GameType => "CENTERCUT";
         public override int MaxPlayers => 4;
         public override string Icon => "Crosshair";
@@ -25,8 +25,8 @@ namespace PuttrApp
             "Misses and back-door makes score nothing. 63 is perfect.",
         };
 
-        // createRandomPutts: 3 to 11 feet, each once, a random tee 1 to 3, shuffled.
-        protected override List<TournamentMath.Dealt> MakeList() => Scoring.NineDistances(Dice);
+        // createRandomPutts: 3 to 11 feet, each once, a random tee 1 to 3, shuffled. No Easy / Medium / Hard (Matt, 2026-11-21).
+        protected override List<TournamentMath.Dealt> MakeList() => Scoring.NineFor(GameLevels.Medium, Dice);
 
         protected override Shot Take(AppPutt.Verdict v)
         {

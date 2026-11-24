@@ -61,6 +61,12 @@ namespace PuttrArcade
         public abstract Vector3 CameraLook { get; }
         public virtual float CameraFov => 40f;
         public virtual float ShadowDistance => 300f;
+        /// <summary>The lens for the game's card picture (a card is wider than the game's own view of a close-up).</summary>
+        public virtual float CardLens => CameraFov;
+        /// <summary>Wide, the scene is drawn across the whole screen and framed in the middle of it, between the app's
+        /// cards at either side: how much of the screen's width that frame is. A scene whose subject is narrow (a lane
+        /// running away from the camera) takes more, so the subject is not small in a sea of floor.</summary>
+        public virtual float WideFrame => FreePuttMode.MiddleShare;
 
         /// <summary>Build the set. Called once, before Begin.</summary>
         public abstract void Build();
@@ -172,6 +178,10 @@ namespace PuttrArcade
 
         /// <summary>The library sound for a slot (Soundly SoundDrop), one take at random.</summary>
         protected void Sound(string slot, float volume = 0.9f, float pitch = 1f) { if (Arcade != null) Arcade.Audio.Library(slot, volume, pitch); }
+        /// <summary>puttr-app-2: the game's own slot, or the sound it played before (fallback) until the slot's recordings are imported.</summary>
+        protected void Sound(string slot, string fallback, float volume = 0.9f, float pitch = 1f) { if (Arcade != null) Arcade.Audio.Library(slot, fallback, volume, pitch); }
+        /// <summary>puttr-app-2: true if the game's own slot has recordings (so a scene can drop a pair of old sounds it replaces).</summary>
+        protected static bool Has(string slot) => GameAudio.Has(slot);
     }
 
     /// <summary>The arcade game that hosts a RuleScene above the app's panel.</summary>
@@ -205,12 +215,25 @@ namespace PuttrArcade
         public override bool HasPortrait => true;
         public override int PuttFeet => StartView != null ? StartView.NextFeet : 6;
         public override int PuttTee => StartView != null ? StartView.NextTee : 2;
-        public override Rect Viewport => Portrait ? new Rect(0f, 1f - FreePuttMode.UprightShare, 1f, FreePuttMode.UprightShare) : new Rect(0f, 0f, FreePuttMode.WideShare, 1f);
+        // Upright, the world is the top of the screen and the app's panel the rest. Wide, the world is the whole screen,
+        // as an arcade game's is: the scene is framed in the middle of it (Picture) and the app's cards lie over the
+        // sides (the tee and the game's board on the left, the ideal putt and the putt read on the right).
+        public override Rect Viewport => Portrait ? new Rect(0f, 1f - FreePuttMode.UprightShare, 1f, FreePuttMode.UprightShare) : new Rect(0f, 0f, 1f, 1f);
+        public override Rect Picture
+        {
+            get
+            {
+                if (Portrait) return Viewport;
+                float share = _scene != null ? Mathf.Clamp(_scene.WideFrame, 0.3f, 1f) : FreePuttMode.MiddleShare;
+                return new Rect((1f - share) * 0.5f, 0f, share, 1f);
+            }
+        }
         public override Vector3 CameraPosition => _scene != null ? _scene.CameraFrom : At(0, 50, -100);
         public override Vector3 CameraLook => _scene != null ? _scene.CameraLook : At(0, 0, 0);
         public override float CameraFov => _scene != null ? _scene.CameraFov : 40f;
         public override float ShadowDistance => _scene != null ? _scene.ShadowDistance : 300f;
 
+        public float SceneCardLens => _scene != null ? _scene.CardLens : 40f;
         public static RuleStageMode Instance;
         public override void Build() { Instance = this; }
         public override void Preview() { }
@@ -221,6 +244,9 @@ namespace PuttrArcade
             if (_sceneRoot != null) { _sceneRoot.gameObject.SetActive(false); UnityEngine.Object.Destroy(_sceneRoot.gameObject); }
             _scene = NextScene != null ? NextScene() : null;
             if (_scene == null) return;
+            // puttr-app-2: a rule game keeps its score in the app's panel, so no arcade board is left at the top from
+            // the game played before it, empty all game (Matt, 2026-11-21: Speed Demon, Metal Play).
+            if (Arcade != null && Arcade.Hud != null) Arcade.Hud.ClearBoard();
             _sceneRoot = new GameObject("Scene").transform;
             _sceneRoot.SetParent(Root, false);
             _scene.Root = _sceneRoot;
@@ -228,6 +254,7 @@ namespace PuttrArcade
             _scene.Build();
             if (StartView != null) _scene.Begin(StartView);
             if (Arcade != null) Arcade.Audio.GameBed(Bed, 0.28f);
+            PuttrArcade.Arcade.FreeUnused();   // the scene this one replaced
         }
 
         public override void End()
@@ -235,6 +262,7 @@ namespace PuttrArcade
             if (Arcade != null) Arcade.Audio.GameBed(null);
             if (_sceneRoot != null) { _sceneRoot.gameObject.SetActive(false); UnityEngine.Object.Destroy(_sceneRoot.gameObject); }
             _scene = null; _sceneRoot = null;
+            PuttrArcade.Arcade.FreeUnused();
         }
 
         /// <summary>The app changed the state without a putt (HORSE's called shot, Beer Pong's cup).</summary>

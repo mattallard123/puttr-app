@@ -24,6 +24,18 @@ namespace PuttrApp
         public static bool IsKid(object profile) => J.Flag(profile, "isKid");
         public static bool Managed(object profile) => J.Str(profile, "managedBy").Length > 0;
 
+        /// <summary>What a public leaderboard row carries for this profile (puttr-app utils/family.js publicPlayer):
+        /// display name, id, photo, and home town unless the profile is a Kid's.</summary>
+        public static string PublicPlayer(object profile)
+        {
+            var who = new System.Collections.Generic.Dictionary<string, object> { { "displayName", J.Str(profile, "displayName", "Player") }, { "userId", Auth.Uid } };
+            string town = IsKid(profile) ? "" : J.Str(profile, "homeTown");
+            if (town.Length > 0) who["homeTown"] = town;
+            string photo = J.Str(profile, "photoURL");
+            if (photo.Length > 0) who["photoURL"] = photo;
+            return J.Write(who);
+        }
+
         static (string title, string body) Copy(string kind, string owner)
         {
             switch (kind)
@@ -48,9 +60,32 @@ namespace PuttrApp
             string owner = J.Str(p, "familyOwnerName", "the account owner");
             (string title, string words) = Copy(kind, owner);
             body.Clear();
-            body.Add(Ui.Box("pad", Ui.Box("glass center-box", Ui.Bubble("FillUser", Ui.Amber), Ui.Text(title, "h2 center", Ui.Bold).Margin(10), Ui.Text(words, "sub center", Ui.Regular).Margin(6),
-                Ui.Button("Got it", app.Pop, "btn btn-ghost").Margin(12))));
+            body.Add(Ui.Box("pad", Ui.Box("card prof-face", Ui.Icon("User", 32, Ui.Amber), Ui.Title(title, "title-20 prof-name"), Ui.Text(words, "body-2 center", Ui.Regular),
+                Ui.Button("Got it", app.Pop, "btn btn-ghost connect-done").Margin(16))));
             return true;
+        }
+
+        /// <summary>
+        /// kidGated for a screen that is opened rather than built here: when this profile cannot open it, the notice is
+        /// pushed in its place and true comes back (the caller returns). One line at the caller:
+        /// <c>if (Kid.Gate(app, Kid.Social)) return;</c>
+        /// </summary>
+        public static bool Gate(App app, string kind)
+        {
+            bool blocked = kind == Owner ? Managed(app.Profile) : IsKid(app.Profile);
+            if (!blocked) return false;
+            app.Push(new KidBlockedScreen(app, kind));
+            return true;
+        }
+    }
+
+    /// <summary>KidLocked as a page of its own: the header's back, and the notice for this kind.</summary>
+    public sealed class KidBlockedScreen : AppScreen
+    {
+        public KidBlockedScreen(App app, string kind)
+        {
+            Root = Page.Make(app, "", out VisualElement body);
+            Kid.Blocked(app, kind, body);
         }
     }
 
@@ -71,7 +106,7 @@ namespace PuttrApp
         public static VisualElement Face(object player, float size)
         {
             string name = J.Str(player, "name", J.Str(player, "displayName", "?"));
-            VisualElement a = Ui.Avatar(name, J.Str(player, "photoURL"), size >= 56);
+            VisualElement a = Images.Cover(Ui.Avatar(name, J.Str(player, "photoURL"), size >= 56));
             // A Kid's photo lives on this phone only (family-photos/<userId>.jpg).
             string local = PhotoPicker.KidPhotoPath(J.Str(player, "userId"));
             if (J.Flag(player, "isKid") && System.IO.File.Exists(local))
@@ -80,12 +115,15 @@ namespace PuttrApp
                 if (t.LoadImage(System.IO.File.ReadAllBytes(local))) { a.style.backgroundImage = new StyleBackground(t); if (a.childCount > 0) a[0].style.display = DisplayStyle.None; }
             }
             a.style.width = a.style.height = size;
-            a.style.borderTopLeftRadius = a.style.borderTopRightRadius = a.style.borderBottomLeftRadius = a.style.borderBottomRightRadius = size / 2;
+            // An avatar is a rounded square (docs/design-guidelines.md), whatever its size.
+            a.style.borderTopLeftRadius = a.style.borderTopRightRadius = a.style.borderBottomLeftRadius = a.style.borderBottomRightRadius = 4;
             return a;
         }
 
-        /// <summary>switchPlayer: a one-time token for the other profile, then signed in as them and the app starts again.</summary>
-        public static System.Collections.IEnumerator Switch(App app, object player, string pin, Action<string> failed)
+        /// <summary>switchPlayer: a one-time token for the other profile, then signed in as them and the app starts again.
+        /// <paramref name="switched"/> runs once the new profile is signed in, before the tabs are built again: it closes
+        /// whatever "Switching to" card the caller put up (those live on the app's stage, which the rebuild leaves alone).</summary>
+        public static System.Collections.IEnumerator Switch(App app, object player, string pin, Action<string> failed, Action switched = null)
         {
             string token = null, why = null;
             var body = pin != null ? new Dictionary<string, object> { { "pin", pin } } : new Dictionary<string, object>();
@@ -94,6 +132,7 @@ namespace PuttrApp
             string problem = null;
             yield return Auth.SignInWithCustomToken(token, p => problem = p);
             if (problem != null) { failed("Couldn't switch. Check your connection and try again."); yield break; }
+            switched?.Invoke();
             app.SwitchedPlayer();
             app.Toast("Playing as " + J.Str(player, "name", "them") + ".");
         }
@@ -109,51 +148,91 @@ namespace PuttrApp
         public static void Sheet(App app, VisualElement over)
         {
             VisualElement dim = null, grid = Ui.Box("player-grid");
-            VisualElement card = Ui.Box("modal", Ui.Text("Who's putting?", "h2 center", Ui.Bold), grid);
+            VisualElement card = Ui.Box("modal", Ui.Title("Who's putting?", "title-20 who-title"), grid);
             card.RegisterCallback<ClickEvent>(e => e.StopPropagation());
-            dim = Ui.Box("modal-dim", card).OnTap(() => dim.RemoveFromHierarchy());
+            dim = Ui.Box("modal-dim", card).OnBackdropTap(() => dim.RemoveFromHierarchy());
             App.Layer(over).Add(dim);
-            grid.Add(Spinner.Small());
+            // The one spinner turns in the middle of the screen, which is the middle of this card: room for it under the title.
+            grid.Add(Ui.Box("player-loading", Spinner.Small()));
             Load(family =>
             {
                 grid.Clear();
-                if (family == null) { grid.Add(Ui.Text("Couldn't load profiles.", "sub", Ui.Regular)); return; }
+                if (family == null) { grid.Add(Ui.Text("Couldn't load profiles.", "body-2", Ui.Regular)); return; }
                 bool owner = J.Flag(family, "isOwner");
                 List<object> players = J.List(J.Get(family, "players"));
                 foreach (object p in players)
                 {
                     object player = p;
                     bool me = J.Flag(p, "isMe");
-                    VisualElement tile = Ui.Box(me ? "player-tile player-me" : "player-tile", Face(p, 58), Ui.Text(J.Str(p, "name"), "feed-name center", Ui.Bold),
-                        Ui.Text(J.Flag(p, "isOwner") ? "OWNER" : J.Flag(p, "isKid") ? "KID" : "", "kick center", Ui.Bold));
+                    VisualElement tile = Ui.Box(me ? "player-tile player-me" : "player-tile", Face(p, 58), Ui.Text(J.Str(p, "name"), "who-name center", Ui.Bold),
+                        Ui.Text(J.Flag(p, "isOwner") ? "OWNER" : J.Flag(p, "isKid") ? "KID" : "", "kick center who-mark", Ui.Bold));
                     if (!me) tile.OnTap(() =>
                     {
                         // The owner's profile may need the owner's PIN.
-                        if (J.Flag(player, "isOwner") && J.Flag(family, "pinSet")) { dim.RemoveFromHierarchy(); Pin(app, over, "Enter " + J.Str(player, "name") + "'s PIN", pin => App.Run(Switch(app, player, pin, w => app.Toast(w == "pin_required" ? "That PIN is not right." : w)))); return; }
+                        if (J.Flag(player, "isOwner") && J.Flag(family, "pinSet")) { dim.RemoveFromHierarchy(); OwnerPin(app, over, player, null); return; }
                         grid.Clear();
-                        grid.Add(Ui.Text("Switching to " + J.Str(player, "name") + "...", "sub center", Ui.Medium));
-                        App.Run(Switch(app, player, null, w => { dim.RemoveFromHierarchy(); app.Toast(w); }));
+                        grid.Add(Ui.Box("player-loading", Spinner.Small()));
+                        grid.Add(Ui.Text("Switching to " + J.Str(player, "name") + "...", "body-2 center", Ui.Medium));
+                        // The sheet sits on the app's stage, above the tabs: SwitchedPlayer rebuilds the tabs under it and
+                        // leaves it there, so the switch itself closes it once the new profile is signed in (and on failure).
+                        App.Run(Switch(app, player, null, w => { dim.RemoveFromHierarchy(); app.Toast(w); }, () => dim.RemoveFromHierarchy()));
                     });
                     grid.Add(tile);
                 }
                 if (owner && players.Count < J.Int(family, "maxPlayers", 5))
-                    grid.Add(Ui.Box("player-tile", Ui.Box("player-add", Ui.Text("+", "h1 center", Ui.Bold)), Ui.Text("Add", "feed-name center", Ui.Bold)).OnTap(() => { dim.RemoveFromHierarchy(); app.Push(new AddPlayerScreen(app)); }));
-                if (owner) card.Add(Ui.Button(players.Count > 1 ? "Manage profiles" : "Add profiles", () => { dim.RemoveFromHierarchy(); app.Push(new ProfilesScreen(app)); }, "btn btn-ghost").Margin(10));
+                    grid.Add(Ui.Box("player-tile", Ui.Box("player-add", Ui.Icon("Plus", 24, Color.white)), Ui.Text("Add", "who-name center", Ui.Bold)).OnTap(() => { dim.RemoveFromHierarchy(); app.Push(new AddPlayerScreen(app)); }));
+                if (owner) card.Add(Ui.Button(players.Count > 1 ? "Manage profiles" : "Add profiles", () => { dim.RemoveFromHierarchy(); app.Push(new ProfilesScreen(app)); }, "btn btn-ghost").Margin(12));
             });
         }
 
-        /// <summary>A four-digit PIN pad.</summary>
-        public static void Pin(App app, VisualElement over, string title, Action<string> entered)
+        /// <summary>Switching back to the owner when a PIN is set: a wrong PIN asks again ("That PIN is not right"), and
+        /// "Forgot PIN?" says how to get back in without it.</summary>
+        static void OwnerPin(App app, VisualElement over, object owner, string error)
+        {
+            string name = J.Str(owner, "name", "the account owner");
+            Pin(app, over, "Enter " + name + "'s PIN", pin =>
+            {
+                // The pad closes as the fourth digit goes in: the same "Switching to" card stands in until the switch ends.
+                VisualElement busy = Busy(over, name);
+                App.Run(Switch(app, owner, pin, w =>
+                {
+                    busy.RemoveFromHierarchy();
+                    if (w == "pin_required") OwnerPin(app, over, owner, "That PIN is not right");
+                    else app.Toast(w);
+                }, () => busy.RemoveFromHierarchy()));
+            }, null, error, () => ForgotSwitchPin(app, over, name));
+        }
+
+        /// <summary>"Switching to Sam...": a card that cannot be tapped away, closed by the switch when it ends.</summary>
+        static VisualElement Busy(VisualElement over, string name)
+        {
+            VisualElement card = Ui.Box("modal", Ui.Box("player-loading", Spinner.Small()), Ui.Text("Switching to " + name + "...", "body-2 center", Ui.Medium));
+            VisualElement dim = Ui.Box("modal-dim", card);
+            App.Layer(over).Add(dim);
+            return dim;
+        }
+
+        /// <summary>
+        /// The owner's PIN only guards switching from a player's profile. The owner's own sign-in (email, Apple or Google)
+        /// never asks for it, so a forgotten PIN is: sign out here, sign in as the owner, then turn the PIN off or set a new
+        /// one in Profiles (which asks for the old one: see Forgot on that pad).
+        /// </summary>
+        public static void ForgotSwitchPin(App app, VisualElement over, string owner) =>
+            Dialog.Ask(over, "Forgot the PIN?", "Sign out, then sign in with " + owner + "'s own email, Apple or Google account. That never asks for the PIN. Then you can turn the PIN off in Profiles.", "Sign out", app.SignedOut);
+
+        /// <summary>A four-digit PIN pad (PinPad.js): a title, an optional line under it, the four dots, a red line for what
+        /// went wrong, the keys, Cancel, and "Forgot PIN?" when there is a way back.</summary>
+        public static void Pin(App app, VisualElement over, string title, Action<string> entered, string subtitle = null, string error = null, Action forgot = null)
         {
             VisualElement dim = null;
             string pin = "";
-            Label dots = Ui.Text("", "h1 center", Ui.Bold);
+            Label dots = Ui.Text("", "pin-dots ital", Ui.Bold);
             VisualElement pad = Ui.Box("pin-pad");
             void Show() => dots.text = new string('•', pin.Length) + new string('-', 4 - pin.Length);
             foreach (string k in new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "<" })
             {
                 string key = k;
-                VisualElement b = Ui.Box(k.Length == 0 ? "pin-key pin-blank" : "pin-key", Ui.Text(k == "<" ? "Del" : k, "btn-text", Ui.Bold));
+                VisualElement b = Ui.Box(k.Length == 0 ? "pin-key pin-blank" : "pin-key", k == "<" ? Ui.Caps("Del") : Ui.Num(k, "num-20"));
                 if (k.Length > 0) b.OnTap(() =>
                 {
                     if (key == "<") { if (pin.Length > 0) pin = pin.Substring(0, pin.Length - 1); }
@@ -164,10 +243,41 @@ namespace PuttrApp
                 pad.Add(b);
             }
             Show();
-            VisualElement card = Ui.Box("modal", Ui.Text(title, "h2 center", Ui.Bold), dots.Margin(10), pad, Ui.Button("Cancel", () => dim.RemoveFromHierarchy(), "btn btn-ghost"));
+            VisualElement card = Ui.Box("modal", Ui.Title(title, "title-20 who-title"),
+                string.IsNullOrEmpty(subtitle) ? null : Ui.Text(subtitle, "body-2 center pin-sub", Ui.Regular),
+                dots, Ui.Text(error ?? "", "pin-error", Ui.Medium), pad,
+                Ui.Button("Cancel", () => dim.RemoveFromHierarchy(), "btn btn-ghost"),
+                forgot == null ? null : Ui.Text("Forgot PIN?", "pin-forgot", Ui.Medium).OnTap(() => { dim.RemoveFromHierarchy(); forgot(); }));
             card.RegisterCallback<ClickEvent>(e => e.StopPropagation());
             dim = Ui.Box("modal-dim", card);
+            // The layer is the app's stage, outside any page: the pad brings its own styles.
+            StyleSheet sheet = Resources.Load<StyleSheet>("PuttrApp/Home");
+            if (sheet != null) dim.styleSheets.Add(sheet);
             App.Layer(over).Add(dim);
+        }
+
+        /// <summary>What a failed POST /family/create means (AddPlayer.js ERRORS), from its status: the API answers 400
+        /// bad_name, 403 ask_account_owner, 409 family_full.</summary>
+        public static (string title, string body) AddError(string why)
+        {
+            switch (why)
+            {
+                case "http_400": return ("Check the name", "Use a first name of up to 20 letters.");
+                case "http_403": return ("Ask the account owner", "Only the account owner can add players.");
+                case "http_409": return ("All profiles are in use", "Remove a player to add another.");
+                default: return ("Couldn't add the player", "Check your connection and try again.");
+            }
+        }
+
+        /// <summary>The PIN steps (FamilyScreen onPinDigits): a new PIN, then the same again; a mismatch starts over.
+        /// Returns the next step: "confirm" with the first PIN kept, "save" when both match, "new" with an error.</summary>
+        public static string NextPinStep(string step, string first, string digits, out string error)
+        {
+            error = null;
+            if (step == "new") return "confirm";
+            if (step == "confirm" && digits == first) return "save";
+            error = "Those did not match. Try again.";
+            return "new";
         }
     }
 
@@ -181,6 +291,8 @@ namespace PuttrApp
         {
             _app = app;
             Root = Page.Make(app, "Profiles", out _body);
+            StyleSheet sheet = Resources.Load<StyleSheet>("PuttrApp/Home");
+            if (sheet != null) Root.styleSheets.Add(sheet);
             _body.Add(Page.Loading());
         }
 
@@ -195,23 +307,26 @@ namespace PuttrApp
             int max = J.Int(family, "maxPlayers", 5);
             string ownerName = J.Str(players.Find(p => J.Flag(p, "isOwner")), "name", "the account owner");
             _body.Add(Ui.Box("pad", Ui.Text(owner ? players.Count + " of " + max + " players. Everyone here plays with the same membership as you and keeps their own stats."
-                : "This profile is on " + ownerName + "'s account.", "sub", Ui.Regular)));
+                : "This profile is on " + ownerName + "'s account. " + ownerName + " adds and manages profiles.", "body-2 prof-intro", Ui.Regular)));
             VisualElement list = Ui.Box("glass set-card");
             foreach (object p in players)
             {
                 object player = p;
                 string sub = J.Flag(p, "isOwner") ? "Account owner" : J.Flag(p, "isKid") ? "Kid profile   ·   " + J.Str(p, "displayName") : "Player";
                 VisualElement right = J.Flag(p, "isMe") ? Ui.Text("You", "chip chip-green", Ui.Bold) : J.Flag(p, "isKid") ? Ui.Text("Kid", "chip chip-amber", Ui.Bold) : null;
-                VisualElement row = Ui.Box("note-row", Profiles.Face(p, 42), Ui.Box("grow set-words", Ui.Text(J.Str(p, "name"), "feed-name", Ui.Bold), Ui.Text(sub, "muted", Ui.Regular)), right);
+                VisualElement row = Ui.Box("set-row", Profiles.Face(p, 44), Ui.Box("grow set-words", Ui.Text(J.Str(p, "name"), "set-title", Ui.Bold), Ui.Text(sub, "set-sub", Ui.Regular)), right);
                 if (owner && !J.Flag(p, "isOwner")) row.OnTap(() => _app.Push(new PlayerScreen(_app, player)));
                 list.Add(row);
             }
+            if (list.childCount > 0) list[list.childCount - 1].AddToClassList("set-row-last");
             _body.Add(Ui.Box("pad", list));
             if (owner)
             {
-                VisualElement add = Ui.Button(players.Count >= max ? "You have all " + max + " players" : "Add player", () => _app.Push(new AddPlayerScreen(_app)));
-                add.SetEnabled(players.Count < max);
-                _body.Add(Ui.Box("pad", add).Margin(10));
+                // Full: the button stays "Add player", off, with the way out under it (FamilyScreen), using the API's own maximum.
+                bool full = players.Count >= max;
+                VisualElement add = Ui.Button("Add player", () => { if (!full) _app.Push(new AddPlayerScreen(_app)); }, full ? "btn btn-off" : "btn");
+                add.SetEnabled(!full);
+                _body.Add(Ui.Box("pad", add, full ? Ui.Text("You have all " + max + " players. Remove one to add another.", "body-2 center profiles-full", Ui.Regular) : null));
             }
             if (players.Count > 1)
             {
@@ -223,11 +338,11 @@ namespace PuttrApp
                 {
                     object p = ranked[i];
                     double putts = J.Num(p, "totalPutts");
-                    board.Add(Ui.Box("board-row", Ui.Text((i + 1).ToString(), "board-place", Ui.Bold), Profiles.Face(p, 36),
-                        Ui.Box("grow set-words", Ui.Text(J.Str(p, "name"), "feed-name", Ui.Bold), Ui.Text(putts > 0 ? Mathf.RoundToInt((float)(J.Num(p, "totalMade") / putts * 100)) + "% made" : "No putts yet", "muted", Ui.Regular)),
-                        Ui.Text(ProfileMath.Number(J.Num(p, "totalMade")), "feed-score", Ui.Bold)));
+                    board.Add(Ui.Box(i == ranked.Count - 1 ? "board-row set-row-last" : "board-row", Ui.Text((i + 1).ToString(), "board-place", Ui.Bold), Profiles.Face(p, 36),
+                        Ui.Box("grow set-words", Ui.Text(J.Str(p, "name"), "set-title", Ui.Bold), Ui.Text(putts > 0 ? Mathf.RoundToInt((float)(J.Num(p, "totalMade") / putts * 100)) + "% made" : "No putts yet", "set-sub", Ui.Regular)),
+                        Ui.Num(ProfileMath.Number(J.Num(p, "totalMade")), "num-20 set-num")));
                 }
-                _body.Add(Ui.Box("pad", board, Ui.Text("Putts made. Only the profiles on this account see this, with first names.", "muted", Ui.Regular).Margin(6)));
+                _body.Add(Ui.Box("pad", board, Ui.Text("Putts made. Only the profiles on this account see this, with first names.", "body-2", Ui.Regular).Margin(8)));
             }
             if (owner && players.Count > 1)
             {
@@ -235,11 +350,43 @@ namespace PuttrApp
                 bool pinSet = J.Flag(family, "pinSet");
                 _body.Add(Rows.Card(Rows.Row("GearSix", "Require a PIN to switch to " + ownerName, null, Rows.Switch(pinSet, on =>
                 {
-                    if (on) Profiles.Pin(_app, Root, "Choose a 4-digit PIN", pin => App.Run(Api.Post("/family/pin", new Dictionary<string, object> { { "pin", pin } }, _ => { _app.Toast("PIN set."); Shown(); }, _ => { _app.Toast("Couldn't set the PIN."); Shown(); })));
-                    else Profiles.Pin(_app, Root, "Enter your PIN to turn it off", pin => App.Run(Api.Post("/family/pin", new Dictionary<string, object> { { "pin", null }, { "current", pin } }, _ => { _app.Toast("PIN off."); Shown(); }, _ => { _app.Toast("That PIN is not right."); Shown(); })));
+                    if (on) NewPin(null, null);
+                    else ClearPin(null);
                 }))));
+                _body.Add(Ui.Box("pad", Ui.Text("Keeps other players out of purchases and settings.", "body-2", Ui.Regular)).Margin(8));
             }
         }
+
+        // Setting the PIN: choose it, then enter it again; a mismatch starts over with "Those did not match".
+        // Cancel at any step leaves the PIN as it was (the switch is drawn again from the API's answer).
+        void NewPin(string first, string error)
+        {
+            string step = first == null ? "new" : "confirm";
+            Profiles.Pin(_app, Root, step == "new" ? "Choose a 4-digit PIN" : "Enter it again", digits =>
+            {
+                string next = Profiles.NextPinStep(step, first, digits, out string why);
+                if (next == "confirm") { NewPin(digits, null); return; }
+                if (next == "new") { NewPin(null, why); return; }
+                App.Run(Api.Post("/family/pin", new Dictionary<string, object> { { "pin", digits } }, _ => { _app.Toast("PIN set."); Shown(); },
+                    _ => { Dialog.Ask(_app.Toasts, "Couldn't save the PIN", "Check your connection and try again.", "OK", () => { }); Shown(); }));
+            }, step == "new" ? "You will need it to switch back to your own profile." : null, error);
+            // The switch flipped on as it was tapped: drawn again from the API so a cancelled PIN shows it off.
+            Shown();
+        }
+
+        // Turning it off needs the current PIN; a wrong one asks again. Forgot: the API cannot clear it without the PIN.
+        void ClearPin(string error)
+        {
+            Profiles.Pin(_app, Root, "Enter your PIN to turn it off", digits =>
+                App.Run(Api.Post("/family/pin", new Dictionary<string, object> { { "pin", null }, { "current", digits } }, _ => { _app.Toast("PIN off."); Shown(); },
+                    why => { if (why == "http_401") ClearPin("That PIN is not right"); else { Dialog.Ask(_app.Toasts, "Couldn't turn the PIN off", "Check your connection and try again.", "OK", () => { }); Shown(); } })),
+                null, error, ForgotOwnPin);
+            Shown();
+        }
+
+        // There is no reset without the PIN in the API (POST /family/pin checks `current`), so support resets it.
+        void ForgotOwnPin() =>
+            Dialog.Ask(_app.Toasts, "Forgot your PIN?", "The PIN can only be turned off with the PIN. Your caddie can reset it for you: message them and say which account it is for.", "Message your caddie", () => _app.Push(new CaddieScreen(_app)));
     }
 
     /// <summary>AddPlayer: a first name, which hand, and kid or not. A kid picks a character next.</summary>
@@ -247,6 +394,7 @@ namespace PuttrApp
     {
         readonly App _app;
         readonly TextField _name;
+        Label _go, _kidNote;
         bool _left, _kid, _busy;
 
         public AddPlayerScreen(App app)
@@ -258,13 +406,41 @@ namespace PuttrApp
             _name.textEdition.placeholder = "First name";
             _name.textEdition.hidePlaceholderOnFocus = false;
             _name.AddToClassList("field");
+            VisualElement go = Ui.Button("Add player", Add);
+            _go = go.Q<Label>(className: "btn-text");
+            _kidNote = Ui.Text("Kid profiles play every game under a made-up public name, with video, chat and purchases off.", "body-2", Ui.Regular);
+            _kidNote.style.display = DisplayStyle.None;
             body.Add(Ui.Box("pad",
-                Ui.Text("They get their own stats, streaks and leaderboard spot. No email or password needed.", "sub", Ui.Regular),
+                Ui.Text("They get their own stats, streaks and leaderboard spot. No email or password needed.", "body-2", Ui.Regular),
                 _name.Face(Ui.Medium).Margin(12),
-                Ui.Text("PUTTS", "kick", Ui.Bold).Margin(6), FreePuttScreen.Choice(new[] { "Right-handed", "Left-handed" }, 0, i => _left = i == 1).Margin(6),
-                Ui.Text("WHO IS THIS FOR?", "kick", Ui.Bold).Margin(14), FreePuttScreen.Choice(new[] { "A kid, under 13", "Teen or adult" }, 1, i => _kid = i == 0).Margin(6),
-                Ui.Text("A Kid profile has video, online play, chat and leagues off, and shows a made-up name everywhere but this account.", "muted", Ui.Regular).Margin(8),
-                Ui.Button("Add player", Add).Margin(14)));
+                Ui.Caps("Putts", "caps caps-green").Margin(4), Pick(new[] { "Right-handed", "Left-handed" }, 0, i => _left = i == 1).Margin(8),
+                Ui.Caps("Who is this for?", "caps caps-green").Margin(16), Pick(new[] { "A kid, under 13", "Teen or adult" }, 1, PickWho).Margin(8),
+                _kidNote.Margin(8),
+                go.Margin(16)));
+        }
+
+        // The two-way choice, with the chosen side lit as it is tapped (FreePuttScreen.Choice draws it once and leaves it).
+        static VisualElement Pick(string[] names, int chosen, Action<int> pick)
+        {
+            VisualElement row = Ui.Box("choice");
+            for (int i = 0; i < names.Length; i++)
+            {
+                int index = i;
+                row.Add(Ui.Box(i == chosen ? "choice-item choice-on" : "choice-item", Ui.Text(names[i], "choice-text", Ui.Bold)).OnTap(() =>
+                {
+                    for (int k = 0; k < row.childCount; k++) row[k].EnableInClassList("choice-on", k == index);
+                    pick(index);
+                }));
+            }
+            return row;
+        }
+
+        // A kid picks a character next (AddPlayer: the note, and the button says so).
+        void PickWho(int choice)
+        {
+            _kid = choice == 0;
+            _kidNote.style.display = _kid ? DisplayStyle.Flex : DisplayStyle.None;
+            _go.text = _kid ? "NEXT: PICK A CHARACTER" : "ADD PLAYER";
         }
 
         void Add()
@@ -280,7 +456,12 @@ namespace PuttrApp
                 _app.Pop();
                 if (_kid) _app.Push(new CharacterScreen(_app, player, true));
                 else Dialog.Ask(_app.Toasts, name + " is ready", "Switch to " + name + " now, or stay as you are.", "Switch to " + name, () => App.Run(Profiles.Switch(_app, player, null, w => _app.Toast(w))));
-            }, why => { _busy = false; _app.Toast(why == "http_409" ? "You have all 5 players." : "Couldn't add them. Try again."); }));
+            }, why =>
+            {
+                _busy = false;
+                (string title, string words) = Profiles.AddError(why);
+                Dialog.Ask(_app.Toasts, title, words, "OK", () => { });
+            }));
         }
     }
 
@@ -310,7 +491,7 @@ namespace PuttrApp
         {
             _body.Clear();
             string name = J.Str(_player, "name", "them");
-            if (_setup) _body.Add(Ui.Box("pad", Ui.Text("Who is " + name + " going to be?", "h2", Ui.Bold), Ui.Text("Hand " + name + " the phone for this part.", "sub", Ui.Regular)));
+            if (_setup) _body.Add(Ui.Box("pad", Ui.Title("Who is " + name + " going to be?", "title-20"), Ui.Text("Hand " + name + " the phone for this part.", "body-2", Ui.Regular).Margin(4)));
             VisualElement preview = Ui.Box("crew-preview");
             Images.Into(preview, Profiles.AvatarUrl(_animal, _colour));
             _body.Add(Ui.Box("pad center-box", preview));
@@ -323,7 +504,7 @@ namespace PuttrApp
                 pick.OnTap(() => { _animal = animal; Save(); Draw(); });
                 grid.Add(pick);
             }
-            _body.Add(Ui.Box("pad", Ui.Text("PICK YOUR CHARACTER", "kick", Ui.Bold), grid.Margin(8)));
+            _body.Add(Ui.Box("pad", Ui.Caps("Pick your character", "caps caps-green").Margin(16), grid.Margin(8)));
             VisualElement colours = Ui.Box("row");
             for (int i = 1; i <= 6; i++)
             {
@@ -333,8 +514,8 @@ namespace PuttrApp
                 swatch.OnTap(() => { _colour = c; Save(); Draw(); });
                 colours.Add(swatch);
             }
-            _body.Add(Ui.Box("pad", Ui.Text("COLOR", "kick", Ui.Bold), colours.Margin(8)));
-            _body.Add(Ui.Box("pad", Ui.Button(_setup ? "That's me!" : "Done", Done)).Margin(14));
+            _body.Add(Ui.Box("pad", Ui.Caps("Color", "caps caps-green").Margin(8), colours.Margin(8)));
+            _body.Add(Ui.Box("pad", Ui.Button(_setup ? "That's me!" : "Done", Done)).Margin(16));
         }
 
         void Save() => App.Run(Api.Post("/family/update/" + J.Str(_player, "userId"), new Dictionary<string, object> { { "animal", _animal }, { "color", _colour } }, null, _ => _app.Toast("Couldn't save that.")));
@@ -356,7 +537,7 @@ namespace PuttrApp
             string name = J.Str(player, "name", "Player");
             bool kid = J.Flag(player, "isKid");
             Root = Page.Make(app, name, out VisualElement body);
-            body.Add(Ui.Box("pad center-box", Profiles.Face(player, 84).OnTap(() => app.Push(new CharacterScreen(app, player, false))), Ui.Text(name, "h2", Ui.Bold).Margin(8),
+            body.Add(Ui.Box("pad prof-face", Profiles.Face(player, 72).OnTap(() => app.Push(new CharacterScreen(app, player, false))), Ui.Title(name, "title-20 prof-name"),
                 Ui.Text(kid ? "Kid profile" : "Player", kid ? "chip chip-amber" : "chip", Ui.Bold)));
             var rows = new List<VisualElement> { Rows.Row("FillUser", "Character", () => app.Push(new CharacterScreen(app, player, false))) };
             if (kid)
@@ -388,13 +569,13 @@ namespace PuttrApp
                 System.IO.File.WriteAllText(file, J.Write(data));
                 Share.File(file, "application/json");
             }, _ => Dialog.Ask(body, "Couldn't prepare the download", "Check your connection and try again.", "OK", () => { })))));
-            body.Add(Rows.Card(rows.ToArray()));
-            if (kid) body.Add(Ui.Box("pad", Ui.Box("glass", Ui.Text("WHAT " + name.ToUpperInvariant() + " CAN DO", "kick", Ui.Bold),
-                Ui.Text("Play every game, keep their own stats and streaks, climb the leaderboards under a made-up name.", "sub", Ui.Regular).Margin(6),
-                Ui.Text("Off: video and replays, online play, friends and the feed, chat, leagues.", "muted", Ui.Regular).Margin(6))).Margin(10));
-            body.Add(Ui.Box("pad", Ui.Button("Switch to " + name, () => App.Run(Profiles.Switch(app, player, null, w => app.Toast(w)))).Margin(14),
+            body.Add(Rows.Card(rows.ToArray()).Margin(16));
+            if (kid) body.Add(Ui.Box("pad", Ui.Box("card", Ui.Text("WHAT " + name.ToUpperInvariant() + " CAN DO", "caps caps-green", Ui.Bold),
+                Ui.Text("Play every game, keep their own stats and streaks, climb the leaderboards under a made-up name.", "body", Ui.Regular).Margin(8),
+                Ui.Text("Off: video and replays, online play, friends and the feed, chat, leagues.", "body-2", Ui.Regular).Margin(8))).Margin(12));
+            body.Add(Ui.Box("pad", Ui.Button("Switch to " + name, () => App.Run(Profiles.Switch(app, player, null, w => app.Toast(w)))).Margin(16),
                 Ui.Button(kid ? "Delete profile and all data" : "Remove " + name, () => Dialog.Ask(body, "Remove " + name + "?", "All of " + name + "'s putts, games and stats are deleted for good.", "Delete",
-                    () => App.Run(Api.Post("/family/remove/" + J.Str(player, "userId"), new Dictionary<string, object>(), _ => { app.Toast(name + " was removed."); app.Pop(); }, _ => app.Toast("Couldn't remove them."))), true), "btn btn-ghost")));
+                    () => App.Run(Api.Post("/family/remove/" + J.Str(player, "userId"), new Dictionary<string, object>(), _ => { app.Toast(name + " was removed."); app.Pop(); }, _ => app.Toast("Couldn't remove them."))), true), "btn btn-red").Margin(12)));
         }
     }
 
@@ -410,7 +591,7 @@ namespace PuttrApp
                 ("Who can see it", "Only the profiles on this account see the first name. Everyone else sees the made-up name on leaderboards."),
             };
             foreach (var p in parts) { body.Add(Ui.Section(p.title)); body.Add(Page.Note(p.words)); }
-            body.Add(Ui.Box("pad", Ui.Text("The account owner can download or delete everything from the player's page.", "muted", Ui.Regular).Margin(8)));
+            body.Add(Ui.Box("pad", Ui.Text("The account owner can download or delete everything from the player's page.", "body-2", Ui.Regular).Margin(8)));
         }
     }
 }

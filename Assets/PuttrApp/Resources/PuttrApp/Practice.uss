@@ -1,0 +1,108 @@
+/* Practice (puttr-app games/Open.js): the setup tiles on the game page, and the session's panel and result card in play.
+   Solid colours only, from docs/design-guidelines.md. */
+
+/* ── The game page's tiles: an icon, a word and a line under it (Open.js PillRow). The chosen one is lit as a chip
+   is: surface-2 and a white edge, never a green outline. ── */
+.pr-tiles { flex-direction: row; }
+.pr-tile { flex-grow: 1; flex-basis: 0; margin-right: 8px; padding: 12px 4px; min-height: 44px; border-radius: 4px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); align-items: center; }
+.pr-tile-on { background-color: rgb(34, 38, 42); border-color: rgb(255, 255, 255); }
+.pr-tile-icon { margin-bottom: 4px; }
+.pr-tile-label { font-size: 13px; color: rgb(139, 147, 153); -unity-text-align: middle-center; }
+.pr-tile-on .pr-tile-label { color: rgb(255, 255, 255); }
+.pr-tile-sub { font-size: 11px; color: rgb(139, 147, 153); margin-top: 4px; -unity-text-align: middle-center; white-space: normal; }
+.pr-targets { flex-direction: row; margin-top: 12px; }
+.pr-target { flex-grow: 1; flex-basis: 0; margin-right: 8px; padding: 8px 4px; min-height: 44px; border-radius: 4px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); align-items: center; }
+.pr-target-on { background-color: rgb(34, 38, 42); border-color: rgb(255, 255, 255); }
+.pr-target-num { font-size: 15px; color: rgb(139, 147, 153); -unity-font-style: bold-and-italic; }
+.pr-target-on .pr-target-num { color: rgb(255, 255, 255); }
+.pr-target-sub { font-size: 11px; color: rgb(139, 147, 153); }
+
+/* ── The panel in play ── */
+.pr-caption { font-size: 13px; color: rgb(139, 147, 153); margin-top: 8px; -unity-text-align: middle-center; }
+.pr-metronome { padding-top: 8px; padding-bottom: 8px; }
+.pr-section { margin-top: 24px; margin-bottom: 0; }
+.pr-empty { margin-top: 32px; margin-bottom: 16px; align-items: center; }
+.pr-empty-title { font-size: 15px; color: rgb(196, 201, 205); }
+.pr-empty-sub { font-size: 13px; color: rgb(139, 147, 153); margin-top: 4px; }
+
+.pr-stats { flex-direction: row; margin-top: 12px; }
+.pr-stat { flex-grow: 1; flex-basis: 0; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 12px; align-items: center; margin-right: 8px; }
+.pr-stat-num { font-size: 28px; -unity-font-style: bold-and-italic; }
+.pr-stat-label { font-size: 11px; color: rgb(139, 147, 153); -unity-text-align: middle-center; }
+.pr-card { background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 12px; }
+.pr-half { flex-grow: 1; flex-basis: 0; margin-right: 8px; }
+.pr-last { margin-right: 0; }
+.pr-head { flex-direction: row; align-items: center; margin-bottom: 8px; }
+.pr-head-label { font-size: 11px; color: rgb(139, 147, 153); margin-left: 4px; }
+.pr-head-right { font-size: 11px; }
+.pr-big { font-size: 28px; -unity-font-style: bold-and-italic; }
+.pr-mid { font-size: 20px; -unity-font-style: bold-and-italic; }
+.pr-word { font-size: 15px; }
+.pr-small { font-size: 11px; color: rgb(139, 147, 153); margin-top: 4px; white-space: normal; }
+.pr-small-strong { font-size: 11px; }
+.pr-best { font-size: 11px; color: rgb(139, 147, 153); margin-top: 4px; }
+.pr-baseline { flex-direction: row; align-items: flex-end; }
+.pr-avg { font-size: 13px; color: rgb(139, 147, 153); margin-left: 8px; margin-bottom: 4px; }
+.pr-top { align-items: flex-start; }
+.pr-col { flex-grow: 1; flex-basis: 0; margin-right: 12px; }
+
+.pr-goal-title { font-size: 13px; margin-left: 8px; }
+.pr-goal-count { font-size: 11px; color: rgb(139, 147, 153); }
+
+.pr-thin { height: 4px; border-radius: 2px; background-color: rgb(34, 38, 42); overflow: hidden; margin-top: 8px; }
+.pr-thin-fill { height: 4px; border-radius: 2px; }
+.pr-pga { height: 2px; margin-top: 2px; }
+.pr-pga > .pr-thin-fill { height: 2px; }
+
+.pr-split { flex-direction: row; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+.pr-split-part { height: 4px; flex-basis: 0; }
+
+.pr-dot { width: 8px; height: 8px; border-radius: 4px; margin-right: 8px; }
+.pr-dot-small { width: 6px; height: 6px; border-radius: 3px; margin-right: 6px; }
+.pr-entry { flex-direction: row; align-items: center; margin-top: 8px; }
+.pr-entry-label { font-size: 13px; color: rgb(255, 255, 255); }
+.pr-entry-count { font-size: 13px; color: rgb(139, 147, 153); }
+
+.pr-dist { margin-top: 8px; }
+.pr-dist > .pr-thin { margin-top: 4px; }
+.pr-dist-ft { font-size: 13px; color: rgb(255, 255, 255); }
+.pr-dist-pct { font-size: 13px; }
+.pr-dist-of { font-size: 11px; color: rgb(139, 147, 153); margin-left: 8px; }
+.pr-legend { margin-top: 12px; }
+.pr-key { width: 12px; height: 4px; border-radius: 2px; margin-right: 4px; }
+.pr-key-thin { height: 2px; margin-left: 16px; }
+.pr-legend-text { font-size: 11px; color: rgb(139, 147, 153); }
+
+.pr-break { padding: 12px; }
+.pr-break-pct { font-size: 20px; -unity-font-style: bold-and-italic; }
+.pr-break-of { font-size: 11px; color: rgb(139, 147, 153); margin-top: 2px; }
+
+/* ── The putt history (PuttCard.js) ── */
+.pr-hist { flex-direction: row; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; overflow: hidden; margin-top: 8px; }
+.pr-hist:active { background-color: rgb(34, 38, 42); }
+.pr-hist-edge { width: 4px; }
+.pr-hist-grade { width: 56px; align-items: center; justify-content: center; padding: 12px 0; }
+.pr-hist-letter { font-size: 28px; -unity-font-style: bold-and-italic; }
+.pr-hist-score { font-size: 11px; margin-top: 2px; }
+.pr-hist-main { flex-grow: 1; flex-shrink: 1; padding: 12px 12px 12px 0; }
+.pr-badge { width: 20px; height: 20px; border-radius: 4px; align-items: center; justify-content: center; margin-right: 8px; }
+.pr-badge-text { font-size: 11px; color: rgb(255, 255, 255); -unity-text-align: middle-center; }
+.pr-hist-ft { font-size: 13px; color: rgb(255, 255, 255); }
+.pr-hist-break { font-size: 13px; color: rgb(139, 147, 153); margin-left: 8px; }
+.pr-hist-pace { margin-top: 8px; }
+.pr-hist-main > .pr-thin { margin-top: 4px; }
+.pr-hist-result { margin-top: 8px; }
+.pr-hist-result-text { font-size: 11px; margin-left: 4px; }
+.pr-tiny { font-size: 11px; color: rgb(139, 147, 153); }
+.pr-tiny-strong { font-size: 11px; }
+
+/* ── The result card: the putt's picture in a bordered window, its words on the card under it ── */
+.pr-result { max-width: 320px; padding: 16px; border-radius: 4px; background-color: rgb(21, 24, 27); border-color: rgb(38, 42, 46); }
+.pr-path { border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); overflow: hidden; height: 200px; }
+.pr-result-top { margin-top: 16px; align-items: center; }
+.pr-result-text { font-size: 15px; }
+.pr-result-sub { font-size: 13px; color: rgb(139, 147, 153); margin-top: 2px; }
+.pr-result-grade { font-size: 44px; -unity-font-style: bold-and-italic; }
+.pr-result-speed { margin-top: 16px; background-color: rgb(34, 38, 42); border-radius: 4px; padding: 12px; }
+.pr-result-speed > .pr-thin { margin-top: 8px; background-color: rgb(48, 53, 58); }
+.btn.pr-dismiss { margin-top: 16px; }

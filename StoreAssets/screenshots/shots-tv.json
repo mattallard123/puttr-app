@@ -1,0 +1,83 @@
+[
+ {
+  "name": "01-majorleague",
+  "take": "majorleague",
+  "t": 11.0,
+  "k": "Puttr",
+  "h": "The ultimate <em>putting experience</em>"
+ },
+ {
+  "name": "02-spotkick",
+  "take": "spotkick",
+  "t": 13.4,
+  "k": "Every putt measured",
+  "h": "Pace. Line. <em>Result.</em>",
+  "c": "tv top right"
+ },
+ {
+  "name": "03-lanes",
+  "take": "lanes",
+  "t": 26.4,
+  "k": "Lanes",
+  "h": "Your putter is the <em>controller</em>",
+  "c": "tv top"
+ },
+ {
+  "name": "04-onfire",
+  "take": "onfire",
+  "t": 26.5,
+  "k": "On Fire",
+  "h": "Keep the <em>fire</em> alive",
+  "a": "#ff7a1a"
+ },
+ {
+  "name": "05-tracks",
+  "take": "tracks",
+  "t": 6.4,
+  "k": "Tracks",
+  "h": "Play the world's <em>great courses</em>",
+  "c": "tv top"
+ },
+ {
+  "name": "06-puttstar",
+  "take": "puttstar",
+  "t": 20.3,
+  "k": "Putt Star",
+  "h": "Play to the <em>crowd</em>",
+  "a": "#ff4fd8",
+  "c": "tv top"
+ },
+ {
+  "name": "07-sendit",
+  "take": "sendit",
+  "t": 1.1,
+  "k": "Send It",
+  "h": "Putt harder. <em>Fly further.</em>",
+  "a": "#ffcc00",
+  "c": "tv top"
+ },
+ {
+  "name": "08-turfwar",
+  "take": "turfwar",
+  "t": 12.3,
+  "k": "Turf War",
+  "h": "Your putt throws the <em>paint</em>",
+  "a": "#ff9a2e"
+ },
+ {
+  "name": "09-archery",
+  "take": "archery",
+  "t": 22.4,
+  "k": "Archery",
+  "h": "Aim for the <em>gold</em>",
+  "a": "#ffcc00",
+  "c": "tv top"
+ },
+ {
+  "name": "10-games",
+  "take": "play",
+  "t": 3.0,
+  "k": "1 to 4 Players",
+  "h": "40+ games <em>on your mat</em>"
+ }
+]

@@ -89,8 +89,8 @@ namespace PuttrArcade
 
             // The cup and the flag.
             GameObject cup = Make.MeshObject("Cup", Root, Make.Disc(CupR, 48), Make.Lit(new Color(0.01f, 0.01f, 0.01f), 0.1f));
-            cup.transform.localPosition = new Vector3(0, 0.62f, 0);
-            Hoop("Liner", Root, new Vector3(0, 0.64f, 0), CupR, CupR + 0.45f, Make.Lit(Color.white, 0.5f));
+            cup.transform.localPosition = new Vector3(0, 0.72f, 0);
+            Hoop("Liner", Root, new Vector3(0, 0.76f, 0), CupR, CupR + 0.45f, Make.Lit(Color.white, 0.5f));
             Shape(PrimitiveType.Cylinder, "Pin", Root, new Vector3(0, 48f, 0), new Vector3(0.9f, 48f, 0.9f), Make.Lit(new Color(0.96f, 0.95f, 0.9f), 0.6f));
             _flag = new GameObject("Flag").transform;
             _flag.SetParent(Root, false);
@@ -252,7 +252,7 @@ namespace PuttrArcade
             _balls[who].gameObject.SetActive(true);
             _balls[who].localPosition = new Vector3(s.x, BallR + 0.55f, s.y);
             _markers[who].gameObject.SetActive(true);
-            _markers[who].localPosition = new Vector3(s.x, 0.6f, s.y);
+            _markers[who].localPosition = new Vector3(s.x, 0.85f, s.y);   // clear of the green's top (0.6): level with it, the ring flickered
         }
 
         void Board(ShotView v, bool all)
@@ -362,7 +362,7 @@ namespace PuttrArcade
                         yield return null;
                     }
                     for (int k = 0; k < moving.Count; k++) { moving[k].localPosition = homes[k]; moving[k].localRotation = Quaternion.identity; }
-                    Sound("door_slam", 0.35f, 1.8f);
+                    Sound("matchplay_board", "door_slam", 0.35f, 1.8f);   // puttr-app-2: the game's own sound, the shared one until recorded
                     _slotted = Mathf.Max(_slotted, h + 1);
                 }
                 if (v.Points != 0) Arcade.Sparks(At(_board.localPosition + new Vector3(0, 10f, -4f)), 14);

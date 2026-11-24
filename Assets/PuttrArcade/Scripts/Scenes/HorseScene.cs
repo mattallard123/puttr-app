@@ -72,9 +72,10 @@ namespace PuttrArcade
 
         public override void Build()
         {
-            if (_logo == null) _logo = Resources.Load<Texture2D>("PuttrArcade/LogoHeader");
-            if (_mark == null) _mark = Resources.Load<Texture2D>("PuttrArcade/LogoMark");
-            if (_markWhite == null) _markWhite = Resources.Load<Texture2D>("PuttrArcade/LogoMarkWhite");
+            // The sponsor is the brand (Brand.cs): Puttr with no kit, the host's logo with one.
+            _logo = Brand.Logo;
+            _mark = Brand.MarkColour;
+            _markWhite = Brand.Mark;
 
             BuildCourt();
             BuildHoop();
@@ -146,11 +147,15 @@ namespace PuttrArcade
             Flat("Paint", Root, _paint, Make.Lit(new Color(0.05f, 0.3f, 0.17f), 0.6f, 0f, wood, woodNormal, 0.4f));
             Flat("Lines", Root, _lines, Make.Lit(new Color(0.96f, 0.96f, 0.94f), 0.8f));
             Flat("Mat marks", Root, _mat, Make.Lit(new Color(0.96f, 0.96f, 0.94f), 0.8f));
-            // The mat's labels: each distance at the right of its line (the arcade's cards sit top left), L C R past the
-            // end of the paint.
+            // The tees as on the Puttr mat: a black spot with a thin white rim, the distance in the centre one. L C R past
+            // the end of the paint.
             Color label = new Color(0.97f, 0.97f, 0.95f);
+            Flat("Tee rims", Root, HorseArena.TeeSpots(0.2f, 9.6f), Make.Lit(new Color(0.9f, 0.9f, 0.88f), 0.6f));
+            Flat("Tee spots", Root, HorseArena.TeeSpots(0.22f, 8.6f), Make.Lit(new Color(0.02f, 0.02f, 0.025f), 0.35f));
+            // puttr-app-2 (Matt, 2026-11-21): as the Puttr mat prints it, the distance once, in the centre spot of its row;
+            // the left and right spots are plain circles to tap.
             for (int f = 3; f <= 11; f++)
-                Words(Root, f.ToString(), new Vector3(82f, 0.3f, HorseArena.MatZ(f)), 13f, label).transform.localRotation = Quaternion.Euler(90f, 0, 0);
+                Words(Root, f.ToString(), new Vector3(HorseArena.TeeX(2), 0.32f, HorseArena.MatZ(f)), 8.5f, label).transform.localRotation = Quaternion.Euler(90f, 0, 0);
             string[] tees = { "L", "C", "R" };
             for (int t = 1; t <= 3; t++)
                 Words(Root, tees[t - 1], new Vector3(HorseArena.TeeX(t), 0.3f, HorseArena.PaintEnd - 16f), 14f, label).transform.localRotation = Quaternion.Euler(90f, 0, 0);
@@ -171,7 +176,8 @@ namespace PuttrArcade
             if (_mark != null)
             {
                 var centre = new HorseArena.Builder();
-                Decal(centre, new Vector3(0, 0.2f, HorseArena.HalfCourt), 100f, 100f * _mark.height / _mark.width);
+                Vector2 centreSize = Brand.Fit(_mark, 100f, 100f);
+                Decal(centre, new Vector3(0, 0.2f, HorseArena.HalfCourt), centreSize.x, centreSize.y);
                 Flat("Centre logo", Root, centre.Build("Centre logo"), Make.Transparent(Color.white, 0.8f, _mark));
             }
         }
@@ -260,6 +266,7 @@ namespace PuttrArcade
             Points(net, knots);
         }
 
+        static int _ribbonBrand = -1;
         static Mesh _treadsLow, _treadsHigh, _seatsA, _seatsB, _seatsC, _seatsD, _seatsE, _fascia, _ribbon, _ribbonLogos, _suites, _frontWall, _frontCap, _backWall;
 
         void BuildBowl()
@@ -311,16 +318,19 @@ namespace PuttrArcade
                 HorseArena.Wall(suites, HorseArena.ClubD - 0.5f, clubT - 50f, clubT - 48f);
                 HorseArena.Wall(suites, HorseArena.ClubD - 0.5f, clubT - 2f, clubT);
                 _suites = suites.Build("Ribbon trim");
-                if (_logo != null)
-                {
-                    var logos = new HorseArena.Builder();
-                    float h = 30f, w = h * _logo.width / _logo.height;
-                    HorseArena.Logos(logos, HorseArena.ClubD - 1f, clubT - 25f, w, h, 230f);
-                    _ribbonLogos = logos.Build("Ribbon logos");
-                }
                 var back = new HorseArena.Builder();
                 HorseArena.Wall(back, HorseArena.BackD, HorseArena.UpperY(HorseArena.UpperRows - 1), HorseArena.UpperY(HorseArena.UpperRows - 1) + 500f);
                 _backWall = back.Build("Back wall");
+            }
+
+            // The ribbon's logos are cut to the logo's shape, so they are made again when the brand changes.
+            if (_logo != null && (_ribbonLogos == null || _ribbonBrand != Brand.Version))
+            {
+                _ribbonBrand = Brand.Version;
+                var logos = new HorseArena.Builder();
+                Vector2 size = Brand.Fit(_logo, 30f * Brand.Aspect(Brand.Puttr), 30f);
+                HorseArena.Logos(logos, HorseArena.ClubD - 1f, HorseArena.ClubTop - 25f, size.x, size.y, 230f);
+                _ribbonLogos = logos.Build("Ribbon logos");
             }
 
             // Seats in the team green, fading toward black as the bowl climbs into the dark.
@@ -364,7 +374,7 @@ namespace PuttrArcade
                 }
                 if (isGreen && _markWhite != null)
                 {
-                    float mh = 24f, mw = mh * _markWhite.width / _markWhite.height, cy = y0 + h / 2f;
+                    float mw = Brand.Fit(_markWhite, 34f, 24f).x, mh = mw / Brand.Aspect(_markWhite), cy = y0 + h / 2f;
                     for (int k = -1; k <= 1; k++)
                     {
                         float mx = cx + k * 40f;
@@ -630,7 +640,7 @@ namespace PuttrArcade
                 Vector3 floor = new Vector3(entry.x, BallR, entry.z - 10f);
                 yield return FlyTo(_ball.localPosition, floor, 0.35f, 0f);
                 Sound("court_bounce", 0.6f);
-                Sound("golf_clap", 0.4f);
+                Sound("horse_cheer", "golf_clap", 0.4f);   // puttr-app-2: the game's own sound, the shared one until recorded
             }
             else
             {
@@ -638,7 +648,7 @@ namespace PuttrArcade
                 float side = v.MissSide == "LEFT" ? -1f : v.MissSide == "RIGHT" ? 1f : (across < 0 ? -1f : 1f);
                 Vector3 hit = v.Made ? RimAt + toRim * (RimR + 1f) + Vector3.up * 3f : RimAt + right * side * (RimR + 1.5f) + Vector3.up * 3f;
                 yield return FlyTo(hand, hit, 1.1f, apex);
-                Sound("rim_clang", 1f);
+                Sound("horse_rim", "rim_clang", 1f);   // puttr-app-2: the game's own sound, the shared one until recorded
                 if (v.Made)
                 {
                     // Round the rim and out.

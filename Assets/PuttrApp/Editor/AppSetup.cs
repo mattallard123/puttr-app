@@ -52,7 +52,13 @@ namespace PuttrApp.EditorTools
         public static void BuildMac() => Build(BuildTarget.StandaloneOSX, "Builds/Puttr.app");
 
         [MenuItem("Puttr 2/Build for iOS")]
-        public static void BuildIos() => Build(BuildTarget.iOS, "Builds/iOS");
+        public static void BuildIos()
+        {
+            // Always the device SDK, whatever the project was left on: a simulator build that failed part way once
+            // left it on the simulator's, and the next Builds/iOS could not be run on an iPhone.
+            PlayerSettings.iOS.sdkVersion = iOSSdkVersion.DeviceSDK;
+            Build(BuildTarget.iOS, "Builds/iOS");
+        }
 
         // The Simulator needs its own build: one made for a real iPhone will not install there.
         // Same steps as the arcade's Packaging.BuildIosSimulator, Burst switched off for this build.
@@ -66,13 +72,16 @@ namespace PuttrApp.EditorTools
             const string burst = "ProjectSettings/BurstAotSettings_iOS.json";
             string before = File.Exists(burst) ? File.ReadAllText(burst) : null;
             File.WriteAllText(burst, "{\"MonoBehaviour\":{\"Version\":4,\"EnableBurstCompilation\":false,\"EnableOptimisations\":true,\"EnableSafetyChecks\":false,\"EnableDebugInAllBuilds\":false,\"DebugDataKind\":0,\"EnableArmv9SecurityFeatures\":false,\"CpuMinTargetX32\":0,\"CpuMaxTargetX32\":0,\"CpuMinTargetX64\":0,\"CpuMaxTargetX64\":0,\"OptimizeFor\":0}}");
-            try { Build(BuildTarget.iOS, "Builds/iOS-Simulator"); }
+            // The settings go back before a failed build ends batch mode (exiting inside the build skipped this).
+            bool ok = false;
+            try { ok = Build(BuildTarget.iOS, "Builds/iOS-Simulator", false); }
             finally
             {
-                PlayerSettings.iOS.sdkVersion = was;
+                PlayerSettings.iOS.sdkVersion = was == iOSSdkVersion.SimulatorSDK ? iOSSdkVersion.DeviceSDK : was;
                 PlayerSettings.iOS.simulatorSdkArchitecture = arch;
                 if (before != null) File.WriteAllText(burst, before); else File.Delete(burst);
             }
+            if (!ok && Application.isBatchMode) EditorApplication.Exit(1);
         }
 
         [MenuItem("Puttr 2/Build for Android")]
@@ -93,14 +102,19 @@ namespace PuttrApp.EditorTools
             Build(BuildTarget.Android, "Builds/Android/Puttr.apk");
         }
 
-        static void Build(BuildTarget target, string path)
+        /// <summary>For the other build files here (MacBuilds): builds, and leaves a failure to the caller.</summary>
+        internal static bool BuildTo(BuildTarget target, string path) => Build(target, path, false);
+
+        static bool Build(BuildTarget target, string path, bool exitOnFailure = true)
         {
             if (EditorUserBuildSettings.activeBuildTarget != target)
                 Debug.LogWarning("Puttr 2: the editor is set to " + EditorUserBuildSettings.activeBuildTarget + ", not " + target + ". Start batch mode with -buildTarget.");
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = new[] { ScenePath }, locationPathName = path, target = target, options = BuildOptions.None });
             Debug.Log("Puttr 2 " + target + " build: " + report.summary.result + ", " + report.summary.totalErrors + " errors, " + (report.summary.totalSize / (1024 * 1024)) + " MB");
-            if (Application.isBatchMode && report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded) EditorApplication.Exit(1);
+            bool ok = report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded;
+            if (Application.isBatchMode && !ok && exitOnFailure) EditorApplication.Exit(1);
+            return ok;
         }
     }
 }

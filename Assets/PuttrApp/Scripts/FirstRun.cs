@@ -1,6 +1,6 @@
 // The coach's first run on Improve (puttr-app coach/mvp CoachOnboarding, CoachReveal) and the drill tools:
 //
-//   CoachFirstRunScreen    welcome, pick a coach (their intro in their voice), five putts at 6 ft straight,
+//   CoachFirstRunScreen    welcome, pick a coach (their bundled intro mp3, Coaches/{id}_intro), five putts at 6 ft straight,
 //                          the reveal (computeReveal here, then ai.puttr.co /coach/diagnose over it), the daily
 //                          goal and reminder: POST /coach/settings and /streaks/goal/
 //   Metronome              TEMPO drills: effects_metronome every 60000/bpm ms, 50 to 120 bpm (85 to start)
@@ -98,10 +98,11 @@ namespace PuttrApp
         {
             _app = app;
             _done = done;
+            if (ProfileSetup.Arg("-app2CoachPick")) _step = "pick";   // for checking the picker from a script
             _body = new VisualElement();
             ScrollView scroll = Ui.Scroll();
             scroll.Add(_body);
-            scroll.Add(FreePuttScreen.Space(28));
+            scroll.Add(FreePuttScreen.Space(32));
             Root = scroll;
             Draw();
         }
@@ -111,7 +112,7 @@ namespace PuttrApp
             Coaches.Persona p = Coaches.Of(id);
             VisualElement face = Ui.Box("avatar");
             face.style.width = face.style.height = size;
-            face.style.borderTopLeftRadius = face.style.borderTopRightRadius = face.style.borderBottomLeftRadius = face.style.borderBottomRightRadius = size / 2;
+            face.AddToClassList("coach-face");   // a rounded square, as every avatar
             Texture2D t = Resources.Load<Texture2D>("PuttrApp/Coaches/" + p.Name);
             if (t != null) face.style.backgroundImage = new StyleBackground(t);
             return face;
@@ -120,33 +121,33 @@ namespace PuttrApp
         void Draw()
         {
             _body.Clear();
-            _body.Add(Ui.Box("top", Ui.Text("‹", "back back-chevron", Ui.Medium).OnTap(Back), Ui.Text("", "sec-title", Ui.Bold), Ui.Box("back-balance")));
+            _body.Add(Ui.Box("top", Ui.Text("‹", "back back-chevron", Ui.Medium).OnTap(Back), Ui.Text("", "top-title", Ui.Bold), Ui.Box("back-balance")));
             VisualElement p = Ui.Box("pad");
             _body.Add(p);
             switch (_step)
             {
                 case "welcome":
                     VisualElement row = Ui.Box("row");
-                    foreach (Coaches.Persona c in Coaches.All) row.Add(Face(c.Id, 58));
-                    p.Add(row.Margin(20));
-                    p.Add(Ui.Text("Meet your\nputting coaches.", "display wrap", Ui.Bold).Margin(18));
-                    p.Add(Ui.Text("Pick the one whose style fits you. Give them 5 putts and 5 minutes, they'll show you exactly what to work on.", "sub wrap", Ui.Regular).Margin(10));
+                    foreach (Coaches.Persona c in Coaches.All) row.Add(Face(c.Id, 56));
+                    p.Add(row.Margin(24));
+                    p.Add(Ui.Title("Meet your\nputting coaches.", "title").Margin(16));
+                    p.Add(Ui.Text("Pick the one whose style fits you. Give them 5 putts and 5 minutes, they'll show you exactly what to work on.", "sub wrap", Ui.Regular).Margin(12));
                     p.Add(Ui.Button("Let's go →", () => { _step = "pick"; Draw(); }).Margin(24));
-                    p.Add(Ui.Text("Takes about 5 minutes", "muted center", Ui.Regular).Margin(8));
+                    p.Add(Ui.Text("Takes about 5 minutes", "body-2 center", Ui.Regular).Margin(8));
                     break;
                 case "pick":
-                    p.Add(Ui.Text("Pick your coach", "display wrap", Ui.Bold));
-                    p.Add(Ui.Text("Four personalities. Same data, very different vibe. Swap anytime.", "sub wrap", Ui.Regular).Margin(6));
+                    p.Add(Ui.Title("Pick your coach", "title"));
+                    p.Add(Ui.Text("Four personalities. Same data, very different vibe. Swap anytime.", "sub wrap", Ui.Regular).Margin(8));
                     VisualElement grid = Ui.Box("team-grid");
                     foreach (Coaches.Persona c in Coaches.All)
                     {
                         string id = c.Id;
-                        VisualElement card = Ui.Box(id == _persona ? "glass team-cell choice-on" : "glass team-cell", Face(id, 96), Ui.Text(c.Name, "h2 wrap", Ui.Bold).Margin(8), Ui.Text(FirstRunMath.Personality[id].ToUpperInvariant(), "stat-label", Ui.Bold));
+                        VisualElement card = Ui.Box(id == _persona ? "card team-cell coach-on" : "card team-cell", Face(id, 96), Ui.Title(c.Name, "title-20").Margin(8), Ui.Text(FirstRunMath.Personality[id].ToUpperInvariant(), "caps", Ui.Bold));
                         grid.Add(Ui.Box("team-slot", card.OnTap(() => { _persona = id; Speak(); Draw(); })));
                     }
                     p.Add(grid);
                     p.Add(Form.Label(Coaches.Of(_persona).Name + " sounds like"));
-                    p.Add(Ui.Box("glass", Ui.Text(FirstRunMath.Intro[_persona], "sub wrap", Ui.Regular)));
+                    p.Add(Ui.Box("card", Ui.Text(FirstRunMath.Intro[_persona], "sub wrap", Ui.Regular)));
                     p.Add(Ui.Button("Choose " + Coaches.Of(_persona).Name + " →", () =>
                     {
                         CoachVoice.Hush();
@@ -156,11 +157,11 @@ namespace PuttrApp
                     if (!_introPlayed) { _introPlayed = true; Speak(); }
                     break;
                 case "calibrate":
-                    p.Add(Ui.Box("row", Face(_persona, 48), Ui.Text("Let's see your stroke", "h2 grow", Ui.Bold).Margin(0)));
-                    p.Add(Ui.Box("glass", Ui.Text("Five putts, 6 ft, straight", "feed-name", Ui.Bold), Ui.Text("Putt like you normally would, I'm watching your speed and where the ball finishes.", "sub wrap", Ui.Regular).Margin(6)).Margin(12));
-                    p.Add(Ui.Box("stat-tiles", Tile("6 ft", "DISTANCE"), Tile("Straight", "BREAK"), Tile("5", "PUTTS")));
-                    p.Add(Ui.Box("glass", Ui.Text("I'm watching: speed and where it finishes", "sub wrap", Ui.Regular)).Margin(12));
-                    if (Green.Peek == null || !Green.Peek.Online) p.Add(Ui.Text("Connect your Puttr to begin.", "muted center", Ui.Regular).Margin(12));
+                    p.Add(Ui.Box("row", Face(_persona, 48), Ui.Title("Let's see your stroke", "title-20 grow").Margin(0)));
+                    p.Add(Ui.Box("card", Ui.Text("Five putts, 6 ft, straight", "body", Ui.Bold), Ui.Text("Putt like you normally would, I'm watching your speed and where the ball finishes.", "sub wrap", Ui.Regular).Margin(8)).Margin(12));
+                    p.Add(Ui.StatStrip(("6 ft", "Distance"), ("Straight", "Break"), ("5", "Putts")).Margin(12));
+                    p.Add(Ui.Box("card", Ui.Text("I'm watching: speed and where it finishes", "sub wrap", Ui.Regular)).Margin(12));
+                    if (Green.Peek == null || !Green.Peek.Online) p.Add(Ui.Text("Connect your Puttr to begin.", "body-2 center", Ui.Regular).Margin(12));
                     p.Add(Ui.Button("I'm ready", () => _app.Games.PlayCalibration(round =>
                     {
                         var seen = new List<AppPutt.Verdict>(round.Session.Seen);
@@ -172,22 +173,22 @@ namespace PuttrApp
                     break;
                 case "reveal":
                     string first = HomeScreen.FirstName(_app.Profile);
-                    p.Add(Ui.Box("row", Face(_persona, 48), Ui.Text("Here's what I saw, " + (first.Length > 0 ? first : "there") + ".", "h2 grow wrap", Ui.Bold).Margin(0)));
-                    VisualElement leak = Ui.Box("glass", Ui.Text("BIGGEST LEAK", "stat-label", Ui.Bold), Ui.Text(J.Str(_reveal, "leakTitle"), "display wrap", Ui.Bold).Margin(6), Ui.Text(J.Str(_reveal, "leakBody"), "sub wrap", Ui.Regular).Margin(6));
-                    leak.style.borderTopColor = leak.style.borderBottomColor = leak.style.borderLeftColor = leak.style.borderRightColor = (Color)Ui.Red;
-                    p.Add(leak.Margin(14));
-                    if (J.Str(_reveal, "strength").Length > 0) p.Add(Ui.Box("glass", GreenText("✓ Your strength"), Ui.Text(J.Str(_reveal, "strength"), "sub wrap", Ui.Regular).Margin(6)).Margin(10));
-                    if (J.Str(_reveal, "plan").Length > 0) p.Add(Ui.Box("glass choice-on", Ui.Text("The plan", "feed-name", Ui.Bold), Ui.Text(J.Str(_reveal, "plan"), "sub wrap", Ui.Regular).Margin(6)).Margin(10));
-                    p.Add(Ui.Box("glass row", Ui.Icon("VideoCamera", 22, Ui.Blue), Ui.Text("This is the what. Soon I'll have you film your setup once so I can show you the why behind it.", "sub grow wrap", Ui.Regular).Margin(0)).Margin(10));
+                    p.Add(Ui.Box("row", Face(_persona, 48), Ui.Title("Here's what I saw, " + (first.Length > 0 ? first : "there") + ".", "title-20 grow").Margin(0)));
+                    Label leakTag = Ui.Caps("Biggest leak");
+                    leakTag.style.color = Ui.Red;   // the colour is on the words; the card keeps its plain border
+                    VisualElement leak = Ui.Box("card", leakTag, Ui.Title(J.Str(_reveal, "leakTitle"), "title").Margin(8), Ui.Text(J.Str(_reveal, "leakBody"), "sub wrap", Ui.Regular).Margin(8));
+                    p.Add(leak.Margin(16));
+                    if (J.Str(_reveal, "strength").Length > 0) p.Add(Ui.Box("card", GreenText("✓ Your strength"), Ui.Text(J.Str(_reveal, "strength"), "sub wrap", Ui.Regular).Margin(8)).Margin(12));
+                    if (J.Str(_reveal, "plan").Length > 0) p.Add(Ui.Box("card", Ui.Text("The plan", "body", Ui.Bold), Ui.Text(J.Str(_reveal, "plan"), "sub wrap", Ui.Regular).Margin(8)).Margin(12));
+                    p.Add(Ui.Box("card row", Ui.Icon("VideoCamera", 24, Color.white), Ui.Text("This is the what. Soon I'll have you film your setup once so I can show you the why behind it.", "sub grow wrap", Ui.Regular).Margin(0)).Margin(12));
                     p.Add(Ui.Button("Start my plan →", () => { _step = "commit"; Draw(); }).Margin(16));
                     Label deeper = Ui.Text("Map your whole green: 12 putts, all distances →", "sec-link center", Ui.Medium);
-                    deeper.style.color = Ui.Blue;
                     p.Add(deeper.Margin(12).OnTap(() => { _deeper = true; _step = "commit"; Draw(); }));
                     break;
                 default:
-                    p.Add(Ui.Text("\U0001F525", "display center wrap", Ui.Bold).Margin(20));
-                    p.Add(Ui.Text("Build the habit", "display center wrap", Ui.Bold).Margin(8));
-                    p.Add(Ui.Text("Players who putt daily improve 2× faster. Pick your goal.", "sub center wrap", Ui.Regular).Margin(6));
+                    p.Add(Ui.Box("center-box", Ui.Icon("FillFire", 44, Ui.Amber)).Margin(24));
+                    p.Add(Ui.Title("Build the habit", "title center").Margin(8));
+                    p.Add(Ui.Text("Players who putt daily improve 2× faster. Pick your goal.", "sub center wrap", Ui.Regular).Margin(8));
                     p.Add(Form.Label("Daily goal (putts)"));
                     int[] goals = { 10, 20, 30, 50 };
                     p.Add(Form.Pills(new[] { "10", "20", "30", "50" }, Array.IndexOf(goals, _goal), i => _goal = goals[i]));
@@ -197,20 +198,15 @@ namespace PuttrApp
                         int total = (_hour * 60 + _minute + d * 30 + 1440) % 1440;
                         _hour = total / 60; _minute = total % 60;
                     }));
-                    p.Add(Ui.Button("Start day 1", () => App.Run(Finish())).Margin(18));
+                    p.Add(Ui.Button("Start day 1", () => App.Run(Finish())).Margin(16));
                     break;
             }
         }
 
-        static Label GreenText(string s) { Label l = Ui.Text(s, "feed-name", Ui.Bold); l.style.color = Ui.Bright; return l; }
-        static VisualElement Tile(string value, string label) => Ui.Box("glass stat-tile", Ui.Text(value, "stat-value", Ui.Bold), Ui.Text(label, "stat-label", Ui.Bold));
+        static Label GreenText(string s) { Label l = Ui.Text(s, "body", Ui.Bold); l.style.color = Ui.Bright; return l; }
 
-        void Speak()
-        {
-            CoachVoice.Hush();
-            CoachVoice.Persona = Coaches.Of(_persona);
-            CoachVoice.Say(FirstRunMath.Intro[_persona]);
-        }
+        // Each coach introduces themselves in their own voice: the bundled intro, as the app's speakCoachIntro.
+        void Speak() => CoachVoice.Intro(Coaches.Of(_persona), FirstRunMath.Intro[_persona]);
 
         void Back()
         {
@@ -258,7 +254,7 @@ namespace PuttrApp
 
     public sealed class Metronome : MonoBehaviour
     {
-        public static int Bpm = 85;
+        public static int Bpm = 80;   // the app's metronome starts at 80
         static Metronome _one;
         AudioSource _source;
         float _next;
@@ -316,7 +312,7 @@ namespace PuttrApp
         {
             Root = Page.Make(app, round.Session.Detail.Length > 0 ? round.Session.Detail : "Speed drill", out VisualElement body);
             double? spread = DrillMath.SpeedSpread(round.Session.Seen);
-            body.Add(Ui.Box("pad center-box", Ui.Text(spread.HasValue ? spread.Value.ToString("0.0", CultureInfo.InvariantCulture) : "–", "code", Ui.Bold), Ui.Text("Score", "muted center", Ui.Regular),
+            body.Add(Ui.Box("pad center-box", Ui.Text(spread.HasValue ? spread.Value.ToString("0.0", CultureInfo.InvariantCulture) : "–", "code", Ui.Bold), Ui.Text("Score", "body-2 center", Ui.Regular),
                 Ui.Text(spread.HasValue ? "Inches between your longest and shortest roll. Lower is better: the same speed every time." : "Not enough rolls were read to score this drill.", "sub center wrap", Ui.Regular).Margin(12)));
             object lesson = round.Round;
             body.Add(Ui.Box("pad", Ui.Button("Again", () => { app.Pop(); app.Games.PlayLessonDrill(lesson); }), Ui.Button("Done", app.Pop, "btn btn-ghost").Margin(8)));
@@ -335,7 +331,7 @@ namespace PuttrApp
         public CameraSetupScreen(App app)
         {
             _app = app;
-            _status = Ui.Text("CONNECTING TO VIDEO SERVER", "muted center", Ui.Bold);
+            _status = Ui.Text("CONNECTING TO VIDEO SERVER", "body-2 center", Ui.Bold);
             // On a dark backing so the centre line does not run through the words.
             _status.style.backgroundColor = Color.black;
             _status.style.paddingLeft = _status.style.paddingRight = 12;
@@ -348,11 +344,11 @@ namespace PuttrApp
             VisualElement line = new VisualElement();
             line.style.position = Position.Absolute; line.style.left = Length.Percent(50); line.style.top = 0; line.style.bottom = 0; line.style.width = 4; line.style.marginLeft = -2;
             line.style.backgroundColor = Ui.Bright;
-            VisualElement flip = Ui.Box("btn row", Ui.Icon("VideoCamera", 18, Color.white), Ui.Text("  Flip", "btn-text", Ui.Bold));
-            flip.style.position = Position.Absolute; flip.style.right = 16; flip.style.bottom = 28;
+            VisualElement flip = Ui.Secondary("Flip", () => Capture.One.SwitchCamera());
+            flip.style.position = Position.Absolute; flip.style.right = 16; flip.style.bottom = 32;
             // The centre line and the flip button sit on the picture, below the header.
             _picture.Insert(0, line);
-            _picture.Add(flip.OnTap(() => Capture.One.SwitchCamera()));
+            _picture.Add(flip);
             Root = Ui.Box("grow", Ui.Header("Camera Setup", Leave), _picture);
             Root.style.backgroundColor = Color.black;
             Root.RegisterCallback<DetachFromPanelEvent>(_ => Stop());

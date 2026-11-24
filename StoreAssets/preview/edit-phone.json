@@ -1,0 +1,270 @@
+{
+ "bpm": 148,
+ "seconds": 15,
+ "bed": "audio/bed-148.wav",
+ "bed_start": 0.0,
+ "bed_gain": 0.85,
+ "texts": {
+  "w1": {
+   "h": "The ultimate",
+   "size": 10.5,
+   "portrait_scale": 1.55
+  },
+  "w2": {
+   "h": "putting",
+   "size": 11,
+   "portrait_scale": 1.75
+  },
+  "w3": {
+   "h": "<em>experience</em>",
+   "size": 11.5,
+   "portrait_scale": 1.08
+  },
+  "games": {
+   "h": "40+ <em>games</em>",
+   "k": "On your mat",
+   "size": 12,
+   "portrait_scale": 1.75
+  },
+  "tracks": {
+   "h": "Play the <em>world's</em> courses",
+   "k": "Tracks",
+   "size": 7.4,
+   "portrait_scale": 1.9
+  },
+  "players": {
+   "h": "1 to 4 <em>Players</em>",
+   "size": 11,
+   "portrait_scale": 1.3
+  },
+  "logo": {
+   "c": "logo",
+   "size": 16,
+   "portrait_scale": 1.0
+  },
+  "end": {
+   "c": "end",
+   "h": "The ultimate <em>putting experience</em>",
+   "sub": "AI coaching · Stats · 40+ games",
+   "size": 9.5,
+   "portrait_scale": 1.45
+  },
+  "measured": {
+   "h": "Every putt <em>measured</em>",
+   "k": "Stats",
+   "size": 8.5,
+   "portrait_scale": 1.3
+  },
+  "coach": {
+   "h": "AI <em>coach</em>",
+   "k": "In your pocket",
+   "size": 12,
+   "portrait_scale": 1.75
+  },
+  "pqs": {
+   "h": "Watch it <em>improve</em>",
+   "k": "Putting Quality Score",
+   "size": 8.5,
+   "portrait_scale": 1.5
+  }
+ },
+ "cuts": [
+  {
+   "card": "black",
+   "beats": 2,
+   "text": "logo",
+   "flash": true
+  },
+  {
+   "take": "lanes",
+   "at": 28.8,
+   "beats": 2,
+   "text": "w1",
+   "push": 1.12,
+   "dim": 0.1
+  },
+  {
+   "take": "spotkick",
+   "at": 13.6,
+   "beats": 2,
+   "text": "w2",
+   "push": 1.1,
+   "dim": 0.1
+  },
+  {
+   "take": "majorleague",
+   "at": 15.6,
+   "beats": 2,
+   "text": "w3",
+   "flash": true,
+   "push": 1.12,
+   "dim": 0.12
+  },
+  {
+   "take": "coachchat",
+   "at": 1.0,
+   "beats": 2,
+   "text": "coach",
+   "push": 1.1,
+   "dim": 0.25,
+   "flash": true
+  },
+  {
+   "take": "analysis",
+   "at": 4.2,
+   "beats": 2,
+   "text": "measured",
+   "push": 1.1,
+   "dim": 0.25
+  },
+  {
+   "take": "stats",
+   "at": 4.2,
+   "beats": 2,
+   "text": "pqs",
+   "push": 1.1,
+   "dim": 0.25
+  },
+  {
+   "take": "onfire",
+   "at": 28.5,
+   "beats": 1,
+   "push": 1.08,
+   "flash": true
+  },
+  {
+   "take": "sendit",
+   "at": 1.5,
+   "beats": 1,
+   "push": 1.06
+  },
+  {
+   "take": "windmill",
+   "at": 15.2,
+   "beats": 2,
+   "text": "games",
+   "dim": 0.15,
+   "flash": true
+  },
+  {
+   "take": "slingshot",
+   "at": 5.6,
+   "beats": 1,
+   "push": 1.08
+  },
+  {
+   "take": "underthecup",
+   "at": 3.0,
+   "beats": 1,
+   "push": 1.08
+  },
+  {
+   "take": "derby",
+   "at": 16.5,
+   "beats": 1,
+   "push": 1.06
+  },
+  {
+   "take": "archery",
+   "at": 30.0,
+   "beats": 1,
+   "push": 1.08
+  },
+  {
+   "take": "turfwar",
+   "at": 22.0,
+   "beats": 1,
+   "push": 1.12
+  },
+  {
+   "take": "spotkick",
+   "at": 0.8,
+   "beats": 1,
+   "push": 1.1
+  },
+  {
+   "take": "lanes",
+   "at": 22.0,
+   "beats": 2,
+   "text": "players",
+   "dim": 0.1,
+   "push": 1.08
+  },
+  {
+   "take": "tracks",
+   "at": 0.8,
+   "beats": 2,
+   "text": "tracks",
+   "dim": 0.12,
+   "flash": true
+  },
+  {
+   "take": "tracks",
+   "at": 22.0,
+   "beats": 2,
+   "push": 1.06
+  },
+  {
+   "take": "majorleague",
+   "at": 16.6,
+   "beats": 2,
+   "push": 1.1
+  },
+  {
+   "take": "majorleague",
+   "at": 17.0,
+   "beats": 7,
+   "text": "end",
+   "flash": true,
+   "blur": 22,
+   "dim": 0.32
+  }
+ ],
+ "sfx": [
+  {
+   "file": "audio/hit.wav",
+   "beat": 0,
+   "gain": 0.9
+  },
+  {
+   "file": "audio/whoosh.wav",
+   "beat": 1.6,
+   "gain": 0.55
+  },
+  {
+   "file": "audio/hit.wav",
+   "beat": 6,
+   "gain": 0.7
+  },
+  {
+   "file": "audio/riser.wav",
+   "beat": 7.0,
+   "gain": 0.35
+  },
+  {
+   "file": "audio/hit.wav",
+   "beat": 16,
+   "gain": 0.6
+  },
+  {
+   "file": "audio/whoosh.wav",
+   "beat": 23.6,
+   "gain": 0.5
+  },
+  {
+   "file": "audio/hit.wav",
+   "beat": 26,
+   "gain": 0.6
+  },
+  {
+   "file": "audio/roar.wav",
+   "beat": 28,
+   "gain": 0.5
+  },
+  {
+   "file": "audio/hit.wav",
+   "beat": 30,
+   "gain": 1.0
+  }
+ ]
+}

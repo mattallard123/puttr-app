@@ -203,7 +203,7 @@ namespace PuttrArcade
             float side = v.Made ? 0f : v.MissSide == "LEFT" ? -3.6f : v.MissSide == "RIGHT" ? 3.6f : 0f;
             float dist = Mathf.Max(4f, stop - 0.8f);
             yield return All(
-                Swing(_putter, s, () => Sound("click", 0.45f, 1.2f)),
+                Swing(_putter, s, () => Sound("putter_strike", "click", 0.45f, 1.2f)),   // puttr-app-2: the putter on the ball, shared by every sensor replay (the old sound until it is recorded)
                 Later(s.Back + s.Fwd, Run(Reveal(v, len))),
                 Later(s.Back + s.Fwd, RollBall(_ball, dist, side, Mathf.Clamp(dist / 80f, 1.1f, 1.9f))));
             if (v.Made)
@@ -215,7 +215,7 @@ namespace PuttrArcade
             if (v.Flag("elastic"))
             {
                 _elastic = 0f;
-                Sound("swish", 0.6f, 0.8f);
+                Sound("stretch_band", "swish", 0.6f, 0.8f);   // puttr-app-2: the game's own sound, the shared one until recorded
                 Arcade.Sparks(At(RulerX, 1f, -1f - (lastLo + lastHi) / 2f), 34);
                 Arcade.Shake(0.12f);
             }
@@ -235,7 +235,7 @@ namespace PuttrArcade
             _lampColour = okT == 1 ? ScoreGreen : okT == 0 ? ScoreAmber : new Color(0.5f, 0.55f, 0.6f);
             _lampFlash = okT >= 0 ? 1f : 0f;
             _read.Show("BACKSTROKE", F1(len), "in", "", c);
-            Sound(ok ? "lab_beep" : "click", 0.5f, ok ? 1.2f : 0.7f);
+            if (ok) Sound("stretch_ok", "lab_beep", 0.5f, 1.2f); else Sound("stretch_short", "click", 0.5f, 0.7f);   // puttr-app-2: the game's own sound, the shared one until recorded
             for (float t = 0f; t < 1f; t += Time.deltaTime / 0.3f)
             {
                 _peak.localPosition = new Vector3(0f, 2f * (1f - Ease(t)), z);

@@ -16,7 +16,15 @@ namespace PuttrApp
         public static readonly Color Blue = new Color32(0x56, 0x87, 0xFF, 0xFF);
         public static readonly Color Fire = new Color32(0xFF, 0x7A, 0x3A, 0xFF);
         public static readonly Color Ink = new Color32(0x09, 0x0B, 0x0D, 0xFF);
-        public static readonly Color Faint = new Color32(107, 108, 109, 255);
+        public static readonly Color Faint = new Color32(139, 147, 153, 255);   // text-2 in docs/design-guidelines.md
+        // The rest of the guidelines' colour table, for anything drawn in code. Never invent another grey or green.
+        public static readonly Color Base = new Color32(10, 12, 13, 255);
+        public static readonly Color Surface = new Color32(21, 24, 27, 255);
+        public static readonly Color Surface2 = new Color32(34, 38, 42, 255);
+        public static readonly Color Surface3 = new Color32(48, 53, 58, 255);
+        public static readonly Color Line = new Color32(38, 42, 46, 255);
+        public static readonly Color Soft = new Color32(196, 201, 205, 255);
+        public static readonly Color Gold = new Color32(255, 210, 74, 255);
 
         public static Font Bold, Medium, Regular;
 
@@ -44,21 +52,49 @@ namespace PuttrApp
         /// <summary>Text. Bold for headings and numbers, medium for labels, regular for body copy.</summary>
         public static Label Text(string text, string classes, Font font = null)
         {
+            // A chip is always in caps (docs/design-guidelines.md), wherever it is worded.
+            string c = " " + classes + " ";
+            if (text != null && (c.Contains(" chip ") || c.Contains(" chip-join "))) text = text.ToUpperInvariant();
             var label = new Label(text ?? "");
             AddClasses(label, classes);
             return label.Face(font ?? Medium);
         }
 
+        /// <summary>
+        /// The main button (classes "btn": brand green, slanted ends, caps) or the secondary one ("btn btn-ghost").
+        /// At most one main button on a screen (docs/design-guidelines.md).
+        /// </summary>
         public static VisualElement Button(string text, Action onClick, string classes = "btn")
         {
-            VisualElement button = Box(classes, Text(text, "btn-text", Bold));
+            // The white button is the Apple / Google sign-in shape: it keeps its square ends and its own wording.
+            bool plain = (" " + classes + " ").Contains(" btn-white ");
+            bool slant = !plain && (" " + classes + " ").Contains(" btn ");
+            VisualElement button = slant ? new Slant() : new VisualElement();
+            AddClasses(button, classes);
+            if (slant) button.AddToClassList("slant");
+            button.Add(Text(slant ? (text ?? "").ToUpperInvariant() : text, "btn-text", Bold));
             button.AddManipulator(new Clickable(() => { Perf.Wake(); onClick?.Invoke(); }));
+            Tv.Tappable(button, onClick);
             return button;
+        }
+
+        /// <summary>
+        /// A sheet's dark backdrop: closes only on a tap that starts and ends on the backdrop itself. (A Clickable on
+        /// the backdrop also fired for taps in the sheet that no child took, a text field's included: the sheet closed
+        /// as the keyboard came up and the typing was lost.)
+        /// </summary>
+        public static T OnBackdropTap<T>(this T dim, Action close) where T : VisualElement
+        {
+            bool down = false;
+            dim.RegisterCallback<PointerDownEvent>(e => down = e.target == dim);
+            dim.RegisterCallback<PointerUpEvent>(e => { if (down && e.target == dim) { Perf.Wake(); close?.Invoke(); } down = false; });
+            return dim;
         }
 
         public static T OnTap<T>(this T element, Action onClick) where T : VisualElement
         {
             element.AddManipulator(new Clickable(() => { Perf.Wake(); onClick?.Invoke(); }));
+            Tv.Tappable(element, onClick);
             return element;
         }
 
@@ -99,6 +135,7 @@ namespace PuttrApp
             string letter = string.IsNullOrEmpty(name) ? "P" : name.Trim().Substring(0, 1).ToUpperInvariant();
             Label initial = Text(letter, "avatar-letter", Bold);
             VisualElement avatar = Box(big ? "avatar avatar-big" : "avatar", initial);
+            Images.Cover(avatar);   // a photo fills the circle, centred and cropped, never stretched
             // No photo: the letter on a brand green picked from the name, as puttr-app's Avatar.js.
             avatar.style.backgroundColor = string.IsNullOrEmpty(name) ? BrandColours[0] : ColourFor(name);
             initial.style.color = Color.white;
@@ -134,9 +171,43 @@ namespace PuttrApp
             return scroll;
         }
 
+        public static VisualElement Secondary(string text, Action onClick) => Button(text, onClick, "btn btn-ghost");
+
+        /// <summary>A title: screen names, hero titles, game names. Bold italic caps.</summary>
+        public static Label Title(string text, string classes = "title") => Text((text ?? "").ToUpperInvariant(), classes + " ital", Bold);
+
+        /// <summary>A label: section names, eyebrows, tags, stat captions. Wide-spaced caps.</summary>
+        public static Label Caps(string text, string classes = "caps") => Text((text ?? "").ToUpperInvariant(), classes, Bold);
+
+        /// <summary>A score or a stat.</summary>
+        public static Label Num(string text, string classes = "num") => Text(text, classes + " ital", Bold);
+
+        /// <summary>The one header every tab has: its name (or the logo) on the left, up to two actions on the right.</summary>
+        public static VisualElement TabHeader(VisualElement left, params VisualElement[] actions)
+        {
+            VisualElement right = Box("tab-head-actions");
+            foreach (VisualElement action in actions) if (action != null) right.Add(action);
+            return Box("tab-head", left, right);
+        }
+
+        public static VisualElement TabHeader(string title, params VisualElement[] actions) => TabHeader(Title(title, "tab-head-title"), actions);
+
+        /// <summary>A 44 point square icon button for a header.</summary>
+        public static VisualElement IconSquare(string icon, Action onTap) => Box("icon-sq", Icon(icon, 22, Color.white)).OnTap(onTap);
+
+        /// <summary>One bordered block of stats, split by dividers: a number over its caption.</summary>
+        public static VisualElement StatStrip(params (string value, string caption)[] cells)
+        {
+            VisualElement strip = Box("strip");
+            for (int i = 0; i < cells.Length; i++)
+                strip.Add(Box(i == 0 ? "strip-cell strip-cell-first" : "strip-cell", Num(cells[i].value, "strip-num"), Caps(cells[i].caption, "strip-cap")));
+            return strip;
+        }
+
+        /// <summary>A section's name: a green slash, the name in caps, and a quiet link on the right.</summary>
         public static VisualElement Section(string title, string link = null, Action onLink = null)
         {
-            VisualElement row = Box("sec", Text(title, "sec-title", Bold));
+            VisualElement row = Box("sec", Box("row", Text("/", "sec-slash ital", Bold), Text((title ?? "").ToUpperInvariant(), "sec-title", Bold)));
             if (link != null) row.Add(Text(link, "sec-link").OnTap(onLink));
             return row;
         }
@@ -146,7 +217,7 @@ namespace PuttrApp
         {
             // A chevron alone (Matt, 2026-11-16: no "Back" word); a label only where a screen asks for one.
             Label back = Text(backLabel == null ? "\u2039" : "\u2039  " + backLabel, backLabel == null ? "back back-chevron" : "back", Medium).OnTap(onBack);
-            return Box("top", back, Text(title, "sec-title", Bold), Box("back-balance"));
+            return Box("top", back, Text(title, "top-title", Bold), Box("back-balance"));
         }
 
         public static VisualElement Progress(float share)
@@ -160,6 +231,36 @@ namespace PuttrApp
         {
             if (string.IsNullOrEmpty(classes)) return;
             foreach (string name in classes.Split(' ')) if (name.Length > 0) element.AddToClassList(name);
+        }
+    }
+
+    /// <summary>
+    /// A button with slanted ends. Its colour is the style sheet's --fill, so hover, pressed and the grey secondary
+    /// are all set in App.uss; with no --fill it draws nothing and the plain background shows.
+    /// </summary>
+    public sealed class Slant : VisualElement
+    {
+        static readonly CustomStyleProperty<Color> FillProperty = new CustomStyleProperty<Color>("--fill");
+        Color _fill;
+        bool _has;
+
+        public Slant()
+        {
+            generateVisualContent += Draw;
+            RegisterCallback<CustomStyleResolvedEvent>(e => { _has = e.customStyle.TryGetValue(FillProperty, out _fill); MarkDirtyRepaint(); });
+        }
+
+        void Draw(MeshGenerationContext context)
+        {
+            float w = layout.width, h = layout.height;
+            if (!_has || w <= 0f || h <= 0f) return;
+            float k = Mathf.Min(10f, w * 0.2f);
+            Painter2D p = context.painter2D;
+            p.fillColor = _fill;
+            p.BeginPath();
+            p.MoveTo(new Vector2(k, 0)); p.LineTo(new Vector2(w, 0)); p.LineTo(new Vector2(w - k, h)); p.LineTo(new Vector2(0, h));
+            p.ClosePath();
+            p.Fill();
         }
     }
 

@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>XP and Levels</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,700;0,900;1,900&display=swap">
+<style>
+/* Layout: one review scroll. Today, shared rules, then three concepts each led by full 16:9 screens, then the comparison. */
+:root{
+  --ink:#07090a; --panel:#111314; --card:#181a1c; --card2:#202325; --line:#2a2d30;
+  --mute:#8d8e8f; --sub:#b8b9b9; --text:#fff;
+  --green:#7ad446; --deep:#2d8c3c; --amber:#ffb300; --fire:#ff6a2b; --red:#ff5252; --blue:#4aa8ff;
+  --font:Montserrat,system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ink);color:var(--text);font:400 16px/1.6 var(--font)}
+.wrap{max-width:1280px;margin:0 auto;padding-block:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-weight:900;font-style:italic;text-transform:uppercase;line-height:1.02;margin:0;text-wrap:balance}
+h1{font-size:clamp(38px,6.4vw,84px);letter-spacing:-.01em}
+h2{font-size:clamp(28px,3.6vw,46px)}
+h3{font-size:20px}
+p{margin:0;max-width:66ch;color:var(--sub)}
+.eyebrow{font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--green)}
+.lede{font-size:clamp(17px,1.6vw,21px);color:var(--sub);max-width:60ch}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+
+header.top{padding-block:56px 36px;display:grid;gap:20px}
+nav.jump{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--ink);border-block:1px solid var(--line)}
+nav.jump .wrap{display:flex;gap:6px;overflow-x:auto;padding-block:10px}
+nav.jump a{flex:none;text-decoration:none;font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--sub);padding:8px 14px;border-radius:999px;border:1px solid var(--line)}
+nav.jump a:hover{color:var(--text);border-color:var(--mute)}
+nav.jump a b{font-weight:900;font-style:italic;margin-right:6px}
+nav.jump a.a b{color:var(--green)} nav.jump a.b b{color:var(--blue)} nav.jump a.c b{color:var(--fire)}
+
+section{padding-block:56px;border-bottom:1px solid var(--line);display:grid;gap:28px}
+.cols{display:grid;gap:28px;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+.cols>*{min-width:0}
+ul.plain{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+ul.plain li{padding-left:18px;position:relative;color:var(--sub);max-width:62ch}
+ul.plain li::before{content:"";position:absolute;left:0;top:.62em;width:8px;height:8px;background:var(--mute)}
+ul.plain.bad li::before{background:var(--red)}
+ul.plain.good li::before{background:var(--green)}
+ul.plain li b{color:var(--text);font-weight:700}
+.h-label{font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute);margin-bottom:12px}
+
+/* today: the current flow, drawn small */
+.today{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));align-items:stretch}
+.today .step{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:12px;align-content:start;min-width:0}
+.today .cap{font-weight:700;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.qcard{background:var(--card2);border-radius:10px;padding:10px 12px;font-size:13px;display:flex;justify-content:space-between;gap:8px;color:var(--sub)}
+.qcard b{color:var(--text)}
+.tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.tile{background:var(--card2);border-radius:8px;aspect-ratio:1;display:grid;place-items:center;font-weight:900;font-style:italic;font-size:15px}
+.tile.off{color:#4a4d50}
+.tile i{display:block;font-style:normal;font-size:8px;letter-spacing:1px;color:var(--amber)}
+.ramp{background:var(--card2);border-radius:10px;height:92px;position:relative;overflow:hidden}
+.ramp::before{content:"";position:absolute;left:50%;bottom:0;width:44%;height:100%;transform:translateX(-50%);background:var(--deep);clip-path:polygon(0 100%,100% 100%,70% 0,30% 0)}
+.ramp::after{content:"";position:absolute;left:50%;top:14px;width:14px;height:5px;border-radius:50%;background:var(--ink);transform:translateX(-50%)}
+
+/* inputs table */
+.tablebox{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;min-width:680px;font-size:14px}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);background:var(--panel)}
+td{color:var(--sub)} td:first-child{color:var(--text);font-weight:700;white-space:nowrap}
+td.pick{color:var(--green);font-weight:700}
+
+/* concept */
+.concept .head{display:grid;gap:14px}
+.badge{display:inline-grid;place-items:center;width:56px;height:56px;border-radius:14px;font-weight:900;font-style:italic;font-size:30px;color:var(--ink)}
+.concept.a .badge{background:var(--green)} .concept.b .badge{background:var(--blue)} .concept.c .badge{background:var(--fire)}
+.concept.a .eyebrow{color:var(--green)} .concept.b .eyebrow{color:var(--blue)} .concept.c .eyebrow{color:var(--fire)}
+.titleRow{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.loop{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));counter-reset:s}
+.loop div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 16px 18px;font-size:14px;color:var(--sub);counter-increment:s;min-width:0}
+.loop div::before{content:counter(s);display:block;font-weight:900;font-style:italic;font-size:24px;color:var(--text);margin-bottom:6px}
+.loop b{color:var(--text);font-weight:700}
+figure{margin:0;display:grid;gap:10px}
+.frame{border-radius:18px;border:1px solid var(--line);overflow-x:auto;background:var(--panel)}
+.frame svg{display:block;width:100%;min-width:760px;height:auto;font-family:var(--font)}
+figcaption{font-size:14px;color:var(--mute);max-width:80ch}
+figcaption b{color:var(--text);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px;margin-right:8px}
+.k{font-weight:900;font-style:italic;text-transform:uppercase}
+.l{font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.b{font-weight:500}
+.pick-box{background:var(--panel);border:1px solid var(--green);border-radius:18px;padding:28px;display:grid;gap:16px}
+ol.q{margin:0;padding-left:22px;display:grid;gap:10px;color:var(--sub);max-width:70ch}
+ol.q b{color:var(--text)}
+footer{padding-block:32px 64px;color:var(--mute);font-size:13px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+<style>
+.phones{display:grid;gap:24px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));justify-items:center}
+.phones figure{width:100%;max-width:340px}
+.phone{width:100%;border-radius:34px;border:1px solid var(--line);overflow:hidden;background:var(--panel)}
+.phone svg{display:block;width:100%;height:auto;font-family:var(--font)}
+.ladder{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr))}
+.rank{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:6px;min-width:0}
+.rank .n{font-weight:900;font-style:italic;font-size:22px;text-transform:uppercase}
+.rank .lv{font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.rank .sw{height:8px;border-radius:4px}
+.rank p{font-size:13px}
+td.src{white-space:nowrap;font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+td.src.spec{color:var(--green)} td.src.new{color:var(--amber)}
+td.num{font-weight:900;font-style:italic;color:var(--text);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="star" viewBox="0 0 24 24"><polygon points="12,1 15.1,8.3 23,9.2 17.1,14.5 18.8,22.3 12,18.3 5.2,22.3 6.9,14.5 1,9.2 8.9,8.3"/></symbol>
+    <symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">Puttr 2 · XP and levels · mockups to review</div>
+  <h1>XP and levels</h1>
+  <p class="lede">What XP will look like across the app, drawn from the sports UI spec (decided 16 November). Nothing here is built: the app shows no XP today and the API does not award any. The numbers are the spec's first proposal, plus a few new ones marked as such.</p>
+</header>
+</div>
+
+<nav class="jump" aria-label="Sections"><div class="wrap">
+  <a href="#rules">The rules</a>
+  <a href="#final">After a game</a>
+  <a href="#levelup">Level up</a>
+  <a href="#card">Player card</a>
+  <a href="#home">Home</a>
+  <a href="#phone">Phone</a>
+  <a href="#ranks">Ranks</a>
+  <a href="#earn">What earns XP</a>
+  <a href="#open">Decisions</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="rules">
+  <div class="eyebrow">The rules, from the spec</div>
+  <h2>Level is effort. PQS is skill.</h2>
+  <div class="cols">
+    <ul class="plain good">
+      <li><b>1,000 XP a level, flat.</b> Level 15 costs the same as level 2, so the bar always moves at the same speed.</li>
+      <li><b>Six ranks,</b> one every ten levels: Rookie, Fairway, Scratch, Tour, Major, Legend.</li>
+      <li><b>Unlocks are looks only.</b> A level never makes a putt easier or a score higher.</li>
+    </ul>
+    <ul class="plain good">
+      <li><b>The API awards XP</b> when a game saves, so every device agrees, and it is backfilled from a Player's history.</li>
+      <li><b>PQS stays the big number.</b> Level and XP sit under it, never over it.</li>
+      <li><b>One place explains each award:</b> the final screen lists what the game just paid.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="final">
+  <div class="eyebrow">Where you earn it</div>
+  <h2>After a game</h2>
+  <p>The final screen keeps the score as the headline. XP is its own panel: the total, what made it up, and the bar moving toward the next level.</p>
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 1600 900" role="img" aria-label="Final screen for a Center Cut game with an XP panel showing plus 140 XP, its breakdown and the level bar">
+      <rect width="1600" height="900" fill="#07090a"/>
+      <text class="l" x="80" y="92" font-size="14" fill="#7ad446">Final · Center Cut</text>
+      <text class="k" x="80" y="230" font-size="150" fill="#fff">36.5</text>
+      <text class="b" x="84" y="272" font-size="20" fill="#b8b9b9">points · 7 of 9 holed · your best is 41.2</text>
+      <!-- stat tiles -->
+      <g>
+        <rect x="80" y="320" width="200" height="120" rx="14" fill="#181a1c"/><rect x="296" y="320" width="200" height="120" rx="14" fill="#181a1c"/><rect x="512" y="320" width="200" height="120" rx="14" fill="#181a1c"/><rect x="728" y="320" width="200" height="120" rx="14" fill="#181a1c"/>
+        <g class="k" font-size="40" fill="#fff"><text x="104" y="384">78%</text><text x="320" y="384">0.9°</text><text x="536" y="384">11 in.</text><text x="752" y="384">2</text></g>
+        <g class="l" font-size="12" fill="#8d8e8f"><text x="104" y="416">Made</text><text x="320" y="416">Line miss</text><text x="536" y="416">Pace, past</text><text x="752" y="416">Center cuts</text></g>
+      </g>
+      <!-- pqs -->
+      <rect x="80" y="464" width="848" height="96" rx="14" fill="#181a1c"/>
+      <text class="k" x="104" y="528" font-size="48" fill="#fff">79</text><text class="l" x="178" y="512" font-size="12" fill="#8d8e8f">PQS</text><text class="b" x="178" y="536" font-size="17" fill="#7ad446">Up 1 from this game</text>
+      <!-- rate -->
+      <rect x="80" y="584" width="848" height="96" rx="14" fill="#181a1c"/>
+      <text class="l" x="104" y="640" font-size="12" fill="#7ad446">Rate this game</text>
+      <g fill="none" stroke="#6b6c6d" stroke-width="2"><use href="#star" x="660" y="612" width="40" height="40"/><use href="#star" x="708" y="612" width="40" height="40"/><use href="#star" x="756" y="612" width="40" height="40"/><use href="#star" x="804" y="612" width="40" height="40"/><use href="#star" x="852" y="612" width="40" height="40"/></g>
+      <rect x="80" y="724" width="416" height="64" rx="14" fill="#2d8c3c"/><text class="b" x="288" y="764" text-anchor="middle" font-size="20" fill="#fff" style="font-weight:700">Play again</text>
+      <rect x="512" y="724" width="416" height="64" rx="14" fill="#181a1c" stroke="#26282a" stroke-width="2"/><text class="b" x="720" y="764" text-anchor="middle" font-size="20" fill="#fff" style="font-weight:700">Exit</text>
+
+      <!-- XP panel -->
+      <rect x="1000" y="80" width="520" height="708" rx="20" fill="#111314" stroke="#2a2d30" stroke-width="2"/>
+      <text class="l" x="1040" y="136" font-size="13" fill="#ffb300">XP earned</text>
+      <text class="k" x="1040" y="232" font-size="96" fill="#fff">+140</text>
+      <line x1="1040" y1="270" x2="1480" y2="270" stroke="#2a2d30" stroke-width="2"/>
+      <g class="b" font-size="20" fill="#b8b9b9"><text x="1040" y="320">Game finished</text><text x="1040" y="368">Beat Puttr</text><text x="1040" y="416">8 makes</text><text x="1040" y="464">2 center cuts</text></g>
+      <g class="k" font-size="24" fill="#fff" text-anchor="end"><text x="1480" y="322">50</text><text x="1480" y="370">30</text><text x="1480" y="418">40</text><text x="1480" y="466">20</text></g>
+      <line x1="1040" y1="502" x2="1480" y2="502" stroke="#2a2d30" stroke-width="2"/>
+      <text class="l" x="1040" y="556" font-size="13" fill="#8d8e8f">Level 14 · Fairway</text>
+      <text class="k" x="1480" y="560" text-anchor="end" font-size="26" fill="#fff">760 / 1,000</text>
+      <rect x="1040" y="584" width="440" height="22" rx="11" fill="#202325"/>
+      <rect x="1040" y="584" width="334" height="22" rx="11" fill="#ffb300"/>
+      <rect x="1040" y="584" width="273" height="22" rx="11" fill="#7ad446"/>
+      <g class="l" font-size="11"><rect x="1040" y="630" width="12" height="12" rx="3" fill="#7ad446"/><text x="1062" y="641" fill="#8d8e8f">Before</text><rect x="1150" y="630" width="12" height="12" rx="3" fill="#ffb300"/><text x="1172" y="641" fill="#8d8e8f">This game</text></g>
+      <text class="b" x="1040" y="716" font-size="20" fill="#fff">240 XP to Level 15</text>
+      <text class="b" x="1040" y="748" font-size="16" fill="#8d8e8f">Level 15 unlocks the Ember console light</text>
+    </svg>
+    </div>
+    <figcaption><b>Tablet and TV</b>The score, stats, PQS and the game rating stay where they are. The XP panel on the right says what the game paid and shows the bar: green is what you had, amber is what this game added.</figcaption>
+  </figure>
+</section>
+
+<section id="levelup">
+  <div class="eyebrow">When the bar fills</div>
+  <h2>Level up</h2>
+  <p>Shown after the final screen when a game carries you over. One unlock, one choice, then on.</p>
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 1600 900" role="img" aria-label="Level up screen: level 15, Fairway, with one unlock and two buttons">
+      <rect width="1600" height="900" fill="#07090a"/>
+      <circle cx="800" cy="330" r="290" fill="#0f1a12"/><circle cx="800" cy="330" r="214" fill="#132417"/>
+      <text class="l" x="800" y="120" text-anchor="middle" font-size="16" fill="#7ad446">Level up</text>
+      <text class="k" x="800" y="420" text-anchor="middle" font-size="300" fill="#fff">15</text>
+      <text class="k" x="800" y="494" text-anchor="middle" font-size="44" fill="#7ad446">Fairway</text>
+      <text class="b" x="800" y="534" text-anchor="middle" font-size="19" fill="#b8b9b9">5 levels to Scratch</text>
+      <!-- unlock -->
+      <rect x="470" y="580" width="660" height="150" rx="18" fill="#111314" stroke="#2a2d30" stroke-width="2"/>
+      <rect x="498" y="608" width="94" height="94" rx="14" fill="#ff6a2b"/><circle cx="545" cy="655" r="22" fill="#07090a"/><circle cx="545" cy="655" r="9" fill="#ff6a2b"/>
+      <text class="l" x="620" y="634" font-size="12" fill="#ffb300">Unlocked</text>
+      <text class="k" x="620" y="672" font-size="30" fill="#fff">Ember console light</text>
+      <text class="b" x="620" y="702" font-size="16" fill="#b8b9b9">A new color for your Puttr scene. Looks only.</text>
+      <rect x="470" y="760" width="322" height="64" rx="14" fill="#2d8c3c"/><text class="b" x="631" y="800" text-anchor="middle" font-size="20" fill="#fff" style="font-weight:700">Use it</text>
+      <rect x="808" y="760" width="322" height="64" rx="14" fill="#181a1c" stroke="#26282a" stroke-width="2"/><text class="b" x="969" y="800" text-anchor="middle" font-size="20" fill="#fff" style="font-weight:700">Continue</text>
+      <!-- carry over -->
+      <text class="l" x="1220" y="634" font-size="12" fill="#8d8e8f">Level 15</text>
+      <text class="k" x="1220" y="672" font-size="26" fill="#fff">120 / 1,000</text>
+      <rect x="1220" y="692" width="300" height="14" rx="7" fill="#202325"/><rect x="1220" y="692" width="36" height="14" rx="7" fill="#7ad446"/>
+    </svg>
+    </div>
+    <figcaption><b>Level up</b>The number, the rank, how far to the next rank, and the one thing unlocked. XP past 1,000 carries into the new level (here 120). At a new rank (level 20, 30 and so on) the rank name leads instead of the number.</figcaption>
+  </figure>
+</section>
+
+<section id="card">
+  <div class="eyebrow">Where you see it</div>
+  <h2>The Player card</h2>
+  <p>Profile leads with the card. PQS is the headline; level, rank and the XP bar sit under it. Beside the card: the week's XP and where it came from.</p>
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 1600 900" role="img" aria-label="Profile with the Player card: PQS 79, level 14 Fairway, XP bar, six attributes, the week's XP and recent awards">
+      <rect width="1600" height="900" fill="#07090a"/>
+      <!-- card -->
+      <rect x="80" y="80" width="520" height="740" rx="24" fill="#111314" stroke="#2a2d30" stroke-width="2"/>
+      <circle cx="170" cy="170" r="52" fill="#2d8c3c"/><text class="k" x="170" y="190" text-anchor="middle" font-size="50" fill="#fff">M</text>
+      <text class="k" x="246" y="164" font-size="34" fill="#fff">Matt A.</text><text class="b" x="246" y="196" font-size="17" fill="#8d8e8f">Scottsdale, AZ</text>
+      <text class="k" x="120" y="384" font-size="170" fill="#fff">79</text>
+      <text class="l" x="360" y="300" font-size="14" fill="#8d8e8f">PQS</text><text class="b" x="360" y="332" font-size="18" fill="#7ad446">Up 3 this month</text>
+      <!-- level -->
+      <rect x="120" y="424" width="440" height="110" rx="16" fill="#181a1c"/>
+      <rect x="140" y="444" width="70" height="70" rx="14" fill="#7ad446"/><text class="k" x="175" y="494" text-anchor="middle" font-size="36" fill="#07090a">14</text>
+      <text class="k" x="228" y="474" font-size="24" fill="#fff">Fairway</text>
+      <text class="b" x="540" y="474" text-anchor="end" font-size="16" fill="#b8b9b9">760 / 1,000 XP</text>
+      <rect x="228" y="492" width="312" height="12" rx="6" fill="#202325"/><rect x="228" y="492" width="237" height="12" rx="6" fill="#7ad446"/>
+      <!-- attributes -->
+      <g class="l" font-size="12" fill="#8d8e8f"><text x="120" y="588">Line</text><text x="120" y="626">Pace</text><text x="120" y="664">Short</text><text x="120" y="702">Mid</text><text x="120" y="740">Long</text><text x="120" y="778">Clutch</text></g>
+      <g fill="#202325"><rect x="200" y="578" width="300" height="10" rx="5"/><rect x="200" y="616" width="300" height="10" rx="5"/><rect x="200" y="654" width="300" height="10" rx="5"/><rect x="200" y="692" width="300" height="10" rx="5"/><rect x="200" y="730" width="300" height="10" rx="5"/><rect x="200" y="768" width="300" height="10" rx="5"/></g>
+      <g fill="#fff"><rect x="200" y="578" width="243" height="10" rx="5"/><rect x="200" y="616" width="222" height="10" rx="5"/><rect x="200" y="654" width="264" height="10" rx="5"/><rect x="200" y="692" width="228" height="10" rx="5"/><rect x="200" y="730" width="207" height="10" rx="5"/><rect x="200" y="768" width="216" height="10" rx="5"/></g>
+      <g class="k" font-size="18" fill="#fff" text-anchor="end"><text x="560" y="590">81</text><text x="560" y="628">74</text><text x="560" y="666">88</text><text x="560" y="704">76</text><text x="560" y="742">69</text><text x="560" y="780">72</text></g>
+
+      <!-- week -->
+      <rect x="640" y="80" width="880" height="340" rx="20" fill="#111314" stroke="#2a2d30" stroke-width="2"/>
+      <text class="l" x="680" y="132" font-size="13" fill="#8d8e8f">XP this week</text>
+      <text class="k" x="680" y="198" font-size="56" fill="#fff">1,260</text>
+      <text class="b" x="1480" y="134" text-anchor="end" font-size="16" fill="#b8b9b9">Last week 940</text>
+      <line x1="680" y1="372" x2="1480" y2="372" stroke="#2a2d30" stroke-width="2"/>
+      <g fill="#7ad446"><rect x="700" y="290" width="70" height="82" rx="6"/><rect x="814" y="232" width="70" height="140" rx="6"/><rect x="928" y="350" width="70" height="22" rx="6"/><rect x="1042" y="262" width="70" height="110" rx="6"/><rect x="1156" y="214" width="70" height="158" rx="6"/><rect x="1270" y="318" width="70" height="54" rx="6"/></g>
+      <rect x="1384" y="298" width="70" height="74" rx="6" fill="#ffb300"/>
+      <g class="l" font-size="11" fill="#8d8e8f" text-anchor="middle"><text x="735" y="398">Mon</text><text x="849" y="398">Tue</text><text x="963" y="398">Wed</text><text x="1077" y="398">Thu</text><text x="1191" y="398">Fri</text><text x="1305" y="398">Sat</text><text x="1419" y="398" fill="#ffb300">Today</text></g>
+      <g class="b" font-size="13" fill="#b8b9b9" text-anchor="middle"><text x="735" y="282">165</text><text x="849" y="224">280</text><text x="963" y="342">25</text><text x="1077" y="254">215</text><text x="1191" y="206">315</text><text x="1305" y="310">110</text><text x="1419" y="290">150</text></g>
+
+      <!-- recent -->
+      <rect x="640" y="444" width="520" height="376" rx="20" fill="#111314" stroke="#2a2d30" stroke-width="2"/>
+      <text class="l" x="680" y="496" font-size="13" fill="#8d8e8f">Where it came from</text>
+      <g class="b" font-size="19" fill="#fff"><text x="680" y="552">Center Cut</text><text x="680" y="612">Greenlands 1-4, first clear</text><text x="680" y="672">Daily putts, 5 of 5</text><text x="680" y="732">League Night, week 6</text><text x="680" y="792">On Fire</text></g>
+      <g class="k" font-size="22" fill="#ffb300" text-anchor="end"><text x="1120" y="554">+140</text><text x="1120" y="614">+100</text><text x="1120" y="674">+175</text><text x="1120" y="734">+230</text><text x="1120" y="794">+95</text></g>
+      <g stroke="#202325" stroke-width="2"><line x1="680" y1="574" x2="1120" y2="574"/><line x1="680" y1="634" x2="1120" y2="634"/><line x1="680" y1="694" x2="1120" y2="694"/><line x1="680" y1="754" x2="1120" y2="754"/></g>
+
+      <!-- next unlock -->
+      <rect x="1184" y="444" width="336" height="376" rx="20" fill="#111314" stroke="#2a2d30" stroke-width="2"/>
+      <text class="l" x="1220" y="496" font-size="13" fill="#8d8e8f">Next unlock · level 15</text>
+      <rect x="1220" y="524" width="264" height="150" rx="14" fill="#ff6a2b"/><circle cx="1352" cy="599" r="40" fill="#07090a"/><circle cx="1352" cy="599" r="16" fill="#ff6a2b"/>
+      <text class="k" x="1220" y="722" font-size="19" fill="#fff">Ember console light</text>
+      <text class="b" x="1220" y="752" font-size="15" fill="#b8b9b9">240 XP to go. Looks only.</text>
+      <text class="l" x="1220" y="794" font-size="12" fill="#7ad446">See all unlocks</text>
+    </svg>
+    </div>
+    <figcaption><b>Profile</b>The card on the left is the same card shown on the matchup stage before a game, at a smaller size. The six attributes are still an open question in the spec; they are drawn here as placeholders.</figcaption>
+  </figure>
+</section>
+
+<section id="home">
+  <div class="eyebrow">A reason to come back</div>
+  <h2>Home</h2>
+  <p>Home carries the level in the top bar and gives the daily putts an XP reason: 25 a putt, and a bonus for all five.</p>
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 1600 520" role="img" aria-label="Home's top bar with a level chip and XP bar, and the daily putts track showing XP for each putt">
+      <rect width="1600" height="520" fill="#07090a"/>
+      <!-- top bar -->
+      <text class="k" x="80" y="92" font-size="34" fill="#fff">Puttr</text>
+      <rect x="1100" y="48" width="420" height="68" rx="34" fill="#111314" stroke="#2a2d30" stroke-width="2"/>
+      <circle cx="1134" cy="82" r="24" fill="#7ad446"/><text class="k" x="1134" y="91" text-anchor="middle" font-size="22" fill="#07090a">14</text>
+      <text class="l" x="1172" y="74" font-size="12" fill="#fff">Fairway</text><text class="b" x="1490" y="75" text-anchor="end" font-size="13" fill="#8d8e8f">240 to level 15</text>
+      <rect x="1172" y="86" width="318" height="8" rx="4" fill="#202325"/><rect x="1172" y="86" width="242" height="8" rx="4" fill="#7ad446"/>
+      <!-- daily -->
+      <rect x="80" y="160" width="1440" height="300" rx="20" fill="#111314" stroke="#2a2d30" stroke-width="2"/>
+      <text class="l" x="120" y="214" font-size="13" fill="#7ad446">Daily putts · 3 of 5</text>
+      <text class="k" x="120" y="264" font-size="36" fill="#fff">Two to go today</text>
+      <text class="b" x="1480" y="216" text-anchor="end" font-size="16" fill="#b8b9b9">4 day streak</text>
+      <g>
+        <rect x="120" y="300" width="240" height="120" rx="14" fill="#2d8c3c"/><rect x="380" y="300" width="240" height="120" rx="14" fill="#2d8c3c"/><rect x="640" y="300" width="240" height="120" rx="14" fill="#2d8c3c"/>
+        <rect x="900" y="300" width="240" height="120" rx="14" fill="#181a1c" stroke="#7ad446" stroke-width="3"/><rect x="1160" y="300" width="240" height="120" rx="14" fill="#181a1c"/>
+        <g color="#fff"><use href="#check" x="144" y="328" width="36" height="36"/><use href="#check" x="404" y="328" width="36" height="36"/><use href="#check" x="664" y="328" width="36" height="36"/></g>
+        <g class="k" font-size="24" fill="#fff"><text x="196" y="354">+25 XP</text><text x="456" y="354">+25 XP</text><text x="716" y="354">+25 XP</text></g>
+        <g class="b" font-size="15" fill="#d6ecd9"><text x="144" y="396">6 ft, left tee</text><text x="404" y="396">8 ft, center tee</text><text x="664" y="396">4 ft, right tee</text></g>
+        <text class="l" x="924" y="340" font-size="12" fill="#7ad446">Next</text><text class="k" x="924" y="376" font-size="26" fill="#fff">9 ft, left tee</text><text class="b" x="924" y="402" font-size="15" fill="#b8b9b9">+25 XP</text>
+        <text class="l" x="1184" y="340" font-size="12" fill="#8d8e8f">Last one</text><text class="k" x="1184" y="376" font-size="26" fill="#8d8e8f">7 ft</text><text class="b" x="1184" y="402" font-size="15" fill="#8d8e8f">+25 XP, and +50 for all five</text>
+      </g>
+      <rect x="1420" y="300" width="60" height="120" rx="14" fill="#181a1c"/><text class="k" x="1450" y="372" text-anchor="middle" font-size="30" fill="#ffb300">›</text>
+    </svg>
+    </div>
+    <figcaption><b>Home</b>The level chip is the only XP on Home besides the daily putts. Whether the daily putts replace Challenges on Home is still open in the spec.</figcaption>
+  </figure>
+</section>
+
+<section id="phone">
+  <div class="eyebrow">Phone, portrait</div>
+  <h2>The same three moments on a phone</h2>
+  <div class="phones">
+    <figure><div class="phone">
+      <svg viewBox="0 0 390 844" role="img" aria-label="Phone final screen with an XP block under the score">
+        <rect width="390" height="844" fill="#07090a"/>
+        <text class="l" x="195" y="74" text-anchor="middle" font-size="11" fill="#7ad446">Final · Center Cut</text>
+        <text class="k" x="195" y="166" text-anchor="middle" font-size="84" fill="#fff">36.5</text>
+        <text class="b" x="195" y="194" text-anchor="middle" font-size="13" fill="#b8b9b9">points · 7 of 9 holed</text>
+        <rect x="20" y="222" width="350" height="250" rx="16" fill="#111314" stroke="#2a2d30"/>
+        <text class="l" x="40" y="256" font-size="11" fill="#ffb300">XP earned</text><text class="k" x="350" y="266" text-anchor="end" font-size="34" fill="#fff">+140</text>
+        <g class="b" font-size="14" fill="#b8b9b9"><text x="40" y="300">Game finished</text><text x="40" y="326">Beat Puttr</text><text x="40" y="352">8 makes</text><text x="40" y="378">2 center cuts</text></g>
+        <g class="k" font-size="15" fill="#fff" text-anchor="end"><text x="350" y="301">50</text><text x="350" y="327">30</text><text x="350" y="353">40</text><text x="350" y="379">20</text></g>
+        <text class="l" x="40" y="418" font-size="10" fill="#8d8e8f">Level 14 · Fairway</text><text class="b" x="350" y="418" text-anchor="end" font-size="12" fill="#fff">240 to level 15</text>
+        <rect x="40" y="432" width="310" height="12" rx="6" fill="#202325"/><rect x="40" y="432" width="236" height="12" rx="6" fill="#ffb300"/><rect x="40" y="432" width="192" height="12" rx="6" fill="#7ad446"/>
+        <rect x="20" y="488" width="350" height="70" rx="16" fill="#181a1c"/><text class="k" x="40" y="534" font-size="30" fill="#fff">79</text><text class="l" x="92" y="520" font-size="10" fill="#8d8e8f">PQS</text><text class="b" x="92" y="540" font-size="13" fill="#7ad446">Up 1 from this game</text>
+        <rect x="20" y="574" width="350" height="86" rx="16" fill="#181a1c"/><text class="l" x="195" y="602" text-anchor="middle" font-size="10" fill="#7ad446">Rate this game</text>
+        <g fill="none" stroke="#6b6c6d" stroke-width="2"><use href="#star" x="99" y="614" width="32" height="32"/><use href="#star" x="139" y="614" width="32" height="32"/><use href="#star" x="179" y="614" width="32" height="32"/><use href="#star" x="219" y="614" width="32" height="32"/><use href="#star" x="259" y="614" width="32" height="32"/></g>
+        <rect x="20" y="684" width="350" height="54" rx="12" fill="#2d8c3c"/><text class="b" x="195" y="718" text-anchor="middle" font-size="16" fill="#fff" style="font-weight:700">Play again</text>
+        <rect x="20" y="750" width="350" height="54" rx="12" fill="#181a1c" stroke="#26282a"/><text class="b" x="195" y="784" text-anchor="middle" font-size="16" fill="#fff" style="font-weight:700">Exit</text>
+      </svg></div><figcaption><b>After a game</b>XP sits straight under the score.</figcaption></figure>
+
+    <figure><div class="phone">
+      <svg viewBox="0 0 390 844" role="img" aria-label="Phone level up screen">
+        <rect width="390" height="844" fill="#07090a"/>
+        <circle cx="195" cy="300" r="170" fill="#0f1a12"/><circle cx="195" cy="300" r="124" fill="#132417"/>
+        <text class="l" x="195" y="110" text-anchor="middle" font-size="12" fill="#7ad446">Level up</text>
+        <text class="k" x="195" y="362" text-anchor="middle" font-size="180" fill="#fff">15</text>
+        <text class="k" x="195" y="420" text-anchor="middle" font-size="30" fill="#7ad446">Fairway</text>
+        <text class="b" x="195" y="448" text-anchor="middle" font-size="14" fill="#b8b9b9">5 levels to Scratch</text>
+        <rect x="20" y="500" width="350" height="150" rx="16" fill="#111314" stroke="#2a2d30"/>
+        <rect x="38" y="518" width="74" height="74" rx="12" fill="#ff6a2b"/><circle cx="75" cy="555" r="18" fill="#07090a"/><circle cx="75" cy="555" r="7" fill="#ff6a2b"/>
+        <text class="l" x="128" y="538" font-size="10" fill="#ffb300">Unlocked</text><text class="k" x="128" y="566" font-size="15" fill="#fff">Ember console light</text><text class="b" x="128" y="588" font-size="12" fill="#b8b9b9">A new color for your Puttr</text>
+        <text class="b" x="38" y="628" font-size="12" fill="#8d8e8f">Looks only. Change it any time in Profile.</text>
+        <rect x="20" y="684" width="350" height="54" rx="12" fill="#2d8c3c"/><text class="b" x="195" y="718" text-anchor="middle" font-size="16" fill="#fff" style="font-weight:700">Use it</text>
+        <rect x="20" y="750" width="350" height="54" rx="12" fill="#181a1c" stroke="#26282a"/><text class="b" x="195" y="784" text-anchor="middle" font-size="16" fill="#fff" style="font-weight:700">Continue</text>
+      </svg></div><figcaption><b>Level up</b>One screen, no scrolling.</figcaption></figure>
+
+    <figure><div class="phone">
+      <svg viewBox="0 0 390 844" role="img" aria-label="Phone profile with the Player card, level and XP bar">
+        <rect width="390" height="844" fill="#07090a"/>
+        <rect x="20" y="60" width="350" height="430" rx="20" fill="#111314" stroke="#2a2d30"/>
+        <circle cx="70" cy="112" r="30" fill="#2d8c3c"/><text class="k" x="70" y="124" text-anchor="middle" font-size="30" fill="#fff">M</text>
+        <text class="k" x="114" y="110" font-size="22" fill="#fff">Matt A.</text><text class="b" x="114" y="132" font-size="12" fill="#8d8e8f">Scottsdale, AZ</text>
+        <text class="k" x="40" y="258" font-size="110" fill="#fff">79</text><text class="l" x="196" y="206" font-size="11" fill="#8d8e8f">PQS</text><text class="b" x="196" y="228" font-size="13" fill="#7ad446">Up 3 this month</text>
+        <rect x="40" y="284" width="310" height="78" rx="14" fill="#181a1c"/>
+        <rect x="54" y="298" width="50" height="50" rx="10" fill="#7ad446"/><text class="k" x="79" y="333" text-anchor="middle" font-size="24" fill="#07090a">14</text>
+        <text class="k" x="118" y="320" font-size="17" fill="#fff">Fairway</text><text class="b" x="336" y="320" text-anchor="end" font-size="12" fill="#b8b9b9">760 / 1,000 XP</text>
+        <rect x="118" y="334" width="218" height="9" rx="4.5" fill="#202325"/><rect x="118" y="334" width="166" height="9" rx="4.5" fill="#7ad446"/>
+        <g class="l" font-size="9" fill="#8d8e8f"><text x="40" y="394">Line</text><text x="40" y="420">Pace</text><text x="40" y="446">Short</text><text x="200" y="394">Mid</text><text x="200" y="420">Long</text><text x="200" y="446">Clutch</text></g>
+        <g class="k" font-size="15" fill="#fff"><text x="92" y="396">81</text><text x="92" y="422">74</text><text x="92" y="448">88</text><text x="252" y="396">76</text><text x="252" y="422">69</text><text x="252" y="448">72</text></g>
+        <rect x="20" y="506" width="350" height="150" rx="16" fill="#111314" stroke="#2a2d30"/>
+        <text class="l" x="40" y="538" font-size="10" fill="#8d8e8f">XP this week</text><text class="k" x="40" y="578" font-size="30" fill="#fff">1,260</text>
+        <g fill="#7ad446"><rect x="150" y="596" width="22" height="36" rx="3"/><rect x="182" y="570" width="22" height="62" rx="3"/><rect x="214" y="622" width="22" height="10" rx="3"/><rect x="246" y="584" width="22" height="48" rx="3"/><rect x="278" y="562" width="22" height="70" rx="3"/><rect x="310" y="608" width="22" height="24" rx="3"/></g><rect x="342" y="599" width="22" height="33" rx="3" fill="#ffb300"/>
+        <rect x="20" y="672" width="350" height="110" rx="16" fill="#111314" stroke="#2a2d30"/>
+        <text class="l" x="40" y="704" font-size="10" fill="#8d8e8f">Next unlock · level 15</text>
+        <rect x="40" y="718" width="50" height="50" rx="10" fill="#ff6a2b"/><text class="k" x="104" y="740" font-size="17" fill="#fff">Ember console light</text><text class="b" x="104" y="762" font-size="12" fill="#b8b9b9">240 XP to go</text>
+      </svg></div><figcaption><b>Profile</b>The card, the week, the next unlock.</figcaption></figure>
+  </div>
+</section>
+
+<section id="ranks">
+  <div class="eyebrow">Six ranks, ten levels each</div>
+  <h2>The ladder</h2>
+  <div class="ladder">
+    <div class="rank"><div class="sw" style="background:#8d8e8f"></div><div class="lv">Levels 1 to 9</div><div class="n">Rookie</div><p>Where everyone starts. First unlocks are console light colors.</p></div>
+    <div class="rank"><div class="sw" style="background:#7ad446"></div><div class="lv">Levels 10 to 19</div><div class="n">Fairway</div><p>Ball trails and a card frame.</p></div>
+    <div class="rank"><div class="sw" style="background:#4aa8ff"></div><div class="lv">Levels 20 to 29</div><div class="n">Scratch</div><p>Cup and flag styles.</p></div>
+    <div class="rank"><div class="sw" style="background:#ffb300"></div><div class="lv">Levels 30 to 39</div><div class="n">Tour</div><p>Scene themes for the 3D green.</p></div>
+    <div class="rank"><div class="sw" style="background:#ff6a2b"></div><div class="lv">Levels 40 to 49</div><div class="n">Major</div><p>Animated card frames.</p></div>
+    <div class="rank"><div class="sw" style="background:#ff5252"></div><div class="lv">Level 50 and up</div><div class="n">Legend</div><p>Levels keep counting. A gold card at 50.</p></div>
+  </div>
+  <p>The rank names and the "looks only" rule are from the spec. The unlock types listed under each rank are my suggestions; the spec names only one unlock, the Ember console light at level 15.</p>
+</section>
+
+<section id="earn">
+  <div class="eyebrow">What earns XP</div>
+  <h2>The table</h2>
+  <p>The first five rows are the spec's own figures (its example game adds up to 140). The rest are new proposals so that Greenlands, tournaments and League Night pay too.</p>
+  <div class="tablebox"><table>
+    <thead><tr><th>For</th><th>XP</th><th>Notes</th><th>From</th></tr></thead>
+    <tbody>
+      <tr><td>Finishing a game</td><td class="num">50</td><td>Any game played to its end. Leaving part way pays nothing</td><td class="src spec">Spec</td></tr>
+      <tr><td>Winning</td><td class="num">30</td><td>Beating another Player or Puttr</td><td class="src spec">Spec</td></tr>
+      <tr><td>Each make</td><td class="num">5</td><td>8 makes pay 40</td><td class="src spec">Spec</td></tr>
+      <tr><td>Each center cut</td><td class="num">10</td><td>On top of the make</td><td class="src spec">Spec</td></tr>
+      <tr><td>Each daily putt</td><td class="num">25</td><td>Five a day</td><td class="src spec">Spec</td></tr>
+      <tr><td>All five daily putts</td><td class="num">+50</td><td>A bonus for finishing the day's set</td><td class="src new">New</td></tr>
+      <tr><td>Greenlands stage, first clear</td><td class="num">40 + 20 a star</td><td>100 for three stars. A replay pays only for stars it adds</td><td class="src new">New</td></tr>
+      <tr><td>Greenlands boss, first beat</td><td class="num">150</td><td>Once a boss</td><td class="src new">New</td></tr>
+      <tr><td>Tournament round</td><td class="num">100</td><td>Once a round entered</td><td class="src new">New</td></tr>
+      <tr><td>League Night game</td><td class="num">100</td><td>Once a week, plus the game's own XP</td><td class="src new">New</td></tr>
+    </tbody>
+  </table></div>
+  <div class="cols">
+    <div>
+      <div class="h-label">How fast that is</div>
+      <ul class="plain">
+        <li><b>A typical game pays about 140,</b> so a level is about seven games.</li>
+        <li><b>Three games a week</b> is a level about every two and a half weeks.</li>
+        <li><b>A game and the daily putts every day</b> is about two levels a week.</li>
+        <li><b>Legend (level 50) is 49,000 XP,</b> about 350 games at 140 each.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h-label">Backfill from history</div>
+      <ul class="plain">
+        <li>The spec says XP is backfilled. It does not say how.</li>
+        <li><b>One way:</b> 50 for every finished game and 5 for every make on record. Wins and center cuts are left out, since old rows may not hold them.</li>
+        <li><b>Example:</b> 400 games and 3,200 makes is 36,000 XP, which starts that Player at level 37, Tour.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="open">
+  <div class="eyebrow">Before anything is built</div>
+  <h2>Decisions I need from you</h2>
+  <ol class="q">
+    <li><b>Are the numbers right?</b> The spec calls them a first proposal to tune. The table above is that proposal plus my additions.</li>
+    <li><b>How should backfill work?</b> Long-time Players would start at a high level under the example above. That may be what you want, or you may want everyone to start at 1.</li>
+    <li><b>Is there a daily cap?</b> Without one, grinding 3 ft makes pays 5 XP each without limit.</li>
+    <li><b>Who earns it?</b> My assumption: the signed-in Player and Profiles on the account earn their own; guests and Puttr earn none; test putts earn none.</li>
+    <li><b>What are the unlocks?</b> The spec names one. A list of looks is needed for at least the first 20 levels.</li>
+    <li><b>Do the six attributes stay?</b> They are still open in the spec and are drawn on the card here.</li>
+  </ol>
+</section>
+
+<footer>Mockups for review, drawn in HTML and SVG. Names, ratings and numbers are placeholders. Nothing here is built.</footer>
+</div>
+</body>
+</html>

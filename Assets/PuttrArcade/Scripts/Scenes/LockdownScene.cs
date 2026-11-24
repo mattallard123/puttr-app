@@ -284,7 +284,7 @@ namespace PuttrArcade
             HideStroke();
             Rails();
 
-            yield return Swing(_putter, s, () => Sound("golf_iron", 0.3f, 1.25f));
+            yield return Swing(_putter, s, () => Sound("putter_strike", "golf_iron", 0.3f, 1.25f));   // puttr-app-2: the putter on the ball, shared by every sensor replay (the old sound until it is recorded)
             Vector3 ballFrom = _ball.localPosition, ballTo = ballFrom + Vector3.forward * 22f;
 
             if (scored)
@@ -294,7 +294,9 @@ namespace PuttrArcade
                 var target = new float[6];
                 for (int i = 0; i < 6; i++) target[i] = Radius(ratios[i] * before) * R;
                 Color col = lockdown ? Violet : Color.Lerp(Violet, Break, 0.35f);
-                Sound("synth_whoosh", 0.4f, 1.1f);
+                // puttr-app-2: the stroke rises into a bolt or a rattle (the shared whoosh until Lockdown's own are recorded).
+                if (lockdown) { if (!Has("lockdown_bolt")) Sound("synth_whoosh", 0.4f, 1.1f); }
+                else Sound("lockdown_break", "synth_whoosh", 0.4f, 1.1f);
                 var r = new float[6];
                 for (float t = 0f; t < 1f; t += Time.deltaTime / 0.7f)
                 {
@@ -321,13 +323,13 @@ namespace PuttrArcade
                     float from = _ring, to = Radius(after);
                     for (float t = 0f; t < 1f; t += Time.deltaTime / 0.22f) { SetRing(Mathf.Lerp(from, to, t * t), 1f); yield return null; }
                     SetRing(to, 1f);
-                    Sound("door_slam", 0.6f);
+                    Sound("lockdown_bolt", "door_slam", 0.6f);   // puttr-app-2: the game's own sound, the shared one until recorded
                     Arcade.Shake(0.25f);
                     for (int i = 0; i < 6; i++) Arcade.Sparks(At(Corner(i, to * R) + Vector3.up * WallH), 8);
                     Combo(v.Int("combo"));
                     _read.Show("BAND", Mathf.RoundToInt(after * 100f).ToString(), "%", "", Violet);
                     Quaternion d0 = _dial.localRotation, d1 = d0 * Quaternion.Euler(0, 0, -60f);
-                    Sound("ratchet", 0.5f);
+                    if (!Has("lockdown_bolt")) Sound("ratchet", 0.5f);   // puttr-app-2: the bolt says it once recorded
                     for (float t = 0f; t < 1f; t += Time.deltaTime / 0.5f) { _dial.localRotation = Quaternion.Slerp(d0, d1, Ease(t)); yield return null; }
                     _dial.localRotation = d1;
                     if (v.Int("combo") >= 3) Arcade.Celebrate(18, At(new Vector3(26f, 17f, 55f)));
@@ -335,7 +337,7 @@ namespace PuttrArcade
                 else
                 {
                     // A break: the wall eases back, a warning lamp lights.
-                    Sound("thud", 0.5f);
+                    if (!Has("lockdown_break")) Sound("thud", 0.5f);   // puttr-app-2: the rattle says it once recorded
                     Arcade.Shake(0.15f);
                     Lamps(v.Int("breakRun"));
                     Combo(0);
@@ -343,7 +345,7 @@ namespace PuttrArcade
                     float from = _ring, to = Radius(after);
                     for (float t = 0f; t < 1f; t += Time.deltaTime / 0.6f) { SetRing(Mathf.Lerp(from, to, Ease(t)), 1f); yield return null; }
                     SetRing(to, 1f);
-                    if (v.Int("breakRun") >= v.Int("endAfter", 3)) { Sound("game_over", 0.4f); Arcade.Shake(0.4f); }
+                    if (v.Int("breakRun") >= v.Int("endAfter", 3)) { Sound("lockdown_alarm", "game_over", 0.6f); Arcade.Shake(0.4f); }   // puttr-app-2: the vault alarm, the arcade's game-over until recorded
                 }
                 yield return new WaitForSeconds(0.4f);
             }
@@ -351,18 +353,18 @@ namespace PuttrArcade
             {
                 // Calibration: a ghost hexagon near the rim; the third raises the band.
                 for (float t = 0f; t < 1f; t += Time.deltaTime / 0.6f) { _ball.localPosition = Vector3.Lerp(ballFrom, ballTo, 1f - (1f - t) * (1f - t)); yield return null; }
-                Sound("lab_beep", 0.5f, 1f + 0.1f * _ghosts.Count);
+                Sound("lockdown_corner", "lab_beep", 0.5f, 1f + 0.1f * _ghosts.Count);   // puttr-app-2: the game's own sound, the shared one until recorded
                 Ghosts(_ghosts.Count + 1);
                 yield return new WaitForSeconds(0.3f);
                 if (bandSet)
                 {
-                    Sound("riser", 0.5f);
+                    Sound("lockdown_open", "riser", 0.5f);   // puttr-app-2: the game's own sound, the shared one until recorded
                     float to = Radius(v.Num("band", 1f));
                     for (float t = 0f; t < 1f; t += Time.deltaTime / 0.8f) { SetRing(Mathf.Lerp(1f, to, Ease(t)), Ease(t)); yield return null; }
                     SetRing(to, 1f);
                     Ghosts(0);
                     Arcade.Sparks(At(Vector3.up * 2f), 30);
-                    Sound("gate", 0.5f);
+                    if (!Has("lockdown_corner")) Sound("gate", 0.5f);   // puttr-app-2: Square Up's gate, until Lockdown's dial is recorded
                     _read.Show("BAND", Mathf.RoundToInt(v.Num("band", 1f) * 100f).ToString(), "%", "", Violet);
                 }
             }

@@ -7,6 +7,8 @@
 package co.puttr.app2;
 
 import android.app.Activity;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -38,6 +40,14 @@ public final class PuttrPush {
     public static String deviceId(Activity a) {
         String id = Settings.Secure.getString(a.getContentResolver(), Settings.Secure.ANDROID_ID);
         return id == null ? "" : (id.length() > 64 ? id.substring(0, 64) : id);
+    }
+
+    /** Everything read: the delivered notifications leave the shade, and the launcher's dot with them. */
+    public static void clear(Activity a) {
+        try {
+            NotificationManager manager = (NotificationManager) a.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (manager != null) manager.cancelAll();
+        } catch (Exception ignored) { }
     }
 
     /** The data of the notification that opened the app (FCM puts it in the launch intent's extras), once. */

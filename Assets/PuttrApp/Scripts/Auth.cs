@@ -65,7 +65,7 @@ namespace PuttrApp
 
         public static void SignOut()
         {
-            if (Native) { FirebaseNative.SignOut(); _nativeUid = null; return; }
+            if (Native) { FirebaseNative.SignOut(); _nativeUid = null; _nativeToken = null; return; }
             _session = null;
             Save();
         }
@@ -81,6 +81,7 @@ namespace PuttrApp
             if (error != null) { done?.Invoke(Friendly(400, error)); yield break; }
             int bar = value.IndexOf('|');
             _nativeUid = bar >= 0 ? value.Substring(0, bar) : value;
+            _nativeToken = null;   // another Player: never their predecessor's token
             LastSignInWasNew = value.EndsWith("|new");
             done?.Invoke(null);
         }
@@ -199,12 +200,19 @@ namespace PuttrApp
         }
 
         /// <summary>The id token for the API. Refreshes ahead of expiry; null when signed out.</summary>
+        static bool _refreshing;
+        // iPhone: the SDK's token, kept here for a few minutes so each API call does not cross to native and back.
+        static string _nativeToken;
+        static long _nativeTokenAt;
+        const long NativeTokenSeconds = 240;   // by the clock, not the app's running time: a phone asleep for an hour must ask again
+
         public static IEnumerator Token(Action<string> got)
         {
             if (Native)
             {
                 // The SDK keeps its own token fresh and hands back the cached one when it is still good.
                 if (string.IsNullOrEmpty(_nativeUid)) { got(null); yield break; }
+                if (_nativeToken != null && Now >= _nativeTokenAt && Now - _nativeTokenAt < NativeTokenSeconds) { got(_nativeToken); yield break; }
                 bool answered = false;
                 string token = null, error = null;
                 FirebaseNative.GetIdToken(false, (v, e) => { token = v; error = e; answered = true; });
@@ -218,17 +226,28 @@ namespace PuttrApp
                     yield break;
                 }
                 if (error != null) Perf.Note("firebase: no id token (" + error + ")");
+                if (!string.IsNullOrEmpty(token)) { _nativeToken = token; _nativeTokenAt = Now; }
                 got(string.IsNullOrEmpty(token) ? null : token);
                 yield break;
             }
             if (!SignedIn) { got(null); yield break; }
             if (Now < _session.expiresAt - RefreshAheadSeconds) { got(_session.idToken); yield break; }
 
+            // One refresh at a time: a launch sends a dozen requests at once, and each used to ask for its own token.
+            if (_refreshing)
+            {
+                float until = Time.realtimeSinceStartup + Api.TimeoutSeconds + 2f;
+                while (_refreshing && Time.realtimeSinceStartup < until) yield return null;
+                got(_session != null ? _session.idToken : null);
+                yield break;
+            }
+            _refreshing = true;
             string url = "https://securetoken.googleapis.com/v1/token?key=" + Config.FirebaseWebApiKey;
             string form = "grant_type=refresh_token&refresh_token=" + UnityWebRequest.EscapeURL(_session.refreshToken);
             long status = 0;
             string text = null;
             yield return Api.Send("POST", url, form, null, (s, t) => { status = s; text = t; }, "application/x-www-form-urlencoded");
+            _refreshing = false;
             if (_session == null) { got(null); yield break; } // signed out while this was in flight
             object data = J.Parse(text);
             string fresh = J.Str(data, "id_token");

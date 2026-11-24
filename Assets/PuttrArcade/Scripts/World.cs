@@ -38,6 +38,9 @@ namespace PuttrArcade
             Physics.defaultContactOffset = 0.02f;
             Physics.defaultMaxDepenetrationVelocity = 120f;
             Time.fixedDeltaTime = 1f / 240f;
+            // After a long frame the physics catches up by at most this much (24 steps), not a third of a second (80):
+            // on a slow device the catching up was itself what made the next frame long.
+            Time.maximumDeltaTime = 0.1f;
         }
 
         public void Build(Transform parent)
@@ -250,6 +253,7 @@ namespace PuttrArcade
             light.color = color;
             light.intensity = intensity;
             light.shadows = LightShadows.Soft;
+            PlainLights.Add(light);
             return light;
         }
     }

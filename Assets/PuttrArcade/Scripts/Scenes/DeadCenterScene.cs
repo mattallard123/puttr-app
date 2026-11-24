@@ -1,6 +1,7 @@
-// Dead Center through a scope: the camera sits low behind the ball, looking down the putt, and everything outside the
-// lens is black. The crosshair's reticle sits on the cup and a red laser marks the perfect line from the tee into it.
-// The putt rolls up the green leaving a teal line beside the laser, then the scope zooms in on the cup to show the
+// Dead Center through a scope: the camera hangs directly over the hole, looking straight down (Matt, 2026-11-23: not
+// the low angle from behind the ball it had), and everything outside the lens is black. The crosshair's centre sits
+// on the front edge of the mat's 3D hole and a red laser marks the perfect line from the tee into it. The putt
+// rolls in from the bottom of the lens leaving a teal line beside the laser, then the scope zooms in to show the
 // entry: the red needle is the perfect entry, the teal one is where the ball went in (or the side it missed on).
 // Attempts from the same spot stay on the green, faint. Units are inches; the cup is at the origin.
 using System.Collections;
@@ -11,10 +12,13 @@ namespace PuttrArcade
 {
     public sealed class DeadCenterScene : RuleScene
     {
-        const float LaneW = 48f, BallR = 1.1f, CupR = 2.4f, LensD = 20f, Fov = 34f;
+        const float LaneW = 48f, BallR = 0.84f, CupR = 2.125f, LensD = 20f, Fov = 34f;
+        // Upright the lens is smaller (it sits under the score bug), so the camera hangs higher to show as much green in it.
+        static float Height => Portrait ? 44f : 30f;
+        static float ZoomFov => Portrait ? 24f : 20f;
         static readonly Color Teal = new Color(0.25f, 0.95f, 0.85f), Laser = new Color(1f, 0.22f, 0.2f);
 
-        Transform _ball, _start, _scope, _lens, _cupCam;
+        Transform _ball, _start, _scope, _lens, _cupCam, _entryYou, _entryPerfect;
         LineRenderer _laser, _trail, _needleYou, _needlePerfect;
         Material _reticleMat;
         readonly List<LineRenderer> _old = new List<LineRenderer>();
@@ -43,34 +47,43 @@ namespace PuttrArcade
             Material hole = Make.Lit(new Color(0.01f, 0.01f, 0.01f), 0.1f);
             Material white = Make.Emissive(Color.white, new Color(0.7f, 0.7f, 0.7f));
 
-            Shape(PrimitiveType.Cube, "Floor", Root, new Vector3(0, -1.6f, 0f), new Vector3(800f, 2f, 900f), room);
+            HoleView.Floor(Root, CupR, -0.6f, room);   // cut out under the cup: a slab here showed, lit, in the bottom of the hole from straight above
             Shape(PrimitiveType.Cube, "Back wall", Root, new Vector3(0, 100f, 160f), new Vector3(800f, 300f, 4f), Make.Lit(new Color(0.03f, 0.1f, 0.11f), 0.3f));
             // Range panels on the back wall: faint vertical bars, like a firing range.
             Material bar = Make.Emissive(Color.black, new Color(0.08f, 0.3f, 0.3f));
             for (int i = -8; i <= 8; i++)
                 Shape(PrimitiveType.Cube, "Bar", Root, new Vector3(i * 26f, 60f, 157.5f), new Vector3(1.2f, 120f, 0.5f), bar);
-            Shape(PrimitiveType.Cube, "Green", Root, new Vector3(0, -0.5f, -72f), new Vector3(LaneW, 1f, 180f), turf);
+            // puttr-app-2: the Puttr mat's own 3D hole (World's carpet patch, white liner and dark cup), not a painted disc
+            // (Matt, 2026-11-21). The green runs up to the patch round it.
+            Shape(PrimitiveType.Cube, "Green", Root, new Vector3(0, -0.5f, -93f), new Vector3(LaneW, 1f, 138f), turf);
+            Material patchTurf = Make.Lit(new Color(0.08f, 0.3f, 0.2f), 0.1f, 0f, pile, pileNormal, 0.8f);
+            patchTurf.SetTextureScale("_BaseMap", new Vector2(3f, 14f));
+            Make.MeshObject("Green by the cup", Root, Make.HolePatch(LaneW / 2f, CupR, 1f / 48f, Vector3.zero, 1f, 96), patchTurf);
+            Make.MeshObject("Liner", Root, Make.Cup(CupR, 1.1f, false, 72), Make.Lit(new Color(0.92f, 0.93f, 0.9f), 0.45f));
+            Make.MeshObject("Cup", Root, Make.Cup(CupR, 4f, true, 72), Make.Lit(new Color(0.006f, 0.01f, 0.009f), 0f)).transform.localPosition = new Vector3(0, -1.1f, 0);
             Material edge = Make.Emissive(Color.black, Teal * 0.6f);
             for (int s = -1; s <= 1; s += 2)
                 Shape(PrimitiveType.Cube, "Edge", Root, new Vector3(s * (LaneW / 2f + 0.3f), 0.15f, -72f), new Vector3(0.6f, 0.4f, 180f), edge);
-            Make.MeshObject("Cup", Root, Make.Disc(CupR, 48), hole).transform.localPosition = new Vector3(0, 0.03f, 0);
-            Hoop("Lip", Root, new Vector3(0, 0.05f, 0), CupR, CupR + 0.35f, white);
             _reticleMat = Make.Emissive(Color.black, Teal * 2f);
-            Hoop("Reticle", Root, new Vector3(0, 0.07f, 0), CupR + 1.6f, CupR + 2f, _reticleMat);
+            Hoop("Reticle", Root, new Vector3(0, 0.07f, 0), CupR + 0.5f, CupR + 0.72f, _reticleMat);
             for (int k = 0; k < 4; k++)
             {
                 Vector3 d = Quaternion.Euler(0, k * 90f, 0) * Vector3.forward;
-                Points(Stroke(Root, "Reticle tick", Teal, 0.3f), new[] { d * (CupR + 2.4f) + Vector3.up * 0.08f, d * (CupR + 5f) + Vector3.up * 0.08f });
+                Points(Stroke(Root, "Reticle tick", Teal, 0.14f), new[] { d * (CupR + 0.9f) + Vector3.up * 0.08f, d * (CupR + 2f) + Vector3.up * 0.08f });
             }
             // Foot lines across the green.
             Material tick = Make.Glow(new Color(0.6f, 1f, 1f, 0.08f), false);
             for (int f = 1; f <= 12; f++)
                 Shape(PrimitiveType.Quad, "Foot", Root, new Vector3(0, 0.03f, -f * 12f), new Vector3(LaneW, 0.3f, 1f), tick).transform.localRotation = Quaternion.Euler(90f, 0, 0);
 
-            _laser = Stroke(Root, "Perfect line", Laser * 0.85f, 0.5f);
-            _trail = Stroke(Root, "Your roll", Teal * 0.8f, 0.6f);
-            _needlePerfect = Stroke(Root, "Perfect entry", Laser * 1.6f, 0.35f);
-            _needleYou = Stroke(Root, "Your entry", Teal * 1.6f, 0.35f);
+            _laser = Stroke(Root, "Perfect line", Laser * 0.85f, 0.28f);
+            _trail = Stroke(Root, "Your roll", Teal * 0.8f, 0.32f);
+            _needlePerfect = Stroke(Root, "Perfect entry", Laser * 1.6f, 0.2f);
+            _needleYou = Stroke(Root, "Your entry", Teal * 1.6f, 0.2f);
+            // Where on the lip the putt went in, and where the perfect one does.
+            _entryYou = Make.MeshObject("Your entry point", Root, Make.Disc(0.34f, 24), Make.Emissive(Color.black, Teal * 2.2f)).transform;
+            _entryPerfect = Make.MeshObject("Perfect entry point", Root, Make.Disc(0.28f, 24), Make.Emissive(Color.black, Laser * 2f)).transform;
+            _entryYou.gameObject.SetActive(false); _entryPerfect.gameObject.SetActive(false);
 
             _start = new GameObject("Start").transform;
             _start.SetParent(Root, false);
@@ -140,7 +153,16 @@ namespace PuttrArcade
             float aspect = _eye != null ? _eye.aspect : Aspect;
             if (_eye != null) { _scope.position = _eye.transform.position; _scope.rotation = _eye.transform.rotation; }
             float half = LensD * Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad);
-            float r = Mathf.Min(half, half * aspect) * 0.94f;
+            // Upright the app's score bug lies over the top of the picture, so the lens is drawn a little smaller and sits
+            // at the bottom of it, the hole clear of the bug. The camera tips forward by as much, and the lens is put
+            // exactly where the front edge of the hole is seen, so the crosshair stays on it.
+            float bug = HoleView.BugBottom();
+            if (Portrait && Hud.Tablet) bug = Mathf.Max(bug, 0.24f);   // a tablet's tee and distance card sits top left, down to here
+            float r = Mathf.Min(half * (1f - 0.9f * bug), half * aspect) * 0.94f;
+            float down = Mathf.Max(0f, half - 1.22f * r);
+            _look = new Vector3(0, 0f, -CupR + Height * down / LensD);
+            Vector3 edge = _eye != null ? _eye.transform.InverseTransformPoint(At(0, 0, -CupR)) : new Vector3(0, -down, LensD);
+            _lens.localPosition = edge.z > 0.01f ? new Vector3(edge.x, edge.y, edge.z) * (LensD / edge.z) : new Vector3(0, -down, LensD);
             _lens.localScale = Vector3.one * r;
             float s = _scope.lossyScale.z;
             for (int i = 0; i < _lensLines.Count; i++) _lensLines[i].widthMultiplier = _lensWidths[i] * r * s;
@@ -152,9 +174,10 @@ namespace PuttrArcade
             _start.localPosition = from;
             _ball.localPosition = from + Vector3.up * BallR;
             _ball.gameObject.SetActive(true);
-            Vector3 back = new Vector3(from.x, 0, from.z).normalized;
-            _cam = from + back * 46f + Vector3.up * (16f + feet * 0.7f);
-            _look = new Vector3(0, 0.5f, 0);
+            // Straight down on the front edge of the hole, the Player at the bottom of the lens (the camera sits a hair
+            // toward the Player so "up" on screen is down the mat, away from them).
+            _look = new Vector3(0, 0f, -CupR);   // the crosshair's centre on the front centre of the hole (Matt, 2026-11-21)
+            _cam = _look + new Vector3(0, Height, -0.6f);
             _scope.localPosition = _cam;
             _scope.localRotation = Quaternion.LookRotation(_look - _cam, Vector3.up);
             _fov = _fovTo = Fov;
@@ -168,6 +191,7 @@ namespace PuttrArcade
             _feet = feet; _tee = tee;
             _needleYou.positionCount = 0;
             _needlePerfect.positionCount = 0;
+            if (_entryYou != null) { _entryYou.gameObject.SetActive(false); _entryPerfect.gameObject.SetActive(false); }
         }
 
         public override void Begin(ShotView start) { Aim(start.NextFeet, start.NextTee); }
@@ -176,7 +200,7 @@ namespace PuttrArcade
             if (view.Over) return; // found it: leave the winning roll and the zoom on screen
             if (_trail.positionCount > 1)
             {
-                LineRenderer keep = Stroke(Root, "Old roll", new Color(Teal.r, Teal.g, Teal.b, 0.22f), 0.45f);
+                LineRenderer keep = Stroke(Root, "Old roll", new Color(Teal.r, Teal.g, Teal.b, 0.22f), 0.24f);
                 var pts = new Vector3[_trail.positionCount];
                 _trail.GetPositions(pts);
                 Points(keep, pts);
@@ -199,7 +223,7 @@ namespace PuttrArcade
         {
             int feet = v.Feet > 0 ? v.Feet : 6, tee = v.Tee > 0 ? v.Tee : 2;
             if (feet != _feet || tee != _tee) Aim(feet, tee);
-            Sound("synth_whoosh", 0.45f, 0.8f);
+            Sound("deadcenter_scope", "synth_whoosh", 0.45f, 0.8f);   // puttr-app-2: the game's own sound, the shared one until recorded
             _trail.positionCount = 0;
             List<Vector3> roll = Roll(v, SpotFor(feet, tee), BallR);
             yield return Along(_ball, roll, Mathf.Lerp(0.9f, 1.6f, Mathf.InverseLerp(3f, 11f, feet)), _trail);
@@ -211,22 +235,26 @@ namespace PuttrArcade
             }
 
             // Zoom in on the cup: the perfect entry and yours.
-            _fovTo = Mathf.Lerp(12f, 7f, Mathf.InverseLerp(3f, 11f, feet));
+            _fovTo = ZoomFov;
             float perfect = TeeEntry(feet, tee);
-            Points(_needlePerfect, new[] { Vector3.up * 0.2f, EntryDir(perfect) * (CupR + 4.5f) + Vector3.up * 0.2f });
+            Points(_needlePerfect, new[] { Vector3.up * 0.2f, EntryDir(perfect) * (CupR + 2.4f) + Vector3.up * 0.2f });
+            _entryPerfect.localPosition = EntryDir(perfect) * CupR + Vector3.up * 0.1f;
+            _entryPerfect.gameObject.SetActive(true);
             if (v.HasEntry)
             {
-                Vector3 to = EntryDir(v.EntryDeg) * (CupR + 4.5f) + Vector3.up * 0.25f;
+                _entryYou.localPosition = EntryDir(v.EntryDeg) * CupR + Vector3.up * 0.12f;
+                _entryYou.gameObject.SetActive(true);
+                Vector3 to = EntryDir(v.EntryDeg) * (CupR + 2.4f) + Vector3.up * 0.25f;
                 for (float t = 0f; t < 1f; t += Time.deltaTime / 0.5f)
                 {
-                    Points(_needleYou, new[] { Vector3.up * 0.25f, Vector3.Lerp(EntryDir(perfect) * (CupR + 4.5f) + Vector3.up * 0.25f, to, Ease(t)) });
+                    Points(_needleYou, new[] { Vector3.up * 0.25f, Vector3.Lerp(EntryDir(perfect) * (CupR + 2.4f) + Vector3.up * 0.25f, to, Ease(t)) });
                     yield return null;
                 }
             }
             bool dead = v.Good;
             if (dead)
             {
-                Sound("bell_ding", 0.6f, 1.2f);
+                Sound("deadcenter_bullseye", "bell_ding", 0.6f, 1.2f);   // puttr-app-2: the game's own sound, the shared one until recorded
                 Arcade.Sparks(At(0, 1f, 0), 24);
                 _reticleMat.SetColor("_EmissionColor", new Color(0.6f, 1f, 0.4f) * 3f);
             }

@@ -29,7 +29,7 @@ namespace PuttrArcade
 
         static bool Portrait => Screen.height > Screen.width;
         public override Vector3 CameraFrom => At(0f, Portrait ? 95f : 80f, Portrait ? -270f : -240f);
-        public override Vector3 CameraLook => At(0f, Portrait ? 45f : 35f, 260f);
+        public override Vector3 CameraLook => At(0f, Portrait ? 100f : 35f, 260f);   // upright: aimed up, so the streak sign is under the score bug, not behind it
         public override float CameraFov => Portrait ? 60f : 46f;
 
         public override void Build()

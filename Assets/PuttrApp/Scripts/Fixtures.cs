@@ -1,6 +1,7 @@
 // Made-up answers for every call the spike makes, so the screens can be looked at with no
 // account and no network: start with -app2Fixture (or PUTTR_ARGS="-app2Fixture" on a simulator).
 // Nothing is sent anywhere in this mode, and no game is saved.
+using System;
 using System.Collections.Generic;
 
 namespace PuttrApp
@@ -8,14 +9,37 @@ namespace PuttrApp
     public static class Fixtures
     {
         public static bool On;
+        // -app2LabPose url: the sample 3D session's pose file (to see a real stroke in the cards from a script).
+        // -app2LabBuilding: the session list says the newest is still being built; its status route says ready.
+        static readonly string LabPose = ArgAfter("-app2LabPose");
+        static readonly bool LabBuilding = Array.IndexOf(Environment.GetCommandLineArgs(), "-app2LabBuilding") >= 0;
+        static string Lab(string json, bool building)
+        {
+            if (LabPose != null) json = json.Replace("\"blazePoseUrl\":\"\"", "\"blazePoseUrl\":\"" + LabPose + "\"");
+            if (building)
+            {
+                int at = json.IndexOf("\"status\":4", StringComparison.Ordinal);
+                if (at >= 0) json = json.Substring(0, at) + "\"status\":2" + json.Substring(at + 10);
+                json = json.Replace("2026-11-12T17:00:00.000Z", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.000Z"));
+            }
+            return json;
+        }
+        static readonly string TracksFile = ArgAfter("-app2TracksFile");
+        static string ArgAfter(string flag) { string[] a = System.Environment.GetCommandLineArgs(); int i = System.Array.IndexOf(a, flag); return i >= 0 && i + 1 < a.Length ? a[i + 1] : null; }
         public static float Delay = 0.15f;
         /// <summary>-app2NotMember: the made-up Player is not in Puttr Club (to see the paywall).</summary>
         public static bool NotMember;
+        /// <summary>-app2Connected (store captures): the made-up Player's Puttr shows as connected.</summary>
+        public static bool Connected;
 
         public static object For(string path)
         {
             if (path.StartsWith("/tracks/featured")) return J.Parse("{\"track\":{\"slug\":\"st-andys-old\",\"name\":\"St Andrews Old Course\",\"location\":\"St Andrews, Scotland\",\"rank\":1,\"par\":72,\"holes\":18,\"yds\":7305,\"isFree\":1},\"week\":47,\"roundsThisWeek\":38,\"roundsTotal\":412,\"lowest\":{\"toPar\":-7,\"displayName\":\"Ava Chen\"},\"myBest\":-2,\"myRoundsTotal\":4}");
-            if (path.StartsWith("/tracks/courses")) return J.Parse("[{\"slug\":\"st-andys-old\",\"name\":\"St Andrews Old Course\",\"location\":\"St Andrews, Scotland\",\"rank\":1,\"par\":72,\"holes\":18,\"yds\":7305,\"isFree\":1,\"myBest\":-2,\"rounds\":4},{\"slug\":\"pine-valley\",\"name\":\"Pine Valley\",\"location\":\"Pine Valley, NJ\",\"rank\":2,\"par\":70,\"holes\":18,\"yds\":7181,\"isFree\":0,\"rounds\":0},{\"slug\":\"augusta\",\"name\":\"Augusta National\",\"location\":\"Augusta, GA\",\"rank\":3,\"par\":72,\"holes\":18,\"yds\":7545,\"isFree\":0,\"rounds\":1}]");
+            if (path.StartsWith("/tracks/leaderboard")) return J.Parse("{\"rows\":[{\"id\":1,\"rank\":1,\"level\":\"major\",\"userId\":\"u2\",\"displayName\":\"Ava Chen\",\"homeTown\":\"Austin, TX\",\"holeSet\":\"all18\",\"toPar\":-4,\"strokes\":68,\"par\":72,\"created_at\":\"2026-11-15T18:00:00Z\",\"trackName\":\"St Andrews Old Course\",\"userGameId\":\"9001\"},{\"id\":2,\"rank\":1,\"level\":\"pro\",\"userId\":\"fixture\",\"displayName\":\"Sam Rivera\",\"homeTown\":\"Denver, CO\",\"holeSet\":\"front9\",\"toPar\":-1,\"strokes\":35,\"par\":36,\"created_at\":\"2026-11-12T18:00:00Z\",\"trackName\":\"Pine Valley\"},{\"id\":3,\"rank\":2,\"level\":\"pro\",\"userId\":\"u3\",\"displayName\":\"Marcus Bell\",\"holeSet\":\"all18\",\"toPar\":2,\"strokes\":74,\"par\":72,\"created_at\":\"2026-11-10T18:00:00Z\",\"trackName\":\"Augusta National\"}]}");
+            if (path.StartsWith("/tracks/search")) return J.Parse("[{\"osmType\":\"way\",\"osmId\":123,\"name\":\"Cherry Hills Country Club\",\"place\":\"Cherry Hills Village, Colorado\"},{\"osmType\":\"way\",\"osmId\":456,\"name\":\"Cherry Creek Golf\",\"place\":\"Denver, Colorado\",\"existing\":{\"slug\":\"cherry-creek\",\"name\":\"Cherry Creek Golf\",\"mine\":false}}]");
+            if (path.StartsWith("/tracks/courses")) return J.Parse("[{\"slug\":\"st-andys-old\",\"name\":\"St Andrews Old Course\",\"location\":\"St Andrews, Scotland\",\"rank\":1,\"par\":72,\"holes\":18,\"yds\":7305,\"isFree\":1,\"myBest\":-2,\"rounds\":4},{\"slug\":\"pine-valley\",\"name\":\"Pine Valley\",\"location\":\"Pine Valley, NJ\",\"rank\":2,\"par\":70,\"holes\":18,\"yds\":7181,\"isFree\":0,\"rounds\":0},{\"slug\":\"augusta\",\"name\":\"Augusta National\",\"location\":\"Augusta, GA\",\"rank\":3,\"par\":72,\"holes\":18,\"yds\":7545,\"isFree\":0,\"rounds\":1},{\"slug\":\"cherry-creek\",\"name\":\"Cherry Creek Golf\",\"location\":\"Denver, CO\",\"par\":71,\"holes\":18,\"yds\":6700,\"isFree\":0,\"rounds\":3,\"userId\":\"u2\",\"creatorName\":\"Ava Chen\",\"creatorHomeTown\":\"Austin, TX\"}]");
+            // -app2TracksFile course.json: that course's document from a file (a seed from puttr-app/scripts/tracks/courses), to look at other ground than St Andrews.
+            if (path.StartsWith("/tracks/course/") && TracksFile != null) return J.Parse(System.IO.File.ReadAllText(TracksFile));
             if (path.StartsWith("/tracks/course/")) { var doc = J.Parse(UnityEngine.Resources.Load<UnityEngine.TextAsset>("PuttrApp/Fixtures/tracks-standrews").text) as Dictionary<string, object>; doc["slug"] = "st-andys-old"; doc["location"] = "St Andrews, Scotland"; return doc; }
             if (path.StartsWith("/lesson/coaches")) return J.Parse("[{\"userId\": \"c1\", \"displayName\": \"Tom Ellery\", \"photoURL\": \"\", \"homeTown\": \"Scottsdale, AZ\", \"headline\": \"Short game specialist, 20 yrs teaching\", \"memberPrice\": 55, \"nonMemberPrice\": 60, \"specialties\": \"STROKE,SPEED\", \"turnaroundHours\": 72, \"avgRating\": 4.8, \"ratingCount\": 12, \"lessonCount\": 40, \"acceptingLessons\": 1, \"live\": 1, \"openLessons\": 2}, {\"userId\": \"c2\", \"displayName\": \"Jess Moreno\", \"homeTown\": \"Leeds, UK\", \"headline\": \"Green reading and pressure\", \"memberPrice\": 82.5, \"nonMemberPrice\": 90, \"specialties\": \"GREEN_READING,PRESSURE\", \"turnaroundHours\": 48, \"ratingCount\": 0, \"lessonCount\": 0, \"acceptingLessons\": 1, \"live\": 0}]");
             if (path.StartsWith("/lesson/coach/")) return J.Parse("{\"coach\": {\"userId\": \"c1\", \"displayName\": \"Tom Ellery\", \"headline\": \"Short game specialist, 20 yrs teaching\", \"bio\": \"I coach players of every level to roll it pure and trust their speed.\", \"memberPrice\": 55, \"nonMemberPrice\": 60, \"specialties\": \"STROKE,SPEED\", \"turnaroundHours\": 72, \"avgRating\": 4.8, \"ratingCount\": 12, \"lessonCount\": 40, \"acceptingLessons\": 1, \"live\": 1}, \"reviews\": [{\"rating\": 5, \"review\": \"Fixed my pull in a week.\", \"reviewedAt\": \"2026-11-10T12:00:00.000Z\", \"displayName\": \"Ava Chen\"}]}");
@@ -55,7 +79,7 @@ namespace PuttrApp
             if (path.StartsWith("/versus/")) return J.Parse("{\"versus\":{\"id\":499,\"status\":\"COMPLETE\",\"challengerId\":\"a\",\"challengerName\":\"Ava Chen\",\"challengedName\":\"Sam Rivera\",\"challengerUserGameId\":8790,\"challengedUserGameId\":8791,\"challengerScore\":21.5,\"challengedScore\":26,\"winnerId\":\"fixture\",\"gameTitle\":\"Center Cut\",\"message\":\"Rematch?\"},\"challengerPutts\":[{\"distance\":5,\"made\":1},{\"distance\":7,\"made\":0}],\"challengedPutts\":[{\"distance\":5,\"made\":1},{\"distance\":7,\"made\":1}]}");
             if (path.StartsWith("/multiplayer/stats")) return J.Parse("[{\"total\":12,\"wins\":7}]");
             if (path.StartsWith("/multiplayer/active")) return J.Parse("[{\"id\":61,\"userId\":\"fixture\",\"participantId\":\"a\",\"hostName\":\"Sam Rivera\",\"participantName\":\"Ava Chen\",\"status\":\"0\",\"numPutts\":9,\"distanceRange\":\"3,11\",\"entryAngle\":90,\"puttData\":\"[{\\\"distance\\\":6,\\\"tee\\\":2}]\",\"gameState\":\"{\\\"currentPlayer\\\":1,\\\"playerPutts\\\":[[],[]],\\\"puttCounter\\\":0,\\\"isOvertime\\\":false,\\\"rules\\\":\\\"entry\\\"}\",\"created_at\":\"2099-11-16T08:00:00.000Z\"}]");
-            if (path.StartsWith("/multiplayer/completed")) return J.Parse("[{\"id\":55,\"userId\":\"b\",\"participantId\":\"fixture\",\"hostName\":\"Marcus Bell\",\"participantName\":\"Sam Rivera\",\"status\":\"1\",\"winnerId\":\"fixture\",\"numPutts\":18,\"distanceRange\":\"6,9\",\"entryAngle\":180,\"created_at\":\"2026-11-10T08:00:00.000Z\"}]");
+            if (path.StartsWith("/multiplayer/completed")) return J.Parse("[{\"id\":55,\"userId\":\"b\",\"participantId\":\"fixture\",\"hostName\":\"Marcus Bell\",\"participantName\":\"Sam Rivera\",\"status\":\"1\",\"winnerId\":\"fixture\",\"numPutts\":9,\"distanceRange\":\"6,9\",\"entryAngle\":180,\"puttData\":\"[{\\\"distance\\\":6,\\\"tee\\\":2},{\\\"distance\\\":7,\\\"tee\\\":1},{\\\"distance\\\":8,\\\"tee\\\":3},{\\\"distance\\\":9,\\\"tee\\\":2},{\\\"distance\\\":6,\\\"tee\\\":1},{\\\"distance\\\":7,\\\"tee\\\":3},{\\\"distance\\\":8,\\\"tee\\\":2},{\\\"distance\\\":9,\\\"tee\\\":1},{\\\"distance\\\":6,\\\"tee\\\":3}]\",\"gameState\":\"{\\\"currentPlayer\\\":1,\\\"playerPutts\\\":[[6,0,8,0,6,7,0,9,0,0],[6,7,0,9,0,0,8,0,6,6]],\\\"puttCounter\\\":10,\\\"isOvertime\\\":true,\\\"rules\\\":\\\"entry\\\"}\",\"created_at\":\"2026-11-10T08:00:00.000Z\"}]");
             if (path.StartsWith("/family/")) return J.Parse("{\"ownerId\":\"fixture\",\"isOwner\":true,\"pinSet\":false,\"maxPlayers\":5,\"players\":[{\"userId\":\"fixture\",\"name\":\"Sam\",\"displayName\":\"Sam Rivera\",\"isOwner\":true,\"isMe\":true,\"totalPutts\":8214,\"totalMade\":5391},{\"userId\":\"k1\",\"name\":\"Mia\",\"displayName\":\"Sunny Fox 27\",\"isKid\":true,\"photoURL\":\"https://storage.googleapis.com/images.puttr.co/avatars/fox-4.png\",\"avatar\":{\"animal\":\"fox\",\"color\":4},\"totalPutts\":610,\"totalMade\":330},{\"userId\":\"p2\",\"name\":\"Jordan\",\"displayName\":\"Jordan\",\"totalPutts\":1200,\"totalMade\":702}]}");
             if (path.StartsWith("/members/profile/")) return J.Parse("[{\"userId\":\"a\",\"displayName\":\"Ava Chen\",\"homeTown\":\"Denver, CO\",\"isMember\":1,\"photoURL\":\"\",\"created_at\":\"2023-05-02T12:00:00.000Z\",\"bio\":\"Lag putting is my love language.\",\"handicap\":3.1,\"following\":40,\"followers\":118,\"totalPutts\":15220,\"totalMade\":10102,\"totalFeet\":110400,\"totalGames\":612}]");
             if (path.StartsWith("/members/userStats/")) return For("/profile/userStats");
@@ -70,7 +94,7 @@ namespace PuttrApp
             // The gameview route's game: tracked putts (so the putt rows read pace and entry), and its replay when
             // PUTTR_FIXTURE_VIDEO names one (open --env PUTTR_FIXTURE_VIDEO=http://... to check the video player).
             if (path == "/profile/game/putts/9001") return J.Parse(GameViewPutts());
-            if (path == "/video/recordings/9001" && (System.Environment.GetEnvironmentVariable("PUTTR_FIXTURE_VIDEO") ?? "").StartsWith("http")) return new List<object> { new Dictionary<string, object> { { "videoUrl", System.Environment.GetEnvironmentVariable("PUTTR_FIXTURE_VIDEO") } } };
+            if (path == "/video/recordings/9001" && (System.Environment.GetEnvironmentVariable("PUTTR_FIXTURE_VIDEO") ?? "").StartsWith("http")) return new List<object> { new Dictionary<string, object> { { "videoUrl", System.Environment.GetEnvironmentVariable("PUTTR_FIXTURE_VIDEO") }, { "created_at", "2026-11-15T18:00:00.000Z" } } };
             if (path.StartsWith("/profile/game/putts/")) return J.Parse("[{\"distance\":5,\"tee\":2,\"made\":1,\"rollout\":11},{\"distance\":7,\"tee\":1,\"made\":0,\"rollout\":-4},{\"distance\":5,\"tee\":3,\"made\":1,\"rollout\":16},{\"distance\":9,\"tee\":2,\"made\":1,\"rollout\":8}]");
             if (path.StartsWith("/video/recordings/")) return J.Parse("[]");
             if (path.StartsWith("/challenges/ACTIVE") || path.StartsWith("/challenges/UPCOMING") || path.StartsWith("/challenges/COMPLETED")) return J.Parse("[{\"challenge\":{\"title\":\"November 1,000\",\"subTitle\":\"Hole 1,000 putts this month\",\"cType\":\"PUTTS\",\"startDate\":\"2026-11-01\",\"endDate\":\"2026-11-30\",\"userJoined\":\"2026-11-01\"},\"participants\":340,\"userResults\":412,\"challengeLevels\":[{\"number\":250,\"title\":\"BRONZE\"},{\"number\":500,\"title\":\"SILVER\"},{\"number\":1000,\"title\":\"GOLD\"}]},{\"challenge\":{\"title\":\"Go the distance\",\"subTitle\":\"A mile of putts\",\"cType\":\"DISTANCE\",\"startDate\":\"2026-11-01\",\"endDate\":\"2026-11-30\",\"userJoined\":null},\"participants\":120,\"userResults\":0,\"challengeLevels\":[{\"number\":5280,\"title\":\"GOLD\"}]}]");
@@ -80,8 +104,13 @@ namespace PuttrApp
             if (path.StartsWith("/profile/messages/all")) return J.Parse("[{\"id\":31,\"status\":0,\"messageData\":\"{\\\"type\\\":\\\"FOLLOW\\\",\\\"userId\\\":\\\"a\\\"}\",\"body\":\"Ava Chen started following you\",\"displayName\":\"Ava Chen\",\"photoURL\":\"\",\"created_at\":\"2026-11-16T09:00:00.000Z\"},{\"id\":30,\"status\":0,\"messageData\":\"{\\\"type\\\":\\\"LEAGUE\\\",\\\"route\\\":\\\"weekRecap\\\"}\",\"body\":\"Your League Night week 5 recap is ready. The Mavericks moved up to 2nd.\",\"created_at\":\"2026-11-15T20:00:00.000Z\"},{\"id\":29,\"status\":1,\"messageData\":\"{\\\"type\\\":\\\"GAME\\\",\\\"gameId\\\":100}\",\"body\":\"Marcus Bell beat your On Fire score with 61.33333\",\"displayName\":\"Marcus Bell\",\"photoURL\":\"\",\"created_at\":\"2026-11-14T18:00:00.000Z\"},{\"id\":28,\"status\":1,\"messageData\":\"{\\\"type\\\":\\\"TOURNAMENT\\\"}\",\"body\":\"Round 2 of Watch It Drop is open. 212 players are in.\",\"created_at\":\"2026-11-10T12:00:00.000Z\"}]");
             if (path.StartsWith("/profile/message/")) return new Dictionary<string, object>();
             if (path.StartsWith("/notifications/prefs")) return J.Parse("{\"practice\":true,\"competition\":true,\"offers\":false}");
-            if (path.StartsWith("/lab/sessions")) return J.Parse("[{\"id\":812,\"status\":4,\"handedness\":\"R\",\"created_at\":\"2026-11-12T17:00:00.000Z\",\"blazePoseUrl\":\"\",\"replayUrl\":\"\"}]");
-            if (path.StartsWith("/lab/session/putts")) return J.Parse("[{\"distance\":5,\"entry\":\"[1,2,30,1]\",\"rollout\":14},{\"distance\":5,\"entry\":\"0\",\"rollout\":-6},{\"distance\":5,\"entry\":\"[0,1,12,2]\",\"rollout\":9}]");
+            // 3D sessions: a finished session with a good capture, and an older one still processing (LabSessions, the session page).
+            if (path.StartsWith("/lab/sessions")) return J.Parse(Lab("[{\"id\":812,\"status\":4,\"handedness\":\"RIGHTY\",\"score\":18.0,\"created_at\":\"2026-11-12T17:00:00.000Z\",\"captureCheck\":\"{\\\"verdict\\\":\\\"ok\\\",\\\"halves\\\":{\\\"first\\\":\\\"downTheLine\\\",\\\"second\\\":\\\"faceOn\\\"}}\",\"blazePoseUrl\":\"\",\"replayUrl\":\"\",\"thumbUrl\":\"\"},{\"id\":640,\"status\":2,\"handedness\":\"RIGHTY\",\"score\":14.5,\"created_at\":\"2026-05-30T17:00:00.000Z\",\"captureCheck\":\"{\\\"verdict\\\":\\\"bad\\\",\\\"reasons\\\":[\\\"wrongPerspective\\\"],\\\"halves\\\":{\\\"first\\\":\\\"downTheLine\\\",\\\"second\\\":\\\"downTheLine\\\"}}\"}]", LabBuilding));
+            if (path.StartsWith("/lab/session/putts") || path.StartsWith("/coaching/session/putts")) return J.Parse(LabPutts());
+            if (path.StartsWith("/lab/session/status/")) return J.Parse(Lab("[{\"id\":812,\"status\":4,\"handedness\":\"RIGHTY\",\"score\":18.0,\"created_at\":\"2026-11-12T17:00:00.000Z\",\"blazePoseUrl\":\"\",\"replayUrl\":\"\"}]", false));
+            if (path.StartsWith("/lab/session/start")) return J.Parse("{\"insertId\":9812}");
+            if (path.StartsWith("/lab/session/") || path.StartsWith("/lab/recording/")) return J.Parse("{\"ok\":true}");
+            if (path.StartsWith("/coach/lessons/")) return J.Parse("[{\"id\":41,\"title\":\"STANCE\",\"description\":\"Guide of how to get yourself into a solid stance over the ball.\"},{\"id\":42,\"title\":\"POSTURE\",\"description\":\"Getting our body into a good position to help move freely.\"}]");
             if (path.StartsWith("/coach/settings")) return J.Parse("{\"dailyGoal\":10,\"longestStreak\":9,\"currentStreak\":4,\"lastPracticeDate\":\"2026-01-01\"}");
             if (path.StartsWith("/profile/analysis/putts")) return J.Parse(AnalysisPutts());
             if (path.StartsWith("/profile/analysis")) return J.Parse("[{\"distance\":3,\"tee\":2,\"total\":40,\"made\":\"39\"},{\"distance\":4,\"tee\":1,\"total\":22,\"made\":\"19\"},{\"distance\":5,\"tee\":3,\"total\":25,\"made\":\"18\"},{\"distance\":6,\"tee\":2,\"total\":30,\"made\":\"21\"},{\"distance\":7,\"tee\":1,\"total\":18,\"made\":\"9\"},{\"distance\":8,\"tee\":3,\"total\":20,\"made\":\"8\"},{\"distance\":9,\"tee\":2,\"total\":16,\"made\":\"7\"},{\"distance\":10,\"tee\":1,\"total\":12,\"made\":\"3\"},{\"distance\":11,\"tee\":3,\"total\":10,\"made\":\"2\"}]");
@@ -94,7 +123,8 @@ namespace PuttrApp
             if (path.Contains("/leaderboard?")) return J.Parse("[{\"rank\":1,\"team\":\"lions\",\"score\":52.3,\"attempts\":4,\"player\":{\"displayName\":\"Marcus Bell\",\"homeTown\":\"Leeds, UK\",\"putterBrand\":\"Scotty Cameron\",\"putter\":{\"brand\":\"Scotty Cameron\",\"model\":\"Phantom X 5.5\",\"length\":\"34\",\"head\":\"Mallet\",\"shaft\":\"Slant neck\",\"grip\":\"Pistolini Plus\"}}},{\"rank\":2,\"team\":\"mavericks\",\"score\":47.9,\"attempts\":6,\"player\":{\"userId\":\"fixture\",\"displayName\":\"Sam Rivera\",\"homeTown\":\"Austin, TX\",\"putterBrand\":\"L.A.B. Golf\",\"putter\":{\"brand\":\"L.A.B. Golf\",\"model\":\"DF3\",\"length\":\"35\"}}},{\"rank\":3,\"team\":\"blizzards\",\"score\":44.1,\"attempts\":2,\"player\":{\"displayName\":\"Jo Park\",\"homeTown\":\"Chicago, IL\",\"putterBrand\":\"Byron Morgan\",\"putter\":null}}]");
             if (path.Contains("/standings")) return J.Parse("[{\"team\":\"lions\",\"total\":231.4,\"seasonTotal\":690.2,\"weekRank\":1,\"seasonRank\":1,\"weekRankChange\":2},{\"team\":\"mavericks\",\"total\":219.8,\"seasonTotal\":701.5,\"weekRank\":2,\"seasonRank\":2,\"weekRankChange\":0},{\"team\":\"noreasters\",\"total\":188.0,\"seasonTotal\":610.0,\"weekRank\":3,\"seasonRank\":3,\"weekRankChange\":-1}]");
             if (path.StartsWith("/tournaments/upcoming")) return J.Parse("[{\"id\":164,\"title\":\"Watch It Drop\",\"description\":\"November's monthly tournament.\",\"startDate\":\"2026-11-01T00:00:00.000Z\",\"endDate\":\"2099-11-30T23:59:59.000Z\",\"participants\":212,\"userJoined\":\"2026-11-02\",\"prizeImage\":\"https://storage.googleapis.com/images.puttr.co/games/Tournament_Button.jpg\",\"prizeDescription\":\"Winner receives a Garmin Approach S50 golf GPS watch\",\"displayName\":\"Puttr\"}]");
-            if (path.StartsWith("/tournaments/PRIVATE") || path.StartsWith("/tournaments/past")) return J.Parse("[]");
+            if (path.StartsWith("/tournaments/PRIVATE")) return J.Parse("[]");
+            if (path.StartsWith("/tournaments/past")) return J.Parse("[{\"id\":163,\"title\":\"October Classic\",\"description\":\"October's monthly tournament.\",\"startDate\":\"2026-10-01T00:00:00.000Z\",\"endDate\":\"2026-10-31T23:59:59.000Z\",\"participants\":188,\"prizeImage\":\"https://storage.googleapis.com/images.puttr.co/games/Tournament_Button.jpg\",\"displayName\":\"Puttr\",\"reelVideoUrl\":\"https://storage.googleapis.com/images.puttr.co/howto/Unboxing_2025.mp4\"}]");
             if (path.StartsWith("/tournaments/details")) return J.Parse("[{\"participants\":212,\"rounds\":[{\"id\":901,\"roundNum\":1,\"gameId\":1700,\"difficulty\":\"7.0\",\"puttData\":\"[{\\\"id\\\":0,\\\"distance\\\":4,\\\"tee\\\":2},{\\\"id\\\":1,\\\"distance\\\":7,\\\"tee\\\":1},{\\\"id\\\":2,\\\"distance\\\":5,\\\"tee\\\":3},{\\\"id\\\":3,\\\"distance\\\":9,\\\"tee\\\":2},{\\\"id\\\":4,\\\"distance\\\":6,\\\"tee\\\":1}]\"},{\"id\":902,\"roundNum\":2,\"gameId\":1701,\"difficulty\":\"7.0\",\"puttData\":\"[{\\\"id\\\":0,\\\"distance\\\":3,\\\"tee\\\":2}]\"}]}]");
             if (path.StartsWith("/tournaments/userResults")) return J.Parse("[{\"r1_score\":null}]");
             if (path.StartsWith("/tournaments/userGames/")) return J.Parse("[{\"id\":9001,\"roundNum\":1,\"status\":2},{\"id\":9002,\"roundNum\":2,\"status\":2},{\"id\":9001,\"roundNum\":3,\"status\":2}]");
@@ -142,12 +172,36 @@ namespace PuttrApp
                 (0f, 34f, 0f, 5, 2, 8f), (0.9f, 30f, 0f, 7, 1, 5f), (-0.9f, 30f, 0f, 6, 3, 5f), (0.3f, 52f, 0f, 9, 2, 14f), (3.4f, 40f, 0f, 8, 2, 11f), (-3.2f, -14f, 0f, 4, 2, -6f),
             };
             var rows = new List<string>();
+            int n = 0;
             foreach (var s in shots)
             {
+                // Saved 10 s into the recording, then every 8 s: the replay's putt clips (GameReplay.Clips).
+                string at = new System.DateTime(2026, 11, 15, 18, 0, 10 + 8 * n++, System.DateTimeKind.Utc).ToString("yyyy-MM-ddTHH:mm:ss.000Z", System.Globalization.CultureInfo.InvariantCulture);
                 var path = Puttr.PuttrSamples.Synthesize(s.line, s.speed, s.heading, Puttr.PuttrSamples.SampleHole);
                 bool made = Puttr.PuttrAnalysis.IsMade(path, Puttr.PuttrSamples.SampleHole);
                 rows.Add("{\"distance\":" + s.distance + ",\"tee\":" + s.tee + ",\"made\":" + (made ? 1 : 0) + ",\"ballPath\":" + J.Write(RoundSaver.PathJson(path)) +
-                         ",\"holeBounds\":\"[320,100,110]\",\"rollout\":\"" + s.rollout.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + "\"}");
+                         ",\"created_at\":\"" + at + "\",\"holeBounds\":\"[320,100,110]\",\"rollout\":\"" + s.rollout.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + "\"}");
+            }
+            return "[" + string.Join(",", rows) + "]";
+        }
+
+        /// <summary>Six lab putts at 5 ft (lab_session_putts): ball paths from the bottom of the frame to a hole near the top, four in, two out.</summary>
+        static string LabPutts()
+        {
+            var rows = new List<string>();
+            int[] ends = { -6, 4, 22, -40, 12, 0 };          // where each path finishes across the hole, in pixels
+            double?[] rollouts = { 14, -6, 9, -15.2, 5.6, 3.1 };
+            for (int i = 0; i < ends.Length; i++)
+            {
+                bool made = System.Math.Abs(ends[i]) < 30;
+                var pts = new List<string>();
+                for (int k = 0; k <= 24; k++)
+                {
+                    double t = k / 24.0, y = 330 - t * (made ? 268 : 300), x = 240 + ends[i] * t * t;
+                    pts.Add("[" + (int)x + "," + (int)y + "," + (int)(26 - t * 8) + "]");
+                }
+                string entry = made ? "[" + (240 + ends[i]) + ",70," + (ends[i] * -2) + ",\\\"FRONT " + (ends[i] < 0 ? "LEFT" : "RIGHT") + "\\\"]" : "0";
+                rows.Add("{\"id\":" + (7000 + i) + ",\"distance\":5,\"tee\":2,\"ballPath\":\"[" + string.Join(",", pts) + "]\",\"holeBounds\":\"[240,60,60]\",\"entry\":\"" + entry + "\",\"rollout\":" + rollouts[i].Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}");
             }
             return "[" + string.Join(",", rows) + "]";
         }
@@ -180,7 +234,7 @@ namespace PuttrApp
             for (int w = 0; w < 4; w++)
             {
                 System.DateTime start = monday.AddDays(7 * (w - 1));
-                weeks.Add("{\"weekNumber\":" + (w + 1) + ",\"gameId\":472,\"gameTitle\":\"Center Cut\",\"startsAt\":\"" + start.ToString("yyyy-MM-dd") + "T00:00:00\",\"endsAt\":\"" + start.AddDays(6).ToString("yyyy-MM-dd") + "T23:59:59\"}");
+                weeks.Add("{\"weekNumber\":" + (w + 1) + ",\"gameId\":472,\"gameType\":\"CENTERCUT\",\"gameTitle\":\"Center Cut\",\"startsAt\":\"" + start.ToString("yyyy-MM-dd") + "T00:00:00\",\"endsAt\":\"" + start.AddDays(6).ToString("yyyy-MM-dd") + "T23:59:59\"}");
             }
             return "{\"id\":\"s4-2026\",\"number\":4,\"weeks\":[" + string.Join(",", weeks) + "]}";
         }
@@ -208,6 +262,9 @@ namespace PuttrApp
         public static object Chat(string path)
         {
             if (path.StartsWith("/v2/caddie/chat")) return J.Parse("{\"conversationId\":\"fx-caddie\",\"answer\":\"Open **Settings**, then **Camera Check**. Set the phone on the stand so the whole mat is in view, then tap **Calibrate**. It takes about ten seconds.\\n\\n- Good light helps\\n- Keep the hole cup clear\",\"escalated\":false}");
+            if (path.StartsWith("/v2/lab/session/")) return J.Parse("{\"insights\":[{\"fault\":\"weight_right\",\"label\":\"Weight favoring the right side\",\"confidence\":\"medium\",\"evidence\":{\"body\":\"weight favoring the right side on the setup capture (putts 4, 5, 6)\"},\"lessonIds\":[]},{\"fault\":\"stance_wide\",\"label\":\"Stance too wide\",\"confidence\":\"medium\",\"evidence\":{\"body\":\"stance too wide on the setup capture (putts 4, 5, 6)\"}}]}");
+            if (path.StartsWith("/v2/coach/narrate")) return J.Parse("{\"lines\":null}");
+            if (path.StartsWith("/v2/coach/analyze")) return J.Parse("{\"conversationId\":\"fx-coach\",\"answer\":\"## Square your shoulders\\n\\nYour misses this session started right of the line. At setup, lay a club across your shoulders and check it points at the target.\\n\\n- Hold the finish for a count of two\\n- **Center Cut** from 4 feet, ten in a row\",\"recommendedLessons\":[{\"id\":11,\"title\":\"Grip pressure\"}]}");
             if (path.StartsWith("/v2/coach/chat")) return J.Parse("{\"conversationId\":\"fx-coach\",\"answer\":\"Short putts that slide past the high side usually come from a closed face at impact. Try **Center Cut** from 4 feet with a gate two balls wide, and hold your finish for a count of two.\",\"recommendedLessons\":[{\"id\":11,\"title\":\"Grip pressure\"}],\"recommendedGames\":[]}");
             if (path.StartsWith("/v2/coach/conversations/")) return J.Parse("{\"conversationId\":\"fx-coach\",\"messages\":[{\"role\":\"assistant\",\"text\":\"Hey Sam, what part of your putting can I help with today?\",\"at\":\"2026-11-16T15:02:00.000Z\"},{\"role\":\"user\",\"text\":\"I keep leaving my lag putts short.\",\"at\":\"2026-11-16T15:03:00.000Z\"},{\"role\":\"user\",\"text\":\"Mostly from 20 feet and out.\",\"at\":\"2026-11-16T15:03:20.000Z\"},{\"role\":\"assistant\",\"text\":\"That is a pace habit. Aim to finish **17 inches past** the hole: your rollout on Puttr shows it. Make the backstroke longer rather than hitting harder.\",\"at\":\"2026-11-16T15:03:40.000Z\"}]}");
             if (path.StartsWith("/v2/coach/conversations")) return J.Parse("{\"conversations\":[{\"conversationId\":\"fx-coach\",\"title\":\"Lag putts coming up short\",\"preview\":\"That is a pace habit.\",\"previewRole\":\"assistant\",\"lastTurnAt\":\"2026-11-16T15:03:40.000Z\"}],\"hasMore\":false}");

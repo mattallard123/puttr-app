@@ -7,7 +7,7 @@ using UnityEngine.Rendering;
 
 namespace PuttrArcade
 {
-    static class HorseArena
+    public static class HorseArena
     {
         // ── Court plan (NBA dimensions) ─────────────────────────────────────
         public const float Baseline = 63f;                 // the rim centre is 5'3" from the baseline
@@ -209,29 +209,32 @@ namespace PuttrArcade
         public static float TeeX(int tee) => tee == 1 ? -TeeOff : tee == 3 ? TeeOff : 0f;
 
         /// <summary>The extended lane's edges, the distance lines and the tee spots, as one mesh.</summary>
+        /// <summary>The lane's outline down to the end of the paint (white). The tees are TeeSpots.</summary>
         public static Mesh MatMarks(float y)
         {
             var b = new Builder();
             const float w = 2.6f;
             Strip(b, new[] { new Vector2(-LaneHalf, FreeThrow), new Vector2(-LaneHalf, PaintEnd), new Vector2(LaneHalf, PaintEnd), new Vector2(LaneHalf, FreeThrow) }, w, y);
+            return b.Build("Mat marks");
+        }
+
+        /// <summary>Every tee spot as a disc of this radius (the scene draws a thin white rim, then the black spot over it,
+        /// with the distance in the middle, as on the Puttr mat). No lines between them (Matt).</summary>
+        public static Mesh TeeSpots(float y, float r)
+        {
+            var b = new Builder();
             for (int f = 3; f <= 11; f++)
-            {
-                float z = MatZ(f);
-                if (Mathf.Abs(z - FreeThrow) > 3f) Strip(b, new[] { new Vector2(-MatHalf, z), new Vector2(MatHalf, z) }, 1.6f, y);
                 for (int t = 1; t <= 3; t++)
                 {
-                    // A tee spot: a dot on the line.
-                    Vector3 c = new Vector3(TeeX(t), y + 0.02f, z);
-                    const int n = 16;
-                    const float r = 4.5f;
+                    Vector3 c = new Vector3(TeeX(t), y, MatZ(f));
+                    const int n = 32;
                     for (int k = 0; k < n; k += 2)
                     {
                         Vector3 P(int i) { float a = i / (float)n * Mathf.PI * 2f; return c + new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r); }
                         b.Quad(c, P(k), P(k + 1), P(k + 2), Vector3.up);
                     }
                 }
-            }
-            return b.Build("Mat marks");
+            return b.Build("Tee spots");
         }
 
         static void Strip(Builder b, IList<Vector2> pts, float width, float y)

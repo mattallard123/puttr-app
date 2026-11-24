@@ -210,10 +210,10 @@ namespace PuttrApp
             Action close = () => dim?.RemoveFromHierarchy();
 
             VisualElement who = Ui.Box("grow putter-sheet-who",
-                Ui.Text("GAMER", "putter-sheet-kick", Ui.Regular),
+                Ui.Text("GAMER", "putter-sheet-kick", Ui.Bold),
                 Ui.Text(string.IsNullOrEmpty(p.Name) ? "Player" : p.Name, "putter-sheet-name", Ui.Bold));
             if (!string.IsNullOrEmpty(p.HomeTown)) who.Add(Ui.Text(p.HomeTown, "putter-sheet-town", Ui.Regular));
-            VisualElement shut = Ui.Box("putter-sheet-close", Ui.Icon("XCircle", 20, new Color32(181, 181, 181, 255))).OnTap(close);
+            VisualElement shut = Ui.Box("putter-sheet-close", Ui.Icon("X", 20, Ui.Faint)).OnTap(close);
 
             VisualElement disc = Ui.Box("putter-sheet-disc", brand != null ? Badge(brand, 40f, 1f, true) : Ui.Text("?", "putter-sheet-unknown", Ui.Bold));
             VisualElement words = Ui.Box("grow putter-sheet-words", Ui.Text(brand ?? "No putter on file", "putter-sheet-brand", Ui.Bold));

@@ -23,6 +23,7 @@ namespace PuttrArcade
         float _heat;
 
         static bool Portrait => Screen.height > Screen.width;
+        public override float WideFrame => 0.74f;   // a lane down the middle: nothing of it is under the side cards
         public override Vector3 CameraFrom => At(Portrait ? new Vector3(-2f, 84f, -205f) : new Vector3(-6f, 76f, -205f));
         public override Vector3 CameraLook => At(Portrait ? new Vector3(-6f, 14f, -34f) : new Vector3(-30f, 14f, -34f));
         public override float CameraFov => Portrait ? 52f : 44f;
@@ -233,7 +234,7 @@ namespace PuttrArcade
             Transform bar = Bar(Root, door ? 0 : feet, hot, new Color(0.25f, 0.06f, 0.02f));
             if (door) bar.GetComponentInChildren<TextMesh>().text = "";
             _heat = 1f;
-            Sound("fire_whoosh", 0.35f, door ? 0.7f : 1.1f);
+            Sound("metal_bellows", "fire_whoosh", 0.35f, door ? 0.7f : 1.1f);   // puttr-app-2: the game's own sound, the shared one until recorded
             Vector3 hover = new Vector3(0, 16f, 0);
             for (float t = 0f; t < 1f; t += Time.deltaTime / 0.6f)
             {

@@ -4,8 +4,11 @@
 // down inside the green window on the landing ramp, on the far side of a row
 // of buses. Life size, in inches, with real gravity.
 //
-//   pace   takeoff speed: 11 in/s of bike for every in/s of putt, so a
-//          3.5 ft/s putt clears four buses and a 5.5 ft/s putt clears ten.
+//   pace   how far past the hole the putt would finish. The first round (three
+//          buses) wants a putt that dies in, about 3 in past, and each bus adds
+//          1 in (Matt, 2026-11-23: 3 in a bus could not be played far), so the
+//          eighth round wants 10 in. The window either side of that is as wide
+//          as it was: about 3 in of rollout at first, 2 at the end.
 //   line   lean. A putt more than a couple of inches off the center of the
 //          hole lands crooked, and that is a fall too.
 //
@@ -21,10 +24,14 @@ namespace PuttrArcade
     public sealed class SendItMode : StageMode
     {
         public override string Name => "Send It";
+        public override bool Branded => true;
         public override string VoicePrefix => "sendit";
         public override int Putter => _turn; // whose difficulty applies to this putt
         public override string Blurb => "Putt harder to jump further.\nLand in the green window.\nOne more bus every round.";
         public override GameAudio.Scene Sound => GameAudio.Scene.Arena;
+        // puttr-app-2: a supercross crowd of its own (the stadium crowd, pitched down, until it is recorded); it ends on the landing roar.
+        public override string BedSlot => "sendit_arena_loop";
+        public override string EndSlot => "sendit_landing";
         public override int Score(int player) => _best[player];
         public override string ScoreWord(int n) => n == 1 ? "bus" : "buses";
         public override string ScoreUnit => "buses";
@@ -36,15 +43,25 @@ namespace PuttrArcade
         public override string[] HowTo => new[]
         {
             "The harder you putt, the further the bike jumps. Too soft lands on the buses, too firm flies past the landing ramp.",
-            "Land in the green window. The gauge under the stage shows the pace it needs. Every round adds a bus, so every round needs a firmer putt.",
+            "Land in the green window. The gauge under the stage shows the pace it needs. The first round wants a putt that dies in the hole, and each bus adds 1 in past it.",
             "Keep it straight: more than about 3 inches off the center of the hole lands crooked. Two lives each.",
         };
 
         const int Rounds = 8, Lives = 2, FirstBuses = 3;
         const float LipY = 140f, TakeoffDeg = 26f, LandingDeg = 20f;
         const float BusPitch = 102f, BusWidth = 96f, BusTop = 120f, FirstBusX = 30f;
-        const float BikePerPace = 11f, RunUpX = -560f;
-        const float GaugeLow = 25f, GaugeHigh = 80f;
+        const float RunUpX = -560f;
+        const float GaugeLow = 0f, GaugeHigh = 56f;
+        // What each round asks for, and how much a putt off it moves the landing: an inch more a round, and three
+        // inches of putt either way carries the bike a bus long or short (so the window is no tighter than it was).
+        const float FirstPast = 3f, PastPerRound = 1f, PastPerBusLength = 3f;
+        // Takeoff speed squared per inch of rollout off the round's own.
+        static readonly float BikeGain = BusPitch / PastPerBusLength * LaneSpec.Gravity / Mathf.Sin(2f * TakeoffDeg * Mathf.Deg2Rad);
+        float _middleSpeed2;
+        float WantedPast => FirstPast + PastPerRound * _roundIndex;
+        // The speed off the lip for this putt: the wanted rollout lands in the middle of the window.
+        float BikeSpeed(float pace) => Mathf.Sqrt(Mathf.Max(0f, _middleSpeed2 + BikeGain * (PaceWords.Past(pace) - WantedPast)));
+        static float PaceFor(float past) => Mathf.Sqrt(2f * PuttrAnalysis.RampDecelInPerSec2 * past);
         public override bool AimPace(out float low, out float high, out float min, out float max)
         {
             low = _paceLow; high = _paceHigh; min = GaugeLow; max = GaugeHigh;
@@ -115,9 +132,9 @@ namespace PuttrArcade
             Shape(PrimitiveType.Cube, "Edge light", takeoff, new Vector3(0, 0.3f, -47.4f), new Vector3(length, 1.2f, 1.2f), edge);
             Truss(Root, RampBaseX, steel);
             Make.MeshObject("Takeoff banner", Root, Prism(new Vector2(RampBaseX + 30f, 2f), new Vector2(-4f, LipY - 12f), new Vector2(-4f, 2f), 84f), panel);
-            var logo = Resources.Load<Texture2D>("PuttrArcade/LogoHeader");
+            var logo = Brand.Logo;
             if (logo != null)
-                Card("Ramp logo", Root, new Vector3(-66f, 34f, -42.6f), new Vector2(96f, 96f * logo.height / logo.width), Make.Glow(new Color(1f, 1f, 1f, 0.9f), false, logo));
+                Card("Ramp logo", Root, new Vector3(-66f, 34f, -42.6f), Brand.Size(logo, 96f), Make.Glow(new Color(1f, 1f, 1f, 0.9f), false, logo));
 
             // The landing ramp. It moves out as buses are added.
             _landing = new GameObject("Landing").transform;
@@ -303,17 +320,25 @@ namespace PuttrArcade
             }
             _landingX = FirstBusX + n * BusPitch + 20f;
             _landing.localPosition = new Vector3(_landingX, 0, 0);
-            _zoneLength = Mathf.Max(100f, 230f - 16f * _roundIndex);
+            _zoneLength = Mathf.Max(150f, 230f - 11f * _roundIndex);
             float along = _zoneLength / Mathf.Cos(LandingDeg * Mathf.Deg2Rad);
             float run = LandingRun / Mathf.Cos(LandingDeg * Mathf.Deg2Rad);
             _zone.localPosition = new Vector3(-run * 0.5f + along * 0.5f, 0.2f, 0f);
             _zone.localScale = new Vector3(along, 1.6f, 92.5f);
 
             // The putts that make it, found by flying every pace.
-            _paceLow = _paceHigh = 0f;
-            for (float pace = 15f; pace < 95f; pace += 0.05f)
+            float lowSpeed = 100f, highSpeed = 1600f, middle = _landingX + _zoneLength * 0.5f;
+            for (int i = 0; i < 28; i++)
             {
-                if (Fly(pace * BikePerPace, out _, out _) != Landing.Clear) continue;
+                float mid = (lowSpeed + highSpeed) * 0.5f;
+                Fly(mid, out Vector2 down, out _);
+                if (down.x < middle) lowSpeed = mid; else highSpeed = mid;
+            }
+            _middleSpeed2 = lowSpeed * lowSpeed;
+            _paceLow = _paceHigh = 0f;
+            for (float pace = 0.5f; pace < 95f; pace += 0.05f)
+            {
+                if (Fly(BikeSpeed(pace), out _, out _) != Landing.Clear) continue;
                 if (_paceLow == 0f) _paceLow = pace;
                 _paceHigh = pace;
             }
@@ -337,8 +362,8 @@ namespace PuttrArcade
             Words(_round, "SHORT", new Vector3(X(GaugeLow) + text * 2f, gaugeY + bar * 2f, z), text, quiet);
             Words(_round, "LONG", new Vector3(X(GaugeHigh) - text * 2f, gaugeY + bar * 2f, z), text, quiet);
             Words(_round, "CLEAR", new Vector3((X(_paceLow) + X(_paceHigh)) * 0.5f, gaugeY + bar * 2f, z), text, Make.Bright);
-            for (int feet = 3; feet <= 6; feet++)
-                Words(_round, PaceWords.Length(PaceWords.Past(feet * 12f)) + " past", new Vector3(X(feet * 12f), gaugeY - bar * 2f, z), text * 0.9f, quiet);
+            foreach (float past in new[] { 3f, 6f, 12f, 18f })
+                Words(_round, PaceWords.Length(past) + " past", new Vector3(X(PaceFor(past)), gaugeY - bar * 2f, z), text * 0.9f, quiet);
             ShowAim(); // the card's pace window is this round's, now that it is known
         }
 
@@ -386,7 +411,7 @@ namespace PuttrArcade
             get
             {
                 string who = _players > 1 ? Arcade.PlayerName(_turn) + "   ·   " : "";
-                return who + Buses + " buses   ·   Putt to finish about " + PaceWords.Length(PaceWords.Past((_paceLow + _paceHigh) * 0.5f)) + " past the hole";
+                return who + Buses + " buses   ·   " + (_roundIndex == 0 ? "Die it in the hole" : "Putt to finish about " + PaceWords.Length(WantedPast) + " past the hole");
             }
         }
 
@@ -428,7 +453,9 @@ namespace PuttrArcade
         {
             int player = _turn, round = _roundIndex, buses = Buses;
             float pace = Pace(putt), line = Line(putt);
-            float speed = pace * BikePerPace;
+            float speed = BikeSpeed(pace);
+            // A putt that never reached the hole is short of every window, the first round's "dies in" too.
+            if (!putt.Launch.Reached) { pace = Mathf.Min(pace, 6f); speed = Mathf.Sqrt(Mathf.Max(80f * 80f, _middleSpeed2 - BikeGain * (WantedPast + 5f))); }
             Landing landing = Fly(speed, out Vector2 touch, out float airtime);
             bool crooked = landing == Landing.Clear && Mathf.Abs(line) > LeanLimit;
 
@@ -484,7 +511,7 @@ namespace PuttrArcade
                 hud.Banner("SENT IT", middle < 0.3f ? "Middle of the window: " + buses + " buses" : "Cleared " + buses + " buses", Make.Bright, 2.2f);
                 Arcade.Audio.Land();
                 Arcade.Audio.SetEngine(30f);
-                Arcade.Audio.Strike();
+                if (Arcade.Audio.TryLibrary("sendit_landing", 1f)) Arcade.Audio.Excite(1f); else Arcade.Audio.Strike();   // puttr-app-2
                 Arcade.Celebrate(80, At(touch.x, touch.y, -60f));
                 Arcade.Sparks(At(touch.x, touch.y, -40f), 14);
                 _best[player] = Mathf.Max(_best[player], buses);
@@ -504,7 +531,7 @@ namespace PuttrArcade
                 ShowPutt(putt, crooked ? "Crooked" : landing == Landing.Short ? "Short" : "Long", crooked ? Make.Amber : Make.Red);
                 Arcade.Audio.Crash();
                 Arcade.Audio.SetEngine(0f);
-                Arcade.Audio.Groan();
+                if (Arcade.Audio.TryLibrary("sendit_crash_groan", 0.85f)) Arcade.Audio.Excite(0.25f); else Arcade.Audio.Groan();   // puttr-app-2
                 Arcade.Shake(0.9f);
                 Arcade.Sparks(At(touch.x, touch.y + 20f, -40f), 60);
                 _lives[player]--;

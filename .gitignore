@@ -2,6 +2,8 @@
 /[Tt]emp/
 /[Oo]bj/
 /[Bb]uilds/
+# Xcode's derived data when xcodebuild is run from the project root (-derivedDataPath build): about 12 GB
+/build/
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 /Shots/
@@ -15,3 +17,17 @@
 # Raw Soundly exports; Tools/import-sounds.py writes the trimmed copies into Assets/
 /SoundDrop/*
 !/SoundDrop/README.md
+
+# Keys: local only (Tools/keys has the templates). GitHub flagged these on 62debba.
+/Assets/PuttrApp/Scripts/Keys.cs
+/Assets/PuttrApp/Scripts/Keys.cs.meta
+/Assets/PuttrApp/Editor/Firebase/GoogleService-Info.plist
+/Assets/PuttrApp/Editor/Firebase/GoogleService-Info.plist.meta
+/Assets/Plugins/Android/PuttrApp.androidlib/res/values/firebase.xml
+/Assets/Plugins/Android/PuttrApp.androidlib/res/values/firebase.xml.meta
+
+# CC0 source art for Tracks (about 2 GB): Tools/tracks-art/fetch.py downloads it again; only the baked results ship
+/Tools/tracks-art/source/
+
+# Store screenshots and previews made by StoreAssets/screenshots/build.py and preview/build.py
+/StoreAssets/out/

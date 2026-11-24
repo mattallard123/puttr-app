@@ -23,6 +23,7 @@ namespace PuttrArcade
         Vector3 _frogHome;
 
         static bool Portrait => Screen.height > Screen.width;
+        public override float WideFrame => 0.74f;   // a lane down the middle: nothing of it is under the side cards
         public override Vector3 CameraFrom => At(Portrait ? 0f : 20f, 70f, Portrait ? -190f : -180f);
         public override Vector3 CameraLook => At(-16f, 40f, 20f);
         public override float CameraFov => Portrait ? 58f : 46f;
@@ -344,13 +345,13 @@ namespace PuttrArcade
                 _ball.localPosition = new Vector3(0, PadY + BallR, 0);
                 for (float t = 0f; t < 1f; t += Time.deltaTime / 0.18f) { _ball.localPosition = new Vector3(0, Mathf.Lerp(PadY + BallR, -3f, t), 0); yield return null; }
                 _ball.gameObject.SetActive(false);
-                Sound("cup_plop", 0.8f);
+                Sound("leapfrog_make", "cup_plop", 0.8f);   // puttr-app-2: the game's own sound, the shared one until recorded
                 Ripple(Vector3.zero);
             }
             else if (onPad || onStart)
             {
                 _ball.localPosition = land + Vector3.up * ((onPad ? PadY : 0.4f) + BallR);
-                Sound("ball_land", 0.5f);
+                Sound("leapfrog_lilypad", "ball_land", 0.5f);   // puttr-app-2: the game's own sound, the shared one until recorded
                 Ripple(onPad ? Vector3.zero : land);
             }
             else

@@ -1,5 +1,5 @@
 // What shows while the arcade builds: the Puttr mark, still, in Puttr green on the arcade's ink,
-// with a thin bar under it that fills as each part is built, then a fade into the home screen.
+// with a thin bar under it that fills as each part is really built (no glint, no creep), then, once full, a fade into the home screen.
 //
 // The mark does not turn. The build runs on the main thread a piece a frame, and some pieces take
 // a good part of a second, so a turning mark stuttered; a bar that steps forward reads as progress.
@@ -138,10 +138,12 @@ namespace PuttrArcade
             void Update()
             {
                 if (_size.x != Screen.width || _size.y != Screen.height) Layout();
-                // The bar eases toward what is built, so a step forward glides rather than jumps.
-                _shown = Mathf.MoveTowards(_shown, Done, Time.unscaledDeltaTime * 2.5f);
+                // The bar shows only what is really done (Matt: no glint, no fake creep), easing toward it so a step
+                // glides rather than jumps. Once everything is done it runs to the end, and only then fades into the app.
+                _shown = Mathf.MoveTowards(_shown, Done, Time.unscaledDeltaTime * 3f);
                 Fill.anchorMax = new Vector2(_shown, 1f);
                 if (_fadeFrom < 0f) return;
+                if (_shown < 1f) { _fadeFrom = Time.unscaledTime; return; }   // the fade starts when the bar is full
                 float t = (Time.unscaledTime - _fadeFrom) / Fade;
                 Group.alpha = 1f - Mathf.SmoothStep(0f, 1f, t);
                 if (t >= 1f) Destroy(gameObject);

@@ -18,6 +18,12 @@ namespace PuttrArcade
 {
     public sealed class LabScene : RuleScene
     {
+        /// <summary>puttr-app-2: set by the app where its tee sign would sit over the readout (a tablet or TV). The trace
+        /// is drawn shorter and the app puts the tee and distance in the space under it, TeeSlot (Matt, 2026-11-21).</summary>
+        public static bool TeeUnderTrace;
+        /// <summary>Where the tee and distance go under the trace, in fractions of the picture (0,0 top left).</summary>
+        public static Rect TeeSlot { get; private set; }
+
         const float CupR = 3.4f, BallR = 1.6f, Tilt = 16f, Fov = 40f, ViewH = 200f;
         const int Segs = 10;
         static readonly Color EntryCol = new Color(0.48f, 0.86f, 0.3f), SpeedCol = new Color(0.38f, 0.62f, 1f), Amber = new Color(1f, 0.76f, 0.25f);
@@ -91,7 +97,7 @@ namespace PuttrArcade
         static Vector2 ViewShape()
         {
             bool upright = Screen.height > Screen.width;
-            return new Vector2(Screen.width * (upright ? 1f : FreePuttMode.WideShare), Screen.height * (upright ? FreePuttMode.UprightShare : 1f));
+            return new Vector2(Screen.width * (upright ? 1f : FreePuttMode.MiddleShare), Screen.height * (upright ? FreePuttMode.UprightShare : 1f));
         }
 
         // A point on the screen from viewport fractions (0,0 top left).
@@ -99,6 +105,15 @@ namespace PuttrArcade
         Rect R(float fx0, float fy0, float fx1, float fy1) => new Rect((fx0 - 0.5f) * _W, (0.5f - fy1) * _H, (fx1 - fx0) * _W, (fy1 - fy0) * _H);
         // Text sizes are given in a phone's points.
         float Pt(float px) => px * _u;
+
+        bool _stackWide;
+        float _bugAt;
+        /// <summary>Upright: how far down the picture the app's score bug ends (a fraction of the picture's height).</summary>
+        static float BugBottom()
+        {
+            if (Screen.height <= Screen.width) return 0f;
+            return Hud.StatusBelowPx > 1f ? Hud.StatusBelowPx / Mathf.Max(1f, Screen.height * FreePuttMode.UprightShare) : 0.37f;
+        }
 
         void Layout()
         {
@@ -112,20 +127,27 @@ namespace PuttrArcade
             _D = _H * 0.5f / tanV;
             _u = ViewH / 485f * Mathf.Min(1f, aspect / 0.887f);
 
+            _stackWide = upright;
+            _bugAt = BugBottom();
             if (upright)
             {
-                // Clear of the score bug (top 24%) and the tee sign (left 44%, down to 53%).
-                _stack = R(0.465f, 0.255f, 0.70f, 0.535f);
-                _heroes = R(0.035f, 0.555f, 0.70f, 0.75f);
-                _props = R(0.035f, 0.765f, 0.70f, 0.98f);
-                _plot = R(0.72f, 0.255f, 0.97f, 0.98f);
+                // Everything starts under the app's score bug, wherever it ends (it hid the result and the putt's total
+                // on a phone). Result, putt total and best putt run across in one row, where the tee sign used to
+                // leave the left empty (Matt, 2026-11-23).
+                float top = Mathf.Clamp(_bugAt + 0.02f, 0.2f, 0.45f), rest = 0.98f - top;
+                _stack = R(0.035f, top, 0.70f, top + rest * 0.2f);
+                _heroes = R(0.035f, top + rest * 0.225f, 0.70f, top + rest * 0.585f);
+                _props = R(0.035f, top + rest * 0.61f, 0.70f, 0.98f);
+                _plot = R(0.72f, top, 0.97f, TeeUnderTrace ? 0.885f : 0.98f);
+                TeeSlot = Rect.MinMaxRect(0.72f, 0.895f, 0.97f, 0.98f);
             }
             else
             {
                 _stack = R(0.275f, 0.14f, 0.565f, 0.305f);
                 _heroes = R(0.035f, 0.325f, 0.565f, 0.585f);
                 _props = R(0.035f, 0.605f, 0.565f, 0.955f);
-                _plot = R(0.59f, 0.14f, 0.965f, 0.955f);
+                _plot = R(0.59f, 0.14f, 0.965f, TeeUnderTrace ? 0.835f : 0.955f);
+                TeeSlot = Rect.MinMaxRect(0.59f, 0.85f, 0.965f, 0.955f);
             }
 
             if (_frame != null) Make.Kill(_frame.gameObject);
@@ -175,6 +197,26 @@ namespace PuttrArcade
         {
             Rect r = _stack;
             Panel(r, Edge, PanelFill);
+            if (_stackWide)
+            {
+                // One row: result, putt total, best putt, each a label over its value.
+                float gap = Mathf.Min(r.width * 0.035f, Pt(10f)), colW = (r.width - gap) / 3f;
+                float labW = Mathf.Min(Pt(8.5f), r.height * 0.2f), bigW = Mathf.Min(Pt(19f), r.height * 0.4f);
+                string[] names = { "RESULT", "PUTT TOTAL", "BEST PUTT" };
+                var v = new TextMesh[3];
+                var o = new TextMesh[3];
+                for (int i = 0; i < 3; i++)
+                {
+                    float left = r.xMin + gap + colW * i;
+                    if (i > 0) Line(_frame, new Color(Edge.r, Edge.g, Edge.b, 0.2f), Pt(0.8f), 0.1f, new Vector2(left - gap * 0.5f, r.yMin + r.height * 0.16f), new Vector2(left - gap * 0.5f, r.yMax - r.height * 0.16f));
+                    Text(names[i], new Vector2(left, r.yMax - r.height * 0.27f), labW, Label, TextAnchor.MiddleLeft);
+                    v[i] = Text("", new Vector2(left, r.yMax - r.height * 0.66f), bigW, Value, TextAnchor.MiddleLeft, 128);
+                    if (i > 0) o[i] = Text("/20", new Vector2(left, r.yMax - r.height * 0.66f - bigW * 0.27f), bigW * 0.45f, Dim, TextAnchor.MiddleLeft);
+                }
+                _resultText = v[0]; _totalText = v[1]; _avgText = v[2]; _totalOf = o[1]; _avgOf = o[2];
+                _stackGap = bigW * 0.15f;
+                return;
+            }
             float pad = Mathf.Min(r.width * 0.09f, Pt(10f)), rowH = (r.height - pad * 0.6f) / 3f;
             float lab = Mathf.Min(Pt(8.5f), rowH * 0.2f), big = Mathf.Min(Pt(20f), rowH * 0.42f);
             string[] labels = { "RESULT", "PUTT TOTAL", "BEST PUTT" };   // the average is in the score bar
@@ -653,7 +695,7 @@ namespace PuttrArcade
         public override void Tick()
         {
             if (_frame == null) return;
-            if (ViewShape() != _shape) { Layout(); if (_status == "READY") Spot(); }
+            if (ViewShape() != _shape || Mathf.Abs(BugBottom() - _bugAt) > 0.01f) { Layout(); if (_status == "READY") Spot(); }
             // The status light breathes.
             float a = 0.55f + 0.45f * Mathf.Sin(Time.time * (_status == "READY" ? 3f : 9f));
             _statusDot.localScale = Vector3.one * _dot * (0.75f + 0.25f * a);
@@ -721,6 +763,7 @@ namespace PuttrArcade
             float pace = paces.Length > 0 ? paces[paces.Length - 1] : 0f, entry = entries.Length > 0 ? entries[entries.Length - 1] : 0f;
             _heroLive = true;
             Sound("lab_beep", 0.35f, 1.25f);
+            Sound("lab_scan", 0.45f);   // puttr-app-2: the readings sweep in (silent until recorded)
             const float each = 0.14f, stagger = 0.06f, count = 0.7f;
             for (float t = 0f; t < count; t += Time.deltaTime)
             {

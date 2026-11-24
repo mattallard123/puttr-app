@@ -1,0 +1,277 @@
+/* The Profile tab (ProfileScreen.cs, ProfileVisuals.cs): one scrolling page, the Player card at the top (a
+   column of its own on the left when .wide), built to docs/design-guidelines.md ("Broadcast"): flat, solid
+   colours from its table, type 44/28/20/15/13/11, spacing 4/8/12/16/24/32, radius 4. The shared pieces
+   (title, caps, num, strip, btn, icon-sq, sec) are styled at the end of App.uss; this sheet lays things out.
+   Added to the screen's own root, so it only reaches this screen (and the pages that load it: Pages.cs,
+   GameExtras.cs). */
+
+.pf { flex-grow: 1; }
+.pf-main { flex-grow: 1; }
+.pf-side { display: none; flex-grow: 0; flex-shrink: 0; border-right-width: 1px; border-right-color: rgb(38, 42, 46); }
+.pf-wide { flex-direction: row-reverse; }
+
+/* ── The head: header, then the Player card ── */
+.pf-head { padding-bottom: 4px; }
+.pf-top { }
+.pf-top-member { height: 56px; }
+.pf-sk-hero { padding: 16px 16px 0 16px; }
+.pf-sk-words { margin-left: 16px; }
+
+.pf-hero { padding: 16px 16px 0 16px; }
+.pf-id { flex-direction: row; align-items: center; }
+.pf-face-wrap { width: 80px; height: 80px; margin-right: 16px; flex-shrink: 0; }
+.pf .pf-face { margin: 0; border-width: 0; }
+.pf .pf-face-member { border-width: 2px; border-color: rgb(122, 212, 70); }
+.pf .pf-face .avatar-letter { font-size: 28px; }
+/* The edit pencil on the photo's corner: a 28 point square in a 44 point tap area. */
+.pf-edit-hit { position: absolute; right: -12px; bottom: -12px; width: 44px; height: 44px; align-items: center; justify-content: center; }
+.pf-edit { width: 28px; height: 28px; border-radius: 4px; background-color: rgb(34, 38, 42); border-width: 2px; border-color: rgb(10, 12, 13); align-items: center; justify-content: center; }
+.pf-edit-hit:active .pf-edit { background-color: rgb(48, 53, 58); }
+.pf-id-words { min-width: 0; }
+.pf-id-line { margin-top: 4px; white-space: normal; }
+.pf-bio { font-size: 13px; color: rgb(196, 201, 205); margin: 16px 0 0 0; padding: 0; white-space: normal; }
+
+.pf-putter { flex-direction: row; align-items: center; margin-top: 16px; padding: 12px 16px; min-height: 44px; }
+.pf-putter-mark { width: 44px; height: 32px; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; }
+.pf-putter-words { flex-grow: 1; flex-shrink: 1; }
+
+/* Actions: no main button on your own profile; Follow is the one on another Player's. */
+.pf .pf-switch { margin-top: 16px; }
+.pf-actions { flex-direction: row; align-items: center; margin-top: 16px; }
+.pf .pf-actions > .btn { flex-grow: 1; flex-basis: 0; margin-top: 0; }
+.pf .pf-action-next { margin-left: 8px; }
+.pf .pf-h2h-btn { margin-top: 16px; }
+.pf-link { font-size: 13px; color: rgb(139, 147, 153); min-height: 44px; margin: 4px 0 0 0; padding: 0; align-self: flex-start; -unity-text-align: middle-left; }
+
+.pf-gap { margin-top: 16px; }
+.pf-gap-12 { margin-top: 12px; }
+
+/* ── Cards and rows ── */
+.pf-card { border-radius: 4px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); overflow: hidden; }
+.pf-card-pad { padding: 16px; }
+.pf-row { flex-direction: row; align-items: center; margin-top: 12px; padding-top: 12px; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.pf-row.pf-first { margin-top: 0; padding-top: 0; border-top-width: 0; }
+.pf-row-icon { margin-right: 12px; flex-shrink: 0; }
+.pf-row-title { font-size: 15px; color: rgb(255, 255, 255); margin: 0; padding: 0; }
+.pf-row-detail { font-size: 13px; color: rgb(139, 147, 153); margin: 4px 0 0 0; padding: 0; white-space: normal; }
+.pf-row-tag { margin-left: 8px; flex-shrink: 0; }
+.pf-row-end { margin-left: 8px; flex-shrink: 0; }
+.pf-wrap { white-space: normal; flex-shrink: 1; }
+.pf-gold { color: rgb(255, 210, 74); margin-left: 8px; flex-shrink: 0; }
+
+/* Progress: a 4 point bar */
+.pf-meter { height: 4px; background-color: rgb(34, 38, 42); margin-top: 12px; overflow: hidden; }
+.pf-meter-fill { height: 100%; background-color: rgb(45, 140, 60); }
+.pf-meter-line { margin-top: 8px; }
+
+/* ── Achievements: flat crests (also AchievementsScreen in Pages.cs, which wraps them in .pf-shelf) ── */
+.pf-shelf { padding-top: 4px; -unity-background-image-tint-color: rgba(0, 0, 0, 0); }
+.pf-crests { }
+.pf-coin-item { width: 96px; align-items: center; padding: 0 4px 12px 4px; }
+.pf-coin-item.pf-first { margin-left: 12px; }
+.pf-coin { width: 56px; height: 56px; border-radius: 4px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); align-items: center; justify-content: center; flex-shrink: 0; }
+.pf-coin-title { font-size: 13px; color: rgb(255, 255, 255); margin: 8px 0 0 0; padding: 0; -unity-text-align: upper-center; white-space: normal; }
+.pf-coin-desc { font-size: 11px; color: rgb(139, 147, 153); margin: 4px 0 0 0; padding: 0; -unity-text-align: upper-center; white-space: normal; }
+.pf-coin-grid { flex-direction: row; flex-wrap: wrap; justify-content: center; padding: 0 4px; }
+.pf-coin-none { padding: 4px 12px 16px 12px; }
+
+/* ── Challenges: a card each ── */
+.pf-challenge { margin-top: 12px; }
+.pf-challenge.pf-first { margin-top: 0; }
+.pf-join { margin-top: 12px; }
+
+/* ── Last 30 days: the score block and the calendar ── */
+.pf-act-head { flex-direction: row; align-items: center; }
+.pf-act-number { margin-right: 16px; }
+.pf-trend { font-size: 13px; margin: 4px 0 0 0; padding: 0; }
+.nc { margin-top: 16px; }
+.nc-head { padding-bottom: 4px; }
+.nc-arrow { font-size: 20px; color: rgb(255, 255, 255); width: 44px; height: 44px; -unity-text-align: middle-center; margin: 0; padding: 0; }
+.nc-month { font-size: 11px; letter-spacing: 1.5px; color: rgb(255, 255, 255); -unity-text-align: middle-center; margin: 0; padding: 0; }
+.nc-names { }
+.nc-name { width: 14.2857%; font-size: 11px; color: rgb(139, 147, 153); -unity-text-align: middle-center; margin: 0 0 4px 0; padding: 0; }
+.nc-grid { }
+.nc-day { position: absolute; font-size: 13px; color: rgb(139, 147, 153); -unity-text-align: middle-center; margin: 0; padding: 0; }
+.nc-day-on { color: rgb(255, 255, 255); }
+.nc-day-shut { color: rgb(48, 53, 58); }
+.nc-picked { font-size: 13px; color: rgb(196, 201, 205); -unity-text-align: middle-center; margin: 8px 0 0 0; padding: 0; min-height: 16px; }
+
+/* ── Putts by month: the line ── */
+.pf-ribbon { height: 200px; margin: 8px; }
+.pf-ribbon-value { position: absolute; font-size: 11px; color: rgb(255, 255, 255); -unity-text-align: middle-center; margin: 0; padding: 0; }
+.pf-ribbon-month { position: absolute; font-size: 11px; color: rgb(139, 147, 153); -unity-text-align: middle-center; margin: 0; padding: 0; }
+
+/* ── Make % by distance: lanes ── */
+.pf-legend { flex-wrap: wrap; margin-bottom: 8px; }
+.pf-key { margin-right: 16px; margin-bottom: 4px; }
+.pf-key-dot { width: 8px; height: 8px; border-radius: 4px; margin-right: 8px; }
+.pf-lane { flex-direction: row; align-items: center; padding: 8px 0; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.pf-lane-first { border-top-width: 0; }
+.pf-feet { width: 44px; align-items: center; margin-right: 12px; }
+.pf-bars { }
+.pf-bar { align-items: center; margin: 4px 0 0 0; }
+.pf-bar-value { width: 44px; font-size: 11px; color: rgb(139, 147, 153); margin: 0; padding: 0; }
+.pf-bar-you .pf-bar-value { color: rgb(255, 255, 255); }
+.pf-bar-track { height: 8px; background-color: rgb(34, 38, 42); overflow: hidden; }
+.pf-bar-fill { height: 100%; transition-property: width; transition-duration: 1.1s; transition-timing-function: ease-out-cubic; }
+
+/* ── Make % by break: three tees ── */
+.pf-breaks { flex-direction: row; }
+.pf-break { flex-grow: 1; flex-basis: 0; margin-left: 16px; }
+.pf-break.pf-first { margin-left: 0; }
+.pf-break-name { margin-top: 4px; }
+
+/* ── Two columns (.pf-two) ── */
+.pf-cols { flex-direction: row; align-items: flex-start; }
+.pf-col { flex-grow: 1; flex-basis: 0; }
+
+/* Avatars on Profile pages: a photo is aspect-filled (scale-and-crop), never stretched. */
+.avatar { -unity-background-scale-mode: scale-and-crop; }
+
+/* ── One putt (PuttCards in GameExtras.cs: GameView's All putts, Versus putt by putt, the detail) ── */
+.pc-list { }
+.pc-card { flex-direction: row; background-color: rgb(21, 24, 27); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+.pc-card:active { background-color: rgb(34, 38, 42); }
+.pc-edge { width: 3px; flex-shrink: 0; }
+.pc-grade { width: 56px; flex-shrink: 0; align-items: center; justify-content: center; padding: 14px 0; }
+.pc-grade-t { font-size: 24px; margin: 0; padding: 0; -unity-text-align: middle-center; }
+.pc-score-t { font-size: 10px; margin: 1px 0 0 0; padding: 0; -unity-text-align: middle-center; }
+.pc-main { flex-grow: 1; flex-shrink: 1; min-width: 0; padding: 12px 14px 12px 0; }
+.pc-head { flex-direction: row; align-items: center; }
+.pc-num { width: 18px; height: 18px; border-radius: 4px; align-items: center; justify-content: center; margin-right: 8px; flex-shrink: 0; }
+.pc-num-t { font-size: 9px; color: rgb(255, 255, 255); margin: 0; padding: 0; -unity-text-align: middle-center; }
+.pc-num-big { width: 22px; height: 22px; border-radius: 4px; margin-right: 10px; }
+.pc-num-big .pc-num-t { font-size: 10px; }
+.pc-dist { font-size: 13px; color: rgb(255, 255, 255); margin: 0; padding: 0; }
+.pc-break { font-size: 13px; color: rgb(139, 147, 153); margin: 0 0 0 6px; padding: 0; }
+.pc-pace { margin-top: 8px; }
+.pc-pace-row { flex-direction: row; align-items: center; margin-bottom: 4px; }
+.pc-pace-l { font-size: 10px; color: rgb(139, 147, 153); margin: 0; padding: 0; }
+.pc-pace-v { font-size: 10px; margin: 0; padding: 0; }
+.pc-bar { height: 4px; border-radius: 2px; background-color: rgb(34, 38, 42); overflow: hidden; }
+.pc-bar-fill { height: 4px; border-radius: 2px; }
+.pc-result { flex-direction: row; align-items: center; margin-top: 6px; }
+.pc-mark { margin-right: 6px; flex-shrink: 0; }
+.pc-dot { width: 6px; height: 6px; border-radius: 3px; }
+.pc-result-t { font-size: 11px; margin: 0; padding: 0; white-space: normal; flex-shrink: 1; }
+.pc-compact { border-radius: 4px; margin-bottom: 0; }
+.pc-compact .pc-edge { width: 2px; }
+.pc-compact .pc-grade { width: 44px; padding: 10px 0; }
+.pc-compact .pc-grade-t { font-size: 19px; }
+.pc-compact .pc-score-t { font-size: 8px; }
+.pc-compact .pc-main { padding: 8px 10px 8px 0; }
+.pc-compact .pc-num { width: 15px; height: 15px; border-radius: 4px; margin-right: 6px; }
+.pc-compact .pc-num-t { font-size: 7px; }
+.pc-compact .pc-dist, .pc-compact .pc-break { font-size: 11px; }
+.pc-compact .pc-break { margin-left: 4px; }
+.pc-compact .pc-pace { margin-top: 5px; }
+.pc-compact .pc-pace-l, .pc-compact .pc-pace-v { font-size: 8px; }
+.pc-compact .pc-bar, .pc-compact .pc-bar-fill { height: 3px; }
+.pc-compact .pc-result { margin-top: 4px; }
+.pc-compact .pc-result-t { font-size: 9px; }
+.pc-compact .pc-dot { width: 5px; height: 5px; }
+.pc-none { align-items: center; justify-content: center; min-height: 72px; }
+.pc-pair-head { margin: 10px 0 6px 0; }
+.pc-pair { flex-direction: row; }
+.pc-side { flex-grow: 1; flex-basis: 0; min-width: 0; }
+.pc-side-left { margin-right: 8px; }
+.pc-side-who { font-size: 9px; letter-spacing: 1px; color: rgb(139, 147, 153); margin: 0 0 4px 2px; padding: 0; }
+
+.pc-modal { max-width: 432px; padding: 16px; }
+.pc-picture { border-radius: 4px; overflow: hidden; }
+.pc-path { width: 100%; height: 200px; }
+.pc-again { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border-radius: 4px; background-color: rgb(34, 38, 42); align-items: center; justify-content: center; }
+.pc-detail-head { flex-direction: row; align-items: center; margin-top: 16px; }
+.pc-detail-title { font-size: 16px; color: rgb(255, 255, 255); margin: 0; padding: 0; white-space: normal; }
+.pc-detail-grade { font-size: 28px; margin: 0 0 0 8px; padding: 0; }
+.pc-tiles { flex-direction: row; margin-top: 12px; }
+.pc-tile { flex-basis: 0; background-color: rgb(34, 38, 42); border-radius: 4px; padding: 10px; }
+.pc-tile-left { margin-right: 8px; }
+.pc-tile-head { flex-direction: row; align-items: center; margin-bottom: 6px; }
+.pc-tile-l { font-size: 10px; color: rgb(139, 147, 153); margin: 0 0 0 4px; padding: 0; }
+.pc-tile-v { font-size: 15px; margin: 0; padding: 0; white-space: normal; }
+.pc-tile-sub { font-size: 10px; color: rgb(139, 147, 153); margin: 1px 0 0 0; padding: 0; white-space: normal; }
+
+/* ── The activity feed (FeedScreen in Pages.cs): one card per game played ── */
+.fd-grid { flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
+.fd-card { width: 100%; padding: 0; margin-bottom: 12px; overflow: hidden; }
+.wide .fd-card { width: 49%; }
+.fd-card:active { background-color: rgb(34, 38, 42); }
+.fd-head { flex-direction: row; align-items: center; padding: 14px; }
+.fd-head .avatar { width: 36px; height: 36px; border-radius: 4px; margin-right: 10px; }
+.fd-who { flex-shrink: 1; min-width: 0; }
+.fd-name { font-size: 13px; color: rgb(255, 255, 255); margin: 0; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fd-ago { font-size: 11px; color: rgb(139, 147, 153); margin: 2px 0 0 0; padding: 0; }
+.fd-score { background-color: rgb(21, 24, 27); border-radius: 4px; padding: 6px 12px; margin-left: 8px; flex-shrink: 0; }
+.fd-score-t { font-size: 16px; color: rgb(122, 212, 70); margin: 0; padding: 0; }
+.fd-game { border-top-width: 1px; border-top-color: rgb(38, 42, 46); padding: 12px 14px 8px 14px; }
+.fd-title-row { flex-direction: row; align-items: center; }
+.fd-title { font-size: 14px; color: rgb(255, 255, 255); margin: 0 8px 0 0; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 1; }
+.fd-desc { font-size: 12px; color: rgb(139, 147, 153); margin: 3px 0 0 0; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fd-meter { flex-direction: row; flex-shrink: 0; }
+.fd-meter-bar { width: 12px; height: 3px; border-radius: 2px; margin-left: 3px; }
+.fd-stats { flex-direction: row; align-items: center; padding: 10px 14px; background-color: rgb(21, 24, 27); }
+.fd-players { flex-direction: row; align-items: center; }
+.fd-players-t { font-size: 11px; color: rgb(139, 147, 153); margin: 0 0 0 4px; padding: 0; }
+.fd-stat { flex-grow: 1; flex-basis: 0; align-items: center; }
+.fd-stat-v { font-size: 14px; color: rgb(255, 255, 255); margin: 0; padding: 0; -unity-text-align: middle-center; }
+.fd-stat-l { font-size: 10px; color: rgb(139, 147, 153); margin: 2px 0 0 0; padding: 0; -unity-text-align: middle-center; }
+.fd-play { width: 32px; height: 32px; border-radius: 4px; background-color: rgb(45, 140, 60); align-items: center; justify-content: center; margin-left: 8px; flex-shrink: 0; }
+.fd-play:active { background-color: rgb(36, 112, 48); }
+.fd-find { flex-direction: row; align-items: center; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); padding: 12px 14px; margin-bottom: 12px; }
+.fd-find-t { font-size: 13px; color: rgb(255, 255, 255); margin: 0 0 0 10px; padding: 0; }
+.fd-empty { align-items: center; padding: 80px 40px 0 40px; }
+.fd-empty-icon { width: 64px; height: 64px; border-radius: 4px; background-color: rgb(21, 24, 27); align-items: center; justify-content: center; margin-bottom: 16px; }
+.fd-empty-title { font-size: 16px; color: rgb(255, 255, 255); margin: 0 0 4px 0; padding: 0; }
+.fd-empty-text { font-size: 13px; color: rgb(139, 147, 153); -unity-text-align: upper-center; white-space: normal; margin: 0; padding: 0; }
+.fd-empty-btn { padding: 12px 24px; margin-top: 20px; }
+
+/* ── Edit profile: persona, gender, birthday ── */
+.ep-personas { margin-top: 4px; }
+.ep-persona { flex-direction: row; align-items: center; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 12px; margin-top: 8px; }
+.ep-persona-on { background-color: rgb(21, 24, 27); border-color: rgb(45, 140, 60); }
+.ep-persona-icon { width: 40px; height: 40px; border-radius: 4px; background-color: rgb(34, 38, 42); align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; }
+.ep-persona-title { font-size: 14px; color: rgb(255, 255, 255); margin: 0; padding: 0; }
+.ep-persona-desc { font-size: 12px; color: rgb(139, 147, 153); margin: 2px 0 0 0; padding: 0; white-space: normal; }
+.ep-birth { margin: 8px -3px 0 -3px; }
+.ep-birth .stepper { flex-basis: 0; margin-left: 3px; margin-right: 3px; }
+.ep-birth .stepper-button { width: 30px; height: 40px; }
+.ep-birth .stepper-value { font-size: 14px; }
+
+/* ── Another Player: Head to head, Beat it, the Putt Quality Score ── */
+.h2h-row { flex-direction: row; align-items: center; }
+.h2h-names { margin-top: 12px; margin-bottom: 8px; }
+.h2h-line { padding: 8px 0; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.h2h-label { flex-grow: 1; flex-basis: 0; font-size: 11px; color: rgb(139, 147, 153); -unity-text-align: middle-center; margin: 0; padding: 0; white-space: normal; }
+.h2h-mid { flex-grow: 1.2; flex-basis: 0; }
+.h2h-cell { flex-grow: 1; flex-basis: 0; font-size: 20px; -unity-font-style: bold-and-italic; -unity-text-align: middle-center; margin: 0; padding: 0; }
+
+.pf-best { align-items: center; }
+.pf-best-line { flex-direction: row; flex-wrap: wrap; align-items: center; }
+.pf-best-lead { margin-left: 8px; }
+.pf-beat { background-color: rgb(34, 38, 42); border-radius: 4px; min-height: 44px; padding: 0 16px; margin-left: 12px; flex-shrink: 0; align-items: center; justify-content: center; }
+.pf-beat:active { background-color: rgb(48, 53, 58); }
+.pf-beat-t { font-size: 11px; letter-spacing: 1.5px; color: rgb(255, 255, 255); margin: 0; padding: 0; }
+
+.pqs { }
+.pqs-note { font-size: 13px; color: rgb(139, 147, 153); -unity-text-align: middle-center; white-space: normal; margin: 8px 0; padding: 0; }
+.pqs-hero-row { flex-direction: row; align-items: flex-end; justify-content: center; margin-top: 4px; }
+.pqs-big { font-size: 44px; -unity-font-style: bold-and-italic; margin: 0; padding: 0; }
+.pqs-delta { font-size: 13px; margin: 0 0 8px 8px; padding: 0; }
+.pqs-label { font-size: 11px; color: rgb(139, 147, 153); -unity-text-align: middle-center; margin: 4px 0 0 0; padding: 0; white-space: normal; }
+.pqs-tiles { flex-direction: row; margin-top: 16px; margin-bottom: 16px; }
+.pqs-tile { flex-basis: 0; background-color: rgb(34, 38, 42); border-radius: 4px; padding: 12px 0; align-items: center; }
+.pqs-tile-left { margin-right: 12px; }
+.pqs-tile-head { flex-direction: row; align-items: center; margin-bottom: 4px; }
+.pqs-dot { width: 8px; height: 8px; border-radius: 4px; margin-right: 8px; }
+.pqs-tile-l { font-size: 11px; color: rgb(139, 147, 153); margin: 0; padding: 0; }
+.pqs-tile-v { font-size: 20px; -unity-font-style: bold-and-italic; margin: 0; padding: 0; }
+/* The range chips: the one chip style (clear with a line; on is white with black text). */
+.pqs-ranges { flex-direction: row; justify-content: center; margin-bottom: 12px; }
+.pqs-range { height: 32px; padding: 0 12px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); margin: 0 4px; align-items: center; justify-content: center; }
+.pqs-range-on { background-color: rgb(255, 255, 255); border-color: rgb(255, 255, 255); }
+.pqs-range-t { font-size: 11px; letter-spacing: 1.2px; color: rgb(255, 255, 255); margin: 0; padding: 0; }
+.pqs-range-on .pqs-range-t { color: rgb(0, 0, 0); }
+.pqs-chart { height: 220px; }
+.pqs-caption { font-size: 11px; color: rgb(139, 147, 153); -unity-text-align: middle-center; margin: 8px 0 0 0; padding: 0; }
+.pqs-tip { position: absolute; width: 150px; font-size: 13px; color: rgb(255, 255, 255); background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 8px 12px; margin: 0; white-space: normal; }

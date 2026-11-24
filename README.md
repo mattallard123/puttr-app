@@ -1,36 +1,41 @@
-# Puttr 2: the Unity spike (Phase 0)
+# Puttr 2
 
-A throwaway test of whether the Puttr app could be rebuilt in Unity on the Puttr Arcade engine. It exists to answer the Phase 0 gate in `puttr-app/docs/unity-refactor-plan.md`, and nothing else depends on it. Delete the folder and nothing is lost.
+The Puttr app rebuilt in Unity. It started on 2026-11-16 as a Phase 0 spike (`puttr-app/docs/unity-refactor-plan.md`) and is now the app itself: it ships as an update to Puttr, `co.puttr.ios` and `co.puttr.android`, version 3.0.0 build 300. Installing it on a device **replaces** the Puttr app there; reinstall Puttr from the App Store to go back. The plain Mac build (`Builds/Puttr.app`) keeps `co.puttr.app2`; the Mac App Store build (`Builds/macOS`) is `co.puttr.ios`, the same App Store app.
 
-It touches neither `puttr-app` nor `puttr-unity`. The arcade code in `Assets/PuttrArcade` and `Assets/Puttr` is a copy, taken on 2026-11-16 from puttr-unity commit `cfb0232` plus its uncommitted changes. **Since 2026-11-16 the iPhone build uses the real bundle id, `co.puttr.ios` (Android `co.puttr.android`), version 3.0.0 build 300.** Matt's call: the Unity app is meant to ship as an update to Puttr, so it is built as one. Installing it on a device REPLACES the Puttr app there; reinstall Puttr from the App Store to go back. The Mac build keeps `co.puttr.app2`.
+The React Native app (`puttr-app`) is the reference for screens, rules and API calls, and stays live until this one ships. Neither `puttr-app` nor `puttr-unity` is changed by this project.
 
 ## What is in it
 
-| Piece | Where | State |
-| --- | --- | --- |
-| App shell: four tabs, safe areas, phone-wide column on tablets and desktop | `Assets/PuttrApp/Scripts/App.cs`, UI Toolkit | Built |
-| Sign-in with email and password, typed on the device keyboard | `SignInScreen.cs`, `Auth.cs` | Built; a sign-in worked on Matt's iPhone 2026-11-16 |
-| Continue with Apple, Continue with Google (iPhone) | `SocialSignIn.cs`, `Assets/Plugins/iOS/PuttrSignIn.m` | Built, not yet tried on a phone. Signs existing Players in; a first-time sign-up does not create the profile row yet |
-| Sign-in by a code the Puttr app approves (Android, desktop) | `SignInScreen.cs` (`/tv/session`) | Built, not yet tried |
-| Navigation: screens pushed over a tab, with Back | `App.Push` / `App.Pop` | Built |
-| Game page (your best, leaderboard) and results after a round | `GameScreens.cs` | Built, checked with made-up data |
-| Home from the live API: greeting, streak, Jump back in, You might like, Following feed with photos | `HomeScreen.cs` | Built, checked with made-up data only |
-| Play tab: On Fire plus the live trending list | `OtherScreens.cs` | Built |
-| One game, On Fire, played from the app and saved to the account | `GameBridge.cs` | Launch checked; saving not yet tried against the API |
-| Measuring: start times, API timings, frame rate, idle redraw switch | `Perf.cs`, Profile tab | Built |
-| Improve tab | | A note saying it is not in the spike |
+- **The app**: `Assets/PuttrApp/Scripts`, UI Toolkit, one style sheet (`Assets/PuttrApp/Resources/PuttrApp/App.uss`). Four tabs (Home, Play, Improve, Profile), screens pushed over a tab with Back, phone-wide column on tablets and desktop. Screen-by-screen parity with puttr-app is tracked in [docs/screen-parity.md](docs/screen-parity.md); the visual direction is `puttr-app/docs/puttr2-sports-ui`.
+- **The 3D engine**: `Assets/PuttrArcade` and `Assets/Puttr`, copied from puttr-unity (Puttr Arcade) on 2026-11-16 at commit `cfb0232` and since rebuilt for the app. Every game, the game page backdrops and the Puttr connection run on it.
+- **Puttr connection**: Bluetooth and WiFi to the Puttr console, putts read through the arcade (`AppPutt.cs` turns a putt into the app's verdict: made, line, pace, entry).
 
-The arcade copy has seven small edits, all marked `puttr-app-2`: hooks in `Arcade.cs` so the shell hears game start, each putt, game over and "All games", and the dealt distance and tee exposed on `GameMode`. When embedded it sends nothing to the Arcade analytics.
+### Games
+
+The Play tab has top tabs Local, Online, Tracks, Quests, Tournaments and League, and filters All, Solo, Together, Line, Pace and Sensor. Every game sets up on one page (`GameScreens.cs`: Players, options, How to play, the game's own scene turning slowly behind it) and every finish goes back to the tab it came from.
+
+| Kind | Where | Notes |
+| --- | --- | --- |
+| Rule games (Center Cut, HORSE, Cricket, Match Play, Metal, Tour Juice, Speed Demon and the rest of the RN putt-list games) | `RuleGames*.cs`, `RuleCatalog`, scenes in `Assets/PuttrArcade/Scripts/Scenes` | Rules ported from puttr-app; each has its own 3D scene (`RuleSceneList`) |
+| Arcade games (On Fire, Archery, Cricket, Derby, Major League, Lanes, Balloon Pop, Beer Pong, Putt Star) | `Assets/PuttrArcade/Scripts/*Mode.cs`, `GameBridge.ArcadeGames` | API games mapped by gameType |
+| Arcade extras (Dead Weight, Send It, Slingshot, Spot Kick, Tug of War, Turf War, Under the Cup, Windmill) | `ArcadeExtras.cs` | games rows 1611 to 1618, **published 0** so the RN app never lists them (`puttr-api/migrations/add_arcade_games.sql`) |
+| Vertex sensor games (Pendulum, Pure, Carbon Copy, Square Up, Stretch, Lockdown, The Yips) | `SensorGames.cs`, `SensorRuleGames.cs`, `SensorStroke.cs` | rows 1601 to 1607, published 0 |
+| Practice (Free putt), Compare, Custom games | Improve tab, Practice | Compare compares putters, not Players |
+| Tracks (18-hole courses) | `Tracks*.cs` | |
+
+Up to four Players: you, other profiles on the account, guests, or Puttr (a bot whose putts are simulated and never saved). The Puttr catalog's Standard and Streak games stay in the legacy app (`GameBridge.Retired`); a Player's own custom games still play.
+
+Card art is `Assets/PuttrApp/Resources/PuttrApp/Cards/<GAMETYPE>.png`, 960 x 576 (imported with no mipmaps, no compression, no power-of-two scaling, so they stay sharp): run the Mac build with `-puttrShots <dir>` (writes `card_<Name>.png` per arcade game and `card_rule_<TYPE>.png` per rule scene), then `python3 docs/cards/make_cards.py <dir>`.
+
+Sounds are `Assets/PuttrArcade/Resources/PuttrArcade/Audio/Library/<slot>_N.wav`: drop Soundly exports in `SoundDrop/<slot>/` and run `python3 Tools/import-sounds.py`.
 
 ### What gets saved, and what does not
 
-A round is saved with the same three calls the app makes (`/game/new/`, `/game/savePutt/`, `/game/over/`), and they go to the live API. So:
+**Nothing a game plays is written to production yet.** `Api.Held` answers every play-record write (`/game/new`, `/game/savePutt`, `/game/over`, `/club/leaderboard/add`, tournament, league, versus, multiplayer, Tracks and Lab saves) locally with a stand-in id, so games, putts and leaderboards stay off the live API. Reads, sign-in and profile changes are real. `-app2WritePlay` turns saving on; use it only with a test account.
 
-- Putts from a real Puttr, over Bluetooth or WiFi, are saved to the signed-in Player.
-- Keyboard test putts, the demo, and the starter kit simulator on this machine are played but never sent. `-app2SaveTestPutts` overrides that; use it only with a test account.
-- A round is opened on its first real putt, so opening a game and leaving writes nothing. Leaving part way marks the round abandoned.
+When saving is on, a round is opened on its first real putt (opening a game and leaving writes nothing), only the signed-in Player's putts are saved, and keyboard test putts, the demo and Puttr's putts are never sent.
 
-## Run it
+## Build and run
 
 Unity 6000.6.8f1. Close the editor on this project before using the script.
 
@@ -44,6 +49,7 @@ Tools/app-build.sh test
 
 ```bash
 Tools/app-build.sh mac
+Tools/app-build.sh macstore   # Builds/macOS: the Mac App Store Xcode project (scheme PuttrCo, co.puttr.ios, sandboxed, Intel + Apple silicon)
 ```
 
 ```bash
@@ -51,58 +57,93 @@ Tools/app-build.sh ios
 ```
 
 ```bash
+Tools/app-build.sh iossim
+```
+
+```bash
 Tools/app-build.sh android
 ```
 
-- **iPhone:** open `Builds/iOS/Unity-iPhone.xcodeproj`, pick the phone, Run. Signing is automatic with the Puttr team. The scheme is named "PuttrCo" so it is not mistaken for the Arcade in Xcode.
-- **iPhone Simulator:** a phone build will not install on a simulator. Run `Tools/app-build.sh iossim` and open `Builds/iOS-Simulator/Unity-iPhone.xcodeproj` instead. The simulator has no Bluetooth, and its timings say nothing about a phone.
-- **Android:** install `Builds/Android/Puttr2.apk`. The arcade has no Android Bluetooth, so on Android a Puttr is found over WiFi only.
+- **iPhone:** open `Builds/iOS/Unity-iPhone.xcodeproj`, pick the phone, Run. Signing is automatic with the Puttr team. The scheme is "PuttrCo". `Builds/iOS` is device-only.
+- **iPhone/iPad Simulator:** build `iossim`, then from `Builds/iOS-Simulator`:
+
+  ```bash
+  xcodebuild -project Unity-iPhone.xcodeproj -scheme PuttrCo -sdk iphonesimulator -configuration Release -derivedDataPath build CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=YES build
+  ```
+
+  Install with `xcrun simctl install <udid> build/Build/Products/Release-iphonesimulator/*.app`, then `xcrun simctl terminate` and `launch <udid> co.puttr.ios` (a running copy keeps the old build). The simulator has no Bluetooth.
+- **Android:** install `Builds/Android/Puttr2.apk`. Every build looks for a Puttr over Bluetooth first, then on the WiFi (`PuttrConsole.WifiTurn`).
 - **In the editor:** open `Assets/Scenes/PuttrApp.unity` and press Play.
+- **Tests:** `Tools/app-build.sh test` runs the edit-mode tests in `Assets/PuttrApp/Tests`.
 
-The app's own screens are portrait. A game follows the device: portrait or landscape, whichever way the Player holds or props it, and it is never turned for them. The arcade's game screens were drawn for a wide screen, so in portrait their text is small until each game gets a portrait layout (Phase 2 work).
+The app's own screens are portrait. A game follows the device, portrait or landscape.
 
-### Looking at the screens with no account
+### TV
 
-`-app2Fixture` fills every screen with made-up data and sends nothing anywhere.
+On a TV the app runs in TV mode (`Tv.cs`): QR sign-in, the Play tab driven by the remote, leaderboards to look at. A TV looks for the Puttr over Bluetooth first, then on the wifi, as a phone does (the Samsung web build has no Bluetooth, so the wifi only). Build settings are in `Assets/PuttrApp/Editor/TvBuilds.cs`, run-time remote setup in `TvPlatform.cs`. The TV icons and banner are `Assets/PuttrApp/TvIcons`, made from the app icon's art by `python3 docs/appicon/tv.py`.
+
+```bash
+Tools/app-build.sh tvos
+```
+
+```bash
+Tools/app-build.sh tvossim
+```
+
+```bash
+Tools/app-build.sh webtv
+```
+
+- **Apple TV:** `Builds/tvOS/Unity-iPhone.xcodeproj`, scheme "PuttrCo", bundle id `co.puttr.ios` (tvOS is on the iPhone app's App Store record), the iPhone's version and build. No Firebase SDK (sign-in is Firebase's REST API), no Apple or Google sign-in, camera, push, payments or photo picker: the iPhone plugins and post-processors are iOS only.
+- **Apple TV Simulator:** build `tvossim`, then from `Builds/tvOS-Simulator`:
+
+  ```bash
+  xcodebuild -project Unity-iPhone.xcodeproj -scheme PuttrCo -sdk appletvsimulator -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+  ```
+
+  Install `build/Build/Products/Release-appletvsimulator/Puttr.app` on an "Apple TV 4K" simulator with `xcrun simctl install`, then `SIMCTL_CHILD_PUTTR_ARGS="-app2Fixture" xcrun simctl launch <udid> co.puttr.ios`. The Mac keyboard's arrows, Enter and Escape stand in for the remote.
+- **Google TV / Android TV:** the Android build is also the TV app: leanback launcher, the banner, nothing a TV lacks required. `adb install Builds/Android/Puttr.apk` on the TV.
+- **Samsung TV (Tizen):** `webtv` builds the WebGL app into `Builds/WebTV` (page: `Assets/WebGLTemplates/PuttrTV`, nothing compressed) and, with the Tizen Studio CLI and the `PuttrTV` signing profile (puttr-tv `docs/samsung.md`), packages `Builds/WebTV-Tizen/Puttr.wgt` with `Tools/tizen/config.xml`. Check it in a browser at 1920x1080: `python3 -m http.server 8093` in `Builds/WebTV`, then `http://localhost:8093/?app2Fixture` (query parameters are the command line: `?app2Tab=play` is `-app2Tab play`; `?puttrHost=192.168.1.40:3000` points it at a Puttr). The Puttr socket uses the browser's WebSocket there (`Assets/Plugins/WebGL/PuttrSocket.jslib`).
+
+### Looking at screens without an account
 
 | Argument | Does |
 | --- | --- |
 | `-app2Fixture` | Made-up data, no network, no saving |
+| `-app2Tablet` | Lay out as a tablet |
 | `-app2Tab home\|play\|improve\|profile` | Start on that tab |
+| `-app2Open <route>` | Open a screen: `play:TYPE` (a game's page), `start:TYPE` (straight into it), `vs:TYPE` (you vs Puttr), `beerpong`, `tracks`, `league`, `connect` and more in `App.cs` |
 | `-app2SignIn` | Start on the sign-in screen |
 | `-app2Shot file.png` | Screenshot after 5 seconds, then quit (`-app2ShotAt 12` to wait longer) |
-| `-app2Click x,y,seconds` | A click at that point, through the Input System |
+| `-app2Click x,y,seconds` | A click at that point |
+| `-puttrDemo` | Play demo putts in a game |
+| `-puttrShots <dir>` | Write the game card renders |
 | `-puttrNoBluetooth` | Needed when a script starts the Mac build and a game is opened |
+| `-app2Kit <file.json>` | Dress the 3D worlds in a brand kit from a file (Event/Venue host branding), nothing saved or sent. `-app2Open host`, `brandkit` and `brandgames` open the host screens |
+| `-app2WritePlay` | Send play records to the live API (test accounts only) |
 
-On a simulator, pass them in the environment: `SIMCTL_CHILD_PUTTR_ARGS="-app2Fixture"`.
+Example: `open -W -n Builds/Puttr.app --args -screen-width 430 -screen-height 932 -screen-fullscreen 0 -app2Fixture -puttrNoBluetooth -app2Open play:CENTERCUT -app2ShotAt 6 -app2Shot out.png`. On a simulator, pass them in the environment: `SIMCTL_CHILD_PUTTR_ARGS="-app2Fixture"`.
 
-## The gate: what to measure
+## Keys
 
-Do these on the oldest iPhone you still want to support and a mid-range Android, with a real account. The numbers come from the overlay (Profile > Show or hide the numbers) and from `perf.log` in the app's documents folder, which also records every API call, the frame rate while something is moving, and save failures. Copy it off a connected phone with `xcrun devicectl device copy from --device <udid> --domain-type appDataContainer --domain-identifier co.puttr.ios --source Documents/perf.log --destination perf.log`. The thresholds are proposals; agree them before measuring, not after.
+The client keys are kept out of git (GitHub flagged them on the first commit). A fresh clone needs three local files before it builds:
 
-| # | Question | How | Proposed pass |
-| --- | --- | --- | --- |
-| 1 | Cold start | Kill the app, launch, read "first screen laid out" and "home data on screen". Add the time before Unity starts from Xcode's launch log. Compare with puttr-app on the same phone | Within 1 second of puttr-app |
-| 2 | Download size | Archive in Xcode and read the App Store size estimate; APK size | Under twice puttr-app |
-| 3 | Scrolling | Scroll the Following feed top to bottom, first time (photos loading) and second | 55 or more drawn a second, worst frame under 34 ms |
-| 4 | Typing | Sign in by typing. Try autofill, paste, the password manager, moving the cursor | Nothing a Player would notice |
-| 5 | Idle battery and heat | Leave Home on screen 15 minutes with low power on, then off. Compare battery drop and warmth with puttr-app | Low power on: no worse than puttr-app |
-| 6 | A saved round | Play On Fire on a real Puttr, then check the round and its putts in the app and the streak on Home | Round, putts and score all present |
-| 7 | Game after shell | Time from tapping Play to the first putt prompt, first time and second | Under 6 seconds first, under 1 after |
-| 8 | Memory | Read memory on Home, in the game, and back on Home | No growth after three rounds |
-
-Not answerable here, and still open for the full plan: whether a signed-in session survives an upgrade from the React Native app (that needs the real Firebase SDK under the real bundle id), Apple and Google sign-in buttons, payments, video and push.
+| File | From |
+| --- | --- |
+| `Assets/PuttrApp/Scripts/Keys.cs` | `Tools/keys/Keys.example.cs`: the Firebase web key, the Google Places key, the Giphy key (puttr-app's, for the tournament cover search) and the IAPHUB client key (puttr-app `Navigator.js`, for the Puttr Club plans) |
+| `Assets/Plugins/Android/PuttrApp.androidlib/res/values/firebase.xml` | `Tools/keys/firebase.example.xml`: the Android Firebase key (puttr-app `google-services.json`) |
+| `Assets/PuttrApp/Editor/Firebase/GoogleService-Info.plist` | puttr-app's iOS `GoogleService-Info.plist` |
 
 ## Firebase
 
-On iPhone, sign-in runs through the native Firebase Auth SDK, version 10.29.0, the same one puttr-app ships (`Assets/Plugins/iOS/PuttrFirebase.m`, `FirebaseNative.cs`). It is added to the Xcode project as a Swift package by `Assets/PuttrApp/Editor/IosFirebase.cs`, with no CocoaPods, and `GoogleService-Info.plist` is copied from `Assets/PuttrApp/Editor/Firebase/`. Because it is the same SDK under the same bundle id, a Player who updates from puttr-app should be found in the Keychain and still be signed in: `perf.log` says "found a signed-in Player in the Keychain" when that happens. The first Xcode build downloads the package, which takes a few minutes.
+On iPhone, sign-in runs through the native Firebase Auth SDK 10.29.0, the same one puttr-app ships (`Assets/Plugins/iOS/PuttrFirebase.m`, `FirebaseNative.cs`), added as a Swift package by `Assets/PuttrApp/Editor/IosFirebase.cs` with `GoogleService-Info.plist` from `Assets/PuttrApp/Editor/Firebase/`. Same SDK, same bundle id, so a Player updating from puttr-app should still be signed in (`perf.log` says "found a signed-in Player in the Keychain"). Apple and Google sign-in are in `SocialSignIn.cs` and `Assets/Plugins/iOS/PuttrSignIn.m`. The editor, Mac build and Android use Firebase's REST API (`Auth.cs`). On the Mac, Apple and Google sign-in come from `Assets/Plugins/macOS/PuttrSignIn.bundle` (source and `build.sh` in `Assets/PuttrApp/Native~`); Sign in with Apple shows only in the Mac App Store build (`co.puttr.ios`), which carries its entitlement.
 
-The editor, the Mac build and Android still use Firebase's REST API (`Auth.cs`). Push notifications are not wired up yet.
+## Measuring
 
-## Known gaps
+The Profile tab can show a numbers overlay, and `perf.log` in the app's documents folder records start times, every API call, frame rate while something moves, and save failures. Copy it off a phone with `xcrun devicectl device copy from --device <udid> --domain-type appDataContainer --domain-identifier co.puttr.ios --source Documents/perf.log --destination perf.log`.
 
-- **Session storage off iPhone.** On Android and desktop the refresh token is in PlayerPrefs. iPhone uses the Firebase SDK and the Keychain.
-- **Pictures** decode on the main thread and are never evicted.
-- **The first game takes about 4 seconds to open** because all 14 arcade games are built, as the Arcade does at launch. A real app would build one.
-- **Colours are solid, not see-through.** The project renders in linear colour for the arcade, and the app's translucent whites blend far too bright that way. The style sheet uses the same values worked out over the background. A real app needs a decision on this.
-- **Mouse drag does not scroll** on desktop; use the wheel. Touch scrolls.
+## Before it ships
+
+- Turn on saving (remove the `Api.Held` gate) once the app is ready to write real games.
+- Decide when the unpublished games (sensor, arcade extras) get `published = 1`: only once the RN app is retired or can play them.
+- Push notifications, payments and video still need checking on devices; see [docs/screen-parity.md](docs/screen-parity.md) for the screens still to build.

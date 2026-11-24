@@ -28,6 +28,8 @@ namespace PuttrArcade
         public override int PuttTee => _tee;
         public override string Blurb => "Hole it from where the screen says.\nEvery make feeds the fire.\nOne miss and it is out.";
         public override GameAudio.Scene Sound => GameAudio.Scene.Fire;
+        // puttr-app-2: the fire dies down as the game ends (the arcade's game-over until it is recorded).
+        public override string EndSlot => "onfire_burnout";
         public override int Score(int player) => _score;
         public override string ScoreWord(int n) => n == 1 ? "foot" : "feet";
         public override string ScoreUnit => "ft";
@@ -72,8 +74,12 @@ namespace PuttrArcade
             if (_fromGroup == null || (!force && _stacked == Portrait)) return;
             _stacked = Portrait;
             const float side = 122f;
-            _fromGroup.localPosition = _stacked ? new Vector3(side, 194f, 0f) : Vector3.zero;
-            _runGroup.localPosition = _stacked ? new Vector3(-side, 95f, 0f) : Vector3.zero;
+            // Upright, where to putt from is the HUD's tee chip (three dots and the distance): written in the scene it
+            // took the top third of the screen. The run moves up into its place, clear of the score over the fire.
+            _fromGroup.localPosition = Vector3.zero;
+            _fromGroup.gameObject.SetActive(!_stacked);
+            _runGroup.localPosition = _stacked ? new Vector3(-side, 150f, 0f) : Vector3.zero;
+            TeeChip();
             // Upright, a unit of the scene is under two points on a phone: the captions are drawn
             // at 6 units (about 11 points) or they cannot be read. The three tee names would run
             // into each other at that size, so the line under them says which tee instead.
@@ -82,6 +88,8 @@ namespace PuttrArcade
             foreach (TextMesh name in _teeText) if (name != null) name.gameObject.SetActive(!_stacked);
             if (_teeCaption != null) _teeCaption.transform.localPosition = new Vector3(-side, _stacked ? 27f : 19f, 0f);
         }
+
+        void TeeChip() { if (Arcade != null && Arcade.Hud != null) Arcade.Hud.SetTeeSign(_stacked && _feet > 0 ? _feet : 0, _tee); }
 
         const float UprightCaption = 6f;
         struct Caption { public TextMesh Text; public Vector3 Scale; public float Height; }
@@ -203,8 +211,8 @@ namespace PuttrArcade
                 Hoop("Tee dot", _fromGroup, at, 0f, 1.6f, Make.Glow(new Color(1f, 1f, 1f, 0.2f), false));
                 var on = new GameObject("Tee on");
                 on.transform.SetParent(_fromGroup, false);
-                Hoop("Fill", on.transform, at, 0f, 6.2f, Make.Glow(new Color(0.176f, 0.549f, 0.235f, 0.45f), false));
-                Hoop("Edge", on.transform, at, 6.1f, 6.9f, Make.Glow(Make.Bright, false));
+                Hoop("Fill", on.transform, at, 0f, 6.2f, Make.Glow(new Color(1f, 1f, 1f, 0.12f), false));
+                Hoop("Edge", on.transform, at, 6.1f, 6.9f, Make.Glow(Color.white, false));
                 Hoop("Dot", on.transform, at + Vector3.back * 0.2f, 0f, 1.8f, Make.Glow(Color.white, false));
                 _teeOn[i] = on;
                 _teeText[i] = Words(_fromGroup, TeeNames[i].ToUpperInvariant(), at + Vector3.down * 11f, 2.2f, quiet);
@@ -357,8 +365,8 @@ namespace PuttrArcade
                 ShowPutt(putt, "+" + _feet + " ft", Make.Bright);
                 hud.Banner("+" + _feet + " FT", _streak == 1 ? "The fire is lit" : _streak + " in a row", Make.Bright, 1.8f);
                 Arcade.Audio.Whoosh();
-                Arcade.Audio.Spare();
-                if (_streak % 5 == 0) { Arcade.Audio.Coin(); Arcade.Audio.Say("english_streak_" + (1 + _rng.Next(7))); }
+                if (!Arcade.Audio.TryLibrary("onfire_ignite", 0.7f, 1f + Random.Range(-0.04f, 0.04f))) Arcade.Audio.Spare();   // puttr-app-2: its own flare, the shared sting until recorded
+                if (_streak % 5 == 0) { if (!Arcade.Audio.TryLibrary("onfire_streak", 0.9f)) Arcade.Audio.Coin(); Arcade.Audio.Say("english_streak_" + (1 + _rng.Next(7))); }
                 else if (_rng.Next(3) == 0) Arcade.Audio.Say("english_made_" + (1 + _rng.Next(8)));
                 _embers.Emit(40 + _streak * 12);
                 Arcade.Shake(0.25f);
@@ -414,6 +422,7 @@ namespace PuttrArcade
                 _teeText[i].color = on ? Make.Bright : new Color(1f, 1f, 1f, 0.35f);
             }
             _teeCaption.text = TeeNames[_tee - 1].ToUpperInvariant() + " TEE";
+            TeeChip();
         }
 
         // ── The fire ────────────────────────────────────────────────────────

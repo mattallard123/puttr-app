@@ -49,14 +49,86 @@ namespace PuttrArcade
         /// it sets Made, the entry and the miss side on the putt, and says false for a putt the app's games ignore.</summary>
         public static System.Func<PuttResult, int, int, bool> AppJudge;
         public bool IsReady => _ready;
+        bool[] _built;
+
+        /// <summary>puttr-app-2: builds a game the first time it is shown (inside the app games are built on demand).</summary>
+        void Ensure(int index)
+        {
+            if (_built == null || index < 0 || index >= _games.Length) return;
+            if (_built[index] && _games[index].Branded && _brandAt != null && _brandAt[index] != Brand.Version) Unbuild(index);
+            if (_built[index]) return;
+            _built[index] = true;
+            if (_brandAt == null) _brandAt = new int[_games.Length];
+            _brandAt[index] = Brand.Version;
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            _games[index].Build();
+            Debug.Log("Puttr 2 perf: built " + _games[index].Name + " in " + clock.ElapsedMilliseconds + " ms");   // the set's own name: one set carries many games
+        }
+
+        int[] _brandAt;
+
+        /// <summary>The brand changed since this game's set was built (Brand.cs): take the set down and start the
+        /// game afresh, so the next Ensure builds it with the new logos. Never the game being played: it keeps the
+        /// brand it started with until it is next shown.</summary>
+        void Unbuild(int index)
+        {
+            GameMode old = _games[index];
+            if (old == _game || old == _backdropMode) return;
+            for (int i = old.Root.childCount - 1; i >= 0; i--)
+            {
+                GameObject child = old.Root.GetChild(i).gameObject;
+                child.SetActive(false);   // gone from this frame's picture: Destroy waits for the frame's end
+                Destroy(child);
+            }
+            var fresh = (GameMode)System.Activator.CreateInstance(old.GetType());
+            fresh.Arcade = this;
+            fresh.Root = old.Root;
+            _games[index] = fresh;
+            _built[index] = false;
+        }
+
+        /// <summary>Only this game's set is on (built first if it has not been).</summary>
+        void ShowOnly(int index)
+        {
+            Ensure(index);
+            for (int k = 0; k < _games.Length; k++) _games[k].Root.gameObject.SetActive(k == index);
+        }
+
         public int IndexOf(string gameName) { for (int i = 0; _games != null && i < _games.Length; i++) if (_games[i].Name == gameName) return i; return -1; }
-        public void Launch(int index) { players = Mathf.Clamp(EmbeddedPlayers, 1, 4); ApplyEmbeddedNames(); StartGame(Mathf.Clamp(index, 0, _games.Length - 1)); }
+        public void Launch(int index) { players = Mathf.Clamp(EmbeddedPlayers, 1, 4); ApplyEmbeddedNames(); ApplyEmbeddedLevels(); StartGame(Mathf.Clamp(index, 0, _games.Length - 1)); }
         /// <summary>puttr-app-2: how many play the embedded game, and their names (the app's player picker).</summary>
         public static int EmbeddedPlayers = 1;
+        /// <summary>puttr-app-2: Puttr was added as the other Player on the game page, for a game that is also played alone
+        /// (Dead Weight): the one Player passed plays Puttr, not a round of their own.</summary>
+        public static bool EmbeddedPuttr;
         /// <summary>puttr-app-2: which Player putts first (the game page's choice). Games that take turns read it.</summary>
         public static int EmbeddedFirst;
         public static string[] EmbeddedNames;
         void ApplyEmbeddedNames() { for (int i = 0; i < Names.Length; i++) Names[i] = EmbeddedNames != null && i < EmbeddedNames.Length ? EmbeddedNames[i] : ""; }
+        /// <summary>puttr-app-2: the name the Player knows the game by, when it is not the mode's own: the catalogue row's
+        /// title (a renamed row, "Ten Pin"). Null: the mode's DisplayName. The app sets it for every game it starts.</summary>
+        public static string EmbeddedTitle;
+        /// <summary>puttr-app-2: Easy, Medium or Hard for each seat (the game page's Difficulty). The arcade's own setup
+        /// screen, which is where a level is chosen in Puttr Arcade, never shows inside the app. Null: every seat on Medium.</summary>
+        public static int[] EmbeddedLevels;
+        /// <summary>puttr-app-2: a line for the pause card from the app: the difficulty being played ("Difficulty: Hard").</summary>
+        public static string EmbeddedPauseNote;
+        /// <summary>puttr-app-2: the distances a game that deals its own putts and has no levels (Balloon Pop, Beer Pong)
+        /// deals from, { from, to } in feet. Null: 3 to 11, as the game was written.</summary>
+        public static int[] EmbeddedFeet;
+        /// <summary>puttr-app-2: a distance for such a game, from the app's range or 3 to 11 ft.</summary>
+        public static int DealFeet(System.Random dice)
+        {
+            int from = 3, to = 11;
+            if (EmbeddedFeet != null && EmbeddedFeet.Length == 2) { from = Mathf.Clamp(EmbeddedFeet[0], 3, 11); to = Mathf.Clamp(EmbeddedFeet[1], from, 11); }
+            return dice.Next(from, to + 1);
+        }
+        bool _levelFlag;
+        void ApplyEmbeddedLevels() { if (_levelFlag) return; for (int i = 0; i < _levels.Length; i++) _levels[i] = EmbeddedLevels != null && EmbeddedLevels.Length > 0 ? Mathf.Clamp(EmbeddedLevels[Mathf.Min(i, EmbeddedLevels.Length - 1)], Easy, Hard) : Medium; }
+        /// <summary>puttr-app-2: the game's name as the Player sees it, everywhere one is shown or logged. Inside the app
+        /// that is the catalogue title the app passed, else the mode's DisplayName (a rule game's or a round's label):
+        /// never the name of the mode that happens to carry the game ("Rule Stage", "Free Putt").</summary>
+        string Shown(GameMode game) => Embedded && !string.IsNullOrEmpty(EmbeddedTitle) ? EmbeddedTitle : Embedded ? game.DisplayName : game.Name;
         /// <summary>The app is done with this game: back to the app (through AppExit).</summary>
         public void Leave() => ShowHome();
 
@@ -97,6 +169,13 @@ namespace PuttrArcade
         float _slowUntil, _ringFlash, _shake, _idleSince;
         Color _ringColor = Make.Bright;
         bool _flying, _offEnd;
+
+        static Arcade _current;
+        /// <summary>puttr-app-2: the running arcade's sounds, for the app's own panels (Oh-One's hoppers). Null before it starts.</summary>
+        public static GameAudio CurrentAudio => _current != null ? _current.Audio : null;
+        /// <summary>puttr-app-2: something is moving in the game (a putt playing out, between putts, a game over).
+        /// While a game only waits for the next putt the app runs it at 30 frames a second to save battery.</summary>
+        public static bool Busy => _current != null && (_current._flying || _current._phase == Phase.Rolling || _current._phase == Phase.Between || _current._phase == Phase.GameOver || Time.timeScale < 0.99f);
         bool _typingHost, _swallowText;
         string _hostText = "";
         string _shotDir;
@@ -108,6 +187,11 @@ namespace PuttrArcade
 
         AimView _aim;
 
+        /// <summary>puttr-app-2: the arcade in play, for the app's own panels (a rule game's ideal putt card).</summary>
+        public static Arcade Current => _current;
+        public bool AimShowing => _aim != null && _aim.Showing && Hud != null && Hud.AimCardPx.width > 0f;
+        public void HideAim() { if (_aim != null) _aim.Hide(); if (Hud != null) Hud.SetAimCard(null, ""); }
+
         /// <summary>The ideal putt, drawn on the ramp and shown top right.</summary>
         public void ShowAim(int feet, int tee, float targetIn, float goalIn)
         {
@@ -117,6 +201,14 @@ namespace PuttrArcade
             float angle = AimView.EntryDegrees(feet, tee, targetIn);
             int deg = Mathf.RoundToInt(Mathf.Abs(angle));
             AimCard(where + "   \u00B7   " + (deg == 0 ? "straight in" : deg + "\u00B0 from the " + (angle > 0f ? "left" : "right")), -1f);
+        }
+
+        /// <summary>puttr-app-2: the 3D ideal putt with an entry window on the rim (Beer Pong's required entry).</summary>
+        public void ShowEntryWindow(int feet, int tee, float windowDeg, float? entryDeg, bool made, string words, string caption)
+        {
+            if (_aim == null || Hud == null) return;
+            _aim.ShowWindow(feet, tee, windowDeg, entryDeg, made);
+            Hud.SetAimCard(_aim.Texture, words, caption: caption);
         }
 
         // The card's words, with the pace bar for games where pace is the point.
@@ -159,6 +251,7 @@ namespace PuttrArcade
             UnityEngine.tvOS.Remote.reportAbsoluteDpadValues = false; // a swipe, not where the thumb rests
 #endif
             _pipeline = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+            SettlePipeline();
             World.ApplyPhysicsSettings();
             // The Puttr mark and its progress bar are up from the first frame; the arcade builds behind them a piece a frame.
             // Boot runs on the loader, not here: ShowHome stops this component's coroutines.
@@ -174,6 +267,7 @@ namespace PuttrArcade
 
         IEnumerator Boot()
         {
+            _current = this;
             yield return null; // let the spinner draw before the heavy work starts
             var clock = System.Diagnostics.Stopwatch.StartNew();
             World = new World();
@@ -185,17 +279,25 @@ namespace PuttrArcade
             if (hud != null) hud.enabled = false;
             Loader.Progress(0.1f);
             yield return null;
+            // The ball's textures, here behind the loader: they used to be painted when the first putt was hit.
+            Make.Ball(out _, out _);
+            yield return null;
 
             _games = new GameMode[]
             {
                 new OnFireMode(), new MajorLeagueMode(), new CricketMode(), new ArcheryMode(), new DerbyMode(), new TugOfWarMode(), new TurfWarMode(), new WindmillMode(),
                 new LanesMode(), new DeadWeightMode(), new UnderTheCupMode(),
-                new SpotKickMode(), new SlingshotMode(), new SendItMode(),
+                new SpotKickMode(), new SlingshotMode(), new SendItMode(), new PuttBallMode(),
                 new BalloonPopMode(), new PuttStarMode(), new BeerPongMode(), new RuleStageMode(), // puttr-app-2: rebuilt for the app
                 new FreePuttMode(), // puttr-app-2: last, so the arcade's own order is as it was
             };
             int stages = 0, built = 0;
             for (int i = 0; i < Names.Length; i++) Names[i] = PlayerPrefs.GetString("puttr.arcade.name." + i, "");
+            // puttr-app-2: inside the app only the game being played is built (on first use, Ensure): building all
+            // nineteen up front took ~240 MB and seconds the Player never needed. The arcade on its own, and the card
+            // pass (-puttrShots), still build them all.
+            bool lazy = Embedded && SceneCards == null;
+            _built = new bool[_games.Length];
             foreach (GameMode game in _games)
             {
                 game.Arcade = this;
@@ -203,10 +305,10 @@ namespace PuttrArcade
                 // A stage game is built well away from the console, on its own.
                 game.Root.SetParent(game.OwnStage ? World.Root : World.Hall, false);
                 if (game.OwnStage) game.Root.localPosition = new Vector3(6000f * ++stages, 0f, 0f);
-                game.Build();
+                if (!lazy) { game.Build(); _built[built] = true; if (_brandAt == null) _brandAt = new int[_games.Length]; _brandAt[built] = Brand.Version; }
                 game.Root.gameObject.SetActive(false);
                 Loader.Progress(0.1f + 0.8f * ++built / _games.Length);
-                yield return null;
+                if (!lazy) yield return null;
             }
             Hud.BuildHome(_games);
             Hud.BuildSetup();
@@ -242,13 +344,13 @@ namespace PuttrArcade
                 if (args[i] == "-puttrDemoPutts" && int.TryParse(next, out int k)) _demoPutts = Mathf.Max(1, k);
                 if (args[i] == "-puttrEndAfter" && int.TryParse(next, out int e)) _endAfter = Mathf.Max(0, e);
                 // -puttrLevel 0|1|2: every Player on Easy, Medium or Hard (demos and tests).
-                if (args[i] == "-puttrLevel" && int.TryParse(next, out int lv)) for (int j = 0; j < _levels.Length; j++) _levels[j] = Mathf.Clamp(lv, 0, 2);
+                if (args[i] == "-puttrLevel" && int.TryParse(next, out int lv)) { _levelFlag = true; for (int j = 0; j < _levels.Length; j++) _levels[j] = Mathf.Clamp(lv, 0, 2); }   // puttr-app-2: the flag wins over the app's choice
             }
             if (_shotDir != null) System.IO.Directory.CreateDirectory(_shotDir);
 
             if (Keyboard.current != null) Keyboard.current.onTextInput += OnTextInput;
             // What gets played is logged, but not the demo's made-up putts or work in the editor.
-            if (Embedded) { int at = IndexOf(EmbeddedGameName); if (at >= 0) { _startGame = at; players = Mathf.Clamp(EmbeddedPlayers, 1, 4); ApplyEmbeddedNames(); } }
+            if (Embedded) { int at = IndexOf(EmbeddedGameName); if (at >= 0) { _startGame = at; players = Mathf.Clamp(EmbeddedPlayers, 1, 4); ApplyEmbeddedNames(); } ApplyEmbeddedLevels(); }
             if (!Embedded && !demo && !Application.isEditor && System.Array.IndexOf(args, "-puttrNoLog") < 0)
             {
                 ArcadeLog.Begin(gameObject);
@@ -271,6 +373,107 @@ namespace PuttrArcade
         const float ConsoleShadows = 140f;
         UniversalRenderPipelineAsset _pipeline;
 
+        // ── How much the device can draw ─────────────────────────────────────
+
+        /// <summary>puttr-app-2: set by the app before the arcade is made, for a device it knows to be weak (an Android TV or stick).</summary>
+        public static bool ForceLight;
+
+        /// <summary>A weak device: a TV browser (WebGL), under about 3 GB of memory, or one the app names (ForceLight).</summary>
+        public static bool Light =>
+            ForceLight || Plain || Application.platform == RuntimePlatform.WebGLPlayer
+            || (Application.isMobilePlatform && SystemInfo.systemMemorySize > 0 && SystemInfo.systemMemorySize < 2800);
+
+        static bool? _plain;
+
+        /// <summary>An Apple chip older than the A11 (an A9 or A10: the iPads and iPhones of 2015-17, the first Apple TV
+        /// 4K), whatever its memory. Games are drawn there with no HDR and no post-processing at all: the full picture
+        /// came out white on an A9X iPad Pro. Also a weak device (Light).</summary>
+        // Not an Apple TV: the first Apple TV 4K (A10X) drew the full picture correctly (Matt, 2026-11-20).
+        public static bool Plain => _plain ??= (Application.platform != RuntimePlatform.tvOS
+                && (OldChip(SystemInfo.graphicsDeviceName) || OldModel(SystemInfo.deviceModel)))
+            || System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-app2Plain") >= 0;   // to see it on a Mac
+
+        /// <summary>Whether a graphics device name ("Apple A9X GPU", "Apple A10 GPU") is an Apple A-series chip before
+        /// the A11. An M-series chip, or any other maker's, is not.</summary>
+        public static bool OldChip(string gpu)
+        {
+            const string mark = "Apple A";
+            int at = gpu == null ? -1 : gpu.IndexOf(mark, System.StringComparison.OrdinalIgnoreCase);
+            if (at < 0) return false;
+            int from = at + mark.Length, to = from;
+            while (to < gpu.Length && char.IsDigit(gpu[to])) to++;
+            return to > from && int.TryParse(gpu.Substring(from, to - from), out int chip) && chip < 11;
+        }
+
+        /// <summary>Whether Apple's own name for a device ("iPad6,7") is one with a chip before the A11. The second way
+        /// of telling, beside the chip's name: three builds made for the A9X iPad Pro changed nothing on it, and the
+        /// chip's name as that iPad reports it has never been seen.</summary>
+        public static bool OldModel(string model)
+        {
+            if (string.IsNullOrEmpty(model)) return false;
+            int comma = model.IndexOf(',');
+            if (comma < 0) return false;
+            int digits = comma;
+            while (digits > 0 && char.IsDigit(model[digits - 1])) digits--;
+            if (digits == comma || !int.TryParse(model.Substring(digits, comma - digits), out int major)) return false;
+            switch (model.Substring(0, digits))
+            {
+                case "iPhone": return major <= 9;     // to the iPhone 7 (A10); the iPhone 8 and X are 10
+                case "iPad": return major <= 7;       // to the 2017 Pros and the 7th generation iPad (A10); the A12 iPads are 8 and 11
+                case "iPod": return major <= 9;       // the last iPod touch (A10)
+                default: return false;
+            }
+        }
+
+        /// <summary>On an old chip (Plain) the pipeline draws without HDR, for every camera. Called before any 3D
+        /// camera is made (the arcade's, and Tracks' own).</summary>
+        public static void SettlePipeline()
+        {
+            if (!Plain) return;
+            PlainLights.Ensure();   // its lit surfaces get the arcade's own shader and lights: see PlainLights
+            if (GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset pipeline && pipeline.supportsHDR) pipeline.supportsHDR = false;
+        }
+
+        // The 3D picture is drawn at a share of the screen's pixels (the pipeline's render scale, 0.8). On a 4K TV or
+        // a large tablet that share is still far more pixels than the picture needs, each one through every post pass:
+        // the short side is held to 1440 (900 on a weak device). The app's own screens are not drawn through this.
+        void CapRenderSize()
+        {
+            if (_pipeline == null) return;
+            float shortSide = Mathf.Min(Screen.width, Screen.height);
+            if (shortSide <= 0f) return;
+            float cap = (Light ? 900f : 1440f) / shortSide;
+            if (cap < _pipeline.renderScale) _pipeline.renderScale = Mathf.Max(0.4f, cap);
+        }
+
+        // Its own object: the arcade stops its own coroutines whenever a game starts.
+        sealed class Freer : MonoBehaviour { }
+        static Freer _freer;
+        static bool _freeing;
+
+        /// <summary>puttr-app-2: a scene was thrown away: once it is really gone (a frame later), what it alone used
+        /// (its textures, meshes, materials) is freed. Destroying a scene's objects does not free those.</summary>
+        public static void FreeUnused()
+        {
+            if (_freeing) return;
+            if (_freer == null)
+            {
+                var go = new GameObject("Free Unused");
+                DontDestroyOnLoad(go);
+                _freer = go.AddComponent<Freer>();
+            }
+            _freeing = true;
+            _freer.StartCoroutine(FreeSoon());
+        }
+
+        static IEnumerator FreeSoon()
+        {
+            yield return null;
+            yield return null;
+            yield return Resources.UnloadUnusedAssets();
+            _freeing = false;
+        }
+
         void OnDestroy()
         {
             // In the editor a change to the pipeline asset outlives Play: put it back.
@@ -291,8 +494,13 @@ namespace PuttrArcade
             _camera.nearClipPlane = 0.5f;
             _camera.farClipPlane = 9000f;
             UniversalAdditionalCameraData data = _camera.GetUniversalAdditionalCameraData();
-            data.renderPostProcessing = true;
-            data.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+            // A weak device (Light) keeps the grade and the bloom and drops the lens: FXAA, no depth of field, motion
+            // blur or grain. Those are several more full-screen passes a frame. An old chip (Plain) has none of it.
+            data.renderPostProcessing = !Plain;
+            _camera.allowHDR = !Plain;
+            data.antialiasing = Plain ? AntialiasingMode.None
+                : Light ? AntialiasingMode.FastApproximateAntialiasing : AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+            CapRenderSize();
 
             var volume = new GameObject("Post").AddComponent<Volume>();
             volume.transform.SetParent(transform, false);
@@ -319,11 +527,15 @@ namespace PuttrArcade
             _focus.focusDistance.value = 48f;
             _focus.focalLength.value = 200f;
             _focus.aperture.value = 2.4f;
-            MotionBlur blur = profile.Add<MotionBlur>(true);
-            blur.intensity.value = 0.28f;
-            FilmGrain grain = profile.Add<FilmGrain>(true);
-            grain.intensity.value = 0.22f;
-            grain.response.value = 0.8f;
+            _focus.active = !Light;
+            if (!Light)
+            {
+                MotionBlur blur = profile.Add<MotionBlur>(true);
+                blur.intensity.value = 0.28f;
+                FilmGrain grain = profile.Add<FilmGrain>(true);
+                grain.intensity.value = 0.22f;
+                grain.response.value = 0.8f;
+            }
             volume.profile = profile;
 
             _camPos = IdleCameraPosition;
@@ -464,7 +676,7 @@ namespace PuttrArcade
         // for free and a card can never be out of date.
 
         bool _cardsMade;
-        const int CardW = 480, CardH = 288;
+        const int CardW = 960, CardH = 576;   // 2x the card: crisp on an iPad or a TV
 
         void MakeCards()
         {
@@ -477,7 +689,7 @@ namespace PuttrArcade
             for (int i = 0; i < _games.Length; i++)
             {
                 GameMode game = _games[i];
-                for (int k = 0; k < _games.Length; k++) _games[k].Root.gameObject.SetActive(k == i);
+                ShowOnly(i);
                 game.Preview();
                 game.PoseForCard();
                 try { game.Tick(); } catch (System.Exception) { } // lets a game set its fire going before the picture
@@ -511,7 +723,7 @@ namespace PuttrArcade
             int at = System.Array.FindIndex(_games, g => g is RuleStageMode);
             if (at < 0) return;
             var stage = (RuleStageMode)_games[at];
-            for (int k = 0; k < _games.Length; k++) _games[k].Root.gameObject.SetActive(k == at);
+            ShowOnly(at);
             foreach (var card in SceneCards)
             {
                 RuleStageMode.NextScene = card.scene;
@@ -522,7 +734,7 @@ namespace PuttrArcade
                 var picture = new RenderTexture(CardW, CardH, 24) { antiAliasing = 4, name = "Card " + card.type };
                 eye.transform.position = stage.CameraPosition;
                 eye.transform.rotation = Quaternion.LookRotation(stage.CameraLook - stage.CameraPosition, Vector3.up);
-                eye.fieldOfView = stage.CameraFov;
+                eye.fieldOfView = stage.SceneCardLens;
                 eye.targetTexture = picture;
                 var request = new UniversalRenderPipeline.SingleCameraRequest { destination = picture };
                 if (RenderPipeline.SupportsRenderRequest(eye, request)) RenderPipeline.SubmitRenderRequest(eye, request);
@@ -553,7 +765,9 @@ namespace PuttrArcade
         {
             LogLeave();
             StopAllCoroutines();
-            MakeCards();
+            // puttr-app-2: inside the app the arcade's home cards are never seen (the app has its own); making them
+            // would build every game. Only the card pass (-puttrShots) needs them.
+            if (!Embedded || _shotDir != null) MakeCards();
             Time.timeScale = 1f;
             Audio.Hush();
             if (_game != null && _game.OwnStage) { _camPos = IdleCameraPosition; _camLook = IdleCameraLook; }
@@ -586,9 +800,9 @@ namespace PuttrArcade
         {
             _selected = (index + _games.Length) % _games.Length;
             GameMode game = _games[_selected];
-            for (int i = 0; i < _games.Length; i++) _games[i].Root.gameObject.SetActive(i == _selected);
+            ShowOnly(_selected);
             game.Preview();
-            if (Audio != null) { bool moved = _heard != game; _heard = game; Audio.SetScene(game.Sound); if (moved && _phase == Phase.Home) Audio.UiMove(); }
+            if (Audio != null) { bool moved = _heard != game; _heard = game; Audio.SetScene(game.Sound, game.BedSlot, game.SwellSlot, game.RollSlot); /* puttr-app-2: the game's own loops */ if (moved && _phase == Phase.Home) Audio.UiMove(); }
             Hud.SetScoreVisible(false);
             _camPos = game.CameraPosition;
             _camLook = game.CameraLook;
@@ -759,6 +973,8 @@ namespace PuttrArcade
         // Before a game: how it is played, how many Players, and their names.
         void OpenSetup(int index)
         {
+            // puttr-app-2: the app's game page is the setup (Players, names, who goes first); the arcade's own never shows.
+            if (Embedded) return;
             ArcadeLog.Event("game_view", "game", _games[(index + _games.Length) % _games.Length].Name);
             // With a remote the highlight starts on Let's play, so one press plays. Elsewhere it
             // starts on the first name, ready to be typed.
@@ -922,7 +1138,7 @@ namespace PuttrArcade
             string result = !launch.Reached ? "short" : putt.Made ? "made" : putt.MissByInches <= 0.01f ? "lip_out" : putt.MissSide == MissSide.Left ? "miss_left" : putt.MissSide == MissSide.Right ? "miss_right" : "miss";
             // "result" is what the game saw at this level; the true_ fields are the putt as it was.
             PuttResult real = _truePutt ?? putt;
-            ArcadeLog.Event("putt", "game", _game.Name, "players", _logPlayers, "number", _puttsThisGame, "level", LevelNames[Level], "result", result,
+            ArcadeLog.Event("putt", "game", Shown(_game), "players", _logPlayers, "number", _puttsThisGame, "level", LevelNames[Level], "result", result,
                 "speed_fps", real.Launch.SpeedInPerSec / 12f, "line_in", real.Launch.LineAtHoleInches, "miss_in", real.MissByInches, "true_made", real.Made,
                 "entry", putt.Made ? putt.EntryDescription : null);
         }
@@ -942,10 +1158,14 @@ namespace PuttrArcade
             _phase = Phase.Home;
             _selected = index;
             GameMode m = _games[index];
-            for (int i = 0; i < _games.Length; i++) _games[i].Root.gameObject.SetActive(i == index);
+            ShowOnly(index);
             if (m is RuleStageMode stage) stage.Begin(1); else m.Preview();
             Audio.Hush();
             Audio.GameBed(null);
+            // A set behind a page is silent. Without this the last game played was still heard behind every page after
+            // it (On Fire's crackle behind Center Cut's): starting a game sets its own sound again.
+            _heard = null;
+            Audio.SetScene(GameAudio.Scene.Quiet);
             Hud.SetShown(false);
             _backdrop = true;
             _backdropMode = m;
@@ -994,7 +1214,7 @@ namespace PuttrArcade
             Release(_ball);
             _selected = index;
             _game = _games[index];
-            for (int i = 0; i < _games.Length; i++) _games[i].Root.gameObject.SetActive(i == index);
+            ShowOnly(index);
             _flying = false;
             _puttsThisGame = 0;
             _trackLine.positionCount = 0;
@@ -1004,14 +1224,14 @@ namespace PuttrArcade
             Hud.HidePutt();
             _menu = false;
             Hud.SetMenuButton(true);
-            Hud.SetGameName(Hud.Spaced(_game.DisplayName));
+            Hud.SetGameName(Hud.Spaced(Shown(_game)));   // puttr-app-2
             Audio.Hush();
-            Audio.SetScene(_game.Sound);
+            Audio.SetScene(_game.Sound, _game.BedSlot, _game.SwellSlot, _game.RollSlot);   // puttr-app-2: the game's own loops
             Audio.UiStart();
             Hud.SmallBanner = _game.SmallBanner;
             _game.Begin(players);
             AppGameStarted?.Invoke(_game, Mathf.Min(players, _game.MaxPlayers)); // puttr-app-2
-            _logGame = _game.Name;
+            _logGame = Shown(_game);   // puttr-app-2: the game played, not the mode that carried it
             _logPlayers = Mathf.Min(players, _game.MaxPlayers);
             _logSince = Time.unscaledTime;
             var levels = new List<string>();
@@ -1021,7 +1241,7 @@ namespace PuttrArcade
             if (_game.OwnStage || _game.OnMat) { _camPos = _game.CameraPosition; _camLook = _game.CameraLook; }
             else { _camPos = IdleCameraPosition; _camLook = IdleCameraLook; }
             Hud.SetScoreVisible(true);
-            if (!_game.OwnReadout) Hud.Banner(_game.Name.ToUpperInvariant(), _game.Rule, Color.white, 3f);
+            if (!_game.OwnReadout) Hud.Banner(Shown(_game).ToUpperInvariant(), _game.Rule, Color.white, 3f);   // puttr-app-2
             StartCoroutine(NextPutt());
         }
 
@@ -1058,7 +1278,7 @@ namespace PuttrArcade
             _idleSince = Time.unscaledTime;
             _menu = false;
             Hud.SetPrompt("");
-            Audio.GameOver();
+            Audio.GameOver(_game.EndSlot);   // puttr-app-2: the game's own ending
             _game.Final(out string title, out string body);
             if (!demo && AppGameEnded != null) // puttr-app-2
             {
@@ -1139,10 +1359,14 @@ namespace PuttrArcade
         {
             if (_game == null || _phase == Phase.GameOver) return;
             _menu = true;
+            // puttr-app-2: the game's own name (a rule game on Rule Stage said "Rule Stage" here, a round "Free Putt"),
+            // and the difficulty being played, which inside the app is chosen on the game page and shown nowhere else.
+            var notes = new List<string> { "The game is waiting for you.", "Putts are not counted while this is open." };
+            if (Embedded && !string.IsNullOrEmpty(EmbeddedPauseNote)) notes.Insert(0, EmbeddedPauseNote);
             Hud.ShowSummary(new Hud.Summary
             {
-                Icon = _game.Icon, Accent = _game.Accent, Eyebrow = "PAUSED", Headline = _game.Name,
-                Notes = new[] { "The game is waiting for you.", "Putts are not counted while this is open." },
+                Icon = _game.Icon, Accent = _game.Accent, Eyebrow = "PAUSED", Headline = Shown(_game),
+                Notes = notes.ToArray(),
                 Buttons = new[] { "Keep playing", "Start over", Embedded ? "Exit" : "All games" },
             });
         }
@@ -1224,6 +1448,7 @@ namespace PuttrArcade
                 case Phase.Home:
                     // Where the putt went picks the game: left, center or right.
                     // Left or right of the hole browses; the middle plays.
+                    if (Embedded) break; // puttr-app-2: behind the app's game page a putt picks nothing
                     if (!putt.Launch.Reached) break;
                     float line = putt.Launch.LineAtHoleInches;
                     if (line < -1f) Select(_selected - 1);
@@ -1459,7 +1684,7 @@ namespace PuttrArcade
                 if (rang) return;
                 rang = true;
                 Audio.Holed();
-                _ringColor = Make.Bright;
+                _ringColor = Brand.Primary;
                 _ringFlash = 1f;
             };
             CupPhysics.Run run = CupPhysics.Holed(from, measured, launch.HeadingDeg, speed);
@@ -1630,7 +1855,7 @@ namespace PuttrArcade
             _aim?.Tick(Time.unscaledDeltaTime);
             Audio.Tick(Time.unscaledDeltaTime);
             if (_game != null) _game.Tick();
-            else if (_phase == Phase.Home || _phase == Phase.Setup) _games[_selected].Tick();
+            else if ((_phase == Phase.Home || _phase == Phase.Setup) && (_built == null || _built[_selected])) _games[_selected].Tick();
 
             // Slow motion eases in and back out again.
             float targetScale = Time.unscaledTime < _slowUntil ? 0.22f : 1f;
@@ -1660,7 +1885,7 @@ namespace PuttrArcade
             // puttr-app-2: a game with its own upright layout frames itself.
             if (view != null && view.HasPortrait && GameMode.Portrait) return fov;
             const float wide = 16f / 9f;
-            float aspect = _camera.aspect;
+            float aspect = _camera.aspect * _pictureShare;
             if (aspect >= wide) return fov;
             return 2f * Mathf.Atan(Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad) * wide / aspect) * Mathf.Rad2Deg;
         }
@@ -1683,13 +1908,24 @@ namespace PuttrArcade
                         if (p.z > 1f) widest = Mathf.Max(widest, Mathf.Abs(p.x) / p.z);
                     }
             float tanHalfWide = widest / Mathf.Max(0.2f, MatFill);
-            return Mathf.Clamp(2f * Mathf.Atan(tanHalfWide / Mathf.Max(0.2f, _camera.aspect)) * Mathf.Rad2Deg, 10f, 90f);
+            return Mathf.Clamp(2f * Mathf.Atan(tanHalfWide / Mathf.Max(0.2f, _camera.aspect * _pictureShare)) * Mathf.Rad2Deg, 10f, 90f);
         }
+
+        // puttr-app-2: how much of the camera's width the game frames itself in (GameMode.Picture), and whether the lens
+        // is shifted to put that part's middle on the camera's axis.
+        float _pictureShare = 1f;
+        bool _lensShifted;
 
         void LateUpdate()
         {
             if (!_ready) return;
-            if (_backdrop && _backdropMode != null) { OrbitBackdrop(); return; }
+            if (_backdrop && _backdropMode != null)
+            {
+                _pictureShare = 1f;
+                if (_lensShifted) { _lensShifted = false; _camera.ResetProjectionMatrix(); }
+                OrbitBackdrop();
+                return;
+            }
             // Once the ball is through, the camera goes through the console after it.
             // On the home and setup screens the highlighted game is on show.
             bool browsing = _phase == Phase.Home || _phase == Phase.Setup;
@@ -1698,6 +1934,8 @@ namespace PuttrArcade
             // puttr-app-2: a game may be drawn in part of the screen, with the app's panel in the rest.
             Rect port = _game != null ? _game.Viewport : new Rect(0f, 0f, 1f, 1f);
             if (_camera.rect != port) _camera.rect = port;
+            Rect picture = _game != null ? _game.Picture : port;
+            _pictureShare = port.width > 0f ? Mathf.Clamp(picture.width / port.width, 0.1f, 1f) : 1f;
             bool action = stage || (_flying && _game != null);
             Vector3 wantPos = action ? view.CameraPosition : IdleCameraPosition;
             Vector3 wantLook = action ? view.CameraLook : IdleCameraLook;
@@ -1728,6 +1966,18 @@ namespace PuttrArcade
             // Behind the home screen the game sits to the right, clear of the words.
             if (_phase == Phase.Home) _camera.transform.Rotate(0f, -_camera.fieldOfView * 0.3f, 0f, Space.Self);
             _camera.fieldOfView = Mathf.Lerp(_camera.fieldOfView, fixedMat ? MatFov(_camPos, _camLook) : Fitted(action ? view.CameraFov : 38f, action ? view : null), k);
+            // A picture that is not the middle of what is drawn: the lens is shifted, so what the camera looks at sits
+            // in the middle of the picture and the world carries on to the far side of the screen behind the panel.
+            float middle = port.width > 0f ? (picture.center.x - port.xMin) / port.width : 0.5f;
+            if (Mathf.Abs(middle - 0.5f) > 0.001f)
+            {
+                _camera.ResetProjectionMatrix();
+                Matrix4x4 lens = _camera.projectionMatrix;
+                lens[0, 2] = 1f - 2f * middle;
+                _camera.projectionMatrix = lens;
+                _lensShifted = true;
+            }
+            else if (_lensShifted) { _lensShifted = false; _camera.ResetProjectionMatrix(); }
 
             // Focus on the hole while waiting, on the ball while it is on the
             // ramp, and on the game once it is through.
@@ -1740,6 +1990,9 @@ namespace PuttrArcade
             // A stage is far bigger than the console, so its lens is set by
             // distance: sharp out to the action, soft behind it.
             _focus.mode.value = stage ? DepthOfFieldMode.Gaussian : DepthOfFieldMode.Bokeh;
+            // A stage that blurs nothing (its range starts past the far plane: most of them) skips the passes altogether.
+            bool blurs = !Light && (!stage || view.BlurFrom < _camera.farClipPlane);
+            if (_focus.active != blurs) _focus.active = blurs;
             if (stage)
             {
                 _focus.gaussianStart.value = view.BlurFrom;
@@ -1759,6 +2012,8 @@ namespace PuttrArcade
             bool home = _phase == Phase.Home;
             string more = home && Hud.Kind == Hud.Device.Desktop ? "      ·      S for settings" : "";
             if (_phase == Phase.Settings) Hud.SetStatus(null, Make.Bright);
+            // The demo (store captures, -puttrDemo) plays with made-up putts: no console to look for.
+            else if (demo) Hud.SetStatus(null, Make.Bright);
             else if (_console.Online)
             {
                 if (!_console.HoleCalibrated) Hud.SetStatus("Clear the hole and restart your Puttr", Make.Red);
@@ -1959,7 +2214,7 @@ namespace PuttrArcade
         float _navAt = -9f;
         bool _traceMoving;
         int _traceEvents, _traceEventsSaid;
-        const bool TraceNav = true; // true: each step (and the remote's raw stick and dpad) to the log, for Xcode's console
+        const bool TraceNav = false; // true: each step (and the remote's raw stick and dpad) to the log, for Xcode's console
 
         bool NavGate(int source, Vector2Int dir, string what)
         {
@@ -2211,6 +2466,13 @@ namespace PuttrArcade
             if (kb.cKey.wasPressedThisFrame) _console.Inject(PuttrSamples.Synthesize(-0.3f, 17f, 0f, hole, fps), true);
             if (kb.vKey.wasPressedThisFrame) _console.Inject(PuttrSamples.Synthesize(0.75f, 60f, 0.5f, hole, fps), true);
             if (kb.xKey.wasPressedThisFrame) _console.Inject(PuttrSamples.Hand(hole), true);
+        }
+
+        /// <summary>puttr-app-2: a random test putt, as the Space key plays one (-app2AutoPutt: walking the games from a script).</summary>
+        public void TestPutt()
+        {
+            if (_console == null || _phase == Phase.GameOver) return;
+            _console.Inject(RandomPutt(_console.HasHole ? _console.Hole : Hole.Typical, _console.framesPerSecond), true);
         }
 
         // A putt a decent Player might hit: mostly near the middle, at a sensible pace.

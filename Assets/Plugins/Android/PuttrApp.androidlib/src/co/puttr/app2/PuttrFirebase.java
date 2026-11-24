@@ -22,12 +22,17 @@ import com.google.firebase.auth.OAuthProvider;
 import java.lang.reflect.Method;
 
 public final class PuttrFirebase {
-    // puttr-app/android/app/google-services.json (client keys, public by design).
+    // puttr-app/android/app/google-services.json (client ids; the key is read from firebase.xml).
     static final String APP_ID = "1:636312820806:android:23f732b1f9478b19a0fe47";
-    static final String API_KEY = "AIzaSyBKKr38ePqyLbYt0k-A6VADQLcHiylFMZ8";
     static final String PROJECT = "puttr-287402";
 
     static FirebaseAuth auth;
+
+    // The API key comes from res/values/firebase.xml (local only, never committed: Tools/keys/firebase.example.xml).
+    static String apiKey(Context context) {
+        int id = context.getResources().getIdentifier("google_api_key", "string", context.getPackageName());
+        return id != 0 ? context.getString(id) : "";
+    }
 
     static void send(String target, String message) {
         try {
@@ -48,7 +53,7 @@ public final class PuttrFirebase {
         try {
             if (FirebaseApp.getApps(context).isEmpty()) {
                 FirebaseOptions options = new FirebaseOptions.Builder()
-                    .setApplicationId(APP_ID).setApiKey(API_KEY).setProjectId(PROJECT)
+                    .setApplicationId(APP_ID).setApiKey(apiKey(context)).setProjectId(PROJECT)
                     .setGcmSenderId("636312820806").setStorageBucket("puttr-287402.appspot.com")
                     .setDatabaseUrl("https://puttr-287402.firebaseio.com").build();
                 FirebaseApp.initializeApp(context.getApplicationContext(), options);

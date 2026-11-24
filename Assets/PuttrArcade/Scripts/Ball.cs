@@ -75,11 +75,13 @@ namespace PuttrArcade
         /// <summary>A holed putt comes through the cup charged: it glows and hits harder.</summary>
         public void SetCharged(bool charged)
         {
-            Color c = charged ? Make.Bright : new Color(0.8f, 0.88f, 1f);
+            // The trail is the brand's colour: Puttr's green when charged and a cool white otherwise, or the host's colour.
+            Color c = charged || Brand.Active ? Brand.Primary : new Color(0.8f, 0.88f, 1f);
+            _charge.color = Brand.Primary;
             var gradient = new Gradient();
             gradient.SetKeys(
                 new[] { new GradientColorKey(c, 0f), new GradientColorKey(c, 1f) },
-                new[] { new GradientAlphaKey(charged ? 0.6f : 0.16f, 0f), new GradientAlphaKey(0f, 1f) });
+                new[] { new GradientAlphaKey(charged ? 0.6f : Brand.Active ? 0.32f : 0.16f, 0f), new GradientAlphaKey(0f, 1f) });
             Trail.colorGradient = gradient;
             _charge.enabled = charged;
             Body.mass = charged ? 1.5f : 1f;

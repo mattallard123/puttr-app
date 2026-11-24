@@ -57,23 +57,58 @@ namespace PuttrApp
 
         public static string Fmt(double v) => v.ToString(v % 1 == 0 ? "0" : "0.#", CultureInfo.InvariantCulture);
 
-        /// <summary>canVersus: the game's versusEnabled flag when set, else a scored game that is not a streak.</summary>
+        /// <summary>
+        /// A game a Player can challenge another to: any game on the Play tab that ends in a score a Player makes on
+        /// their own, where the higher score wins (the API picks the winner that way). So: not the retired Standard
+        /// and Streak catalogue or a custom game, not Practice or Compare, not a game for two or more only, not a
+        /// sensor game (the other Player may have no sensor), and not one where the lower score wins. (Matt,
+        /// 2026-11-24: "all the games in the play tab that have a final score... remove the legacy games".)
+        /// </summary>
         public static bool Eligible(object game)
         {
-            if (J.Get(game, "versusEnabled") != null) return J.Int(game, "versusEnabled") == 1;
             string type = J.Str(game, "gameType").ToUpperInvariant();
-            return J.Int(game, "hasLeaderboard") == 1 && type != "STREAK" && type != "ARCADESTREAK";
+            if (type == "STANDARD" || type == "STREAK") return false;
+            if (type == FreePuttScreen.GameType || type == "FITTING" || type == "LAB" || type == "ASSESSMENT" || type == "FULLWORKOUT") return false;
+            if (J.Str(game, "gameCat") == "SENSOR") return false;
+            if (J.Str(game, "leaderboardOrder") == "asc") return false;
+            int who = J.Int(game, "multiPlayer");
+            if (who != 0 && who != 3) return false;   // 1 and 2 are for two or more only
+            if (GameBridge.Retired(game) || !GameBridge.Playable(game)) return false;
+            RuleGame rules = RuleCatalog.Make(game);
+            return rules == null || (!rules.LowerIsBetter && rules.MinPlayers <= 1);
+        }
+
+        /// <summary>The games to offer, as the Play tab lists them: the catalogue and the arcade's own, most played first.</summary>
+        public static List<object> Games(List<object> catalogue)
+        {
+            var all = new List<object>(catalogue ?? new List<object>());
+            foreach (object extra in ArcadeExtras.All)
+                if (!all.Exists(g => J.Str(g, "gameType") == J.Str(extra, "gameType"))) all.Add(extra);
+            List<object> games = all.FindAll(Eligible);
+            games.Sort((x, y) => J.Num(y, "last30").CompareTo(J.Num(x, "last30")));
+            return games;
+        }
+
+        /// <summary>Plays a Versus turn: the game's own row is found in the catalogue (a Versus row only names it),
+        /// then it plays as it does from the Play tab, with the turn's score sent when it is over.</summary>
+        public static void Play(App app, string gameId, string versusId, object fallback)
+        {
+            App.Run(Api.Kept("/games/ALL", data =>
+            {
+                var all = new List<object>(J.List(data));
+                all.AddRange(ArcadeExtras.All);
+                object game = all.Find(g => J.Str(g, "id") == gameId) ?? fallback;
+                if (game == null || !GameBridge.Playable(game)) { app.Toast("That game is not in this build yet."); return; }
+                // Under -app2HoldPlay (Api.Held: /versus/) the turn can be played, but its score will not reach the opponent.
+                if (Api.Holds("/versus/")) app.Toast(Api.NotSaved + ": your turn will not be sent.");
+                app.Games.PlayVersus(game, versusId);
+            }, _ => app.Toast("Could not load the game. Check your connection.")));
         }
 
         /// <summary>Opens a row: my turn plays it, anything else shows the result.</summary>
         public static void Open(App app, object row)
         {
-            if (MyTurn(row))
-            {
-                object game = J.Get(row, "game") ?? row;
-                if (!GameBridge.Playable(game) || GameBridge.RuleFor(game) == null) { app.Toast(J.Str(row, "gameTitle", "That game") + " is not in this build yet."); return; }
-                app.Games.PlayCatalog(game, J.Str(row, "id"));
-            }
+            if (MyTurn(row)) Play(app, J.Str(row, "gameId"), J.Str(row, "id"), J.Get(row, "game"));
             else app.Push(new VersusResultsScreen(app, J.Str(row, "id")));
         }
     }
@@ -105,25 +140,26 @@ namespace PuttrApp
         void Draw(List<object> rows)
         {
             _body.Clear();
-            _body.Add(Ui.Box("pad", Ui.Button("Challenge a friend", () => Club.Require(_app, "Versus", () => _app.Push(new VersusPickerScreen(_app))))));
-            if (rows.Count == 0) { _body.Add(Page.Note("No Versus games yet. Challenge a friend to play the same putts and beat your score.")); return; }
+            _body.Add(Ui.Box("pad", Ui.Button("Challenge a Player", () => Club.Require(_app, "Versus", () => _app.Push(new VersusPickerScreen(_app))))));
+            if (rows.Count == 0) { _body.Add(Page.Note("No Versus games yet. Challenge a Player to play the same putts and beat your score.")); return; }
             rows.Sort((a, b) => string.CompareOrdinal(J.Str(b, "createdAt"), J.Str(a, "createdAt")));
             Rivals(rows);
-            (string title, Predicate<object> which)[] sections =
+            // Two blocks of rows. Each row says where it stands (Your turn, Waiting, the result, Expired), so the
+            // headers do not say it again: games still in play (my turn first), then the finished ones.
+            (string title, Predicate<object>[] which)[] sections =
             {
-                ("Your turn", VersusMath.MyTurn),
-                ("Waiting", r => !VersusMath.Done(r) && !VersusMath.MyTurn(r)),
-                ("Completed", r => J.Str(r, "status") == "COMPLETE"),
-                ("Expired", r => J.Str(r, "status") == "EXPIRED"),
+                ("In play", new Predicate<object>[] { VersusMath.MyTurn, r => !VersusMath.Done(r) && !VersusMath.MyTurn(r) }),
+                ("Finished", new Predicate<object>[] { r => J.Str(r, "status") == "COMPLETE", r => J.Str(r, "status") == "EXPIRED" }),
             };
             foreach (var s in sections)
             {
-                List<object> mine = rows.FindAll(s.which);
+                var mine = new List<object>();
+                foreach (Predicate<object> which in s.which) mine.AddRange(rows.FindAll(which));
                 if (mine.Count == 0) continue;
                 _body.Add(Ui.Section(s.title + "   ·   " + mine.Count));
-                VisualElement card = Ui.Box("glass set-card");
-                foreach (object r in mine) card.Add(Row(r));
-                _body.Add(Ui.Box("pad", card));
+                VisualElement block = Ui.Box("card vs-list");
+                for (int i = 0; i < mine.Count; i++) block.Add(Row(mine[i], i == 0));
+                _body.Add(Ui.Box("pad", block));
             }
         }
 
@@ -149,11 +185,11 @@ namespace PuttrApp
                     if (win.Length == 0) t++; else if (win == Auth.Uid) w++; else l++;
                 }
                 string name = J.Str(latest, "opponentName", "A Player");
-                Label record = Ui.Text(w + l + t > 0 ? w + "W · " + l + "L · " + t + "T" : "In progress", "muted center", Ui.Medium);
+                Label record = Ui.Caps(w + l + t > 0 ? w + "W · " + l + "L · " + t + "T" : "In progress", "caps center vs-record");
                 if (w + l + t > 0) record.style.color = w > l ? Ui.Bright : l > w ? Ui.Red : Ui.Faint;
                 string opponent = order[i], gameId = J.Str(latest, "gameId");
-                VisualElement card = Ui.Box("glass rival-card", Ui.Avatar(name, J.Str(latest, "opponentPhoto"), true), Ui.Text(name, "feed-name center", Ui.Bold), record,
-                    Ui.Box("btn-small", Ui.Text(w + l + t > 0 ? "Rematch" : "Challenge", "btn-text", Ui.Bold)).OnTap(() => Club.Require(_app, "Versus", () => App.Run(VersusSetupScreen.Send(_app, J.Get(latest, "game") ?? latest, opponent, "3D", null)))));
+                VisualElement card = Ui.Box("card rival-card", Ui.Avatar(name, J.Str(latest, "opponentPhoto"), true), Ui.Text(name, "vs-name vs-name-mid", Ui.Bold), record,
+                    Ui.Button(w + l + t > 0 ? "Rematch" : "Challenge", () => Club.Require(_app, "Versus", () => App.Run(VersusSetupScreen.Send(_app, J.Get(latest, "game") ?? latest, opponent, "3D", null))), "btn btn-ghost vs-small"));
                 card.OnTap(() => _app.Push(new VersusResultsScreen(_app, J.Str(latest, "id"))));
                 if (i == 0) card.style.marginLeft = 16;
                 strip.Add(card);
@@ -161,16 +197,24 @@ namespace PuttrApp
             _body.Add(strip);
         }
 
-        VisualElement Row(object r)
+        // One row of the block: who, the game and which way it went, and on the right where it stands.
+        VisualElement Row(object r, bool first)
         {
             string name = J.Str(r, "opponentName", "A Player");
             bool sent = J.Flag(r, "sent") || J.Str(r, "challengerId") == Auth.Uid;
-            VisualElement words = Ui.Box("grow set-words", Ui.Box("row", Ui.Text(name, "feed-name", Ui.Bold), Ui.Text(sent ? "SENT" : "RECEIVED", "chip", Ui.Bold).Margin(0)), Ui.Text(J.Str(r, "gameTitle"), "sub", Ui.Regular));
-            string outcome = VersusMath.Outcome(r, out Color colour);
-            if (outcome != null) { Label o = Ui.Text(outcome, "sub", Ui.Bold); o.style.color = colour; words.Add(o); }
+            VisualElement words = Ui.Box("vs-words", Ui.Text(name, "vs-name", Ui.Bold), Ui.Text(J.Str(r, "gameTitle") + "  ·  " + (sent ? "Sent" : "Received"), "body-2", Ui.Regular));
             if (J.Str(r, "message").Length > 0) words.Add(Ui.Text("\"" + J.Str(r, "message") + "\"", "muted", Ui.Regular));
+            VisualElement side = Ui.Box("vs-side");
+            string outcome = VersusMath.Outcome(r, out Color colour);
+            if (outcome != null) { Label o = Ui.Caps(outcome, "caps"); o.style.color = colour; side.Add(o); }
+            else if (VersusMath.Done(r)) side.Add(Ui.Caps("Expired", "caps"));
+            else
+            {
+                side.Add(VersusMath.MyTurn(r) ? Ui.Caps("Your turn", "caps caps-green") : Ui.Caps("Waiting", "caps"));
+                if (VersusMath.Left(r).Length > 0) side.Add(Ui.Text(VersusMath.Left(r), "muted", Ui.Medium).Margin(4));
+            }
             object row = r;
-            return Ui.Box("note-row", Ui.Avatar(name, J.Str(r, "opponentPhoto")), words, VersusMath.Done(r) ? null : Ui.Text(VersusMath.Left(r), "muted", Ui.Medium)).OnTap(() => VersusMath.Open(_app, row));
+            return Ui.Box(first ? "vs-row vs-row-first" : "vs-row", Ui.Avatar(name, J.Str(r, "opponentPhoto")), words, side).OnTap(() => VersusMath.Open(_app, row));
         }
     }
 
@@ -199,29 +243,32 @@ namespace PuttrApp
             string winner = J.Str(v, "winnerId");
             bool complete = J.Str(v, "status") == "COMPLETE";
             string banner = !complete ? (J.Str(v, "status") == "EXPIRED" ? "Expired" : "In progress") : winner.Length == 0 ? "It's a tie" : winner == Auth.Uid ? "You won!" : "You lost";
-            _body.Add(Ui.Box("pad", Ui.Box("glass center-box", Ui.Text(banner, "h1", Ui.Bold), Ui.Text(J.Str(v, "gameTitle"), "sub", Ui.Regular))));
+            _body.Add(Ui.Box("pad", Ui.Box("card center-box", Ui.Title(banner, "title center"), Ui.Text(J.Str(v, "gameTitle"), "body-2 center", Ui.Regular).Margin(4))));
             VisualElement Side(string who, string label)
             {
                 string name = label ?? J.Str(v, who + "Name", "Opponent");
                 string game = J.Str(v, who + "UserGameId");
-                VisualElement card = Ui.Box("glass grow center-box", Ui.Text(label != null ? "YOU" : name.ToUpperInvariant(), "kick", Ui.Bold), Ui.Avatar(name, J.Str(v, who + "Photo"), true).Margin(6),
-                    Ui.Text(J.Get(v, who + "Score") != null && game.Length > 0 ? VersusMath.Fmt(J.Num(v, who + "Score")) : "–", "score-mid", Ui.Bold));
-                if (game.Length > 0 && game != "0") card.Add(Ui.Box("btn-small", Ui.Text("View game", "btn-text", Ui.Bold)).Margin(8).OnTap(() => _app.Push(new GameViewScreen(_app, game))));
+                VisualElement card = Ui.Box("card vs-half center-box", Ui.Caps(label != null ? "You" : name, "caps vs-half-name"), Ui.Avatar(name, J.Str(v, who + "Photo"), true).Margin(8),
+                    Ui.Num(J.Get(v, who + "Score") != null && game.Length > 0 ? VersusMath.Fmt(J.Num(v, who + "Score")) : "–", "num-44 center").Margin(8));
+                if (game.Length > 0 && game != "0") card.Add(Ui.Button("View game", () => _app.Push(new GameViewScreen(_app, game)), "btn btn-ghost vs-small"));
                 return card;
             }
-            _body.Add(Ui.Box("pad", Ui.Box("row", Side(me, J.Str(_app.Profile, "displayName", "You")), FreePuttScreen.Space(0).Width(10), Side(them, null))).Margin(12));
+            _body.Add(Ui.Box("pad", Ui.Box("row", Side(me, J.Str(_app.Profile, "displayName", "You")), FreePuttScreen.Space(0).Width(12), Side(them, null))).Margin(12));
             if (J.Str(v, "message").Length > 0) _body.Add(Page.Note("\"" + J.Str(v, "message") + "\""));
-            if (VersusMath.MyTurn(v)) _body.Add(Ui.Box("pad", Ui.Button("Play your turn", () => VersusMath.Open(_app, v))).Margin(10));
+            if (VersusMath.MyTurn(v)) _body.Add(Ui.Box("pad", Ui.Button("Play your turn", () => VersusMath.Open(_app, v))).Margin(12));
             if (complete)
             {
                 string opponent = J.Str(v, them + "Id");
-                _body.Add(Ui.Box("pad", Ui.Button("Rematch", () => Club.Require(_app, "Versus", () => App.Run(VersusSetupScreen.Send(_app, J.Get(v, "game") ?? v, opponent, "3D", null))))).Margin(10));
+                _body.Add(Ui.Box("pad", Ui.Button("Rematch", () => Club.Require(_app, "Versus", () => App.Run(VersusSetupScreen.Send(_app, J.Get(v, "game") ?? v, opponent, "3D", null))))).Margin(12));
             }
             // Putt by putt: mine against theirs, matched by distance.
             List<object> mine = J.List(J.Get(data, me + "Putts")), theirs = new List<object>(J.List(J.Get(data, them + "Putts")));
             if (mine.Count + theirs.Count == 0) return;
+            // Putt by putt: each putt's two compact PuttCards side by side, yours then theirs, each opening its detail.
+            if (PuttCards.Sheet != null && !Root.styleSheets.Contains(PuttCards.Sheet)) Root.styleSheets.Add(PuttCards.Sheet);
             _body.Add(Ui.Section("Putt by putt"));
-            VisualElement list = Ui.Box("glass set-card");
+            VisualElement list = Ui.Box("pc-list");
+            string theirName = J.Str(v, them + "Name", "Opponent").ToUpperInvariant();
             int n = Mathf.Max(mine.Count, theirs.Count);
             for (int i = 0; i < n; i++)
             {
@@ -229,9 +276,9 @@ namespace PuttrApp
                 object b = null;
                 if (a != null) { b = theirs.Find(p => J.Int(p, "distance") == J.Int(a, "distance")); if (b != null) theirs.Remove(b); }
                 else if (theirs.Count > 0) { b = theirs[0]; theirs.RemoveAt(0); }
-                string Cell(object p) => p == null ? "–" : J.Int(p, "made") == 1 ? "Made" : "Missed";
-                list.Add(Ui.Box("board-row", Ui.Text("PUTT " + (i + 1), "kick", Ui.Bold).Width(64), Ui.Text((a ?? b) != null ? J.Int(a ?? b, "distance") + " ft" : "", "muted", Ui.Regular).Width(48),
-                    Ui.Text(Cell(a), "feed-name grow", Ui.Medium), Ui.Text(Cell(b), "feed-name", Ui.Medium)));
+                VisualElement Half(object p, string who, string classes) => Ui.Box(classes, Ui.Text(who, "pc-side-who", Ui.Bold), p != null ? PuttCards.Card(p, i, Root, null, true) : Ui.Box("pc-card pc-compact pc-none", Ui.Text("–", "pc-break", Ui.Regular)));
+                list.Add(Ui.Text("PUTT " + (i + 1), "kick pc-pair-head", Ui.Bold));
+                list.Add(Ui.Box("pc-pair", Half(a, "YOU", "pc-side pc-side-left"), Half(b, theirName, "pc-side")));
             }
             _body.Add(Ui.Box("pad", list));
         }
@@ -240,9 +287,12 @@ namespace PuttrApp
     /// <summary>Which game to challenge with: the Versus games this build can play, most played first.</summary>
     public sealed class VersusPickerScreen : AppScreen
     {
-        public VersusPickerScreen(App app)
+        /// <param name="friendId">A Player already chosen (a profile's Challenge to Versus): the setup opens with them picked.</param>
+        /// <param name="friend">Their profile row, so they can be shown even when you do not follow them.</param>
+        public VersusPickerScreen(App app, string friendId = null, object friend = null)
         {
-            Root = Page.Make(app, "Challenge a friend", out VisualElement body);
+            string name = J.Str(friend, "displayName");
+            Root = Page.Make(app, string.IsNullOrEmpty(friendId) ? "Challenge a Player" : "Challenge " + (name.Length > 0 ? name : "a Player"), out VisualElement body);
             body.Add(Ui.Box("pad", Ui.Text("Pick a game. You play first and set the score to beat.", "sub", Ui.Regular)));
             VisualElement list = Ui.Box("pad");
             body.Add(list);
@@ -250,15 +300,17 @@ namespace PuttrApp
             App.Run(Api.Get("/games/ALL", data =>
             {
                 list.Clear();
-                List<object> games = J.List(data).FindAll(g => VersusMath.Eligible(g) && GameBridge.RuleFor(g) != null);
-                games.Sort((a, b) => J.Int(b, "last30").CompareTo(J.Int(a, "last30")));
+                List<object> games = VersusMath.Games(J.List(data));
                 if (games.Count == 0) { list.Add(Ui.Text("No Versus games are in this build yet.", "sub", Ui.Regular)); return; }
-                foreach (object g in games)
+                // One bordered block of rows, not a card for each game.
+                VisualElement block = Ui.Box("card vs-list");
+                for (int i = 0; i < games.Count; i++)
                 {
-                    object game = g;
-                    list.Add(Ui.Box("glass list-row", Ui.Box("grow", Ui.Text(J.Str(g, "title"), "feed-name", Ui.Bold), Ui.Text(TournamentMath.Putts(g).Count + " putts", "muted", Ui.Regular)), Ui.Icon("CaretRight", 16, Ui.Faint))
-                        .OnTap(() => app.Push(new VersusSetupScreen(app, game))));
+                    object game = games[i];
+                    block.Add(Ui.Box(i == 0 ? "vs-row vs-row-first" : "vs-row", Ui.Box("vs-words", Ui.Text(J.Str(game, "title"), "vs-name", Ui.Bold), Ui.Text(GameTags.Skill(game) + " · " + GameTags.Length(game), "body-2", Ui.Regular)), Ui.Icon("CaretRight", 16, Ui.Faint))
+                        .OnTap(() => app.Push(new VersusSetupScreen(app, game, friendId, friend))));
                 }
+                list.Add(block.Margin(12));
             }));
         }
     }
@@ -271,13 +323,19 @@ namespace PuttrApp
         readonly object _game;
         readonly VisualElement _friends;
         readonly TextField _message;
+        readonly object _seed;
         string _friend;
         int _duration = 1;
 
-        public VersusSetupScreen(App app, object game)
+        /// <param name="friendId">Picked already (from a profile's Challenge to Versus).</param>
+        /// <param name="friend">That Player's row, shown first in the strip even when you do not follow them.</param>
+        public VersusSetupScreen(App app, object game, string friendId = null, object friend = null)
         {
             _app = app;
             _game = game;
+            _friend = friendId;
+            if (!string.IsNullOrEmpty(friendId))
+                _seed = new Dictionary<string, object> { { "userId", friendId }, { "displayName", J.Str(friend, "displayName", "A Player") }, { "photoURL", J.Str(friend, "photoURL") } };
             Root = Page.Make(app, J.Str(game, "title", "Versus"), out VisualElement body);
             _friends = Ui.Box("pad");
             _message = new TextField { maxLength = 100 };
@@ -291,13 +349,15 @@ namespace PuttrApp
             body.Add(Ui.Box("pad", _message.Face(Ui.Medium)).Margin(12));
             body.Add(Ui.Box("pad", Ui.Button("Let's play", Go)));
             _friends.Add(Spinner.Small());
-            App.Run(Api.Get("/profile/following/", data => Friends(J.List(data))));
+            App.Run(Api.Get("/profile/following/", data => Friends(J.List(data)), _ => Friends(new List<object>())));
         }
 
         void Friends(List<object> people)
         {
             _friends.Clear();
-            if (people.Count == 0) { _friends.Add(Ui.Text("Follow Players to challenge them.", "sub", Ui.Regular)); _friends.Add(Ui.Button("Find players", () => _app.Push(new FindPlayersScreen(_app)), "btn btn-ghost")); return; }
+            // The Player chosen before this page leads the strip (added when they are not someone you follow).
+            if (_seed != null && !people.Exists(p => J.Str(p, "userId") == _friend)) people.Insert(0, _seed);
+            if (people.Count == 0) { _friends.Add(Ui.Text("Follow Players to challenge them.", "sub", Ui.Regular)); _friends.Add(Ui.Secondary("Find Players", () => _app.Push(new FindPlayersScreen(_app)))); return; }
             ScrollView row = Ui.Scroll(true);
             foreach (object p in people)
             {
@@ -324,9 +384,10 @@ namespace PuttrApp
             yield return Api.Post("/versus/create", body, data => created = data, why => failed = why);
             if (created == null) { app.Toast(failed == "offline" ? "No connection. Try again." : "Could not send the challenge."); yield break; }
             if (popSetup) app.Pop();
-            object playable = J.Get(created, "game") ?? game;
-            if (GameBridge.RuleFor(playable) == null) playable = game;
-            app.Games.PlayCatalog(playable, J.Str(created, "id"));
+            // Under -app2HoldPlay /versus/create is answered on the device: no challenge exists, so the friend hears nothing.
+            if (Api.IsLocal(J.Str(created, "id"))) app.Toast(Api.NotSaved + ": the challenge was not sent.");
+            // The challenger plays first: the game as the Play tab plays it, with the turn's score sent at the end.
+            app.Games.PlayVersus(game, J.Str(created, "id"));
         }
     }
 
@@ -353,8 +414,8 @@ namespace PuttrApp
                     object r = rows[i];
                     string name = J.Str(r, "opponentName", "A Player");
                     string chip = VersusMath.MyTurn(r) ? "Your turn" : VersusMath.Outcome(r, out _) ?? (J.Str(r, "challengerId") == Auth.Uid ? "Waiting" : "Pending");
-                    VisualElement card = Ui.Box("glass versus-card", Ui.Box("row", Ui.Avatar(name, J.Str(r, "opponentPhoto")), Ui.Box("grow set-words", Ui.Text(name, "feed-name", Ui.Bold), Ui.Text(J.Str(r, "gameTitle") + (VersusMath.Done(r) ? "" : "   ·   " + VersusMath.Left(r)), "muted", Ui.Regular))),
-                        Ui.Text(chip, VersusMath.MyTurn(r) ? "chip chip-green" : "chip", Ui.Bold).Margin(8));
+                    VisualElement card = Ui.Box("card versus-card", Ui.Box("row", Ui.Avatar(name, J.Str(r, "opponentPhoto")), Ui.Box("vs-words", Ui.Text(name, "vs-name", Ui.Bold), Ui.Text(J.Str(r, "gameTitle") + (VersusMath.Done(r) ? "" : "   ·   " + VersusMath.Left(r)), "muted", Ui.Regular))),
+                        Ui.Caps(chip, VersusMath.MyTurn(r) ? "caps caps-green" : "caps").Margin(12));
                     card.OnTap(() => VersusMath.Open(app, r));
                     if (i == 0) card.style.marginLeft = 16;
                     strip.Add(card);

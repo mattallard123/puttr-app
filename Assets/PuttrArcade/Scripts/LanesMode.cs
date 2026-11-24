@@ -14,6 +14,10 @@ namespace PuttrArcade
     public sealed class LanesMode : GameMode
     {
         public override string Name => "Lanes";
+        public override bool Branded => true;
+        // puttr-app-2: the app's catalogue calls this game Ten Pin (the BOWLING row). Name stays the arcade's own:
+        // it is the key the set, its card and this device's board are found by.
+        public override string DisplayName => "Ten Pin";
         public override string VoicePrefix => "lanes";
         public override int Putter => _active; // whose difficulty applies to this putt
         public override string Blurb => "Ten-pin bowling.\nPutt along the green line\nand the rack goes down.";
@@ -31,6 +35,10 @@ namespace PuttrArcade
             "Ten frames, two balls a frame, scored as bowling is. Wide of the goal is a gutter ball.",
         };
         public override GameAudio.Scene Sound => GameAudio.Scene.Alley;
+        // puttr-app-2: an alley of its own and a bowling ball's rumble (the room and the golf ball's roll until they are recorded).
+        public override string BedSlot => "tenpin_alley_loop";
+        public override string RollSlot => "tenpin_ball_roll_loop";
+        public override string EndSlot => "tenpin_spare";
         public override int Score(int player) => _scores[player].Total;
         public override string ScoreWord(int n) => n == 1 ? "pin" : "pins";
         public override string Rule => "Ten frames. Putt along the green line to find the pocket.";
@@ -158,17 +166,18 @@ namespace PuttrArcade
             return mirror;
         }
 
-        /// <summary>The Puttr logo as a lit sign, facing the Player.</summary>
+        /// <summary>The brand's logo (Puttr's with no kit) as a lit sign, facing the Player.</summary>
         public static void Sign(Transform parent, Vector3 localPosition, float width)
         {
-            var logo = Resources.Load<Texture2D>("PuttrArcade/LogoHeader");
+            Texture2D logo = Brand.Logo;
             if (logo == null) return;
+            Vector2 size = Brand.Size(logo, width);
             GameObject sign = GameObject.CreatePrimitive(PrimitiveType.Quad);
             sign.name = "Logo";
             Make.Kill(sign.GetComponent<Collider>());
             sign.transform.SetParent(parent, false);
             sign.transform.localPosition = localPosition;
-            sign.transform.localScale = new Vector3(width, width * logo.height / logo.width, 1f);
+            sign.transform.localScale = new Vector3(size.x, size.y, 1f);
             sign.GetComponent<MeshRenderer>().sharedMaterial = Make.Glow(new Color(1.25f, 1.25f, 1.25f, 1f), false, logo);
         }
 
@@ -342,10 +351,10 @@ namespace PuttrArcade
 
             Hud hud = Arcade.Hud;
             Vector3 deck = new Vector3(0, LaneSpec.DeckY, LaneSpec.HeadPinZ + 3f);
-            if (ball == null) { hud.Banner("SHORT", putt.Launch.Reached ? "Not enough pace to reach the lane" : "It never reached the hole", Make.Amber); Arcade.Audio.Miss(); }
-            else if (strike) { hud.Banner("STRIKE", holed ? "Holed, and all ten" : "All ten", Make.Bright, 2.2f); Arcade.Audio.Strike(); Arcade.Celebrate(140, deck); }
-            else if (spare) { hud.Banner("SPARE", "", Make.Bright, 2f); Arcade.Audio.Spare(); Arcade.Celebrate(60, deck); }
-            else if (pinsDown == 0) { hud.Banner("MISS", _ballDied ? "Ran out of pace" : "", Make.Red); Arcade.Audio.Miss(); }
+            if (ball == null) { hud.Banner("SHORT", putt.Launch.Reached ? "Not enough pace to reach the lane" : "It never reached the hole", Make.Amber); if (!Arcade.Audio.TryLibrary("tenpin_gutter", 0.7f)) Arcade.Audio.Miss(); }   // puttr-app-2: the alley's own sounds, the shared ones until recorded
+            else if (strike) { hud.Banner("STRIKE", holed ? "Holed, and all ten" : "All ten", Make.Bright, 2.2f); if (!Arcade.Audio.TryLibrary("tenpin_spare", 1f, 1.06f)) Arcade.Audio.Strike(); Arcade.Celebrate(140, deck); }
+            else if (spare) { hud.Banner("SPARE", "", Make.Bright, 2f); if (!Arcade.Audio.TryLibrary("tenpin_spare", 0.8f)) Arcade.Audio.Spare(); Arcade.Celebrate(60, deck); }
+            else if (pinsDown == 0) { hud.Banner("MISS", _ballDied ? "Ran out of pace" : "", Make.Red); if (!Arcade.Audio.TryLibrary("tenpin_gutter", 0.7f)) Arcade.Audio.Miss(); }
             else hud.Banner(pinsDown.ToString(), pinsDown == 1 ? "pin" : "pins", Color.white, 1.5f);
             Arcade.Shot("result");
             yield return new WaitForSecondsRealtime(1.5f);

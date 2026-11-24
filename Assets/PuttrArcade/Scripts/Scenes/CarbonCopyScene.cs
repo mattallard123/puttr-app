@@ -218,14 +218,14 @@ namespace PuttrArcade
             {
                 // The signature: a laser sweeps the stroke as it is made, then it hangs in the air as a hologram.
                 _scan.gameObject.SetActive(true);
-                Sound("laser_zap", 0.5f, 0.9f);
+                Sound("carboncopy_scan", "laser_zap", 0.5f, 0.9f);   // puttr-app-2: the game's own sound, the shared one until recorded
                 float sweep = 0f;
-                yield return All(Swing(_you, you, () => Sound("click", 0.5f, 1.4f), 1f, (t, phase) => { sweep = Mathf.Min(1f, sweep + Time.deltaTime / 1.3f); _scan.localPosition = new Vector3(PutterX - 2f, 13f, Mathf.Lerp(PutterZ - 10f, PutterZ + 8f, sweep)); }),
+                yield return All(Swing(_you, you, () => Sound("putter_strike", "click", 0.5f, 1.4f), 1f, (t, phase) => { sweep = Mathf.Min(1f, sweep + Time.deltaTime / 1.3f); _scan.localPosition = new Vector3(PutterX - 2f, 13f, Mathf.Lerp(PutterZ - 10f, PutterZ + 8f, sweep)); }),   // puttr-app-2: the putter on the ball, shared by every sensor replay (the old sound until it is recorded)
                     Later(you.Back + you.Fwd, RollBall(_ball, 22f, 0f, 1.1f)));
                 _scan.gameObject.SetActive(false);
                 ShowSignature(v, true);
                 _ghostTo = 1f;
-                Sound("synth_whoosh", 0.5f, 1.1f);
+                Sound("carboncopy_copy", "synth_whoosh", 0.5f, 1.1f);   // puttr-app-2: the game's own sound, the shared one until recorded
                 Arcade.Sparks(At(PutterX - 4f, 14f, PutterZ), 24);
                 yield return All(Settle(_you, 0.6f), Wait(0.6f));
                 yield break;
@@ -235,7 +235,7 @@ namespace PuttrArcade
             StrokeData sig = SigStroke(you);
 
             yield return All(
-                Swing(_you, you, () => Sound("click", 0.5f, 1.3f)),
+                Swing(_you, you, () => Sound("putter_strike", "click", 0.5f, 1.3f)),   // puttr-app-2: the shared putter strike
                 Swing(_ghost, sig),
                 Later(you.Back + you.Fwd, RollBall(_ball, 22f, 0f, 1.1f)));
 
@@ -253,7 +253,7 @@ namespace PuttrArcade
                 g.Value.text = mine.Length > i ? Fmt(i, mine[i]) : "";
                 g.Value.color = c;
             }
-            Sound("ratchet", 0.4f, 1.2f);
+            Sound("carboncopy_copy", "ratchet", 0.4f, 1.2f);   // puttr-app-2: the game's own sound, the shared one until recorded
             int all = v.Int("matchAll");
             Color ring = ScoreColour(all);
             bool copy = v.Flag("copy");
@@ -276,7 +276,7 @@ namespace PuttrArcade
                 Fill(Segs, Color.Lerp(ring, Color.white, 0.35f));
                 Arcade.Sparks(At(GaugeX + 1f, RingY, RingZ), 40);
                 Arcade.Shake(0.15f);
-                Sound("bell_ding", 0.55f, 1.15f);
+                Sound("carboncopy_match", "bell_ding", 0.55f, 1.15f);   // puttr-app-2: the game's own sound, the shared one until recorded
                 yield return Wait(0.35f);
                 Fill(Mathf.RoundToInt(Segs * all / 100f), ring);
             }

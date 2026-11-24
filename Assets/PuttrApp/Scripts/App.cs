@@ -59,6 +59,9 @@ namespace PuttrApp
             go.AddComponent<App>();
         }
 
+        /// <summary>A text field has the focus (Perf keeps the app at full rate while the Player types).</summary>
+        public bool Typing => _stage?.focusController?.focusedElement is VisualElement f && (f is TextField || f.GetFirstAncestorOfType<TextField>() != null);
+
         public static Coroutine Run(IEnumerator routine) => I != null ? I.StartCoroutine(routine) : null;
 
         void Awake()
@@ -70,18 +73,42 @@ namespace PuttrApp
             // same picture as the native launch screen, so the hand-over from it cannot be seen.
             PuttrArcade.Loader.AppSplash = true;
             PuttrArcade.Loader.Show();
+            StartCoroutine(NativeSplashOff());
+            SoundOnSilent();
             Perf.Mark("app awake");
             Application.targetFrameRate = 60;
             Application.runInBackground = true;
+            // With the simulator's PUTTR_ARGS too (launch arguments do not reach an app on a simulator), so a scripted
+            // remote check (-app2TvKeys) runs there.
+            var tvArgs = new List<string>(Environment.GetCommandLineArgs());
+            string simArgs = Environment.GetEnvironmentVariable("PUTTR_ARGS");
+            if (!string.IsNullOrEmpty(simArgs)) tvArgs.AddRange(simArgs.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+            Tv.Detect(tvArgs);
             Portrait(true);
             ReadArguments();
+            if (Tv.On && _startTab == null) _startTab = "play";   // a TV is the Play tab
+            if (Tv.On)
+            {
+                TvPlatform.Init();
+                // The first screen: Menu / Back there leaves the app (tvOS, Samsung, Android TV).
+                TvPlatform.AtRoot = () => _stack.Count == 0 && !(Games?.Busy ?? false) && (_tab == null || (_screens.TryGetValue("play", out AppScreen p) && p is PlayScreen ps && ps.AtLocal));
+            }
             Ui.Init();
             BuildCamera();
             BuildEventSystem();
             BuildDocument();
             Games = new GameBridge(this);
             DeepLinks.Init(this);
+            StartCoroutine(Begin());
+        }
+
+        // The first frame is the loader alone. Who is signed in is read after it is drawn: on a phone that is the
+        // Firebase SDK starting and a Keychain read, which used to hold the launch screen up.
+        IEnumerator Begin()
+        {
+            yield return null;
             Auth.Restore();
+            Perf.Mark("session read");
             Loading(0.3f);
             if (Auth.SignedIn || Fixtures.On)
             {
@@ -90,9 +117,79 @@ namespace PuttrApp
             }
             else { ShowSignIn(); Loaded(); }
             StartCoroutine(LoadedAnyway());
+            UpdateGate.Check();   // never waits: the app starts as usual while the store answers
+            Analytics.Begin();
+            Feedback.Begin(this);
+            ConnectGate.Begin(this);   // the hole warning when a Puttr connects with a bad read
         }
 
         // ── The loader on first launch ───────────────────────────────────────
+
+#if UNITY_IOS && !UNITY_EDITOR
+        [System.Runtime.InteropServices.DllImport("__Internal")] static extern void PuttrSplash_Hide();
+#else
+        static void PuttrSplash_Hide() { }
+#endif
+
+#if UNITY_IOS && !UNITY_EDITOR
+        [System.Runtime.InteropServices.DllImport("__Internal")] static extern void PuttrAudio_Play();
+        [System.Runtime.InteropServices.DllImport("__Internal")] static extern void PuttrAudio_Restore();
+        [System.Runtime.InteropServices.DllImport("__Internal")] static extern string PuttrAudio_State();
+#else
+        static void PuttrAudio_Play() { }
+        static void PuttrAudio_Restore() { }
+        static string PuttrAudio_State() => "";
+#endif
+
+        // The sound clock is watched: on a phone it can stop (the session taken by something else and never given
+        // back), and then nothing is heard and whatever waits for a sound to end waits for ever (the coach's review sat
+        // on its first line: Matt, 2026-11-24). Still for two seconds with the app in front, it is started again, and
+        // the log says what the phone's sound was set to.
+        double _soundClock;
+        float _soundAt, _soundStill;
+        int _soundRestarts;
+        bool _soundLogged;
+
+        void SoundWatch()
+        {
+            float now = Time.realtimeSinceStartup;
+            if (now - _soundAt < 1f) return;
+            double clock = AudioSettings.dspTime;
+            if (!_soundLogged && now > 3f) { _soundLogged = true; Perf.Note("sound: " + PuttrAudio_State()); }
+            if (_soundAt > 0f && clock == _soundClock && Application.isFocused)
+            {
+                _soundStill += now - _soundAt;
+                if (_soundStill >= 2f && _soundRestarts < 5)
+                {
+                    _soundStill = 0f;
+                    _soundRestarts++;
+                    Perf.Note("sound: clock stopped (" + PuttrAudio_State() + "), restart " + _soundRestarts);
+                    PuttrAudio_Restore();
+                    // A second stop: the sound engine itself is set up again.
+                    if (_soundRestarts >= 2) AudioSettings.Reset(AudioSettings.GetConfiguration());
+                }
+            }
+            else _soundStill = 0f;
+            _soundClock = clock;
+            _soundAt = now;
+        }
+
+        /// <summary>Game sounds play with the phone on silent (Plugins/iOS/PuttrAudio.m). Set again whenever the app
+        /// comes back to the front and after the camera stops, as both can put the session back.</summary>
+        public static void SoundOnSilent() => PuttrAudio_Play();
+
+        // Back at the front: the store is asked again whether this build is too old (UpdateGate, as App.tsx on 'active').
+        void OnApplicationFocus(bool focused) { if (focused) { SoundOnSilent(); UpdateGate.Check(); } else Perf.Flush(); }
+        void OnApplicationPause(bool paused) { if (paused) Perf.Flush(); Analytics.Paused(paused); }
+        void OnApplicationQuit() => Perf.Flush();
+
+        // The launch screen's spinner (Plugins/iOS/PuttrSplash.m) turns until the engine is up; once the first frame,
+        // with the loader and its bar, is drawn, it goes.
+        IEnumerator NativeSplashOff()
+        {
+            yield return new WaitForEndOfFrame();
+            PuttrSplash_Hide();
+        }
 
         bool _loaded;
 
@@ -130,7 +227,14 @@ namespace PuttrApp
             for (int i = 0; i < args.Count; i++)
             {
                 if (args[i] == "-app2Fixture") Fixtures.On = true;
+                // -app2Host: this run starts in host mode (the attract screen), without the switch being kept.
+                if (args[i] == "-app2Host") HostMode.Force();
+                // -app2HostVenue: the same, in Venue Mode (the lounge), whatever the kit says.
+                if (args[i] == "-app2HostVenue") { HostMode.Force(); BrandKit.ForceVenue = true; }
+                // -app2Kit file.json: the worlds dressed in a brand kit from a file (BrandKit.LoadFile), for checking the scenes without the API.
+                if (args[i] == "-app2Kit" && i + 1 < args.Count && !BrandKit.LoadFile(args[i + 1])) Debug.LogWarning("Puttr 2: could not read the kit at " + args[i + 1]);
                 if (args[i] == "-app2NotMember") Fixtures.NotMember = true;
+                if (args[i] == "-app2Connected") Fixtures.Connected = true;
                 if (args[i] == "-app2FixtureDelay" && i + 1 < args.Count) float.TryParse(args[i + 1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out Fixtures.Delay);
                 if (args[i] == "-app2Tab" && i + 1 < args.Count) _startTab = args[i + 1];
                 if (args[i] == "-app2SignIn") _forceSignIn = true;
@@ -145,6 +249,9 @@ namespace PuttrApp
                 if (args[i] == "-app2ExportPutts" && i + 1 < args.Count) StartCoroutine(ExportPutts(args[i + 1]));
                 if (args[i] == "-app2Phone") _forcePhone = true; // lay a wide desktop window out as a phone on its side
                 if (args[i] == "-app2TracksAuto") TracksPlayScreen.AutoPlay = true;
+                // -app2AutoPutt 6: a random test putt every that many seconds in whatever game is being played (rule games
+                // take no demo putts; this walks them from a script, as pressing Space would).
+                if (args[i] == "-app2AutoPutt" && i + 1 < args.Count && float.TryParse(args[i + 1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float every)) StartCoroutine(AutoPutt(Mathf.Max(1f, every)));
                 if (args[i] == "-app2Tablet") _forceTablet = true; // lay a desktop window out as a tablet, a unit a pixel
                 // -app2Shot file.png: a screenshot five seconds in, then quit (for checking layout from a script).
                 if (args[i] == "-app2Shot" && i + 1 < args.Count) { _shotPath = args[i + 1]; if (_shotAt <= 0f) _shotAt = 5f; }
@@ -161,6 +268,12 @@ namespace PuttrApp
 
         string _startTab;
         bool _forceSignIn, _forcePhone;
+
+        IEnumerator AutoPutt(float every)
+        {
+            yield return new WaitForSecondsRealtime(8f);
+            while (true) { Games?.TestPutt(); yield return new WaitForSecondsRealtime(every); }
+        }
 
         /// <summary>-app2Open tracksplay: straight onto the first tee (sample data or the live course).</summary>
         IEnumerator TracksDemo()
@@ -190,14 +303,49 @@ namespace PuttrApp
             if (page == "challenge") StartCoroutine(Api.Get("/challenges/userChallenges", data => challenges = data));
             yield return new WaitForSecondsRealtime(0.8f);
             // play:TYPE (setup) or start:TYPE (straight in): any game by its gameType, for checking it from a script.
+            // playquests, playquests:3 (that world's map), playquestsall:3 (every stage cleared, in memory only): the
+            // Play tab's Quests, for checking the Greenlands maps from a script.
+            if (page.StartsWith("playquests"))
+            {
+                int colon = page.IndexOf(':');
+                if (page.StartsWith("playquestsall")) foreach (GreenStage each in Greenlands.All) GreenProgress.Record(each, 2, 0, false);
+                if (colon > 0 && int.TryParse(page.Substring(colon + 1), out int world)) GreenlandsScreen.OpenWorld = world;
+                PlayScreen.OpenAt = "Quests"; _screens.Remove("play"); ShowTabs("play");
+                yield break;
+            }
+            // stage:1-4: a Greenlands stage straight in, whether or not it is open yet.
+            if (page.StartsWith("stage:")) { GreenStage stage = Greenlands.ByCode(page.Substring(6).ToUpperInvariant()); if (stage != null) Games.PlayRule(Greenlands.Row, new StageGame(stage)); yield break; }
             if (page.StartsWith("play:") || page.StartsWith("start:") || page.StartsWith("vs:"))
             {
                 string type = page.Substring(page.IndexOf(':') + 1).ToUpperInvariant();
+                // start:TYPE:n: n Players (1 to 4), for an arcade game that needs more than one (Tug of War's two teams).
+                int players = 1;
+                int colon = type.IndexOf(':');
+                if (colon > 0) { int.TryParse(type.Substring(colon + 1), out players); type = type.Substring(0, colon); players = Mathf.Clamp(players, 1, 4); }
                 var row = new Dictionary<string, object> { { "gameType", type }, { "title", type } };
                 // Fixture runs: a catalog-like row, with a leaderboard except Beer Pong (as the live catalog).
                 if (Fixtures.On) { row["id"] = "9001"; row["hasLeaderboard"] = type == "BEERPONG" || type == "OPEN" ? 0.0 : 1.0; row["description"] = "A fixture game for checking the layout."; }
+                // Its real name where one is known (the fixture catalog, the arcade and sensor extras), so a capture's
+                // header reads "On Fire", not "ARCADESTREAK".
+                var known = new List<object>();
+                if (Fixtures.On && Fixtures.For("/games/ALL") is List<object> catalog) known.AddRange(catalog);
+                known.AddRange(ArcadeExtras.All);
+                known.AddRange(SensorGames.All);
+                object named = known.Find(g => J.Str(g, "gameType").ToUpperInvariant() == type);
+                if (named != null) row["title"] = J.Str(named, "title", type);
+                else foreach (var pair in GameBridge.ArcadeGames) if (pair.Value == type) { row["title"] = pair.Key; break; }
                 RuleGame rules = RuleCatalog.Make(row);
                 if (rules != null && page.StartsWith("start:")) { Games.PlayRule(row, rules); yield break; }
+                // An arcade game straight in, with made-up Players (store captures run these with -puttrDemo).
+                if (rules == null && page.StartsWith("start:") && GameBridge.ArcadeGames.ContainsValue(type))
+                {
+                    PuttrArcade.Arcade.EmbeddedPuttr = false;
+                    var names = new List<string> { "Sam", "Ava", "Marcus", "Priya" }.GetRange(0, players);
+                    Games.PlayWith(J.Str(row, "title", type), names);
+                    yield break;
+                }
+                // vs:TYPE for an arcade game that takes Puttr as the other Player (Dead Weight).
+                if (rules == null && page.StartsWith("vs:") && GameBridge.ArcadeGames.ContainsValue(type)) { PuttrArcade.Arcade.EmbeddedPuttr = true; Games.PlayWith(J.Str(row, "title", type), new List<string> { "Sam" }); yield break; }
                 // vs:TYPE: you against Puttr, Puttr putting first (checks Puttr's turns).
                 if (rules != null && page.StartsWith("vs:")) { rules.Names = new List<string> { "Sam", "Puttr" }; rules.Bot = 1; rules.First = 1; Games.PlayRule(row, rules); yield break; }
                 if (!Games.Open(row)) Toast("Nothing plays " + type + " yet.");
@@ -213,6 +361,13 @@ namespace PuttrApp
                 case "find": Push(new FindPlayersScreen(this)); break;
                 case "games": Push(new GamesScreen(this)); break;
                 case "settings": Push(new SettingsScreen(this)); break;
+                case "host": case "hostevent": Host.Open(this, BrandKit.Event); break;   // the Settings rows
+                case "hostvenue": Host.Open(this, BrandKit.Venue); break;
+                case "brandkit": Push(new BrandKitScreen(this)); break;
+                case "brandgames": Push(new BrandGamesScreen(this)); break;
+                case "hostpicker": case "hostattract": ShowHost(false); break;   // with -app2Host: the host's home
+                case "staff": StaffPad.Ask(this); break;
+                case "feedback": Feedback.Open(this, "post_game"); break;
                 case "member": ProfileScreen.Open(this, "a"); break;
                 case "onboarding": Push(new OnboardingScreen(this)); break;
                 case "creator": Push(new CreatorScreen(this)); break;
@@ -245,6 +400,7 @@ namespace PuttrApp
                 case "createtournament": Push(new CreateTournamentScreen(this)); break;
                 case "camerasetup": Push(new CameraSetupScreen(this)); break;
                 case "connect": ConnectSheet.Open(this, _stage); break;
+                case "gate": ConnectGate.Preview(this); break;
                 case "beerpong": Games.PlayWith("Beer Pong", new List<string> { "Sam", "Ava" }); break;
                 case "beerpongsolo": Games.PlayWith("Beer Pong", new List<string> { "Sam" }); break;
                 case "tracks": Push(new TracksCoursesScreen(this)); break;
@@ -258,7 +414,8 @@ namespace PuttrApp
                 case "adminapp": Push(new AdminApplicationScreen(this, "31")); break;
                 case "admincert": Push(new AdminCertGradeScreen(this, J.Parse("{\"id\":801,\"coachName\":\"Tom Ellery\",\"deliveredAt\":\"2026-11-15T00:00:00.000Z\",\"lessonVideoLength\":312}"))); break;
                 case "adminjunior": Push(new AdminJuniorScreen(this, "41")); break;
-                case "quests": Push(new QuestsScreen(this)); break;
+                case "quests": Push(new GreenlandsScreen(this)); break;
+
                 case "questlevels": Push(new QuestLevelsScreen(this, J.Parse("{\"id\":1,\"title\":\"First Steps\",\"description\":\"Short putts to build confidence.\"}"))); break;
                 case "learn": Push(new LearnScreen(this, "BASICS")); break;
                 case "lesson": Library.Load(() => Push(new LessonScreen(this, Library.In("BASICS")[0]))); break;
@@ -275,7 +432,7 @@ namespace PuttrApp
                 case "putters": Push(new PuttersScreen(this)); break;
                 case "editputter": Push(new EditPutterScreen(this, null)); break;
                 case "editprofile": Push(new EditProfileScreen(this)); break;
-                case "membership": Push(new MembershipScreen(this)); break;
+                case "membership": MembershipScreen.Open(this); break;
                 case "feed": Push(new FeedScreen(this, false)); break;
                 case "team": Push(new LeagueTeamScreen(this, League.TeamOf("mavericks"), "s4-2026", 2)); break;
                 case "seasons": Push(new LeagueSeasonsScreen(this)); break;
@@ -286,6 +443,7 @@ namespace PuttrApp
                 case "wifi": Push(new WifiScreen(this)); break;
                 case "vertex": Push(new VertexScreen(this)); break;
                 case "lab": Push(new LabIntroScreen(this)); break;
+                case "coachedreview": StartCoroutine(Api.Get("/lab/sessions", data => { if (J.List(data).Count > 0) Push(new CoachedReviewScreen(this, J.List(data)[0], null)); })); break;
                 case "labsession": StartCoroutine(Api.Get("/lab/sessions", data => { if (J.List(data).Count > 0) Push(new LabSessionScreen(this, J.List(data)[0])); })); break;
                 case "analysis": Club.Require(this, "Full analysis", () => Push(new AnalysisScreen(this))); break;
                 case "club": Push(new ClubScreen(this, null)); break;
@@ -338,7 +496,7 @@ namespace PuttrApp
         // games (Matt, 2026-11-16: no portrait lock). Upside down only on a tablet, as iPadOS allows.
         static void Portrait(bool portrait)
         {
-            if (!Application.isMobilePlatform) return;
+            if (!Application.isMobilePlatform || Tv.On) return;
             Screen.autorotateToPortrait = true;
             Screen.autorotateToLandscapeLeft = true;
             Screen.autorotateToLandscapeRight = true;
@@ -399,6 +557,8 @@ namespace PuttrApp
             _app = Ui.Box("app", _host, _tabBar, _toast, _perf);
             _stage.Add(_app);
             _stage.RegisterCallback<GeometryChangedEvent>(_ => OnLayout());
+            Tv.Attach(_stage);
+            if (Tv.On) _tabBar.style.display = DisplayStyle.None;   // one tab on a TV: Play
         }
 
         void OnLayout()
@@ -415,10 +575,18 @@ namespace PuttrApp
 
         void Update()
         {
+            SoundWatch();
             Perf.Tick();
+            Analytics.Tick();
             Layout();
+            Tv.Tick();
             if (_perfShown) _perf.text = Perf.Summary();
             if (_shotPath != null && Time.realtimeSinceStartup > _shotAt) StartCoroutine(Shoot());
+            // Host mode: with nobody there (no touch, ShowHost's listener; no putt, GameBridge.OnPutt) and no game on, the attract screen comes back.
+            if (HostMode.On)
+            {
+                if (_hostShown && HostMode.Idle && !(Front is HostPickerScreen home && home.AtRest) && (Games == null || !Games.Busy)) ShowHost(true);
+            }
         }
 
         /// <summary>A tablet: the short side is 3.3 inches or more (or -app2Tablet on a desktop window).</summary>
@@ -433,6 +601,15 @@ namespace PuttrApp
         void Layout()
         {
             if (_panel == null) return;
+            if (Tv.On)
+            {
+                // Ten feet away: laid out at 1280 x 720 units, whatever the TV's pixels.
+                if (_panel.scaleMode != PanelScaleMode.ScaleWithScreenSize) _panel.scaleMode = PanelScaleMode.ScaleWithScreenSize;
+                if (_panel.referenceResolution != new Vector2Int(1280, 720)) _panel.referenceResolution = new Vector2Int(1280, 720);
+                if (!Mathf.Approximately(_panel.match, 1f)) _panel.match = 1f;
+                if (_app != null) { _app.EnableInClassList("tablet", true); _app.EnableInClassList("wide", true); }
+                return;
+            }
             bool wide = Screen.width > Screen.height;
             if (Tablet)
             {
@@ -478,7 +655,7 @@ namespace PuttrApp
             _tab = null;
             _stack.Clear();
             _tabBar.AddToClassList("hidden");
-            Swap(new SignInScreen(this));
+            Swap(Tv.On ? (AppScreen)new TvSignInScreen(this) : new SignInScreen(this));
         }
 
         // Screens opened over a tab (a game's page, results). Back goes to the one underneath.
@@ -498,6 +675,9 @@ namespace PuttrApp
             Coach.RefreshPending(() => { if (_improveLabel != null) _improveLabel.text = Coach.Pending > 0 ? "Coach (" + (Coach.Pending > 9 ? "9+" : Coach.Pending.ToString()) + ")" : "Coach"; });
         }
 
+        /// <summary>The pushed screen at the front, or null when a tab is showing.</summary>
+        public AppScreen Front => _stack.Count > 0 ? _stack[_stack.Count - 1] : null;
+
         public void Push(AppScreen screen)
         {
             _stack.Add(screen);
@@ -511,15 +691,53 @@ namespace PuttrApp
             if (_stack.Count > 0) Swap(_stack[_stack.Count - 1]); else ShowTabs(_tab ?? "home");
         }
 
-        public void ShowTabs(string tab)
+        bool _hostShown, _hostListens;
+
+        /// <summary>Host mode's home (Host.cs): the game picker, with the attract screen over it at the start and
+        /// whenever nobody has been there for a while. The tab bar is the Player's app: it stays hidden.</summary>
+        HostPickerScreen _hostHome;
+
+        /// <summary>Host mode's one screen (Host.cs HostPickerScreen): the arena, the brand and the games. The tab bar
+        /// is the Player's app: it stays hidden. idle: nobody has been there for a while, so whoever was signed in at a
+        /// venue is signed out and the row of games goes back to the start.</summary>
+        public void ShowHost(bool idle)
         {
             _stack.Clear();
+            _tabBar.AddToClassList("hidden");
+            HostMode.Touch();
+            _hostShown = true;
+            // Any touch anywhere counts as someone being there (the project reads input through UI Toolkit, not UnityEngine.Input).
+            if (!_hostListens && _document != null && _document.rootVisualElement != null)
+            {
+                _hostListens = true;
+                _document.rootVisualElement.RegisterCallback<PointerDownEvent>(_ => { if (HostMode.On) HostMode.Touch(); }, TrickleDown.TrickleDown);
+            }
+            if (idle) HostMode.EndSession();
+            if (_hostHome == null) _hostHome = new HostPickerScreen(this);
+            if (idle) _hostHome.Rest();
+            _stack.Add(_hostHome);
+            Swap(_hostHome);
+        }
+
+        public void ShowTabs(string tab)
+        {
+            // In host mode there are no tabs: everything that would go back to one goes to the host's games.
+            if (HostMode.On && !_forceSignIn) { ShowHost(!_hostShown); return; }
+            _hostShown = false;
+            _hostHome = null;   // left host mode: the next start builds its home afresh
+            _stack.Clear();
             if (_startTab != null) { tab = _startTab; _startTab = null; }
+            if (Tv.On) tab = "play";   // the only tab on a TV
             if (_forceSignIn) { _forceSignIn = false; ShowSignIn(); return; }
             _tab = tab;
             _tabBar.RemoveFromClassList("hidden");
-            Vertex.Boot(); // an enabled Vertex sensor is looked for once signed in
-            Inbox.Load();
+            // A TV has no Home to read the profile: read it here (the Play tab's account button and the Players need it).
+            if (Tv.On && Profile == null) Run(Api.Get("/profile/", data => { Profile = J.First(data); TvProfileRead?.Invoke(); }));
+            // Once signed in: an enabled Vertex sensor is looked for, and the inbox read. Not on every tab tap (each
+            // used to restart the sensor scan and fetch every message): the sensor once per sign-in, the inbox at most
+            // once a minute here (a push and coming back to the front read it too).
+            if (_vertexFor != Auth.Uid) { _vertexFor = Auth.Uid; Vertex.Boot(); }
+            if (_inboxFor != Auth.Uid || Time.realtimeSinceStartup - _inboxAt > 60f) { _inboxFor = Auth.Uid; _inboxAt = Time.realtimeSinceStartup; Inbox.Load(); }
             for (int i = 0; i < _tabs.Count; i++)
             {
                 bool on = TabKeys[i] == tab;
@@ -541,14 +759,47 @@ namespace PuttrApp
         }
 
         AppScreen _front;
+        string _vertexFor, _inboxFor;
+        float _inboxAt;
+
+        /// <summary>
+        /// A page's title and back button stay put while the page scrolls: a screen whose scroll view starts with its
+        /// header (Ui.Header, as Page.Make and most pushed screens build it) has the header lifted out above the scroll
+        /// view, once. Screens without one are left as they are.
+        /// </summary>
+        public static void PinHeader(AppScreen screen)
+        {
+            if (!(screen.Root is ScrollView scroll) || scroll.contentContainer.childCount == 0) return;
+            VisualElement header = scroll.contentContainer[0];
+            if (!header.ClassListContains("top")) return;
+            header.RemoveFromHierarchy();
+            var bar = new VisualElement();
+            bar.AddToClassList("page-viewport");   // centred to the page column on a wide screen, as the scroll's content is
+            bar.AddToClassList("pinned-top");
+            // A header that is only a back button has no line under it (Matt, 2026-11-24): the page's own title follows.
+            Label title = header.Q<Label>(className: "top-title");
+            if (title == null || string.IsNullOrEmpty(title.text)) bar.AddToClassList("pinned-top-bare");
+            header.AddToClassList("page-column");
+            bar.Add(header);
+            var page = new VisualElement();
+            page.AddToClassList("screen");
+            page.AddToClassList("pinned-page");
+            page.Add(bar);
+            page.Add(scroll);
+            screen.Root = page;
+        }
 
         void Swap(AppScreen screen)
         {
+            Tv.Swapped(_front, screen);   // a TV: the focus is remembered on the way in, and put back on the way out
             if (_front != null && _front != screen) _front.Hidden();
             _front = screen;
             _host.Clear();
+            PinHeader(screen);
             _host.Add(screen.Root);
             screen.Shown();
+            // A tab goes by its own name (Home, Play, Improve or Coach, Profile); a screen over it by its class.
+            Analytics.Viewed(_stack.Count == 0 && _tab != null ? TabNames[Array.IndexOf(TabKeys, _tab)] + (screen is CoachScreen ? " (Coach)" : "") : Analytics.ScreenName(screen.GetType()));
             Spinner.Cover(_host, screen);   // never a blank screen while its data loads
             Perf.Wake();
         }
@@ -563,6 +814,7 @@ namespace PuttrApp
         public void SwitchedPlayer()
         {
             Profile = null;
+            if (_screens.TryGetValue("home", out AppScreen was) && was is HomeScreen old) old.Forget();
             _screens.Clear();
             Inbox.Messages = new System.Collections.Generic.List<object>();
             ShowTabs("home");
@@ -575,7 +827,9 @@ namespace PuttrApp
             PuttrApp.Push.Unregister();
             Iap.Logout();
             Auth.SignOut();
+            BrandKit.Forget();   // the worlds go back to Puttr; the kit stays with its owner
             Profile = null;
+            if (_screens.TryGetValue("home", out AppScreen was) && was is HomeScreen old) old.Forget();
             _screens.Clear();
             ShowSignIn();
         }
@@ -642,6 +896,21 @@ namespace PuttrApp
         /// <summary>Exit from a game or its final screen: everything pushed is closed, back to the main screen of the tab it came from.</summary>
         public void ExitToTab() => ShowTabs(_tab ?? "home");
 
+        /// <summary>A TV read the profile (the Play tab's account button redraws).</summary>
+        public Action TvProfileRead;
+
+        /// <summary>Back on a TV remote: out of a game, off the screen on top, else to the Play tab's first tab.</summary>
+        public void TvBack()
+        {
+            if (Games != null && Games.TvBack()) return;
+            if (_stack.Count > 0) { Pop(); return; }
+            if (_screens.TryGetValue("play", out AppScreen play) && play is PlayScreen p && !p.AtLocal) { p.TvBack(); return; }
+            TvPlatform.Exit();   // Back on the first screen leaves the app
+        }
+
+        /// <summary>The Tizen wrapper's Back key (keyCode 10009), sent to this object by name.</summary>
+        public void TvBackKey(string _) => Tv.Back();
+
         /// <summary>The game page's backdrop: the stage goes see-through, so the arcade's set shows behind the app.</summary>
         public void SetBackdrop(bool on) => _stage.EnableInClassList("stage-clear", on);
 
@@ -660,6 +929,7 @@ namespace PuttrApp
             // What was just played changes the streak and Jump back in: Home refreshes in place, keeping what it shows.
             HomeStale();
             if (_stack.Count > 0) Swap(_stack[_stack.Count - 1]); else ShowTabs(_tab ?? "home");
+            PuttrArcade.Arcade.FreeUnused();   // what the game alone used (a scene's textures and meshes)
         }
     }
 }

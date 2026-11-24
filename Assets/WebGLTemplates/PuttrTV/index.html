@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <!-- Puttr 2 web build, made for a 1920x1080 TV: the Samsung (Tizen) app wraps this page (Tools/tizen).
+       The app fills the screen; the Puttr logo and a bar show while it loads.
+       Query parameters become the app's command line: ?app2Fixture&app2Tab=play is "-app2Fixture -app2Tab play".
+       The remote: arrows, Enter and Back. Back (Tizen 10009, Escape in a browser) goes to the app as
+       SendMessage("Puttr App", "TvBackKey"); media keys as SendMessage("Puttr App", "TvKey", "playpause" | "play" | "pause" | "stop" | "rewind" | "fastforward"). -->
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=1920, user-scalable=no">
+    <title>{{{ PRODUCT_NAME }}}</title>
+    <style>
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #090b0d; }
+      #unity-canvas { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; background: #090b0d; outline: none; }
+      #boot { position: fixed; left: 0; top: 0; right: 0; bottom: 0;display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 48px; background: #090b0d; transition: opacity .4s; }
+      #boot img { width: 33vw; max-width: 640px; }
+      #bar { width: 24vw; height: 6px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
+      #bar i { display: block; height: 100%; width: 0; background: #2D8C3C; transition: width .2s; }
+      #note { color: #9aa3a8; font: 500 28px/1.4 sans-serif; text-align: center; max-width: 60vw; display: none; }
+    </style>
+  </head>
+  <body>
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="boot"><img src="TemplateData/logo.png" alt="Puttr"><div id="bar"><i></i></div><div id="note"></div></div>
+    <script src="Build/{{{ LOADER_FILENAME }}}"></script>
+    <script>
+      (function () {
+        var APP = 'Puttr App';   // the App MonoBehaviour's GameObject
+        var instance = null;
+
+        // ?a&b=c -> ["-a", "-b", "c"]
+        var args = [];
+        new URLSearchParams(location.search).forEach(function (value, key) { args.push('-' + key); if (value) args.push(value); });
+
+        // Samsung remote: Back always reaches a web app; media keys only once registered.
+        var media = { MediaPlayPause: 'playpause', MediaPlay: 'play', MediaPause: 'pause', MediaStop: 'stop', MediaRewind: 'rewind', MediaFastForward: 'fastforward' };
+        var mediaCodes = {};
+        if (typeof tizen !== 'undefined' && tizen.tvinputdevice) {
+          Object.keys(media).forEach(function (name) {
+            try { tizen.tvinputdevice.registerKey(name); mediaCodes[tizen.tvinputdevice.getKey(name).code] = media[name]; } catch (e) { }
+          });
+        }
+        window.addEventListener('keydown', function (e) {
+          if (e.keyCode === 10009 || e.keyCode === 461) {   // Samsung Back, LG Back
+            e.preventDefault();
+            if (instance) instance.SendMessage(APP, 'TvBackKey', '');
+          } else if (mediaCodes[e.keyCode]) {
+            e.preventDefault();
+            if (instance) instance.SendMessage(APP, 'TvKey', mediaCodes[e.keyCode]);
+          }
+        }, true);
+
+        var canvas = document.getElementById('unity-canvas');
+        var boot = document.getElementById('boot');
+        createUnityInstance(canvas, {
+          arguments: args,
+          dataUrl: "Build/{{{ DATA_FILENAME }}}",
+          frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
+#if USE_WASM
+          codeUrl: "Build/{{{ CODE_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+          symbolsUrl: "Build/{{{ SYMBOLS_FILENAME }}}",
+#endif
+          streamingAssetsUrl: "StreamingAssets",
+          companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+          productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+          productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+        }, function (progress) {
+          document.querySelector('#bar i').style.width = Math.round(progress * 100) + '%';
+        }).then(function (unityInstance) {
+          instance = unityInstance;
+          window.unityInstance = unityInstance;
+          canvas.focus();
+          boot.style.opacity = '0';
+          setTimeout(function () { boot.style.display = 'none'; }, 500);
+        }).catch(function (message) {
+          var note = document.getElementById('note');
+          note.textContent = 'Puttr could not start on this TV. ' + message;
+          note.style.display = 'block';
+        });
+      })();
+    </script>
+  </body>
+</html>

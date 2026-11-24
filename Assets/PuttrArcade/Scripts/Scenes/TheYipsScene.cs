@@ -239,7 +239,7 @@ namespace PuttrArcade
             StrokeData s = StrokeOf(v);
             int dmg = v.Int("dmg"), taken = v.Int("taken");
             bool crit = v.Flag("crit");
-            yield return Swing(_putter, s, () => Sound("golf_iron", 0.55f, 1.2f));
+            yield return Swing(_putter, s, () => Sound("putter_strike", "golf_iron", 0.55f, 1.2f));   // puttr-app-2: the putter on the ball, shared by every sensor replay (the old sound until it is recorded)
             Arcade.StartCoroutine(Settle(_putter, 0.6f));
 
             // The shot up the arena.
@@ -250,7 +250,7 @@ namespace PuttrArcade
             _shot.gameObject.SetActive(true);
             _shotMat.SetColor("_EmissionColor", crit ? new Color(4f, 3f, 0.8f) : dmg > 0 ? new Color(3f, 1.6f, 2f) : new Color(0.8f, 0.6f, 0.6f));
             _shotLight.color = crit ? new Color(1f, 0.85f, 0.4f) : new Color(1f, 0.6f, 0.75f);
-            Sound(dmg > 0 ? "synth_whoosh" : "swish", 0.55f, crit ? 0.8f : 1f);
+            if (!Has(dmg > 0 ? "theyips_hit" : "theyips_block")) Sound(dmg > 0 ? "synth_whoosh" : "swish", 0.55f, crit ? 0.8f : 1f);   // puttr-app-2: the impact says it once recorded
             var trail = new List<Vector3>();
             float fly = dmg > 0 ? 0.42f : 0.5f;
             for (float t = 0f; t < 1f; t += Time.deltaTime / fly)
@@ -271,16 +271,16 @@ namespace PuttrArcade
                 _recoil = 1f;
                 _bossTo = v.Num("bossHp") / Mathf.Max(1f, v.Num("bossMax", 250f));
                 Arcade.Sparks(At(to), crit ? 70 : 28);
-                Sound(crit ? "boom" : "hammer_hit", crit ? 0.9f : 0.7f);
+                if (crit) Sound("theyips_crit", "boom", 0.9f); else Sound("theyips_hit", "hammer_hit", 0.7f);   // puttr-app-2: the game's own sound, the shared one until recorded
                 if (crit) Arcade.Shake(0.55f);
                 _hit.text = "-" + dmg;
                 _hit.color = crit ? new Color(1f, 0.85f, 0.25f) : Color.white;
                 _hit.characterSize = (crit ? 13f : 9f) * 10f / 128f * 1.4f;
                 _hitAge = 0f;
             }
-            else Sound("sizzle", 0.5f);
+            else Sound("theyips_block", "sizzle", 0.5f);   // puttr-app-2: the game's own sound, the shared one until recorded
 
-            if (v.Int("stage") != v.Int("lastStage") && v.Int("won") == 0) { Sound("gong", 0.7f, 0.8f); Stage(v.Int("stage"), false); }
+            if (v.Int("stage") != v.Int("lastStage") && v.Int("won") == 0) { Sound("theyips_stage", "gong", 0.7f, 0.8f); Stage(v.Int("stage"), false); }   // puttr-app-2: the monster's roar, the shared gong until recorded
             yield return new WaitForSeconds(dmg > 0 ? 0.35f : 0.15f);
 
             // It strikes back.
@@ -288,8 +288,8 @@ namespace PuttrArcade
             {
                 _roar = 1f;
                 for (float t = 0f; t < 1f; t += Time.deltaTime / 0.22f) { _lunge = Ease(t); yield return null; }
-                Sound("laser_zap", 0.8f, 0.7f);
-                Sound("crash", 0.5f, 1.3f);
+                Sound("theyips_stage", "laser_zap", 0.8f, 0.7f);   // puttr-app-2: the monster's roar, the shared zap and crash until recorded
+                if (!Has("theyips_stage")) Sound("crash", 0.5f, 1.3f);
                 Arcade.Shake(0.5f);
                 _redFlash = 0.55f;
                 _youTo = v.Num("playerHp") / Mathf.Max(1f, v.Num("playerMax", 100f));
@@ -307,7 +307,7 @@ namespace PuttrArcade
             if (v.Int("won") == 1)
             {
                 _dead = true;
-                Sound("boom", 1f, 0.7f);
+                Sound("theyips_victory", "boom", 1f, 0.7f);   // puttr-app-2: the game's own sound, the shared one until recorded
                 Arcade.Celebrate(40, At(BossAt));
                 for (float t = 0f; t < 1f; t += Time.deltaTime / 0.8f)
                 {
@@ -321,7 +321,7 @@ namespace PuttrArcade
             }
             else if (v.Int("won") == -1)
             {
-                Sound("rock_screech", 0.8f, 0.7f);
+                Sound("theyips_defeat", "rock_screech", 0.8f, 0.7f);   // puttr-app-2: the game's own sound, the shared one until recorded
                 Doom();
                 _roar = 1f;
                 for (float t = 0f; t < 1f; t += Time.deltaTime / 0.7f) { _scale = 1f + 0.4f * Ease(t); yield return null; }

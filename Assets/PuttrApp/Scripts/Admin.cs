@@ -31,19 +31,30 @@ namespace PuttrApp
         /// <summary>"a / b", leaving out whichever is empty.</summary>
         public static string Pair(string a, string b) => a.Length > 0 && b.Length > 0 ? a + " / " + b : a + b;
 
+        /// <summary>A tag: the one chip, its text in a meaning colour (bright green good, amber waiting, red bad).</summary>
         public static Label Pill(string text, Color colour)
         {
             Label pill = Ui.Text(text, "chip", Ui.Bold);
             pill.style.color = colour;
-            pill.style.backgroundColor = Color.Lerp(Ui.Ink, colour, 0.18f);
             return pill;
         }
 
+        /// <summary>A row's status: caps text in a meaning colour, no plate behind it.</summary>
+        public static Label Status(string text, Color colour, string classes = "caps adm-status")
+        {
+            Label status = Ui.Caps(text, classes);
+            status.style.color = colour;
+            return status;
+        }
+
+        /// <summary>A label inside a card (not a section header: those are Ui.Section, one level only).</summary>
+        public static Label Sub(string text) => Ui.Caps(text, "caps adm-label");
+
         public static VisualElement Row(string label, string value, Color? colour = null)
         {
-            Label v = Ui.Text(string.IsNullOrEmpty(value) ? "–" : value, "feed-name adm-value", Ui.Bold);
+            Label v = Ui.Text(string.IsNullOrEmpty(value) ? "–" : value, "adm-value", Ui.Bold);
             if (colour != null) v.style.color = colour.Value;
-            return Ui.Box("board-row", Ui.Text(label, "muted adm-key", Ui.Medium), v);
+            return Ui.Box("board-row", Ui.Text(label, "adm-key", Ui.Medium), v);
         }
 
         public static VisualElement Tiles(params (string value, string label, string sub)[] tiles)
@@ -51,8 +62,8 @@ namespace PuttrApp
             VisualElement grid = Ui.Box("adm-tiles");
             foreach (var t in tiles)
             {
-                VisualElement tile = Ui.Box("adm-tile", Ui.Text(t.value, "h2", Ui.Bold), Ui.Text(t.label.ToUpperInvariant(), "kick", Ui.Bold));
-                if (!string.IsNullOrEmpty(t.sub)) tile.Add(Ui.Text(t.sub, "muted", Ui.Regular));
+                VisualElement tile = Ui.Box("adm-tile", Ui.Num(t.value, "num-20"), Ui.Caps(t.label, "caps"));
+                if (!string.IsNullOrEmpty(t.sub)) tile.Add(Ui.Text(t.sub, "adm-sub", Ui.Regular));
                 grid.Add(tile);
             }
             return grid;
@@ -62,21 +73,59 @@ namespace PuttrApp
         {
             VisualElement card = Ui.Box("glass adm-card");
             foreach (VisualElement p in parts) if (p != null) card.Add(p);
+            // The last row's divider would double the card's own edge.
+            if (card.childCount > 0)
+            {
+                VisualElement last = card[card.childCount - 1];
+                if (last.ClassListContains("board-row")) last.AddToClassList("adm-last");
+                else if (last.childCount > 0 && last[last.childCount - 1].ClassListContains("board-row")) last[last.childCount - 1].style.borderBottomWidth = 0;
+            }
             VisualElement box = Ui.Box("");
             box.Add(Ui.Section(title, note));
             box.Add(Ui.Box("pad", card));
             return box;
         }
 
-        public static VisualElement UserRow(App app, object row)
+        /// <summary>A list: rows in one bordered block, split by dividers.</summary>
+        public static VisualElement List() => Ui.Box("adm-list");
+
+        public static VisualElement ListRow(VisualElement list, params VisualElement[] parts)
+        {
+            VisualElement row = Ui.Box(list.childCount == 0 ? "adm-row adm-first" : "adm-row", parts);
+            list.Add(row);
+            return row;
+        }
+
+        /// <summary>A row's words: its name (15, bold) and the lines under it (13, grey). Empty lines are left out.</summary>
+        public static VisualElement Words(string name, params string[] lines)
+        {
+            VisualElement words = Ui.Box("adm-words", Ui.Text(name, "adm-name", Ui.Bold));
+            foreach (string line in lines) if (!string.IsNullOrEmpty(line)) words.Add(Ui.Text(line, "adm-line", Ui.Medium));
+            return words;
+        }
+
+        /// <summary>A small secondary button on a row or beside the main button (User, Refresh, Clear).</summary>
+        public static VisualElement Mini(string text, Action onTap) => Ui.Button(text, onTap, "btn btn-ghost adm-mini");
+
+        /// <summary>A row of filter chips, one on. The caller draws the row again when one is picked.</summary>
+        public static VisualElement Scopes(string[] names, int chosen, Action<int> pick)
+        {
+            VisualElement row = Ui.Box("adm-scopes");
+            for (int i = 0; i < names.Length; i++)
+            {
+                int index = i;
+                row.Add(Ui.Box(i == chosen ? "scope scope-on" : "scope", Ui.Text(names[i].ToUpperInvariant(), "scope-text", Ui.Bold)).OnTap(() => pick(index)));
+            }
+            return row;
+        }
+
+        public static void UserRow(App app, VisualElement list, object row)
         {
             string name = J.Str(row, "displayName", J.Str(row, "email", "Unknown"));
             object who = row;
-            return Ui.Box("glass list-row", Ui.Avatar(name, J.Str(row, "photoURL")), Ui.Box("grow set-words", Ui.Text(name, "feed-name", Ui.Bold), Ui.Text(J.Str(row, "homeTown"), "muted", Ui.Regular), Ui.Text(J.Str(row, "email"), "muted", Ui.Regular)))
+            ListRow(list, Ui.Avatar(name, J.Str(row, "photoURL")), Words(name, J.Str(row, "homeTown"), J.Str(row, "email")))
                 .OnTap(() => app.Push(new AdminUserScreen(app, J.Str(who, "userId"))));
         }
-
-        public static Color Amber => new Color32(0xE9, 0xB9, 0x49, 0xFF);
 
         public static VisualElement Info(VisualElement over, string title, string text) { Dialog.Ask(over, title, text, "OK", () => { }); return null; }
     }
@@ -105,9 +154,8 @@ namespace PuttrApp
             _search.RegisterCallback<KeyDownEvent>(e => { if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter) Search(); });
             _tabs = new VisualElement();
             _list = new VisualElement();
-            body.Add(Ui.Box("pad", _search.Face(Ui.Medium), Ui.Box("row", Ui.Button("Search", Search, "btn grow"), FreePuttScreen.Space(0).Width(8),
-                Ui.Box("btn-small", Ui.Text("Clear", "btn-text", Ui.Bold)).OnTap(() => { _users = null; _search.value = ""; Draw(); }), FreePuttScreen.Space(0).Width(8),
-                Ui.Box("btn-small", Ui.Text("Refresh", "btn-text", Ui.Bold)).OnTap(Load))));
+            body.Add(Ui.Box("pad", _search.Face(Ui.Medium), Ui.Box("adm-actions", Ui.Button("Search", Search, "btn adm-first"),
+                Adm.Mini("Clear", () => { _users = null; _search.value = ""; Draw(); }), Adm.Mini("Refresh", Load))));
             body.Add(_tabs);
             body.Add(_list);
             Load();
@@ -129,13 +177,13 @@ namespace PuttrApp
             if (_users != null)
             {
                 _list.Add(Ui.Section(_users.Count + " USERS"));
-                VisualElement col = Ui.Box("pad");
-                foreach (object u in _users) col.Add(Adm.UserRow(_app, u));
-                _list.Add(col);
+                VisualElement col = Adm.List();
+                foreach (object u in _users) Adm.UserRow(_app, col, u);
+                if (col.childCount > 0) _list.Add(col);
                 return;
             }
             int index = Array.FindIndex(Tabs, t => t.key == _tab);
-            _tabs.Add(Ui.Box("pad", FreePuttScreen.Choice(Array.ConvertAll(Tabs, t => t.name), index, i => { _tab = Tabs[i].key; Load(); })).Margin(8));
+            _tabs.Add(Ui.Box("pad", Adm.Scopes(Array.ConvertAll(Tabs, t => t.name), index, i => { _tab = Tabs[i].key; Load(); })).Margin(8));
         }
 
         void Load()
@@ -164,16 +212,16 @@ namespace PuttrApp
         {
             _list.Clear();
             _list.Add(Ui.Section(rows.Count + " GAMES TODAY"));
-            VisualElement col = Ui.Box("pad");
+            VisualElement col = Adm.List();
             foreach (object r in rows)
             {
                 object row = r;
-                VisualElement user = Ui.Box("btn-small", Ui.Text("User", "btn-text", Ui.Bold)).OnTap(() => _app.Push(new AdminUserScreen(_app, J.Str(row, "userId"))));
-                col.Add(Ui.Box("glass list-row", Ui.Box("grow set-words", Ui.Text(J.Str(r, "title", "Game"), "feed-name", Ui.Bold), Ui.Text(Adm.When(r, "created_at"), "muted", Ui.Regular),
-                    Ui.Text(J.Str(r, "displayName", J.Str(r, "email")) + "   ·   " + J.Int(r, "players") + "p   ·   status " + J.Int(r, "status") + "   ·   score " + RoundSession.Points(J.Num(r, "score")), "sub", Ui.Regular)), user)
-                    .OnTap(() => _app.Push(new AdminGameScreen(_app, row))));
+                VisualElement user = Adm.Mini("User", () => _app.Push(new AdminUserScreen(_app, J.Str(row, "userId"))));
+                Adm.ListRow(col, Adm.Words(J.Str(r, "title", "Game"), Adm.When(r, "created_at"),
+                    J.Str(r, "displayName", J.Str(r, "email")) + "   ·   " + J.Int(r, "players") + "p   ·   status " + J.Int(r, "status") + "   ·   score " + RoundSession.Points(J.Num(r, "score"))), user)
+                    .OnTap(() => _app.Push(new AdminGameScreen(_app, row)));
             }
-            _list.Add(col);
+            if (col.childCount > 0) _list.Add(col);
         }
 
         public static string Capture(object session)
@@ -208,22 +256,23 @@ namespace PuttrApp
         {
             _list.Clear();
             _list.Add(Ui.Section(rows.Count + " SESSIONS"));
-            VisualElement col = Ui.Box("pad");
+            VisualElement col = Adm.List();
             foreach (object r in rows)
             {
                 object row = r;
                 int status = J.Int(r, "status");
                 VisualElement thumb = Ui.Box("adm-thumb");
                 Images.Into(thumb, J.Str(r, "thumbUrl"));
-                VisualElement words = Ui.Box("grow set-words", Ui.Text(J.Str(r, "displayName", J.Str(r, "email", "Unknown")), "feed-name", Ui.Bold),
-                    Ui.Text(Adm.When(r, "created_at") + "   ·   #" + J.Str(r, "id") + (J.Get(r, "score") != null ? "   ·   score " + J.Num(r, "score").ToString("0.#", CultureInfo.InvariantCulture) : "") + "   ·   " + J.Str(r, "handedness"), "muted", Ui.Regular),
-                    Ui.Box("chips", Adm.Pill(status >= 4 ? "Analyzed" : status == 3 ? "Annotated" : "Recorded", Ui.Faint)));
+                VisualElement words = Adm.Words(J.Str(r, "displayName", J.Str(r, "email", "Unknown")),
+                    Adm.When(r, "created_at") + "   ·   #" + J.Str(r, "id") + (J.Get(r, "score") != null ? "   ·   score " + J.Num(r, "score").ToString("0.#", CultureInfo.InvariantCulture) : "") + "   ·   " + J.Str(r, "handedness"));
+                VisualElement tags = Ui.Box("adm-tags", Adm.Status(status >= 4 ? "Analyzed" : status == 3 ? "Annotated" : "Recorded", Ui.Faint, "caps"));
                 string capture = Capture(r);
-                if (capture != null) words[2].Add(Adm.Pill(capture, capture == "Capture OK" ? Ui.Bright : Ui.Red));
-                VisualElement user = Ui.Box("btn-small", Ui.Text("User", "btn-text", Ui.Bold)).OnTap(() => _app.Push(new AdminUserScreen(_app, J.Str(row, "userId"))));
-                col.Add(Ui.Box("glass list-row", thumb, words, user).OnTap(() => _app.Push(new LabSessionScreen(_app, row))));
+                if (capture != null) tags.Add(Adm.Status(capture, capture == "Capture OK" ? Ui.Bright : Ui.Red, "caps"));
+                words.Add(tags);
+                VisualElement user = Adm.Mini("User", () => _app.Push(new AdminUserScreen(_app, J.Str(row, "userId"))));
+                Adm.ListRow(col, thumb, words, user).OnTap(() => _app.Push(new LabSessionScreen(_app, row)));
             }
-            _list.Add(col);
+            if (col.childCount > 0) _list.Add(col);
         }
 
         static string AppStatus(object a, out Color colour)
@@ -231,8 +280,8 @@ namespace PuttrApp
             bool draft = J.Get(a, "submittedAt") == null && J.Int(a, "status") == 0;
             int s = J.Int(a, "status");
             object live = J.Get(a, "goLive");
-            colour = Ui.Blue;
-            if (draft) { colour = new Color(1, 1, 1, 0.4f); return "DRAFT"; }
+            colour = Color.white;
+            if (draft) { colour = Ui.Faint; return "DRAFT"; }
             if (s == 2 && live != null) { colour = J.Flag(live, "live") ? Ui.Bright : Ui.Amber; return J.Flag(live, "live") ? "LIVE" : "ONBOARDING"; }
             switch (s) { case 1: colour = Ui.Amber; return "IN REVIEW"; case 2: colour = Ui.Bright; return "APPROVED"; case 3: colour = Ui.Amber; return "WAITLIST"; case 4: colour = Ui.Red; return "REJECTED"; default: return "NEW"; }
         }
@@ -242,13 +291,13 @@ namespace PuttrApp
             _list.Clear();
             int open = apps.FindAll(a => J.Get(a, "submittedAt") != null && J.Int(a, "status") <= 1).Count;
             _list.Add(Ui.Section(open + " AWAITING REVIEW" + (certs.Count > 0 ? "   ·   " + certs.Count + " TO GRADE" : "")));
-            VisualElement col = Ui.Box("pad");
+            VisualElement col = Adm.List();
             foreach (object c in certs)
             {
                 object cert = c;
                 string name = J.Str(c, "coachName", J.Str(c, "coachEmail"));
-                col.Add(Ui.Box("glass list-row adm-cert", Ui.Avatar(name, J.Str(c, "coachPhoto")), Ui.Box("grow set-words", Ui.Text(name, "feed-name", Ui.Bold), Ui.Text("Certification lesson delivered " + Adm.Ago(c, "deliveredAt"), "muted", Ui.Regular)),
-                    Adm.Pill("GRADE", Ui.Blue)).OnTap(() => _app.Push(new AdminCertGradeScreen(_app, cert))));
+                Adm.ListRow(col, Ui.Avatar(name, J.Str(c, "coachPhoto")), Adm.Words(name, "Certification lesson delivered " + Adm.Ago(c, "deliveredAt")),
+                    Adm.Status("To grade", Ui.Amber)).OnTap(() => _app.Push(new AdminCertGradeScreen(_app, cert)));
             }
             foreach (object a in apps)
             {
@@ -258,20 +307,20 @@ namespace PuttrApp
                 bool draft = J.Get(a, "submittedAt") == null && J.Int(a, "status") == 0;
                 string status = AppStatus(a, out Color colour);
                 string where = J.Str(a, "location");
-                col.Add(Ui.Box("glass list-row", Ui.Avatar(name, J.Str(a, "photoURL")), Ui.Box("grow set-words", Ui.Text(name, "feed-name", Ui.Bold),
-                    Ui.Text((where.Length > 0 ? where + "   ·   " : "") + J.Int(a, "yearsCoaching") + " yrs   ·   " + creds + (creds == 1 ? " credential" : " credentials"), "muted", Ui.Regular),
-                    Ui.Text(draft ? "Step " + Math.Max(1, J.Int(a, "step")) + " of 6   ·   started " + Adm.Ago(a, "created_at") : Adm.Ago(a, "submittedAt"), "muted", Ui.Regular)),
-                    Adm.Pill(status, colour)).OnTap(() => _app.Push(new AdminApplicationScreen(_app, J.Str(app, "id")))));
+                Adm.ListRow(col, Ui.Avatar(name, J.Str(a, "photoURL")), Adm.Words(name,
+                    (where.Length > 0 ? where + "   ·   " : "") + J.Int(a, "yearsCoaching") + " yrs   ·   " + creds + (creds == 1 ? " credential" : " credentials"),
+                    draft ? "Step " + Math.Max(1, J.Int(a, "step")) + " of 6   ·   started " + Adm.Ago(a, "created_at") : Adm.Ago(a, "submittedAt")),
+                    Adm.Status(status, colour)).OnTap(() => _app.Push(new AdminApplicationScreen(_app, J.Str(app, "id"))));
             }
-            if (certs.Count + apps.Count == 0) col.Add(Ui.Text("No coach applications.", "sub", Ui.Regular));
-            _list.Add(col);
+            if (certs.Count + apps.Count == 0) _list.Add(Ui.Box("pad", Ui.Text("No coach applications.", "body-2", Ui.Regular)));
+            else _list.Add(col);
         }
 
         void Juniors(List<object> rows)
         {
             _list.Clear();
             int pending = rows.FindAll(r => J.Int(r, "status") == 0).Count;
-            _list.Add(Ui.Box("pad", FreePuttScreen.Choice(new[] { "Pending   ·   " + pending, "All   ·   " + rows.Count }, _juniorsAll ? 1 : 0, i => { _juniorsAll = i == 1; Juniors(rows); })).Margin(4));
+            _list.Add(Ui.Box("pad", Adm.Scopes(new[] { "Pending   ·   " + pending, "All   ·   " + rows.Count }, _juniorsAll ? 1 : 0, i => { _juniorsAll = i == 1; Juniors(rows); })).Margin(4));
             int[] order = { 0, 2, 3, 1 }; // status 0, 3, 1, 2
             List<object> shown = _juniorsAll ? new List<object>(rows) : rows.FindAll(r => J.Int(r, "status") == 0);
             shown.Sort((a, b) =>
@@ -279,8 +328,8 @@ namespace PuttrApp
                 int oa = Array.IndexOf(new[] { 0, 3, 1, 2 }, J.Int(a, "status")), ob = Array.IndexOf(new[] { 0, 3, 1, 2 }, J.Int(b, "status"));
                 return oa != ob ? oa.CompareTo(ob) : string.CompareOrdinal(J.Str(a, "submittedAt"), J.Str(b, "submittedAt"));
             });
-            VisualElement col = Ui.Box("pad");
-            if (shown.Count == 0) col.Add(Ui.Text(_juniorsAll ? "No junior applications yet." : "No applications waiting for review.", "sub", Ui.Regular));
+            VisualElement col = Adm.List();
+            if (shown.Count == 0) _list.Add(Ui.Box("pad", Ui.Text(_juniorsAll ? "No junior applications yet." : "No applications waiting for review.", "body-2", Ui.Regular)));
             foreach (object r in shown)
             {
                 string name = J.Str(r, "displayName", J.Str(r, "email"));
@@ -289,18 +338,20 @@ namespace PuttrApp
                 if (age >= 0) line.Add(age + "");
                 if (J.Str(r, "hometown").Length > 0) line.Add(J.Str(r, "hometown"));
                 line.Add(Adm.Ago(r, "submittedAt"));
-                VisualElement sub = Ui.Box("chips");
-                if (!J.Flag(r, "postingRequired")) sub.Add(Adm.Pill("No-post track", Ui.Red));
-                if (J.Int(r, "status") == 3) sub.Add(Ui.Text("Parent: " + J.Str(r, "parentEmail", "no email"), "chip", Ui.Medium));
-                else if (age >= 0 && age < 18) sub.Add(J.Get(r, "parentConsentAt") != null ? Adm.Pill("Consent ✓", Ui.Bright) : Adm.Pill("Consent sent, waiting", Ui.Blue));
-                if (J.Get(r, "handicap") != null) sub.Add(Ui.Text("HCP " + J.Str(r, "handicap"), "chip", Ui.Medium));
+                VisualElement sub = Ui.Box("adm-tags");
+                if (!J.Flag(r, "postingRequired")) sub.Add(Adm.Status("No-post track", Ui.Red, "caps"));
+                if (J.Int(r, "status") == 3) sub.Add(Adm.Status("Parent: " + J.Str(r, "parentEmail", "no email"), Ui.Faint, "caps"));
+                else if (age >= 0 && age < 18) sub.Add(J.Get(r, "parentConsentAt") != null ? Adm.Status("Consent ✓", Ui.Bright, "caps") : Adm.Status("Consent sent, waiting", Ui.Amber, "caps"));
+                if (J.Get(r, "handicap") != null) sub.Add(Adm.Status("HCP " + J.Str(r, "handicap"), Ui.Faint, "caps"));
                 int s = J.Int(r, "status");
                 string id = J.Str(r, "id");
-                col.Add(Ui.Box("glass list-row", Ui.Avatar(name, J.Str(r, "photoURL")), Ui.Box("grow set-words", Ui.Text(name, "feed-name", Ui.Bold), Ui.Text(string.Join("   ·   ", line), "muted", Ui.Regular), sub),
-                    Adm.Pill(s == 1 ? "APPROVED" : s == 2 ? "REJECTED" : s == 3 ? "UNDER 13" : "PENDING", s == 1 ? Ui.Bright : s == 2 ? Ui.Red : s == 3 ? Ui.Blue : Ui.Amber))
-                    .OnTap(() => _app.Push(new AdminJuniorScreen(_app, id))));
+                VisualElement words = Adm.Words(name, string.Join("   ·   ", line));
+                if (sub.childCount > 0) words.Add(sub);
+                Adm.ListRow(col, Ui.Avatar(name, J.Str(r, "photoURL")), words,
+                    Adm.Status(s == 1 ? "APPROVED" : s == 2 ? "REJECTED" : s == 3 ? "UNDER 13" : "PENDING", s == 1 ? Ui.Bright : s == 2 ? Ui.Red : s == 3 ? Ui.Faint : Ui.Amber))
+                    .OnTap(() => _app.Push(new AdminJuniorScreen(_app, id)));
             }
-            _list.Add(col);
+            if (col.childCount > 0) _list.Add(col);
         }
     }
 
@@ -342,7 +393,7 @@ namespace PuttrApp
             App.Run(Api.Get("/admin/user/overview/" + _userId, d => { _overview.Clear(); AdminOverview.Build(_app, _overview, d); }, why =>
             {
                 _overview.Clear();
-                Label retry = Ui.Text("Overview failed (" + why + "). Tap to retry.", "sub", Ui.Bold);
+                Label retry = Ui.Text("Overview failed (" + why + "). Tap to retry.", "body-2", Ui.Bold);
                 retry.style.color = Ui.Red;
                 _overview.Add(Ui.Box("pad", retry).OnTap(LoadOverview));
             }));
@@ -355,10 +406,13 @@ namespace PuttrApp
             object u = _user;
             string name = J.Str(u, "displayName", "Unknown");
             VisualElement card = Ui.Box("glass");
-            card.Add(Ui.Box("row", Ui.Avatar(name, J.Str(u, "photoURL"), true), Ui.Box("grow set-words", Ui.Text(name, "h2", Ui.Bold), Ui.Text((J.Str(u, "firstName") + " " + J.Str(u, "lastName")).Trim(), "sub", Ui.Regular),
-                Ui.Text(J.Str(u, "email") + "  (copy)", "sec-link", Ui.Medium).OnTap(() => { GUIUtility.systemCopyBuffer = J.Str(u, "email"); _app.Toast("Email copied."); }))).OnTap(() => ProfileScreen.Open(_app, _userId, u)));
+            VisualElement words = Adm.Words(name, (J.Str(u, "firstName") + " " + J.Str(u, "lastName")).Trim());
+            words[0].RemoveFromHierarchy();
+            words.Insert(0, Ui.Title(name, "title-20"));
+            words.Add(Ui.Text(J.Str(u, "email") + "  (copy)", "adm-line", Ui.Medium).OnTap(() => { GUIUtility.systemCopyBuffer = J.Str(u, "email"); _app.Toast("Email copied."); }));
+            card.Add(Ui.Box("adm-head", Ui.Avatar(name, J.Str(u, "photoURL"), true), words).OnTap(() => ProfileScreen.Open(_app, _userId, u)));
             card.Add(Ui.Box("chips", J.Str(u, "persona").Length > 0 ? Ui.Text(J.Str(u, "persona"), "chip", Ui.Medium) : null, Ui.Text("Joined " + Adm.Day(u, "created_at"), "chip", Ui.Medium)));
-            card.Add(Membership(u).Margin(10));
+            card.Add(Membership(u).Margin(12));
             card.Add(Rows.Row("GraduationCap", "Coach (video library)", null, Rows.Switch(J.Int(u, "isCoach") == 1, on =>
                 App.Run(Api.Post("/admin/members/setCoach", new Dictionary<string, object> { { "userId", _userId }, { "isCoach", on ? 1 : 0 } }, _ => _app.Toast(on ? "Coach on." : "Coach off."), _ => { _app.Toast("Couldn't change it."); LoadUser(); })))));
             _who.Add(Ui.Box("pad", card));
@@ -381,11 +435,11 @@ namespace PuttrApp
                 else if (trial != null) { label = "Trial"; until = trial; }
                 else { label = "Active Member"; until = null; }
                 bool expired = until != null && until.Value.Date < DateTime.UtcNow.Date;
-                Label date = Ui.Text(until == null ? "" : (expired ? "expired " : "until ") + until.Value.ToString("MMM d, yyyy", CultureInfo.InvariantCulture), "sub", Ui.Bold);
+                Label date = Ui.Text(until == null ? "" : (expired ? "expired " : "until ") + until.Value.ToString("MMM d, yyyy", CultureInfo.InvariantCulture), "body-2", Ui.Bold);
                 if (expired) date.style.color = Ui.Red;
-                return Ui.Box("glass row adm-member", Ui.Icon("FillTrophy", 18, Ui.Bright), Ui.Text("  " + label + "  ", "feed-name", Ui.Bold), date, Ui.Text(detail.Length > 0 ? "   ·   " + detail : "", "muted", Ui.Regular));
+                return Ui.Box("adm-member", Ui.Icon("Trophy", 20, Ui.Bright), Ui.Text("  " + label + "  ", "adm-name", Ui.Bold), date, Ui.Text(detail.Length > 0 ? "   ·   " + detail : "", "body-2", Ui.Regular));
             }
-            return Ui.Box("row", Ui.Button("Activate year", ActivateYear, "btn grow"), FreePuttScreen.Space(0).Width(8), Ui.Button("Activate to date", ActivateDate, "btn btn-ghost grow"));
+            return Ui.Box("adm-actions", Ui.Button("Activate year", ActivateYear, "btn adm-first"), Ui.Button("Activate to date", ActivateDate, "btn btn-ghost"));
         }
 
         void Activate(Dictionary<string, object> body, string done)
@@ -398,12 +452,12 @@ namespace PuttrApp
         void ActivateYear()
         {
             VisualElement dim = null;
-            VisualElement card = Ui.Box("modal", Ui.Text("Activate a year", "h2", Ui.Bold), Ui.Text("What is this membership?", "sub", Ui.Regular).Margin(6),
+            VisualElement card = Ui.Box("modal", Ui.Title("Activate a year", "title-20"), Ui.Text("What is this membership?", "body-2", Ui.Regular).Margin(8),
                 Ui.Button("Website order", () => { dim.RemoveFromHierarchy(); Activate(new Dictionary<string, object> { { "source", "shopify" } }, "Activated for a year (website order)."); }),
                 Ui.Button("Comp (free)", () => { dim.RemoveFromHierarchy(); Activate(new Dictionary<string, object> { { "source", "comp" } }, "Activated for a year (comp)."); }, "btn btn-ghost"),
                 Ui.Button("Cancel", () => dim.RemoveFromHierarchy(), "btn btn-ghost"));
             card.RegisterCallback<ClickEvent>(e => e.StopPropagation());
-            dim = Ui.Box("modal-dim", card).OnTap(() => dim.RemoveFromHierarchy());
+            dim = Ui.Box("modal-dim", card).OnBackdropTap(() => dim.RemoveFromHierarchy());
             App.Layer(Root).Add(dim);
         }
 
@@ -413,9 +467,9 @@ namespace PuttrApp
             VisualElement dim = null;
             var field = new TextField { value = DateTime.Now.AddYears(1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) };
             field.AddToClassList("field");
-            Label error = Ui.Text("", "sub", Ui.Medium);
+            Label error = Ui.Text("", "body-2", Ui.Medium);
             error.style.color = Ui.Red;
-            VisualElement card = Ui.Box("modal", Ui.Text("Membership end date", "h2", Ui.Bold), Ui.Text("YYYY-MM-DD, today or later.", "muted", Ui.Regular), field.Face(Ui.Medium).Margin(8), error,
+            VisualElement card = Ui.Box("modal", Ui.Title("Membership end date", "title-20"), Ui.Text("YYYY-MM-DD, today or later.", "body-2", Ui.Regular).Margin(8), field.Face(Ui.Medium).Margin(8), error,
                 Ui.Button("Activate", () =>
                 {
                     if (!DateTime.TryParseExact(field.value.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime end) || end.Date < DateTime.Now.Date) { error.text = "Enter a date like 2027-11-16, today or later."; return; }
@@ -437,11 +491,11 @@ namespace PuttrApp
             for (int i = rows.Count - 1; i >= 0; i--)
             {
                 object info = J.Parse(J.Str(rows[i], "deviceInfo", "{}")) ?? J.Get(rows[i], "deviceInfo");
-                VisualElement card = Ui.Box("glass adm-device", Ui.Text(J.Str(info, "model", "Unknown"), "feed-name", Ui.Bold), Ui.Text(J.Str(info, "brand") + "   ·   " + J.Str(info, "platVer"), "muted", Ui.Regular), Ui.Text("v" + J.Str(info, "version"), "muted", Ui.Regular));
+                VisualElement card = Ui.Box("glass adm-device", Ui.Text(J.Str(info, "model", "Unknown"), "adm-name", Ui.Bold), Ui.Text(J.Str(info, "brand") + "   ·   " + J.Str(info, "platVer"), "adm-line", Ui.Regular), Ui.Text("v" + J.Str(info, "version"), "adm-line", Ui.Regular));
                 if (strip.contentContainer.childCount == 0) card.style.marginLeft = 16;
                 strip.Add(card);
             }
-            if (rows.Count == 0) strip.Add(Ui.Box("pad", Ui.Text("No devices recorded.", "muted", Ui.Regular)));
+            if (rows.Count == 0) strip.Add(Ui.Box("pad", Ui.Text("No devices recorded.", "body-2", Ui.Regular)));
             _devices.Add(strip);
         }
 
@@ -453,11 +507,11 @@ namespace PuttrApp
             foreach (object r in rows)
             {
                 object row = r;
-                VisualElement tile = Ui.Box("glass adm-labtile", Ui.Text(J.Get(r, "score") != null ? J.Num(r, "score").ToString("0", CultureInfo.InvariantCulture) : "–", "h2 center", Ui.Bold), Ui.Text(Adm.Day(r, "created_at"), "muted center", Ui.Regular)).OnTap(() => _app.Push(new LabSessionScreen(_app, row)));
+                VisualElement tile = Ui.Box("glass adm-labtile", Ui.Num(J.Get(r, "score") != null ? J.Num(r, "score").ToString("0", CultureInfo.InvariantCulture) : "–", "num-20 center"), Ui.Text(Adm.Day(r, "created_at"), "muted center", Ui.Regular)).OnTap(() => _app.Push(new LabSessionScreen(_app, row)));
                 if (strip.contentContainer.childCount == 0) tile.style.marginLeft = 16;
                 strip.Add(tile);
             }
-            if (rows.Count == 0) strip.Add(Ui.Box("pad", Ui.Text("No lab sessions", "muted", Ui.Regular)));
+            if (rows.Count == 0) strip.Add(Ui.Box("pad", Ui.Text("No lab sessions", "body-2", Ui.Regular)));
             _lab.Add(strip);
         }
     }
@@ -486,12 +540,12 @@ namespace PuttrApp
             // Account
             VisualElement flags = Ui.Box("chips");
             if (J.Int(profile, "isAdmin") == 1) flags.Add(Adm.Pill("Admin", Ui.Red));
-            if (J.Int(profile, "isTester") == 1) flags.Add(Adm.Pill("Tester", Adm.Amber));
+            if (J.Int(profile, "isTester") == 1) flags.Add(Adm.Pill("Tester", Ui.Amber));
             if (J.Int(profile, "isCoach") == 1) flags.Add(Adm.Pill("Coach", Ui.Bright));
             if (J.Flag(profile, "isMember")) flags.Add(Adm.Pill("Member", Ui.Bright));
             if (J.Int(profile, "ownsPuttr") == 1) flags.Add(Adm.Pill("Owns Puttr", Ui.Bright));
             if (J.Flag(auth, "disabled")) flags.Add(Adm.Pill("AUTH DISABLED", Ui.Red));
-            if (J.Get(auth, "emailVerified") != null && !J.Flag(auth, "emailVerified")) flags.Add(Adm.Pill("Email unverified", Adm.Amber));
+            if (J.Get(auth, "emailVerified") != null && !J.Flag(auth, "emailVerified")) flags.Add(Adm.Pill("Email unverified", Ui.Amber));
             object social = J.Get(d, "social");
             var greens = J.List(J.Get(social, "greens")).ConvertAll(g => J.Str(g, "greenMac") + " (" + J.Int(g, "connects") + " connects, " + Adm.Ago(g, "lastConnect") + ")");
             List<object> tokens = J.List(J.Get(social, "pushTokens"));
@@ -507,8 +561,8 @@ namespace PuttrApp
                 Adm.Row("Persona / hand", Adm.Pair(J.Str(profile, "persona"), J.Str(profile, "handedness"))),
                 Adm.Row("Hometown / timezone", Adm.Pair(J.Str(profile, "homeTown"), J.Str(profile, "timezone"))),
                 Adm.Row("Handicap", J.Str(profile, "realHandicap", J.Str(profile, "handicap"))),
-                Adm.Row("Greens paired", greens.Count > 0 ? string.Join("\n", greens) : "none", greens.Count > 0 ? (Color?)null : Adm.Amber),
-                Adm.Row("Push tokens", tokens.Count > 0 ? tokens.Count + "   ·   last " + Adm.Ago(tokens[0], "updated_at") : "none", tokens.Count > 0 ? (Color?)null : Adm.Amber),
+                Adm.Row("Greens paired", greens.Count > 0 ? string.Join("\n", greens) : "none", greens.Count > 0 ? (Color?)null : Ui.Amber),
+                Adm.Row("Push tokens", tokens.Count > 0 ? tokens.Count + "   ·   last " + Adm.Ago(tokens[0], "updated_at") : "none", tokens.Count > 0 ? (Color?)null : Ui.Amber),
                 Adm.Row("Notifications", prefs == null ? "defaults" : "practice " + (J.Flag(prefs, "practice") ? "on" : "off") + "   ·   competition " + (J.Flag(prefs, "competition") ? "on" : "off") + "   ·   offers " + (J.Flag(prefs, "offers") ? "on" : "off")),
                 Adm.Row("Primary putter", putter == null ? "none" : (J.Str(putter, "brand") + " " + PuttersScreen.Clean(J.Str(putter, "model"))).Trim()),
                 Adm.Row("Followers / following", J.Int(follow, "followers", J.Int(profile, "followers")) + " / " + J.Int(follow, "following", J.Int(profile, "following")))));
@@ -525,16 +579,16 @@ namespace PuttrApp
             {
                 VisualElement bar = Ui.Box("adm-bar");
                 bar.style.height = Mathf.Max(2, m.value * 60f / max);
-                bar.style.backgroundColor = m.value > 0 ? Ui.Green : (Color)new Color32(50, 52, 54, 255);
-                bars.Add(Ui.Box("adm-barcol", Ui.Text(m.value > 0 ? Adm.N(m.value) : "", "muted center", Ui.Regular), bar, Ui.Text(m.label, "muted center", Ui.Regular)));
+                bar.style.backgroundColor = m.value > 0 ? Ui.Green : Ui.Surface2;
+                bars.Add(Ui.Box("adm-barcol", Ui.Text(m.value > 0 ? Adm.N(m.value) : "", "", Ui.Regular), bar, Ui.Text(m.label, "", Ui.Regular)));
             }
             VisualElement dist = Ui.Box("chips");
             foreach (object r in J.List(J.Get(activity, "byDistance"))) if (J.Int(r, "putts") >= 5) dist.Add(Ui.Text(Pct(J.Num(r, "made"), J.Num(r, "putts")) + "   " + J.Int(r, "distance") + "ft · " + J.Int(r, "putts"), "chip", Ui.Medium));
             object coach = J.Get(activity, "coach");
-            into.Add(Adm.Card("Activity", null, Ui.Text("PUTTS PER MONTH   ·   LAST 12", "kick", Ui.Bold), bars,
+            into.Add(Adm.Card("Activity", null, Ui.Caps("Putts per month   ·   last 12", "caps"), bars,
                 Adm.Row("Average rollout", R1(putts, "avgRollout") + " in"),
                 Adm.Row("Caddie", coach == null ? "never onboarded" : J.Str(coach, "personaId") + "   ·   goal " + J.Int(coach, "dailyGoal") + "/day   ·   streak " + J.Int(coach, "currentStreak") + " (best " + J.Int(coach, "longestStreak") + ")"),
-                Ui.Text("MAKE % BY DISTANCE (5+ PUTTS)", "kick", Ui.Bold).Margin(10), dist));
+                Adm.Sub("Make % by distance (5+ putts)"), dist));
 
             // Games and replays
             object totals = J.Get(games, "totals"), video = J.Get(games, "video");
@@ -546,21 +600,21 @@ namespace PuttrApp
                 object g = recentGames[i];
                 int s = J.Int(g, "status");
                 string title = J.Str(g, "title", "Game") + (J.Int(g, "tournamentId") > 0 ? " · tournament" : "") + (J.Int(g, "players") > 1 ? " · " + J.Int(g, "players") + "p" : "");
-                Label score = Ui.Text(RoundSession.Points(J.Num(g, "score")), "feed-score", Ui.Bold);
-                score.style.color = s == 0 ? Adm.Amber : s == 1 ? Ui.Red : Ui.Bright;
-                Label rec = Ui.Text(J.Int(g, "videoSegments") > 0 ? "replay ✓" : J.Int(g, "videoRows") > 0 ? "NO VIDEO FILE" : "no recording", "muted", Ui.Medium);
+                Label score = Ui.Num(RoundSession.Points(J.Num(g, "score")), "num-20 adm-score");
+                score.style.color = s == 0 ? Ui.Amber : s == 1 ? Ui.Red : Ui.Bright;
+                Label rec = Ui.Text(J.Int(g, "videoSegments") > 0 ? "replay ✓" : J.Int(g, "videoRows") > 0 ? "NO VIDEO FILE" : "no recording", "adm-line", Ui.Medium);
                 if (J.Int(g, "videoSegments") > 0) rec.style.color = Ui.Bright; else if (J.Int(g, "videoRows") > 0) rec.style.color = Ui.Red;
                 string id = J.Str(g, "id");
-                recent.Add(Ui.Box("board-row", Ui.Box("grow", Ui.Text(title, "feed-name", Ui.Bold), Ui.Text(Adm.Day(g, "created_at") + "   ·   " + (s == 0 ? "Open" : s == 1 ? "Abandoned" : "Done") + "   ·   putt " + J.Int(g, "puttCounter"), "muted", Ui.Regular), rec), score)
+                recent.Add(Ui.Box("board-row", Ui.Box("adm-words", Ui.Text(title, "adm-name", Ui.Bold), Ui.Text(Adm.Day(g, "created_at") + "   ·   " + (s == 0 ? "Open" : s == 1 ? "Abandoned" : "Done") + "   ·   putt " + J.Int(g, "puttCounter"), "adm-line", Ui.Regular), rec), score)
                     .OnTap(() => app.Push(new GameViewScreen(app, id))));
             }
             VisualElement top = Ui.Box("");
             foreach (object t in J.List(J.Get(games, "top")))
-                top.Add(Ui.Box("board-row", Ui.Box("grow", Ui.Text(J.Str(t, "title"), "feed-name", Ui.Bold), Ui.Text(J.Str(t, "gameType") + "   ·   avg " + R1(t, "avg") + "   ·   best " + R1(t, "best") + "   ·   last " + Adm.Ago(t, "last"), "muted", Ui.Regular)), Ui.Text(J.Int(t, "plays") + "×", "feed-score", Ui.Bold)));
+                top.Add(Ui.Box("board-row", Ui.Box("adm-words", Ui.Text(J.Str(t, "title"), "adm-name", Ui.Bold), Ui.Text(J.Str(t, "gameType") + "   ·   avg " + R1(t, "avg") + "   ·   best " + R1(t, "best") + "   ·   last " + Adm.Ago(t, "last"), "adm-line", Ui.Regular)), Ui.Num(J.Int(t, "plays") + "×", "num-20 adm-score")));
             into.Add(Adm.Card("Games & replays", J.Get(video, "lastVideo") != null ? "last video " + Adm.Ago(video, "lastVideo") : null,
                 Adm.Tiles((Adm.N(completed), "Completed", null), (Adm.N(withVideo), "Replays", Pct(withVideo, completed) + " of completed"), (Adm.N(J.Num(video, "emptyRecordings")), "Empty recordings", "recorder made no file"),
                     (Adm.N(J.Num(totals, "tournament")), "Tournament", null), (Adm.N(J.Num(totals, "lab")), "Lab", null), (Adm.N(J.Num(totals, "multi")), "Local multi", null)),
-                Ui.Text("MOST PLAYED", "kick", Ui.Bold).Margin(10), top, Ui.Text("RECENT   ·   TAP TO OPEN", "kick", Ui.Bold).Margin(10), recent));
+                Adm.Sub("Most played"), top, Adm.Sub("Recent   ·   tap to open"), recent));
 
             // Quests
             object quests = J.Get(d, "quests");
@@ -569,7 +623,7 @@ namespace PuttrApp
             {
                 VisualElement q = Ui.Box("");
                 foreach (object r in questList)
-                    q.Add(Ui.Box("board-row", Ui.Box("grow", Ui.Text(J.Str(r, "title"), "feed-name", Ui.Bold), Ui.Text(J.Str(r, "questType") + "   ·   difficulty " + J.Int(r, "difficulty") + "   ·   " + J.Int(r, "played") + "/" + J.Int(r, "levels") + " levels   ·   " + Adm.Ago(r, "lastPlayed"), "muted", Ui.Regular)), Ui.Text(J.Int(r, "stars") + " stars", "feed-score", Ui.Bold)));
+                    q.Add(Ui.Box("board-row", Ui.Box("adm-words", Ui.Text(J.Str(r, "title"), "adm-name", Ui.Bold), Ui.Text(J.Str(r, "questType") + "   ·   difficulty " + J.Int(r, "difficulty") + "   ·   " + J.Int(r, "played") + "/" + J.Int(r, "levels") + " levels   ·   " + Adm.Ago(r, "lastPlayed"), "adm-line", Ui.Regular)), Ui.Num(J.Int(r, "stars") + " stars", "num-20 adm-score")));
                 into.Add(Adm.Card("Quests", null, q));
             }
 
@@ -583,8 +637,8 @@ namespace PuttrApp
                 {
                     League.Team team = League.TeamOf(J.Str(s, "team"));
                     object bySeason = J.Get(J.Get(league, "bySeason"), J.Str(s, "seasonId"));
-                    l.Add(Ui.Box("board-row", Ui.Box("grow", Ui.Text("Season " + J.Int(s, "seasonNumber") + "   ·   " + (team != null ? team.Name : J.Str(s, "team")), "feed-name", Ui.Bold),
-                        Ui.Text("weeks " + J.Int(bySeason, "weeks") + "   ·   best " + R1(bySeason, "best") + "   ·   joined " + Adm.Day(s, "joinedAt"), "muted", Ui.Regular))));
+                    l.Add(Ui.Box("board-row", Ui.Box("adm-words", Ui.Text("Season " + J.Int(s, "seasonNumber") + "   ·   " + (team != null ? team.Name : J.Str(s, "team")), "adm-name", Ui.Bold),
+                        Ui.Text("weeks " + J.Int(bySeason, "weeks") + "   ·   best " + R1(bySeason, "best") + "   ·   joined " + Adm.Day(s, "joinedAt"), "adm-line", Ui.Regular))));
                 }
                 into.Add(Adm.Card("League", null, l));
             }
@@ -595,8 +649,8 @@ namespace PuttrApp
             {
                 VisualElement t = Ui.Box("");
                 foreach (object r in tourneys)
-                    t.Add(Ui.Box("board-row", Ui.Box("grow", Ui.Text(J.Str(r, "title"), "feed-name", Ui.Bold), Ui.Text(Adm.Day(r, "startDate") + " to " + Adm.Day(r, "endDate") + "   ·   " + J.Int(r, "roundsPlayed") + " rounds   ·   " + J.Int(r, "participants") + " players", "muted", Ui.Regular)),
-                        Ui.Text(J.Get(r, "total") != null ? R1(r, "total") : "–", "feed-score", Ui.Bold)));
+                    t.Add(Ui.Box("board-row", Ui.Box("adm-words", Ui.Text(J.Str(r, "title"), "adm-name", Ui.Bold), Ui.Text(Adm.Day(r, "startDate") + " to " + Adm.Day(r, "endDate") + "   ·   " + J.Int(r, "roundsPlayed") + " rounds   ·   " + J.Int(r, "participants") + " Players", "adm-line", Ui.Regular)),
+                        Ui.Num(J.Get(r, "total") != null ? R1(r, "total") : "–", "num-20 adm-score")));
                 into.Add(Adm.Card(tourneys.Count + " tournaments joined", null, t));
             }
 
@@ -668,17 +722,16 @@ namespace PuttrApp
             {
                 bool made = J.Int(p, "made") == 1;
                 int tee = J.Int(p, "tee", 2);
-                Label result = Ui.Text(made ? "Made" : "Missed", "chip", Ui.Bold);
-                result.style.color = made ? Ui.Bright : Ui.Red;
+                Label result = Adm.Status(made ? "Made" : "Missed", made ? Ui.Bright : Ui.Red);
                 grid.Add(Ui.Box("col", Ui.Box("glass adm-putt", new PathView(J.Get(p, "ballPath"), J.Get(p, "holeBounds"), made),
-                    Ui.Box("row", Ui.Text(J.Int(p, "distance") + "ft   ·   " + (tee == 1 ? "Left" : tee == 3 ? "Right" : "Straight"), "feed-name grow", Ui.Bold), result),
-                    Ui.Text(ProfileMath.Date(p, "created_at")?.ToLocalTime().ToString("h:mm tt   ·   MMM d, yyyy", CultureInfo.InvariantCulture) ?? "", "muted", Ui.Regular))));
+                    Ui.Box("row", Ui.Text(J.Int(p, "distance") + "ft   ·   " + (tee == 1 ? "Left" : tee == 3 ? "Right" : "Straight"), "adm-name adm-words", Ui.Bold), result),
+                    Ui.Text(ProfileMath.Date(p, "created_at")?.ToLocalTime().ToString("h:mm tt   ·   MMM d, yyyy", CultureInfo.InvariantCulture) ?? "", "adm-line", Ui.Regular))));
             }
             box.Add(grid);
             return box;
         }
 
-        /// <summary>A ball path on the 475 x 350 camera frame, with the hole glowing green or red.</summary>
+        /// <summary>A ball path on the 475 x 350 camera frame, with the hole ringed green or red.</summary>
         sealed class PathView : VisualElement
         {
             readonly List<Vector3> _path = new List<Vector3>();
@@ -704,11 +757,12 @@ namespace PuttrApp
                 float k = Mathf.Min(r.width / 475f, r.height / 350f);
                 Vector2 P(Vector3 v) => new Vector2(v.x * k, v.y * k);
                 Painter2D p = ctx.painter2D;
-                p.fillColor = new Color32(0x14, 0x30, 0x1A, 0xFF);
+                p.fillColor = Ui.Surface2;
                 p.BeginPath(); p.MoveTo(Vector2.zero); p.LineTo(new Vector2(475 * k, 0)); p.LineTo(new Vector2(475 * k, 350 * k)); p.LineTo(new Vector2(0, 350 * k)); p.ClosePath(); p.Fill();
-                p.fillColor = _made ? new Color(0.48f, 0.83f, 0.27f, 0.35f) : new Color(1f, 0.32f, 0.32f, 0.3f);
-                p.BeginPath(); p.Arc(P(_hole), _hole.z * k * 0.9f, 0, 360); p.Fill();
-                p.fillColor = new Color32(0x05, 0x07, 0x08, 0xFF);
+                // The hole: solid, with a ring in the result's colour (no glow).
+                p.fillColor = _made ? (Color)Ui.Bright : Ui.Red;
+                p.BeginPath(); p.Arc(P(_hole), _hole.z * k * 0.5f + 3f, 0, 360); p.Fill();
+                p.fillColor = Ui.Base;
                 p.BeginPath(); p.Arc(P(_hole), _hole.z * k * 0.5f, 0, 360); p.Fill();
                 if (_path.Count < 2) return;
                 p.strokeColor = Color.white;
@@ -729,11 +783,10 @@ namespace PuttrApp
             Root = Page.Make(app, "Game", out VisualElement body);
             VisualElement putts = new VisualElement();
             void Load() { putts.Clear(); putts.Add(Page.Loading()); App.Run(Api.Open("/club/analytics/putts/" + J.Str(game, "id"), d => { putts.Clear(); putts.Add(AdminPutts.Build(J.List(d))); }, _ => { putts.Clear(); putts.Add(Page.Note("Could not load the putts.")); })); }
-            body.Add(Ui.Box("pad", Ui.Box("glass", Ui.Box("row", Ui.Box("grow", Ui.Text(J.Str(game, "title", "Game"), "h2", Ui.Bold), Ui.Text(J.Str(game, "displayName"), "sub", Ui.Regular)),
-                    Ui.Box("btn-small", Ui.Text("Refresh", "btn-text", Ui.Bold)).OnTap(Load)),
+            body.Add(Ui.Box("pad", Ui.Box("glass", Ui.Box("adm-head", Ui.Box("adm-words", Ui.Title(J.Str(game, "title", "Game"), "title-20"), Ui.Text(J.Str(game, "displayName"), "adm-line", Ui.Regular)),
+                    Adm.Mini("User", () => app.Push(new AdminUserScreen(app, J.Str(game, "userId")))), Adm.Mini("Refresh", Load)),
                 Ui.Box("chips", Ui.Text(J.Int(game, "players") + " players", "chip", Ui.Medium), Ui.Text("status " + J.Int(game, "status"), "chip", Ui.Medium),
-                    Ui.Text(ProfileMath.Date(game, "created_at")?.ToLocalTime().ToString("h:mm tt   ·   MMM d, yyyy", CultureInfo.InvariantCulture) ?? "", "chip", Ui.Medium)),
-                Ui.Box("btn-small", Ui.Text("User", "btn-text", Ui.Bold)).Margin(8).OnTap(() => app.Push(new AdminUserScreen(app, J.Str(game, "userId")))))));
+                    Ui.Text(ProfileMath.Date(game, "created_at")?.ToLocalTime().ToString("h:mm tt   ·   MMM d, yyyy", CultureInfo.InvariantCulture) ?? "", "chip", Ui.Medium)))));
             body.Add(putts);
             Load();
         }
@@ -772,22 +825,22 @@ namespace PuttrApp
             int status = J.Int(a, "status");
             bool draft = J.Get(a, "submittedAt") == null && status == 0, decided = status == 2 || status == 4;
             string name = J.Str(a, "displayName", "Unknown");
-            _body.Add(Ui.Box("pad", Ui.Box("glass row", Ui.Avatar(name, J.Str(a, "photoURL"), true), Ui.Box("grow set-words", Ui.Text(name, "h2", Ui.Bold), Ui.Text(J.Str(a, "email"), "sub", Ui.Regular),
-                Ui.Text(J.Str(a, "location", "No location") + (J.Str(a, "country").Length > 0 ? "   ·   " + J.Str(a, "country") : "") + (draft ? "   ·   started " + Adm.Day(a, "created_at") : "   ·   applied " + Adm.Day(a, "submittedAt")), "muted", Ui.Regular)))));
+            _body.Add(Ui.Box("pad", Ui.Box("glass row", Ui.Avatar(name, J.Str(a, "photoURL"), true), Ui.Box("adm-words", Ui.Title(name, "title-20"), Ui.Text(J.Str(a, "email"), "adm-line", Ui.Regular),
+                Ui.Text(J.Str(a, "location", "No location") + (J.Str(a, "country").Length > 0 ? "   ·   " + J.Str(a, "country") : "") + (draft ? "   ·   started " + Adm.Day(a, "created_at") : "   ·   applied " + Adm.Day(a, "submittedAt")), "adm-line", Ui.Regular)))));
             if (draft) _body.Add(Page.Note("DRAFT: not submitted yet. Step " + Math.Max(1, J.Int(a, "step")) + " of 6."));
             object ps = J.Get(a, "playerStats");
             _body.Add(Adm.Card("Their Puttr usage", null, Adm.Tiles((Adm.N(J.Num(ps, "putts")), "Putts", null), (Adm.N(J.Num(ps, "games")), "Games", null), (Adm.N(J.Num(ps, "labSessions")), "Lab sessions", null), (J.Get(ps, "lastPlayed") != null ? Adm.Ago(ps, "lastPlayed") : "never", "Last played", null))));
             string ctx = J.Str(a, "teachingContext");
             _body.Add(Adm.Card("Coaching background", null,
-                Ui.Text(J.Int(a, "yearsCoaching") + " years coaching   ·   " + J.Int(a, "playerCount") + " players today   ·   teaches " + (ctx == "BOTH" ? "at a facility and online" : ctx == "ONLINE" ? "online" : "at a facility"), "sub", Ui.Regular),
-                Ui.Text("Intended price $" + J.Str(a, "intendedPrice") + "   ·   turnaround " + J.Str(a, "intendedTurnaround") + "h   ·   " + J.Str(a, "weeklyCapacity") + " lessons/week", "sub", Ui.Regular).Margin(6)));
+                Ui.Text(J.Int(a, "yearsCoaching") + " years coaching   ·   " + J.Int(a, "playerCount") + " Players today   ·   teaches " + (ctx == "BOTH" ? "at a facility and online" : ctx == "ONLINE" ? "online" : "at a facility"), "sub", Ui.Regular),
+                Ui.Text("Intended price $" + J.Str(a, "intendedPrice") + "   ·   turnaround " + J.Str(a, "intendedTurnaround") + "h   ·   " + J.Str(a, "weeklyCapacity") + " lessons/week", "sub", Ui.Regular).Margin(8)));
             VisualElement creds = Ui.Box("");
             foreach (object c in Credentials())
             {
                 string type = J.Str(c, "type"), proof = J.Str(c, "proofUrl");
                 VisualElement thumb = Ui.Box("adm-proof");
                 if (proof.StartsWith("http")) { Images.Into(thumb, proof); thumb.OnTap(() => Application.OpenURL(proof)); }
-                creds.Add(Ui.Box("board-row", Ui.Icon("Medal", 18, J.Flag(c, "verified") ? Ui.Bright : Ui.Faint), Ui.Text("  " + (CredentialNames.TryGetValue(type, out string n) ? n : type), "feed-name grow", Ui.Bold), proof.StartsWith("http") ? thumb : Ui.Text("no proof", "muted", Ui.Regular)));
+                creds.Add(Ui.Box("board-row", Ui.Icon("Medal", 18, J.Flag(c, "verified") ? Ui.Bright : Ui.Faint), Ui.Text("  " + (CredentialNames.TryGetValue(type, out string n) ? n : type), "adm-name adm-words", Ui.Bold), proof.StartsWith("http") ? thumb : Ui.Text("no proof", "body-2", Ui.Regular)));
             }
             if (creds.childCount == 0) creds.Add(Ui.Text("None submitted. Community tier only.", "sub", Ui.Regular));
             _body.Add(Adm.Card("Credentials", null, creds));
@@ -816,7 +869,7 @@ namespace PuttrApp
                 else if (cert != null && (J.Int(cert, "status") == 2 || J.Int(cert, "status") == 3)) { title = "Certification lesson in progress"; words = "Started " + Adm.Ago(cert, "submittedAt") + ". Waiting on the coach to deliver."; }
                 else if (rubric != null && !J.Flag(rubric, "pass")) { title = "Last attempt did not pass"; words = "Scored " + J.Int(rubric, "total") + " of 25. A fresh attempt is seeded when they retry."; }
                 else { title = "Certification not started"; words = "Unlocks for the coach once the online Academy modules are done."; }
-                _body.Add(Adm.Card("Certification", null, Ui.Text(title, "feed-name", Ui.Bold), Ui.Text(words, "sub", Ui.Regular), grade));
+                _body.Add(Adm.Card("Certification", null, Ui.Text(title, "adm-name", Ui.Bold), Ui.Text(words, "sub", Ui.Regular).Margin(4), grade));
             }
             if (!decided)
             {
@@ -825,11 +878,10 @@ namespace PuttrApp
                 _notes.textEdition.hidePlaceholderOnFocus = false;
                 _notes.AddToClassList("field");
                 _body.Add(Adm.Card("Review notes (internal)", null, _notes.Face(Ui.Medium)));
-                VisualElement reject = Ui.Button("Reject", Reject, "btn btn-ghost grow"), wait = Ui.Button("Waitlist", Waitlist, "btn btn-ghost grow"), approve = Ui.Button("Approve", Approve, "btn grow");
-                reject.style.borderTopColor = reject.style.borderBottomColor = reject.style.borderLeftColor = reject.style.borderRightColor = Ui.Red;
-                _body.Add(Ui.Box("pad", Ui.Box("row", reject, FreePuttScreen.Space(0).Width(8), wait, FreePuttScreen.Space(0).Width(8), approve)).Margin(10));
+                VisualElement reject = Ui.Button("Reject", Reject, "btn btn-red adm-first"), wait = Ui.Button("Waitlist", Waitlist, "btn btn-ghost"), approve = Ui.Button("Approve", Approve);
+                _body.Add(Ui.Box("pad", Ui.Box("adm-actions", reject, wait, approve)).Margin(12));
             }
-            else _body.Add(Adm.Card("Decision", null, Ui.Text((status == 2 ? "Approved " : "Rejected ") + Adm.Day(a, "decisionAt"), "feed-name", Ui.Bold), Ui.Text(J.Str(a, "reviewNotes"), "sub", Ui.Regular)));
+            else _body.Add(Adm.Card("Decision", null, Ui.Text((status == 2 ? "Approved " : "Rejected ") + Adm.Day(a, "decisionAt"), "adm-name", Ui.Bold), Ui.Text(J.Str(a, "reviewNotes"), "sub", Ui.Regular)));
         }
 
         void Decide(Dictionary<string, object> body)
@@ -850,19 +902,19 @@ namespace PuttrApp
             void DrawTiers()
             {
                 tiers.Clear();
-                VisualElement cert = Ui.Box(tier == "CERTIFIED" ? "scope scope-on" : "scope", Ui.Text("Certified Coach", "scope-text", Ui.Bold));
+                VisualElement cert = Ui.Box(tier == "CERTIFIED" ? "scope scope-on" : "scope", Ui.Text("CERTIFIED COACH", "scope-text", Ui.Bold));
                 if (verified.Count == 0) cert.style.opacity = 0.35f; else cert.OnTap(() => { tier = "CERTIFIED"; DrawTiers(); });
-                tiers.Add(Ui.Box("row", cert, Ui.Box(tier == "COMMUNITY" ? "scope scope-on" : "scope", Ui.Text("Puttr Coach", "scope-text", Ui.Bold)).OnTap(() => { tier = "COMMUNITY"; DrawTiers(); })));
+                tiers.Add(Ui.Box("row", cert, Ui.Box(tier == "COMMUNITY" ? "scope scope-on" : "scope", Ui.Text("PUTTR COACH", "scope-text", Ui.Bold)).OnTap(() => { tier = "COMMUNITY"; DrawTiers(); })));
             }
             foreach (object c in Credentials())
             {
                 string type = J.Str(c, "type");
                 checks.Add(Rows.Row("Medal", CredentialNames.TryGetValue(type, out string n) ? n : type, null, Rows.Switch(false, on => { if (on) verified.Add(type); else verified.Remove(type); if (verified.Count == 0) tier = "COMMUNITY"; DrawTiers(); })));
             }
-            if (checks.childCount == 0) checks.Add(Ui.Text("No credentials submitted.", "muted", Ui.Regular));
+            if (checks.childCount == 0) checks.Add(Ui.Text("No credentials submitted.", "body-2", Ui.Regular));
             DrawTiers();
-            VisualElement card = Ui.Box("modal", Ui.Text("Approve applicant", "h2", Ui.Bold), Ui.Text("VERIFIED CREDENTIALS", "kick", Ui.Bold).Margin(8), checks, Ui.Text("TIER", "kick", Ui.Bold).Margin(8), tiers,
-                Ui.Button("Approve", () => { dim.RemoveFromHierarchy(); Decide(new Dictionary<string, object> { { "action", "approve" }, { "tier", verified.Count > 0 ? tier : "COMMUNITY" }, { "verifiedTypes", new List<object>(verified) } }); }).Margin(10),
+            VisualElement card = Ui.Box("modal", Ui.Title("Approve applicant", "title-20"), Adm.Sub("Verified credentials"), checks, Adm.Sub("Tier"), tiers,
+                Ui.Button("Approve", () => { dim.RemoveFromHierarchy(); Decide(new Dictionary<string, object> { { "action", "approve" }, { "tier", verified.Count > 0 ? tier : "COMMUNITY" }, { "verifiedTypes", new List<object>(verified) } }); }).Margin(12),
                 Ui.Button("Cancel", () => dim.RemoveFromHierarchy(), "btn btn-ghost"));
             card.RegisterCallback<ClickEvent>(e => e.StopPropagation());
             dim = Ui.Box("modal-dim", card);
@@ -873,7 +925,7 @@ namespace PuttrApp
         {
             string reason = null;
             VisualElement dim = null, list = Ui.Box("");
-            VisualElement go = Ui.Button("Reject", () => { if (reason == null) return; dim.RemoveFromHierarchy(); Decide(new Dictionary<string, object> { { "action", "reject" }, { "rejectReason", reason } }); });
+            VisualElement go = Ui.Button("Reject", () => { if (reason == null) return; dim.RemoveFromHierarchy(); Decide(new Dictionary<string, object> { { "action", "reject" }, { "rejectReason", reason } }); }, "btn btn-red");
             go.SetEnabled(false);
             void DrawReasons()
             {
@@ -881,11 +933,11 @@ namespace PuttrApp
                 foreach (var r in Reasons)
                 {
                     string key = r.key;
-                    list.Add(Ui.Box(reason == key ? "scope scope-on adm-reason" : "scope adm-reason", Ui.Text(r.words, "scope-text", Ui.Bold)).OnTap(() => { reason = key; go.SetEnabled(true); DrawReasons(); }));
+                    list.Add(Ui.Box(reason == key ? "scope scope-on adm-reason" : "scope adm-reason", Ui.Text(r.words.ToUpperInvariant(), "scope-text", Ui.Bold)).OnTap(() => { reason = key; go.SetEnabled(true); DrawReasons(); }));
                 }
             }
             DrawReasons();
-            VisualElement card = Ui.Box("modal", Ui.Text("Reject applicant", "h2", Ui.Bold), Ui.Text("REASON", "kick", Ui.Bold).Margin(8), list, go.Margin(10), Ui.Button("Cancel", () => dim.RemoveFromHierarchy(), "btn btn-ghost"));
+            VisualElement card = Ui.Box("modal", Ui.Title("Reject applicant", "title-20"), Adm.Sub("Reason"), list, go.Margin(12), Ui.Button("Cancel", () => dim.RemoveFromHierarchy(), "btn btn-ghost"));
             card.RegisterCallback<ClickEvent>(e => e.StopPropagation());
             dim = Ui.Box("modal-dim", card);
             App.Layer(Root).Add(dim);
@@ -925,14 +977,14 @@ namespace PuttrApp
             Root = Page.Make(app, "Grade certification", out VisualElement body);
             string name = J.Str(cert, "coachName", J.Str(cert, "coachEmail"));
             int length = J.Int(cert, "lessonVideoLength");
-            body.Add(Ui.Box("pad", Ui.Box("glass row", Ui.Avatar(name, J.Str(cert, "coachPhoto"), true), Ui.Box("grow set-words", Ui.Text(name, "h2", Ui.Bold),
-                Ui.Text("Delivered " + Adm.Ago(cert, "deliveredAt") + (length > 0 ? "   ·   " + length / 60 + ":" + (length % 60).ToString("00") : ""), "muted", Ui.Regular)))));
+            body.Add(Ui.Box("pad", Ui.Box("glass row", Ui.Avatar(name, J.Str(cert, "coachPhoto"), true), Ui.Box("adm-words", Ui.Title(name, "title-20"),
+                Ui.Text("Delivered " + Adm.Ago(cert, "deliveredAt") + (length > 0 ? "   ·   " + length / 60 + ":" + (length % 60).ToString("00") : ""), "adm-line", Ui.Regular)))));
             string video = J.Str(cert, "lessonVideoUrl");
             if (video.StartsWith("http"))
             {
                 string status = J.Str(cert, "lessonVideoTranscodeStatus");
                 body.Add(Adm.Card("Lesson video", null, Ui.Button("Watch the lesson", () => SetupGuide.Play(Root, video), "btn btn-ghost"),
-                    status == "pending" ? Ui.Text("Optimizing video for streaming... playback may stall until it finishes.", "muted", Ui.Regular)
+                    status == "pending" ? Ui.Text("Optimizing video for streaming... playback may stall until it finishes.", "body-2", Ui.Regular).Margin(8)
                         : Ui.Text(status == "done" ? "Re-optimize video" : "Optimize video for streaming", "sec-link", Ui.Medium).Margin(8).OnTap(Transcode)));
             }
             if (J.Str(cert, "coachSummary").Length > 0) body.Add(Adm.Card("Their summary notes", null, Ui.Text(J.Str(cert, "coachSummary"), "sub", Ui.Regular)));
@@ -941,7 +993,7 @@ namespace PuttrApp
             _notes.textEdition.placeholder = "Feedback for the coach (sent by email on a fail)...";
             _notes.textEdition.hidePlaceholderOnFocus = false;
             _notes.AddToClassList("field");
-            body.Add(Adm.Card("Rubric", "pass at 18 of 25, no 1s, at most one 2", _rubric, _notes.Face(Ui.Medium).Margin(10)));
+            body.Add(Adm.Card("Rubric", "pass at 18 of 25, no 1s, at most one 2", _rubric, _notes.Face(Ui.Medium).Margin(12)));
             _bar = Ui.Box("pad");
             body.Add(_bar);
             Draw();
@@ -958,16 +1010,16 @@ namespace PuttrApp
                 {
                     int v = i;
                     bool on = _scores.TryGetValue(key, out int s) && s == v;
-                    VisualElement b = Ui.Box("rate-star", Ui.Text(v.ToString(), "btn-text", Ui.Bold)).OnTap(() => { _scores[key] = v; Draw(); });
+                    VisualElement b = Ui.Box("rate-star", Ui.Num(v.ToString(), "num-20")).OnTap(() => { _scores[key] = v; Draw(); });
                     if (on) b.style.backgroundColor = v <= 2 ? Ui.Red : Ui.Green;
                     row.Add(b);
                 }
-                _rubric.Add(Ui.Box("adm-criterion", Ui.Text(c.title, "feed-name", Ui.Bold), Ui.Text(c.words, "muted", Ui.Regular), row.Margin(6)));
+                _rubric.Add(Ui.Box("adm-criterion", Ui.Text(c.title, "adm-name", Ui.Bold), Ui.Text(c.words, "adm-line", Ui.Regular), row.Margin(8)));
             }
             _bar.Clear();
             int total = 0; foreach (int s in _scores.Values) total += s;
             bool all = _scores.Count == Criteria.Length, pass = all && Passes(_scores.Values);
-            _bar.Add(Ui.Text(total + " / 25   ·   " + (all ? (pass ? "Pass" : "Fail") : Criteria.Length - _scores.Count + " left to score"), "h2 center", Ui.Bold));
+            _bar.Add(Ui.Text(total + " / 25   ·   " + (all ? (pass ? "Pass" : "Fail") : Criteria.Length - _scores.Count + " left to score"), "title-20 center"));
             VisualElement go = Ui.Button(!all ? "Score all five to grade" : pass ? "Pass and Certify" : "Fail with Feedback", () => Grade(total, pass), all && !pass ? "btn btn-red" : "btn");
             go.SetEnabled(all);
             _bar.Add(go.Margin(8));
@@ -1043,10 +1095,9 @@ namespace PuttrApp
             foreach (object m in messages)
             {
                 string status = J.Str(m, "status");
-                Label s = Ui.Text(status.Replace("_", " ").ToUpperInvariant(), "kick", Ui.Bold);
-                s.style.color = status == "delivered" ? Ui.Bright : status == "not_delivered" ? Ui.Red : Ui.Amber;
-                card.Add(Ui.Box("board-row", Ui.Box("grow", Ui.Text(J.Str(m, "subject", "(no subject)"), "feed-name", Ui.Bold),
-                    Ui.Text("to " + J.Str(m, "to") + "   ·   " + Adm.Ago(m, "lastEvent") + "   ·   opened " + J.Int(m, "opens") + "x   ·   clicked " + J.Int(m, "clicks") + "x", "muted", Ui.Regular)), s));
+                Label s = Adm.Status(status.Replace("_", " "), status == "delivered" ? Ui.Bright : status == "not_delivered" ? Ui.Red : Ui.Amber);
+                card.Add(Ui.Box("board-row", Ui.Box("adm-words", Ui.Text(J.Str(m, "subject", "(no subject)"), "adm-name", Ui.Bold),
+                    Ui.Text("to " + J.Str(m, "to") + "   ·   " + Adm.Ago(m, "lastEvent") + "   ·   opened " + J.Int(m, "opens") + "x   ·   clicked " + J.Int(m, "clicks") + "x", "adm-line", Ui.Regular)), s));
             }
             _emails.Add(Adm.Card("Email delivery (SendGrid)", "refresh", card));
             _emails.Q<Label>(className: "sec-link")?.OnTap(LoadEmails);
@@ -1059,9 +1110,9 @@ namespace PuttrApp
             int status = J.Int(a, "status"), age = Age(a);
             bool minor = age >= 0 && age < 18;
             string name = J.Str(a, "displayName", J.Str(a, "email"));
-            Label pill = Adm.Pill(status == 1 ? "APPROVED" : status == 2 ? "REJECTED" : status == 3 ? "UNDER 13 WAITLIST" : "PENDING", status == 1 ? Ui.Bright : status == 2 ? Ui.Red : status == 3 ? Ui.Blue : Ui.Amber);
-            _body.Add(Ui.Box("pad", Ui.Box("glass row", Ui.Avatar(name, J.Str(a, "photoURL"), true), Ui.Box("grow set-words", Ui.Text(name, "h2", Ui.Bold),
-                Ui.Text(J.Str(a, "email") + (J.Get(a, "memberSince") != null ? "   ·   joined " + ProfileMath.Date(a, "memberSince")?.ToString("MMM yyyy", CultureInfo.InvariantCulture) : ""), "muted", Ui.Regular)), pill)));
+            Label pill = Adm.Status(status == 1 ? "APPROVED" : status == 2 ? "REJECTED" : status == 3 ? "UNDER 13 WAITLIST" : "PENDING", status == 1 ? Ui.Bright : status == 2 ? Ui.Red : status == 3 ? Ui.Faint : Ui.Amber);
+            _body.Add(Ui.Box("pad", Ui.Box("glass row", Ui.Avatar(name, J.Str(a, "photoURL"), true), Ui.Box("adm-words", Ui.Title(name, "title-20"),
+                Ui.Text(J.Str(a, "email") + (J.Get(a, "memberSince") != null ? "   ·   joined " + ProfileMath.Date(a, "memberSince")?.ToString("MMM yyyy", CultureInfo.InvariantCulture) : ""), "adm-line", Ui.Regular)), pill)));
             string country = J.Str(a, "country"), region = J.Str(a, "region");
             bool nilRisk = minor && country == "US" && (region == "AL" || region == "HI");
             string nil = !minor ? "Not a minor, n/a" : country != "US" ? "Outside US" : nilRisk ? region + " bans HS deals" : region + " allows HS deals";
@@ -1087,11 +1138,11 @@ namespace PuttrApp
                 string handle = J.Str(a, social);
                 if (handle.Length == 0) continue;
                 string url = handle.StartsWith("http") ? handle : social == "instagram" ? "https://instagram.com/" + handle.TrimStart('@') : social == "tiktok" ? "https://tiktok.com/@" + handle.TrimStart('@') : handle;
-                rows.Add(Ui.Box("board-row", Ui.Text(char.ToUpper(social[0]) + social.Substring(1), "muted adm-key", Ui.Medium), Ui.Text((social == "youtube" ? "" : "@") + handle.TrimStart('@'), "sec-link", Ui.Medium).OnTap(() => Application.OpenURL(url))));
+                rows.Add(Ui.Box("board-row", Ui.Text(char.ToUpper(social[0]) + social.Substring(1), "adm-key", Ui.Medium), Ui.Text((social == "youtube" ? "" : "@") + handle.TrimStart('@'), "sec-link", Ui.Medium).OnTap(() => Application.OpenURL(url))));
             }
             _body.Add(Adm.Card("Details", null, rows.ToArray()));
             if (J.Str(a, "extraInfo").Length > 0) _body.Add(Adm.Card("From the applicant", null, Ui.Text(J.Str(a, "extraInfo"), "sub", Ui.Regular)));
-            if (status != 0 && J.Str(a, "reviewNotes").Length > 0) _body.Add(Adm.Card(status == 2 ? "Decline reason (sent to the player)" : "Review notes", null, Ui.Text(J.Str(a, "reviewNotes"), "sub", Ui.Regular)));
+            if (status != 0 && J.Str(a, "reviewNotes").Length > 0) _body.Add(Adm.Card(status == 2 ? "Decline reason (sent to the Player)" : "Review notes", null, Ui.Text(J.Str(a, "reviewNotes"), "sub", Ui.Regular)));
             if (minor && J.Get(a, "parentConsentAt") == null && status == 0)
                 _body.Add(Page.Note("Parent consent has not landed yet (" + Adm.Ago(a, "submittedAt") + " since submit). Approving now still grants the membership; consider waiting for the sign-off, or resend the consent email below."));
 
@@ -1101,13 +1152,13 @@ namespace PuttrApp
             {
                 string tone = J.Str(item, "tone");
                 VisualElement dot = Ui.Box("adm-dot");
-                dot.style.backgroundColor = tone == "good" ? Ui.Bright : tone == "bad" ? Ui.Red : tone == "warn" ? Ui.Amber : new Color(1, 1, 1, 0.35f);
-                Label title = Ui.Text(J.Str(item, "title"), "feed-name", Ui.Bold);
+                dot.style.backgroundColor = tone == "good" ? Ui.Bright : tone == "bad" ? Ui.Red : tone == "warn" ? Ui.Amber : Ui.Faint;
+                Label title = Ui.Text(J.Str(item, "title"), "adm-name", Ui.Bold);
                 if (tone == "bad") title.style.color = Ui.Red;
-                log.Add(Ui.Box("adm-log", dot, Ui.Box("grow set-words", title, Ui.Text(J.Str(item, "detail"), "sub", Ui.Regular), Ui.Text(ProfileMath.Date(item, "at")?.ToLocalTime().ToString("MMM d, yyyy h:mm tt", CultureInfo.InvariantCulture) + "   ·   " + Adm.Ago(item, "at"), "muted", Ui.Regular))));
+                log.Add(Ui.Box("adm-log", dot, Ui.Box("grow set-words", title, Ui.Text(J.Str(item, "detail"), "adm-line", Ui.Regular), Ui.Text(ProfileMath.Date(item, "at")?.ToLocalTime().ToString("MMM d, yyyy h:mm tt", CultureInfo.InvariantCulture) + "   ·   " + Adm.Ago(item, "at"), "adm-line", Ui.Regular))));
             }
-            if (!J.Flag(_timeline, "eventsLogged")) log.Add(Ui.Text("No email records for this application. Sends before Nov 2026 were not logged, so an email may have gone out without appearing here. Use Resend below to send a tracked copy.", "muted", Ui.Regular).Margin(6));
-            VisualElement resends = Ui.Box("chips");
+            if (!J.Flag(_timeline, "eventsLogged")) log.Add(Ui.Text("No email records for this application. Sends before Nov 2026 were not logged, so an email may have gone out without appearing here. Use Resend below to send a tracked copy.", "body-2", Ui.Regular).Margin(8));
+            VisualElement resends = Ui.Box("");
             var stages = new List<(string key, string label, bool parent)>();
             if (status == 3) stages.Add(("parentWaitlist", "Parent waitlist email", true));
             else
@@ -1117,12 +1168,12 @@ namespace PuttrApp
                 if (status == 1) stages.Add(("approved", "Approval email", false));
                 if (status == 2) stages.Add(("rejected", "Decline email", false));
             }
-            foreach (var st in stages) { var s = st; resends.Add(Adm.Pill("Resend " + s.label.ToLowerInvariant(), Ui.Blue).OnTap(() => Resend(s.key, s.label, s.parent))); }
-            _body.Add(Adm.Card("Status log", null, log, resends.Margin(8)));
+            foreach (var st in stages) { var s = st; resends.Add(Ui.Secondary("Resend " + s.label.ToLowerInvariant(), () => Resend(s.key, s.label, s.parent)).Margin(8)); }
+            _body.Add(Adm.Card("Status log", null, log, resends));
             _body.Add(_emails);
 
             if (status == 0)
-                _body.Add(Ui.Box("pad", Ui.Box("row", Ui.Button("Decline", Decline, "btn btn-ghost grow"), FreePuttScreen.Space(0).Width(8), Ui.Button("Approve", Approve, "btn grow"))).Margin(12));
+                _body.Add(Ui.Box("pad", Ui.Box("adm-actions", Ui.Button("Decline", Decline, "btn btn-red adm-first"), Ui.Button("Approve", Approve))).Margin(12));
         }
 
         void Merge(object d)
@@ -1143,15 +1194,15 @@ namespace PuttrApp
             reason.textEdition.placeholder = "Optional. e.g. We need an active public golf account to verify posting.";
             reason.textEdition.hidePlaceholderOnFocus = false;
             reason.AddToClassList("field");
-            VisualElement card = Ui.Box("modal", Ui.Text("Decline application", "h2", Ui.Bold), Ui.Text("The player gets a soft decline email. Anything you type below is included in that email, word for word.", "sub", Ui.Regular).Margin(6),
-                Ui.Text("REASON (SENT TO THE PLAYER)", "kick", Ui.Bold).Margin(8), reason.Face(Ui.Medium),
+            VisualElement card = Ui.Box("modal", Ui.Title("Decline application", "title-20"), Ui.Text("The Player gets a soft decline email. Anything you type below is included in that email, word for word.", "sub", Ui.Regular).Margin(8),
+                Adm.Sub("Reason (sent to the Player)"), reason.Face(Ui.Medium),
                 Ui.Button("Decline", () =>
                 {
                     dim.RemoveFromHierarchy();
                     var body = new Dictionary<string, object> { { "action", "reject" } };
                     if (reason.value.Trim().Length > 0) body["declineReason"] = reason.value.Trim();
                     App.Run(Api.Post("/admin/junior/application/" + _id + "/decide", body, d => { Merge(d); _app.Toast("Declined."); }, why => _app.Toast(why == "http_400" ? "Already decided." : "Could not save the decision.")));
-                }, "btn btn-red").Margin(10),
+                }, "btn btn-red").Margin(12),
                 Ui.Button("Cancel", () => dim.RemoveFromHierarchy(), "btn btn-ghost"));
             card.RegisterCallback<ClickEvent>(e => e.StopPropagation());
             dim = Ui.Box("modal-dim", card);
@@ -1176,10 +1227,10 @@ namespace PuttrApp
                     Root.schedule.Execute(LoadEmails).StartingIn(4000);
                 }, why => _app.Toast("Not sent (" + why + ").")));
             });
-            VisualElement card = Ui.Box("modal", Ui.Text("Resend " + label.ToLowerInvariant(), "h2", Ui.Bold),
+            VisualElement card = Ui.Box("modal", Ui.Title("Resend " + label, "title-20"),
                 Ui.Text(parent ? "Check the address with the parent first. Changing it here updates the application, so future emails go to the new address too."
-                    : "Sends the same email again. A different address here is a one-off; the player's profile email is not changed.", "sub", Ui.Regular).Margin(6),
-                Ui.Text("SEND TO", "kick", Ui.Bold).Margin(8), to.Face(Ui.Medium), send.Margin(10), Ui.Button("Cancel", () => dim.RemoveFromHierarchy(), "btn btn-ghost"));
+                    : "Sends the same email again. A different address here is a one-off; the Player's profile email is not changed.", "sub", Ui.Regular).Margin(8),
+                Adm.Sub("Send to"), to.Face(Ui.Medium), send.Margin(12), Ui.Button("Cancel", () => dim.RemoveFromHierarchy(), "btn btn-ghost"));
             card.RegisterCallback<ClickEvent>(e => e.StopPropagation());
             dim = Ui.Box("modal-dim", card);
             App.Layer(Root).Add(dim);

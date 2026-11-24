@@ -27,7 +27,8 @@ namespace PuttrApp.Tests
             {
                 var g = Make(type) as SensorGame;
                 Assert.IsNotNull(g, type);
-                Assert.Greater(g.HowTo.Length, 5, type + " has its briefing");
+                Assert.That(g.HowTo.Length, Is.InRange(1, 4), type + " has a short how to play");
+                foreach (string line in g.HowTo) StringAssert.DoesNotContain("—", line, type + ": no em dashes");
                 g.Start();
                 RuleViews.State(g);
                 int n = 0;

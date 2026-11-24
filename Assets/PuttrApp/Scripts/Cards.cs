@@ -19,7 +19,7 @@ namespace PuttrApp
             {
                 if (joinedFirst) return; // Home says nothing when there is nothing; Profile says so
                 slot.Add(Ui.Section("Challenges"));
-                slot.Add(Ui.Box("pad", Ui.Box("glass", Ui.Text("No active challenges right now.", "sub", Ui.Regular))));
+                slot.Add(Ui.Box("pad", Ui.Box("card", Ui.Text("No active challenges right now.", "body-2", Ui.Regular))));
                 return;
             }
             if (joinedFirst)
@@ -36,17 +36,21 @@ namespace PuttrApp
                 bool joined = Joined(rows[i]) == 1;
                 double score = J.Get(rows[i], "userResults") != null ? J.Num(rows[i], "userResults") : J.Num(challenge, "currentScore");
                 int percent = ChallengeMath.Percent(score, levels, out _, out _);
-                ProfileScreen.Look(J.Str(challenge, "cType"), out string icon, out Color tint);
+                ProfileScreen.Look(J.Str(challenge, "cType"), out string icon, out _);
                 // The icon and the title in a row; the title wraps to two lines and never runs off the card.
+                // Flat (docs/design-guidelines.md): a plain stroke icon (no tinted tile), the time left in amber caps,
+                // a 4 px bar, and Join as the quiet action.
                 VisualElement card = Ui.Box("glass challenge",
-                    Ui.Box("row challenge-head", Ui.Bubble(icon, tint), Ui.Text(J.Str(challenge, "title", "Challenge"), "tile-title challenge-title grow", Ui.Bold)),
-                    Ui.Text(ProfileMath.TimeLeft(ProfileMath.Date(challenge, "endDate"), DateTime.UtcNow), "muted", Ui.Regular));
+                    Ui.Box("row challenge-head", Ui.Icon(Stroke(icon), 24, Color.white), Ui.Text(J.Str(challenge, "title", "Challenge"), "tile-title challenge-title grow", Ui.Bold)),
+                    Ui.Caps(ProfileMath.TimeLeft(ProfileMath.Date(challenge, "endDate"), DateTime.UtcNow), "caps challenge-time"));
                 if (joined && levels.Count > 0)
                 {
-                    card.Add(Ui.Progress(percent / 100f));
-                    card.Add(Ui.Text(percent + "%", "sec-link", Ui.Bold).Margin(6));
+                    VisualElement bar = Ui.Progress(percent / 100f);
+                    bar.AddToClassList("challenge-bar");
+                    card.Add(bar);
+                    card.Add(Ui.Caps(percent + "%", "caps challenge-pct"));
                 }
-                else card.Add(Ui.Text("Join", "chip-join", Ui.Bold).Margin(8));
+                else card.Add(Ui.Text("Join", "chip-join", Ui.Bold).Margin(12));
                 if (i == 0) card.style.marginLeft = 16;
                 object tapped = rows[i];
                 row.Add(card.OnTap(() => app.Push(new ChallengeScreen(app, tapped))));
@@ -55,6 +59,13 @@ namespace PuttrApp
             end.style.width = 16;
             row.Add(end);
             slot.Add(row);
+        }
+
+        /// <summary>The stroke icon where the set has one (FillTrophy to Trophy): icons are plain strokes.</summary>
+        public static string Stroke(string icon)
+        {
+            string stroke = icon != null && icon.StartsWith("Fill") ? icon.Substring(4) : icon;
+            return stroke != icon && Resources.Load<Texture2D>("PuttrArcade/Icons/Icon" + stroke) == null ? icon : stroke;
         }
 
         static int Joined(object row) => J.Get(J.Get(row, "challenge"), "userJoined") != null ? 1 : 0;

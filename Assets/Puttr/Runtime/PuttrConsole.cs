@@ -42,6 +42,28 @@ namespace Puttr
         [Tooltip("Look for the console on WiFi.")]
         public bool useWifi = true;
 
+        /// <summary>How long Bluetooth has to itself before the WiFi is looked on as well.</summary>
+        public const float BluetoothFirstSeconds = 6f;
+
+        /// <summary>
+        /// Bluetooth first, WiFi as the fallback (Matt, 2026-11-23, every build): the WiFi search waits until Bluetooth
+        /// has had BluetoothFirstSeconds without connecting, or cannot be used at all (no radio in this build, switched
+        /// off, not allowed, or useBluetooth false). A host that was asked for by name is looked for straight away.
+        /// </summary>
+        public bool WifiTurn => WifiFallback(useWifi, useBluetooth && PuttrBluetooth.Supported, Bluetooth.State, Bluetooth.Connected,
+            !string.IsNullOrEmpty(host), Time.realtimeSinceStartup - _bluetoothSince);
+
+        /// <summary>The rule behind WifiTurn, on its own so it can be tested.</summary>
+        public static bool WifiFallback(bool wifi, bool bluetooth, BluetoothState state, bool connected, bool hostAsked, float secondsLooking)
+        {
+            if (!wifi) return false;
+            if (!bluetooth || hostAsked) return true;
+            if (connected) return false;
+            if (state == BluetoothState.NotAllowed || state == BluetoothState.Off) return true;
+            return secondsLooking >= BluetoothFirstSeconds;
+        }
+        float _bluetoothSince;
+
         [Tooltip("Write connection changes to the log.")]
         public bool logConnection = true;
 
@@ -116,6 +138,7 @@ namespace Puttr
 
         void OnEnable()
         {
+            _bluetoothSince = Time.realtimeSinceStartup;
             StartCoroutine(Run());
             if (useBluetooth) Bluetooth.Start();
         }
@@ -129,11 +152,47 @@ namespace Puttr
 
         void OnDestroy() => _socket.Dispose();
 
+        // puttr-app-2: the console is let go while the app is in the background, and found again when it comes back
+        // (Matt, 2026-11-21: no Bluetooth connection held in the background). WiFi mode, where Bluetooth is off, is left as it is.
+        bool _resumeBluetooth;
+        void OnApplicationPause(bool paused)
+        {
+            if (paused)
+            {
+                _resumeBluetooth = Bluetooth.Running;
+                if (_resumeBluetooth) Bluetooth.Stop();
+            }
+            else if (_resumeBluetooth)
+            {
+                _resumeBluetooth = false;
+                _lookAgain = 0f;
+                _bluetoothSince = Time.realtimeSinceStartup;
+                Bluetooth.Start();
+            }
+        }
+
         void Update()
         {
             _socket.Pump();
             Bluetooth.Pump();
+            // Bluetooth's head start runs from when it last had a console, or was last switched on.
+            if (Bluetooth.Connected || (useBluetooth && !Bluetooth.Running)) _bluetoothSince = Time.realtimeSinceStartup;
+            LookAgain();
         }
+
+        // As the legacy app: looking from launch, and every 5 seconds while no console has answered. One in range
+        // that did not connect (a failed attempt tells nobody) is tried again here too.
+        void LookAgain()
+        {
+            if (!useBluetooth || Bluetooth.State != BluetoothState.Scanning) { _lookAgain = 0f; return; }
+            float now = Time.realtimeSinceStartup;
+            if (_lookAgain == 0f) { _lookAgain = now + 5f; return; }
+            if (now < _lookAgain) return;
+            _lookAgain = now + 5f;
+            if (Bluetooth.Devices.Count == 0) Bluetooth.Rescan();
+            else OnBluetoothChanged();
+        }
+        float _lookAgain;
 
         // A console in range and nothing connected: take the one used last
         // time, else the one with this console's name, else the nearest.
@@ -230,7 +289,7 @@ namespace Puttr
                 _restart = false;
                 SetState(ConsoleState.Searching);
                 ActiveHost = null;
-                while (!useWifi) yield return null;
+                while (!WifiTurn) yield return null;   // Bluetooth first
 
                 BuildCandidates();
                 string found = null, version = null;

@@ -57,7 +57,7 @@ namespace PuttrArcade
             _path = line.AddComponent<LineRenderer>();
             _path.useWorldSpace = true;
             _path.material = Make.Glow(new Color(green.r, green.g, green.b, 1f), false);
-            _path.widthMultiplier = 0.9f;
+            _path.widthMultiplier = 0.42f;   // the card is close in on the cup: a line a little thinner than the ball
             _path.numCapVertices = 6;
             _path.alignment = LineAlignment.View;
             _path.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -73,7 +73,11 @@ namespace PuttrArcade
             band.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             _band = band.transform;
 
-            GameObject spot = Make.MeshObject("Spot", root, Make.Disc(0.75f), Make.Glow(Color.white, false));
+            // Where the ideal putt goes in: a green dot on the lip of the cup, ringed white so it shows on the carpet.
+            GameObject spot = Make.MeshObject("Spot", root, Make.Disc(0.62f), Make.Glow(Color.white, false));
+            GameObject core = Make.MeshObject("Entry point", spot.transform, Make.Disc(0.46f), Make.Glow(new Color(0.3f, 0.9f, 0.25f, 1f), false));
+            core.layer = Layer;
+            core.transform.localPosition = new Vector3(0f, 0.03f, 0f);
             spot.layer = Layer;
             _spot = spot.transform;
             root.gameObject.SetActive(false);
@@ -82,9 +86,23 @@ namespace PuttrArcade
 
         readonly Transform _root;
 
-        // The ideal putt is seen from above the tees; the replay of a real putt from close to the cup.
         static readonly Vector3 WideFrom = new Vector3(0f, 21f, -31f), WideAt = new Vector3(0f, 0f, -5f);
-        static readonly Vector3 CloseFrom = new Vector3(0f, 11f, -15f), CloseAt = new Vector3(0f, 0f, -1.5f);
+        // The card's picture is the cup: from nearly overhead, the hole fills the box top to bottom (Matt, 2026-11-23).
+        // A target off to one side of the cup is kept in the picture with it: the camera sits between the two and
+        // opens its lens only as far as that takes.
+        float _frameTarget, _frameMargin = 0.55f;
+        void Close(float targetIn, float margin = 0.55f)
+        {
+            _frameTarget = targetIn; _frameMargin = margin;
+            float mid = Mathf.Abs(targetIn) > LaneSpec.HoleRadius ? targetIn * 0.5f : 0f;
+            var from = new Vector3(mid, 13f, -5.2f);
+            var at = new Vector3(mid, 0f, -0.25f);
+            float halfTall = LaneSpec.HoleRadius + margin;
+            if (mid != 0f) halfTall = Mathf.Max(halfTall, (Mathf.Abs(mid) + LaneSpec.HoleRadius + 0.9f) * _texture.height / _texture.width);
+            _camera.transform.localPosition = from;
+            _camera.transform.LookAt(_camera.transform.parent.TransformPoint(at));
+            _camera.fieldOfView = 2f * Mathf.Atan(halfTall / Vector3.Distance(from, at)) * Mathf.Rad2Deg;
+        }
         LineRenderer _real;
         Transform _ball;
         Vector3[] _replay;
@@ -131,8 +149,7 @@ namespace PuttrArcade
             if (pts.Count < 2) return;
             _replay = pts.ToArray();
             _replayT = 0f;
-            _camera.transform.localPosition = CloseFrom;
-            _camera.transform.LookAt(CloseAt);
+            Close(_frameTarget, _frameMargin);
             _real.gameObject.SetActive(true);
             _ball.gameObject.SetActive(true);
             Tick(0f);
@@ -160,33 +177,112 @@ namespace PuttrArcade
         {
             _root.gameObject.SetActive(true);
             _replayT = -1f;
+            _band.gameObject.SetActive(true); _spot.gameObject.SetActive(true);
+            if (_arcOn != null) { _arcOn.gameObject.SetActive(false); _arcOff.gameObject.SetActive(false); _entry.gameObject.SetActive(false); }
             if (_real != null) { _real.gameObject.SetActive(false); _ball.gameObject.SetActive(false); }
-            _camera.transform.localPosition = WideFrom;
-            _camera.transform.LookAt(WideAt);
+            Close(targetIn);
             float teeIn = (Mathf.Clamp(tee, 1, 3) - 2) * TeeSideInches, length = Mathf.Max(3, feet) * 12f;
             float slope = Mathf.Tan(LaneSpec.RampAngleDeg * Mathf.Deg2Rad);
 
-            // From the tee to the crossing point, then on into the cup.
+            // Where that line meets the lip of the cup: the entry point. A target outside the cup has none: the spot
+            // marks where it crosses the hole's centre line.
+            Vector2 entry = new Vector2(targetIn, 0f);
+            if (Mathf.Abs(targetIn) < LaneSpec.HoleRadius)
+            {
+                Vector2 back = new Vector2(teeIn - targetIn, -length).normalized;   // from the crossing point toward the tee
+                float b = targetIn * back.x, along = -b + Mathf.Sqrt(Mathf.Max(0f, b * b - targetIn * targetIn + LaneSpec.HoleRadius * LaneSpec.HoleRadius));
+                entry += back * along;
+            }
+
+            // From the tee to the entry point.
             var points = new List<Vector3>();
-            for (float z = ViewFromZ; z <= 0.01f; z += 1f)
+            for (float z = ViewFromZ; z < entry.y - 0.05f; z += 0.5f)
             {
                 float x = targetIn + (teeIn - targetIn) * (-z) / length;
                 points.Add(new Vector3(x, LaneSpec.SurfaceY(z) + 0.12f, z));
             }
+            points.Add(new Vector3(entry.x, LaneSpec.SurfaceY(entry.y) + 0.12f, entry.y));
             _path.positionCount = points.Count;
             _path.SetPositions(points.ToArray());
 
             float band = Mathf.Min(goalIn, LaneSpec.MatHalfWidth * 2f);
             _band.position = new Vector3(0f, 0.06f, 0f);
             _band.rotation = Quaternion.Euler(90f - LaneSpec.RampAngleDeg, 0f, 0f);
-            _band.localScale = new Vector3(band, 1.6f, 1f);
-            _spot.position = new Vector3(targetIn, 0.15f, 0f);
+            _band.localScale = new Vector3(band, 0.9f, 1f);
+            _spot.position = new Vector3(entry.x, LaneSpec.SurfaceY(entry.y) + 0.16f, entry.y);
             _spot.rotation = Quaternion.Euler(-LaneSpec.RampAngleDeg, 0f, 0f);
 
             _camera.Render();
         }
 
         public void Hide() => _root.gameObject.SetActive(false);
+
+        // ── An entry window (Beer Pong): the arc of the rim a make must come in through ──
+        LineRenderer _arcOn, _arcOff;
+        Transform _entry;
+        Material _entryPaint;
+
+        LineRenderer Arc(string name, Color colour, float width)
+        {
+            var go = new GameObject(name) { layer = Layer };
+            go.transform.SetParent(_root, false);
+            LineRenderer l = go.AddComponent<LineRenderer>();
+            l.useWorldSpace = true;
+            l.material = Make.Glow(colour, false);
+            l.widthMultiplier = width;
+            l.numCapVertices = 4;
+            l.alignment = LineAlignment.TransformZ;
+            go.transform.rotation = Quaternion.Euler(90f, 0f, 0f);   // flat on the mat
+            l.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            return l;
+        }
+
+        static void ArcPoints(LineRenderer l, float from, float to, float radius)
+        {
+            int n = Mathf.Max(2, Mathf.CeilToInt(Mathf.Abs(to - from) / 3f) + 1);
+            l.positionCount = n;
+            for (int i = 0; i < n; i++)
+            {
+                float a = Mathf.Lerp(from, to, i / (n - 1f)) * Mathf.Deg2Rad;
+                float z = -Mathf.Cos(a) * radius;
+                l.SetPosition(i, new Vector3(Mathf.Sin(a) * radius, LaneSpec.SurfaceY(z) + 0.1f, z));
+            }
+        }
+
+        /// <summary>The ideal putt straight into the cup from the dealt tee, close in on the cup, with the rim lit green
+        /// where a make counts (windowDeg either side of straight in, 0 the front, + to the right) and, after a putt,
+        /// a dot where it went in: white for a make that counted, amber for one that did not.</summary>
+        public void ShowWindow(int feet, int tee, float windowDeg, float? entryDeg, bool made)
+        {
+            Show(feet, tee, 0f, 0f);
+            Close(0f, 1.2f);   // room for the lit rim round the cup
+            _band.gameObject.SetActive(false);
+            _spot.gameObject.SetActive(false);
+            if (_arcOn == null)
+            {
+                _arcOff = Arc("Rim out", new Color(1f, 1f, 1f, 0.22f), 0.7f);
+                _arcOn = Arc("Window", new Color(0.48f, 0.83f, 0.27f, 1f), 0.9f);
+                _entryPaint = Make.Glow(Color.white, false);
+                GameObject dot = Make.MeshObject("Entry", _root, Make.Disc(0.55f), _entryPaint);
+                dot.layer = Layer;
+                _entry = dot.transform;
+            }
+            float r = LaneSpec.HoleRadius + 0.55f, w = Mathf.Clamp(windowDeg, 1f, 180f);
+            _arcOn.gameObject.SetActive(true); _arcOff.gameObject.SetActive(true);
+            ArcPoints(_arcOn, -w, w, r);
+            ArcPoints(_arcOff, w, 360f - w, r);
+            if (entryDeg.HasValue)
+            {
+                float a = entryDeg.Value * Mathf.Deg2Rad, er = LaneSpec.HoleRadius - 0.5f;
+                float z = -Mathf.Cos(a) * er;
+                _entry.position = new Vector3(Mathf.Sin(a) * er, LaneSpec.SurfaceY(z) + 0.2f, z);
+                _entry.rotation = Quaternion.Euler(-LaneSpec.RampAngleDeg, 0f, 0f);
+                _entryPaint.color = made ? Color.white : new Color(1f, 0.7f, 0f);
+                _entry.gameObject.SetActive(true);
+            }
+            else _entry.gameObject.SetActive(false);
+            _camera.Render();
+        }
 
         /// <summary>The angle the perfect putt comes in at, degrees; + is rolling right.</summary>
         public static float EntryDegrees(int feet, int tee, float targetIn)

@@ -79,7 +79,19 @@ namespace PuttrApp
         {
             string url = J.Str(tournament, "prizeImage");
             if (url.Length == 0 || url == "null") url = J.Str(tournament, "heroImage");
+            if (url.Contains("giphy.com/")) return GiphyStill(url); // a private tournament's GIF cover
             return Sized(url, size);
+        }
+
+        /// <summary>Giphy's JPG still of a GIF (480w_s.jpg beside it). Unity decodes PNG and JPG only, and every other
+        /// still Giphy makes is itself a GIF. Anything not a Giphy GIF comes back as it was.</summary>
+        public static string GiphyStill(string url)
+        {
+            if (string.IsNullOrEmpty(url) || !url.Contains("giphy.com/")) return url ?? "";
+            int query = url.IndexOf('?');
+            string path = query >= 0 ? url.Substring(0, query) : url;
+            if (!path.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)) return url;
+            return path.Substring(0, path.LastIndexOf('/') + 1) + "480w_s.jpg";
         }
 
         public static string Sized(string url, int size)
@@ -133,7 +145,7 @@ namespace PuttrApp
             for (int i = 0; i < Mathf.Min(6, list.Count); i++)
             {
                 VisualElement poster = Poster(app, list[i], 200);
-                poster.style.marginLeft = i == 0 ? 16 : 10;
+                poster.style.marginLeft = i == 0 ? 16 : 12;
                 row.Add(poster);
             }
             var end = new VisualElement();
@@ -142,68 +154,230 @@ namespace PuttrApp
             slot.Add(row);
         }
 
-        /// <summary>A tournament as a square poster: its art, name, dates, players, and whether the Player is in.</summary>
+        /// <summary>
+        /// A tournament as a poster (docs/design-guidelines.md, the game tile's shape): its art in a window, 5 wide to 3
+        /// high, and under it a solid bar with the name, the dates and the Players, and whether the Player is in.
+        /// Nothing is written over the picture. size is the poster's width.
+        /// </summary>
         public static VisualElement Poster(App app, object tournament, float size)
         {
             bool joined = J.Get(tournament, "userJoined") != null;
             TournamentMath.State state = TournamentMath.StateOf(tournament, DateTime.UtcNow);
-            VisualElement art = Ui.Box("poster");
-            art.style.width = size;
-            art.style.height = size;
-            art.style.minWidth = art.style.maxWidth = size; // fixed: a row or a column never stretches it
-            art.style.flexShrink = 0;
+            VisualElement art = Ui.Box("poster-art");
+            art.style.height = Mathf.Round(size * 0.6f);
             art.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
             art.style.backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Center);
             art.style.backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Center);
             Images.Into(art, TournamentMath.Art(tournament, 400));
-            if (J.Flag(tournament, "private")) art.Add(Ui.Text("PRIVATE", "chip chip-amber poster-chip", Ui.Bold));
             int players = J.Int(tournament, "participants");
-            // TournamentCard's panel: the title with its Join/Joined/Ended pill, then the dates and the Players.
-            VisualElement line = Ui.Box("row poster-line", Ui.Text(TournamentMath.Dates(tournament), "muted grow", Ui.Regular));
-            if (players > 0) line.Add(Ui.Text(players + (players == 1 ? " Player" : " Players"), "muted", Ui.Regular));
-            art.Add(Ui.Box("poster-panel",
-                Ui.Box("row tourn-title-row",
-                    Ui.Text(J.Str(tournament, "title", "Tournament"), "tile-title grow tourn-title", Ui.Bold),
-                    Ui.Text(joined ? "Joined" : state == TournamentMath.State.Ended ? "Ended" : "Join", joined ? "chip chip-green" : "chip", Ui.Bold)),
-                line));
-            return art.OnTap(() => app.Push(new TournamentScreen(app, tournament)));
+            string when = TournamentMath.Dates(tournament);
+            if (players > 0) when += (when.Length > 0 ? "   \u00B7   " : "") + players + (players == 1 ? " Player" : " Players");
+            VisualElement tags = Ui.Box("row poster-tags");
+            if (J.Flag(tournament, "private")) tags.Add(Ui.Text("Private", "chip chip-amber", Ui.Bold));
+            tags.Add(Ui.Text(joined ? "Joined" : state == TournamentMath.State.Ended ? "Ended" : "Join", joined ? "chip chip-green" : "chip", Ui.Bold));
+            VisualElement poster = Ui.Box("poster", art,
+                Ui.Box("poster-bar", Ui.Title(J.Str(tournament, "title", "Tournament"), "poster-title"), Ui.Caps(when, "caps poster-when"), tags));
+            poster.style.width = size;
+            poster.style.minWidth = poster.style.maxWidth = size; // fixed: a row or a column never stretches it
+            poster.style.flexShrink = 0;
+            return poster.OnTap(() => app.Push(new TournamentScreen(app, tournament)));
         }
     }
 
     public sealed class TournamentsScreen : AppScreen
     {
+        /// <summary>Set by CreateTournamentScreen once the API has taken a new tournament: the list reads again (twice, a
+        /// moment apart, as the read replica can lag the write) when it comes back to the front.</summary>
+        public static bool Created;
+
+        readonly App _app;
+        readonly ScrollView _scroll;
+        readonly VisualElement _open, _past, _pull, _pullSpin;
+        readonly Image _pullMark;
+        float _fetchedAt = -100f, _pulled, _wheel;
+        int _asked;
+        bool _refreshing, _dragging, _scripted;
+        Vector2 _dragFrom;
+
+        /// <summary>How far down the list is pulled before letting go reads it again, and the most it shows.</summary>
+        const float PullAt = 70f, PullMost = 110f, Throttle = 8f;
+
         public TournamentsScreen(App app)
         {
-            ScrollView scroll = Ui.Scroll();
-            scroll.Add(Ui.Header("Tournaments", app.Pop));
-            if (!Kid.IsKid(app.Profile)) scroll.Add(Ui.Box("pad", Ui.Button("Create tournament", () => Club.Require(app, "Private tournaments", () => app.Push(new CreateTournamentScreen(app))), "btn btn-ghost")));
-            var open = new VisualElement();
-            var past = new VisualElement();
-            scroll.Add(open);
-            scroll.Add(past);
+            _app = app;
+            _scroll = Ui.Scroll();
+            _scroll.Add(Ui.Header("Tournaments", app.Pop));
+            if (!Kid.IsKid(app.Profile) && !Tv.On) _scroll.Add(Ui.Box("pad", Ui.Button("Create tournament", () => Club.Require(app, "Private tournaments", () => app.Push(new CreateTournamentScreen(app))), "btn btn-ghost")));
+            _open = new VisualElement();
+            _past = new VisualElement();
+            _scroll.Add(_open);
+            _scroll.Add(_past);
             var foot = new VisualElement();
             foot.style.height = 28;
-            scroll.Add(foot);
-            Root = scroll;
+            _scroll.Add(foot);
+            // Until the list is here: its heading and a row of poster-sized placeholders.
+            VisualElement posters = Ui.Box("row sk-strip");
+            for (int i = 0; i < 3; i++)
+            {
+                VisualElement card = Skeleton.Card(CardSize);
+                card.style.width = card.style.height = CardSize; card.style.marginRight = 12; card.style.flexShrink = 0;
+                posters.Add(card);
+            }
+            Skeleton.Hold(_open, Ui.Box("pad", Skeleton.Bar(0.45f, 16f).Margin(14), posters.Margin(12)));
 
-            // As puttr-app's TournamentsScreen: "Current and upcoming" as a row of square posters to
-            // scroll sideways, then "Past" the same way under it.
+            // Pull to refresh: UI Toolkit has none, so the page watches for a pull past the top of the list (a finger's
+            // elastic overscroll, a mouse drag, or the wheel rolled up at the top) and shows the Puttr mark turning with it.
+            _pullMark = Spinner.Mark(30f, new Color(1f, 1f, 1f, 0.55f));
+            _pullMark.AddToClassList("tourn-pull-mark");
+            _pullSpin = new VisualElement();
+            _pull = Ui.Box("tourn-pull", _pullMark, _pullSpin);
+            _pull.pickingMode = PickingMode.Ignore;
+            VisualElement page = Ui.Box("tourn-page", _scroll, _pull);
+            StyleSheet sheet = Resources.Load<StyleSheet>("PuttrApp/Tournaments");
+            if (sheet != null) page.styleSheets.Add(sheet);
+            Root = page;
+            WatchPull();
+            // -app2TournPull: a pull to refresh three seconds in (for checking from a script).
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-app2TournPull") >= 0)
+                _scroll.schedule.Execute(() => { _dragging = true; Pulled(PullAt * 0.8f); _scroll.schedule.Execute(Refresh).ExecuteLater(1500); }).ExecuteLater(3000);
+        }
+
+        // Read again whenever the page comes to the front (a new tournament, a round played), at most every few seconds.
+        public override void Shown()
+        {
+            if (Created)
+            {
+                Created = false;
+                Fetch(null);
+                _scroll.schedule.Execute(() => { if (_scroll.panel != null) Fetch(null); }).ExecuteLater(2500);
+                return;
+            }
+            if (Time.realtimeSinceStartup - _fetchedAt > Throttle) Fetch(null);
+        }
+
+        /// <summary>The current and upcoming tournaments (the Player's private ones first) and the past ones. What is on
+        /// screen stays until the new answer is here, so a refresh never blanks the page.</summary>
+        void Fetch(Action done)
+        {
+            int me = ++_asked;
+            _fetchedAt = Time.realtimeSinceStartup;
+            int waiting = 2;
+            void One() { if (--waiting == 0) done?.Invoke(); }
+            // As puttr-app's TournamentsScreen: "Current and upcoming" as a row of square posters to scroll sideways,
+            // then "Past" the same way under it.
             Compete.Load(list =>
             {
-                open.Add(Ui.Section("Current and upcoming"));
-                if (list.Count == 0) open.Add(Ui.Box("pad", Ui.Box("glass", Ui.Text("No tournaments right now. A new one opens on the first of every month.", "sub", Ui.Regular))));
-                else open.Add(Row(app, list));
+                if (me == _asked)
+                {
+                    _open.Clear();
+                    _open.Add(Ui.Section("Current and upcoming"));
+                    if (list.Count == 0) _open.Add(Ui.Box("pad", Ui.Box("card", Ui.Text("No tournaments right now. A new one opens on the first of every month.", "body-2", Ui.Medium))));
+                    else _open.Add(Row(_app, list));
+                    Perf.Wake(0.3f);
+                }
+                One();
             });
             App.Run(Api.Get("/tournaments/past", data =>
             {
-                List<object> list = J.List(data);
-                if (list.Count == 0) return;
-                past.Add(Ui.Section("Past"));
-                past.Add(Row(app, list));
-            }));
+                if (me == _asked)
+                {
+                    List<object> list = J.List(data);
+                    _past.Clear();
+                    if (list.Count > 0) { _past.Add(Ui.Section("Past")); _past.Add(Row(_app, list)); }
+                    // -app2TournPast: open the latest past tournament (-app2TournReel: and play its highlights), for checking from a script.
+                    string[] args = Environment.GetCommandLineArgs();
+                    if (list.Count > 0 && !_scripted && (Array.IndexOf(args, "-app2TournPast") >= 0 || Array.IndexOf(args, "-app2TournReel") >= 0))
+                    { _scripted = true; _app.Push(new TournamentScreen(_app, list[0])); }
+                }
+                One();
+            }, _ => One()));
         }
 
-        /// <summary>TournamentCard's size: 220 square, the art cover-cropped, never stretched.</summary>
+        void WatchPull()
+        {
+            // A finger: the ScrollView's elastic overscroll takes the content past the top (a negative offset).
+            // A mouse: a drag down that starts with the list at the top. TrickleDown so a poster under the pointer
+            // does not keep it; a drag of a few units or less stays a tap.
+            _scroll.RegisterCallback<PointerDownEvent>(e =>
+            {
+                _dragging = !_refreshing && _scroll.scrollOffset.y <= 1f;
+                _dragFrom = e.position;
+            }, TrickleDown.TrickleDown);
+            _scroll.RegisterCallback<PointerMoveEvent>(e =>
+            {
+                if (!_dragging) return;
+                float down = e.position.y - _dragFrom.y;
+                if (down < -6f || _scroll.scrollOffset.y > 1f) { _dragging = false; Pulled(0f); return; }
+                if (e.pointerType == "mouse") Pulled(down * 0.6f);
+            }, TrickleDown.TrickleDown);
+            _scroll.RegisterCallback<PointerUpEvent>(e =>
+            {
+                if (_dragging && _pulled > 8f) e.StopPropagation(); // a pull is not also a tap on the poster under it
+                Release();
+            }, TrickleDown.TrickleDown);
+            _scroll.RegisterCallback<PointerCancelEvent>(_ => { _dragging = false; Pulled(0f); }, TrickleDown.TrickleDown);
+            _scroll.RegisterCallback<PointerCaptureOutEvent>(_ => { if (_dragging) Release(); });
+            // The wheel (or a trackpad) rolled up while already at the top.
+            _scroll.RegisterCallback<WheelEvent>(e =>
+            {
+                if (_refreshing || _scroll.scrollOffset.y > 1f || e.delta.y >= 0f) { _wheel = 0f; return; }
+                _wheel += -e.delta.y * 12f;
+                Pulled(_wheel);
+                if (_wheel >= PullAt) { _wheel = 0f; Refresh(); }
+                else _scroll.schedule.Execute(() => { if (!_refreshing && _wheel > 0f) { _wheel = 0f; Pulled(0f); } }).ExecuteLater(400);
+            }, TrickleDown.TrickleDown);
+            // The elastic overscroll is read every frame it moves.
+            _scroll.schedule.Execute(() =>
+            {
+                if (_refreshing) return;
+                float over = -_scroll.scrollOffset.y;
+                if (over > 0.5f) { Pulled(over, true); if (over >= PullAt) _armed = true; }
+                else if (_armed) { _armed = false; Refresh(); }
+                else if (!_dragging && _wheel <= 0f && _pulled > 0f) Pulled(0f);
+            }).Every(16);
+        }
+
+        bool _armed; // a finger pulled far enough: the refresh starts as the list springs back
+
+        void Release()
+        {
+            bool go = _dragging && _pulled >= PullAt;
+            _dragging = false;
+            if (go) Refresh(); else if (!_armed) Pulled(0f);
+        }
+
+        /// <summary>Shows the Puttr mark coming in and turning in the gap over the list as it is pulled. A finger's pull
+        /// moves the list itself (elastic); a mouse or wheel pull moves it here, the same way.</summary>
+        void Pulled(float distance, bool elastic = false)
+        {
+            _pulled = Mathf.Clamp(distance, 0f, PullMost);
+            float share = Mathf.Clamp01(_pulled / PullAt);
+            _scroll.contentContainer.style.translate = new Translate(0, elastic ? 0f : _pulled);
+            _pullMark.style.opacity = share;
+            _pullMark.style.translate = new Translate(0, Mathf.Max(0f, _pulled - 30f) * 0.5f);
+            _pullMark.style.rotate = new Rotate(new Angle(share * 300f, AngleUnit.Degree));
+            _pullMark.style.display = _refreshing ? DisplayStyle.None : DisplayStyle.Flex;
+            Perf.Wake(0.2f);
+        }
+
+        /// <summary>Reads the lists again with the Puttr loader turning until they are back.</summary>
+        public void Refresh()
+        {
+            if (_refreshing) return;
+            _refreshing = true;
+            _armed = _dragging = false;
+            Pulled(0f);
+            _pullSpin.Add(Spinner.Small()); // the one Puttr loader, in the middle of the screen
+            float since = Time.realtimeSinceStartup;
+            Fetch(() =>
+            {
+                // Long enough to be seen, so a quick answer still reads as a refresh.
+                long wait = (long)Mathf.Max(0f, (0.6f - (Time.realtimeSinceStartup - since)) * 1000f);
+                _scroll.schedule.Execute(() => { _pullSpin.Clear(); _refreshing = false; Perf.Wake(0.3f); }).ExecuteLater(wait);
+            });
+        }
+
+        /// <summary>A poster's width: the art is cover-cropped into its window, never stretched.</summary>
         const float CardSize = 220;
 
         static VisualElement Row(App app, List<object> list)
@@ -232,7 +406,7 @@ namespace PuttrApp
         readonly VisualElement _hero, _prize, _champion, _rounds, _board, _action;
         List<object> _roundRows = new List<object>(), _leaders;
         object _results;
-        bool _joined, _busy, _scripted;
+        bool _joined, _busy, _scripted, _haveRounds, _reeled;
         int _heroMode = -1; // 0: phone (art over the title), 1: wide (art boxed beside the info)
         readonly HashSet<string> _open = new HashSet<string>(); // leaderboard rows the Player has opened
         readonly Dictionary<string, List<object>> _userGames = new Dictionary<string, List<object>>();
@@ -260,12 +434,15 @@ namespace PuttrApp
             foot.style.height = 28;
             scroll.Add(foot);
             Root = scroll;
+            // The rounds and the leaderboard come from their own calls: their shapes hold the page until they do.
+            Skeleton.Hold(_rounds, Skeleton.Strip(92, 4));
+            Skeleton.Hold(_board, Skeleton.Section(260));
         }
 
-        // TournamentView's hero card. Phone: the square art across the card with the host and status
-        // over it, the title and dates on a scrim at its foot, the description under it. Wide (tablet,
-        // landscape): the art boxed at 240 on the left, and the status, title, dates, Players,
-        // description, host and prize in the column beside it.
+        // TournamentView's hero card. Phone: the square art in a window across the card, and under it, on the
+        // card's solid ground, the status, title, dates, Players, description and host: nothing is written over
+        // the picture. Wide (tablet, landscape): the art boxed at 240 on the left, and the same column beside it,
+        // with the prize at its foot.
         void Hero()
         {
             float width = _hero.resolvedStyle.width;
@@ -286,48 +463,43 @@ namespace PuttrApp
             art.style.minWidth = art.style.maxWidth = side;
             art.style.minHeight = art.style.maxHeight = side;
             Images.Into(art, TournamentMath.Art(t, 800));
-            if (!TournamentMath.Art(t, 800).StartsWith("http")) art.Add(Ui.Box("tourn-art-icon", Ui.Icon("FillTrophy", wide ? 56 : 80, Ui.Bright)));
+            if (!TournamentMath.Art(t, 800).StartsWith("http")) art.Add(Ui.Box("tourn-art-icon", Ui.Icon("Trophy", wide ? 56 : 80, Ui.Faint)));
 
             Label status = Ui.Text(state == TournamentMath.State.Active ? "ACTIVE" : state == TournamentMath.State.Upcoming ? "UPCOMING" : "ENDED",
                 state == TournamentMath.State.Active ? "chip chip-green tourn-status" : state == TournamentMath.State.Upcoming ? "chip chip-amber tourn-status" : "chip tourn-status", Ui.Bold);
             string title = J.Str(t, "title", "Tournament");
             int players = J.Int(t, "participants");
-            VisualElement meta = Ui.Box("tourn-meta");
             string dates = TournamentMath.Dates(t);
-            if (dates.Length > 0) meta.Add(Ui.Text(dates, "tourn-pill", Ui.Medium));
-            meta.Add(Ui.Text(players + (players == 1 ? " Player" : " Players"), "tourn-pill", Ui.Medium));
+            Label meta = Ui.Caps((dates.Length > 0 ? dates + "   \u00B7   " : "") + players + (players == 1 ? " Player" : " Players"), "caps tourn-meta");
             string host = J.Str(t, "displayName");
             VisualElement hostChip = host.Length == 0 ? null : Ui.Box("tourn-host",
                 Ui.Avatar(host, J.Str(t, "photoURL")),
-                Ui.Box("tourn-host-words", Ui.Text("HOSTED BY", "tourn-kick", Ui.Bold), Ui.Text(host, "tourn-host-name", Ui.Bold)));
+                Ui.Box("tourn-host-words", Ui.Caps("Hosted by", "caps"), Ui.Text(host, "tourn-host-name", Ui.Bold)));
             string about = J.Str(t, "description");
-            Label description = about.Length > 0 && about != "null" ? Ui.Text(about, "tourn-desc", Ui.Regular) : null;
+            Label description = about.Length > 0 && about != "null" ? Ui.Text(about, "body-2 tourn-desc", Ui.Medium) : null;
 
             string prize = J.Str(t, "prizeDescription"), link = J.Str(t, "prizeLink");
             VisualElement prizeRow = null;
             if (prize.Length > 0 && prize != "null")
             {
+                // A plain trophy, gold (a prize), with no tinted square behind it.
                 prizeRow = Ui.Box("row tourn-prize",
-                    Ui.Bubble("FillTrophy", new Color32(0xFF, 0xB3, 0x00, 0xFF)),
-                    Ui.Box("grow tourn-prize-words", Ui.Text("Prize details", "feed-name", Ui.Bold), Ui.Text(prize, "tourn-prize-text", Ui.Regular)));
-                if (link.StartsWith("http")) { prizeRow.Add(Ui.Text("\u203A", "h2", Ui.Medium)); prizeRow.OnTap(() => Application.OpenURL(link)); }
+                    Ui.Icon("Trophy", 24, Ui.Gold),
+                    Ui.Box("grow tourn-prize-words", Ui.Text("Prize details", "body", Ui.Bold), Ui.Text(prize, "body-2 tourn-prize-text", Ui.Medium)));
+                if (link.StartsWith("http")) { prizeRow.Add(Ui.Icon("CaretRight", 14, Ui.Faint)); prizeRow.OnTap(() => Application.OpenURL(link)); }
             }
 
+            // The same words in both shapes: the status, the name, the dates and Players, what it is, who hosts it.
+            VisualElement column = Ui.Box("tourn-col", status, Ui.Title(title, "title tourn-hero-title"), meta, description, hostChip);
             if (wide)
             {
-                VisualElement column = Ui.Box("tourn-col", status, Ui.Text(title, "tourn-hero-title", Ui.Bold), meta, description, hostChip);
-                if (hostChip != null) hostChip.AddToClassList("tourn-host-flat");
                 if (prizeRow != null) { column.Add(Ui.Box("grow")); prizeRow.AddToClassList("tourn-prize-in"); column.Add(prizeRow); }
                 _hero.Add(Ui.Box("glass tourn-hero tourn-hero-wide", art, column));
             }
             else
             {
-                if (hostChip != null) { hostChip.AddToClassList("tourn-host-pill"); art.Add(hostChip); }
-                art.Add(status);
-                art.Add(Ui.Box("tourn-scrim", Ui.Text(title, "tourn-hero-title", Ui.Bold), meta));
-                VisualElement card = Ui.Box("glass tourn-hero tourn-hero-narrow", art, description);
-                _hero.Add(card);
-                if (prizeRow != null) { prizeRow.AddToClassList("glass"); prizeRow.AddToClassList("tourn-prize-card"); _prize.Add(prizeRow); }
+                _hero.Add(Ui.Box("glass tourn-hero tourn-hero-narrow", art, column));
+                if (prizeRow != null) { prizeRow.AddToClassList("card"); prizeRow.AddToClassList("tourn-prize-card"); _prize.Add(prizeRow); }
             }
             Perf.Wake(0.3f);
         }
@@ -336,7 +508,7 @@ namespace PuttrApp
         public override void Shown()
         {
             _userGames.Clear(); // a round just played adds a game
-            App.Run(Api.Get("/tournaments/details/" + _id, data => { _roundRows = J.List(J.Get(J.First(data), "rounds")); Show(); }));
+            App.Run(Api.Get("/tournaments/details/" + _id, data => { _roundRows = J.List(J.Get(J.First(data), "rounds")); _haveRounds = true; Show(); }));
             App.Run(Api.Get("/tournaments/userResults/" + _id, data => { _results = J.First(data); if (_results != null) _joined = true; Show(); }));
             App.Run(Api.Get("/tournaments/leaderboard/" + _id, data => { _leaders = J.List(data); Show(); }));
         }
@@ -348,17 +520,19 @@ namespace PuttrApp
 
             // What the Player can do now.
             _action.Clear();
-            if (state == TournamentMath.State.Upcoming)
+            // A TV shows the standings only: a round is recorded with the phone's camera.
+            if (Tv.On) { }
+            else if (state == TournamentMath.State.Upcoming)
             {
                 DateTime? start = ProfileMath.Date(_tournament, "startDate");
-                _action.Add(Ui.Text("Starts " + (start != null ? start.Value.ToString("dddd, MMMM d", CultureInfo.InvariantCulture) : "soon") + ".", "sub center", Ui.Regular).Margin(14));
+                _action.Add(Ui.Text("Starts " + (start != null ? start.Value.ToString("dddd, MMMM d", CultureInfo.InvariantCulture) : "soon") + ".", "body-2 center", Ui.Medium).Margin(16));
                 if (!_joined) _action.Add(Ui.Button("Join tournament", () => Club.Require(_app, "Tournaments", Join)));
             }
             else if (state == TournamentMath.State.Active)
             {
                 if (!_joined) _action.Add(Ui.Button("Join tournament", () => Club.Require(_app, "Tournaments", Join)));
                 else if (_roundRows.Count > 0 && current <= _roundRows.Count) _action.Add(Ui.Button("Play round " + current, () => _app.Games.PlayRound(_tournament, _roundRows[current - 1], current)));
-                else if (_roundRows.Count > 0) _action.Add(Ui.Text("All rounds played. Check back for the final standings.", "sub center", Ui.Regular).Margin(14));
+                else if (_roundRows.Count > 0) _action.Add(Ui.Text("All rounds played. Check back for the final standings.", "body-2 center", Ui.Medium).Margin(16));
             }
 
             // The champion, once it is over.
@@ -366,32 +540,40 @@ namespace PuttrApp
             if (state == TournamentMath.State.Ended && _leaders != null && _leaders.Count > 0)
             {
                 object first = _leaders[0];
-                VisualElement card = Ui.Box("glass champion",
-                    Ui.Text("CHAMPION", "kick center", Ui.Bold),
+                Label crown = Ui.Caps("Champion", "caps");
+                crown.style.color = Ui.Gold;   // gold: a trophy
+                VisualElement card = Ui.Box("card champion",
+                    crown,
                     Ui.Box("row champion-row", Ui.Avatar(J.Str(first, "displayName"), J.Str(first, "photoUrl"), true),
-                        Ui.Box("grow", Ui.Text(J.Str(first, "displayName", "A Player"), "h2", Ui.Bold), Ui.Text(J.Num(first, "totalScore").ToString("0") + (possible > 0 ? " of " + possible + " feet" : " feet"), "sub", Ui.Regular)),
+                        Ui.Box("grow", Ui.Title(J.Str(first, "displayName", "A Player"), "title-20"), Ui.Text(J.Num(first, "totalScore").ToString("0") + (possible > 0 ? " of " + possible + " feet" : " feet"), "body-2", Ui.Medium).Margin(4)),
                         PutterBrands.RowBadge(first, 28f)));
                 string reel = J.Str(_tournament, "reelVideoUrl");
-                if (reel.StartsWith("http")) card.Add(Ui.Button("Watch the highlights", () => Application.OpenURL(reel), "btn btn-ghost"));
+                if (reel.StartsWith("http"))
+            {
+                card.Add(Ui.Button("Watch the highlights", () => Highlights(reel), "btn btn-ghost"));
+                if (!_reeled && Array.IndexOf(Environment.GetCommandLineArgs(), "-app2TournReel") >= 0) { _reeled = true; Highlights(reel); }
+            }
                 card.style.marginTop = 12;
                 _champion.Add(card);
             }
 
-            // The rounds.
-            _rounds.Clear();
-            if (_roundRows.Count > 0)
+            // The rounds, once they are here (the placeholder holds the place until then).
+            if (_haveRounds) _rounds.Clear();
+            if (_haveRounds && _roundRows.Count > 0)
             {
                 _rounds.Add(Ui.Section(_roundRows.Count + (_roundRows.Count == 1 ? " round" : " rounds")));
-                VisualElement tiles = Ui.Box("row round-tiles");
+                // One bordered strip, a cell a round: the round, its putts, and the Player's score or how hard it is.
+                VisualElement tiles = Ui.Box("strip round-tiles");
                 for (int i = 0; i < _roundRows.Count; i++)
                 {
                     object round = _roundRows[i];
                     object score = J.Get(_results, "r" + (i + 1) + "_score");
                     List<TournamentMath.Dealt> putts = TournamentMath.Putts(round);
-                    VisualElement tile = Ui.Box(i + 1 == current && state == TournamentMath.State.Active && _joined ? "glass round-tile round-now" : "glass round-tile",
-                        Ui.Text("R" + (i + 1), "h2 center", Ui.Bold),
-                        Ui.Text(putts.Count + (putts.Count == 1 ? " putt" : " putts"), "muted center", Ui.Regular),
-                        Ui.Text(score != null ? J.Num(_results, "r" + (i + 1) + "_score").ToString("0") + " ft" : TournamentMath.Level(round), score != null ? "chip chip-green round-chip" : "chip round-chip", Ui.Bold));
+                    bool now = i + 1 == current && state == TournamentMath.State.Active && _joined;
+                    VisualElement tile = Ui.Box((i == 0 ? "strip-cell strip-cell-first" : "strip-cell") + (now ? " round-now" : ""),
+                        Ui.Num("R" + (i + 1), "strip-num"),
+                        Ui.Caps(putts.Count + (putts.Count == 1 ? " putt" : " putts"), "strip-cap"),
+                        Ui.Caps(score != null ? J.Num(_results, "r" + (i + 1) + "_score").ToString("0") + " ft" : TournamentMath.Level(round), score != null ? "strip-cap round-done" : "strip-cap"));
                     tiles.Add(tile);
                 }
                 _rounds.Add(Ui.Box("pad", tiles));
@@ -402,8 +584,9 @@ namespace PuttrApp
             if (_leaders != null)
             {
                 _board.Add(Ui.Section("Leaderboard", possible > 0 ? possible + " feet possible" : null));
-                VisualElement card = Ui.Box("glass");
-                if (_leaders.Count == 0) card.Add(Ui.Text("No rounds played yet. Yours could be the first.", "sub", Ui.Regular));
+                // The Players are rows in one bordered block.
+                VisualElement card = Ui.Box("tourn-board");
+                if (_leaders.Count == 0) card.Add(Ui.Text("No rounds played yet. Yours could be the first.", "body-2 tourn-board-empty", Ui.Medium));
                 int roundCount = _roundRows.Count > 0 ? _roundRows.Count : 4;
                 for (int i = 0; i < Mathf.Min(_leaders.Count, 50); i++) card.Add(LeaderRow(_leaders[i], i + 1, roundCount));
                 _board.Add(Ui.Box("pad", card));
@@ -418,23 +601,25 @@ namespace PuttrApp
             string name = J.Str(row, "displayName", "A Player");
             string userId = J.Str(row, "userId");
             double total = J.Num(row, "totalScore");
-            Label rank = Ui.Text(place.ToString(), "board-place", Ui.Bold);
-            if (place <= 3) rank.style.color = place == 1 ? (Color)new Color32(0xFF, 0xD7, 0x00, 0xFF) : place == 2 ? (Color)new Color32(0xC0, 0xC0, 0xC0, 0xFF) : (Color)new Color32(0xCD, 0x7F, 0x32, 0xFF);
+            Label rank = Ui.Num(place.ToString(), "tourn-place");
+            if (place == 1) rank.style.color = Ui.Gold;   // gold: the leader (the champion once it has ended)
             VisualElement avatar = Ui.Avatar(name, J.Str(row, "photoUrl"));
             Swallow(avatar);
             avatar.OnTap(() => ProfileScreen.Open(_app, userId, row));
             VisualElement head = Ui.Box("tourn-leader-head", rank, avatar,
-                Ui.Box("grow tourn-leader-words", Ui.Text(name, "feed-name", Ui.Bold), Ui.Text(J.Str(row, "homeTown"), "muted", Ui.Regular)),
-                PutterBrands.RowBadge(row, 24f), // their putter's brand (LeaderRow's 24): a tap opens the putter sheet
-                Ui.Text(total > 0 ? total.ToString("0") : "-", "tourn-total", Ui.Bold));
+                Ui.Box("grow tourn-leader-words", Ui.Text(name, "tourn-leader-name", Ui.Bold), Ui.Text(J.Str(row, "homeTown"), "tourn-leader-town", Ui.Medium)),
+                PutterBrands.RowBadge(row, 24f)); // their putter's brand (LeaderRow's 24): a tap opens the putter sheet
+            // The fist bump, left of the total (tournaments/LeaderRow): never on your own row; it does not open the row.
+            if (FistBumps.CanBump(_app, userId)) head.Add(FistBumps.Button(_app, userId));
+            head.Add(Ui.Num(total > 0 ? total.ToString("0") : "-", "tourn-total"));
 
             VisualElement rounds = Ui.Box("tourn-rounds");
             for (int r = 1; r <= Mathf.Min(roundCount, 4); r++)
             {
                 bool played = J.Num(row, "r" + r + "_score") > 0; // as LeaderRow: a 0 or missing score is not tappable
                 VisualElement pill = Ui.Box(played ? "tourn-round tourn-round-played" : "tourn-round",
-                    Ui.Text("R" + r, "tourn-round-label", Ui.Medium),
-                    Ui.Text(played ? J.Num(row, "r" + r + "_score").ToString("0") : "-", "tourn-round-score", Ui.Bold));
+                    Ui.Caps("R" + r, "caps tourn-round-label"),
+                    Ui.Num(played ? J.Num(row, "r" + r + "_score").ToString("0") : "-", "tourn-round-score"));
                 int num = r;
                 if (played) pill.OnTap(() => OpenRound(num, userId));
                 rounds.Add(pill);
@@ -449,6 +634,7 @@ namespace PuttrApp
                 if (Array.IndexOf(Environment.GetCommandLineArgs(), "-app2TournRound") >= 0) OpenRound(1, userId);
             }
             VisualElement line = Ui.Box(_open.Contains(key) ? "tourn-leader tourn-leader-open" : "tourn-leader", head, rounds);
+            if (place == 1) line.AddToClassList("tourn-leader-first");
             if (userId == Auth.Uid) line.AddToClassList("board-me");
             head.OnTap(() =>
             {
@@ -473,6 +659,28 @@ namespace PuttrApp
             if (_userGames.TryGetValue(userId, out List<object> have)) { Go(have); return; }
             App.Run(Api.Get("/tournaments/userGames/" + _id + "/" + userId, data => { List<object> games = J.List(data); _userGames[userId] = games; Go(games); },
                 why => _app.Toast(why == "offline" ? "No connection. Try again." : "Could not open that round.")));
+        }
+
+        /// <summary>The tournament's highlights reel, in the app: the app's full-screen player (black, the video fitted to
+        /// its own shape, the Puttr loader until the first frame), with a close button over it.</summary>
+        void Highlights(string url)
+        {
+            SetupGuide.Play(Root, url);
+            VisualElement layer = App.Layer(Root);
+            VisualElement player = null; // the player Play just put on top (the loader's own layer can come after it)
+            for (int i = layer.childCount - 1; i >= 0 && player == null; i--) if (layer[i].ClassListContains("modal-dim")) player = layer[i];
+            if (player == null) return;
+            // A tap anywhere closes the player; the button is there so that is plain. It sits inside the player, so its
+            // tap reaches the player's own close.
+            float k = Screen.width > 0 && layer.resolvedStyle.width > 0 ? layer.resolvedStyle.width / Screen.width : 1f;
+            VisualElement close = Ui.Box("", Ui.Icon("XCircle", 34, Color.white));
+            close.style.position = Position.Absolute;
+            close.style.right = 12;
+            close.style.top = 10 + (Screen.height - Screen.safeArea.yMax) * k;
+            close.style.width = close.style.height = 48;
+            close.style.alignItems = Align.Center;
+            close.style.justifyContent = Justify.Center;
+            player.Add(close);
         }
 
         /// <summary>A tap on this child does not also open or close the row under it.</summary>

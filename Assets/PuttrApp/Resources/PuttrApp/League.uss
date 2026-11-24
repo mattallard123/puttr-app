@@ -1,0 +1,91 @@
+/* League Night's boards and a team's page (LeagueNight.cs, LeagueMore.cs), built to docs/design-guidelines.md
+   ("Broadcast"): flat, solid colours from its table, type 44/28/20/15/13/11, spacing 4/8/12/16/24/32, radius 4.
+   The shared pieces (title, caps, num, strip, card, btn, icon-sq, sec, scope) are styled in App.uss; this sheet
+   lays things out. Team crests and putter brand marks keep their own colours. */
+
+/* A board: one bordered block; every team or Player is a row in it, a 1 px divider above each but the first. */
+.lg-board { background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; overflow: hidden; }
+.lg-row { flex-direction: row; align-items: center; min-height: 64px; padding: 12px; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.lg-first { border-top-width: 0; }
+.lg-row:active { background-color: rgb(34, 38, 42); }
+/* The Player's own row, or their team's: a step lighter. No coloured outline. */
+.lg-mine { background-color: rgb(34, 38, 42); }
+.lg-mine:active { background-color: rgb(48, 53, 58); }
+.lg-empty { padding: 16px; }
+.lg-words { flex-basis: 0; margin-left: 12px; margin-right: 8px; min-width: 0; }
+.lg-name { font-size: 15px; color: rgb(255, 255, 255); margin: 0; padding: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lg-name-player { flex-grow: 1; flex-basis: 0; }
+.lg-sub { font-size: 13px; color: rgb(139, 147, 153); margin: 4px 0 0 0; padding: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lg-right { align-items: flex-end; margin-right: 8px; flex-shrink: 0; }
+.lg-player-row .lg-right { margin-right: 0; }
+.lg-right-replay { flex-direction: row; align-items: center; }
+.lg-right-replay > .lg-player-score { margin-right: 4px; }
+.lg-team-rank { font-size: 20px; width: 32px; flex-shrink: 0; margin: 0; padding: 0; color: rgb(255, 255, 255); }
+.lg-team-total { font-size: 20px; color: rgb(255, 255, 255); margin: 0; padding: 0; }
+.lg-delta, .caps.lg-delta { font-size: 11px; margin: 4px 0 0 0; padding: 0; }
+.lg-player-rank { font-size: 15px; width: 32px; flex-shrink: 0; margin: 0; padding: 0; color: rgb(255, 255, 255); }
+.lg-player-score { font-size: 20px; color: rgb(255, 255, 255); margin: 0; padding: 0; }
+.lg-player-row .brand-hit { margin-right: 8px; }
+.lg-rank { width: 32px; }
+.lg-sk-score { width: 32px; flex-shrink: 0; }
+.body.lg-putt-call { margin-left: 8px; -unity-text-align: middle-right; white-space: nowrap; }
+
+/* The photo, with the team's crest on its corner where the board mixes teams. */
+.lg-photo { flex-shrink: 0; }
+.lg-photo .avatar { width: 40px; height: 40px; border-radius: 4px; margin-right: 0; }
+.lg-photo-crest { position: absolute; right: -4px; bottom: -4px; background-color: rgb(0, 0, 0); border-radius: 4px; padding: 1px; }
+
+.lg-title-row { flex-direction: row; align-items: center; min-width: 0; }
+.caps.lg-top5 { margin-left: 8px; flex-shrink: 0; }
+
+/* The pickers: Season and the weeks, Teams and Players. One chip style (.scope in App.uss), 44 high to tap. */
+.scope.lg-pill { flex-direction: row; align-items: center; justify-content: center; min-height: 44px; padding-top: 0; padding-bottom: 0; flex-shrink: 0; }
+.lg-pill-later Label { color: rgb(139, 147, 153); }
+.lg-live-dot { width: 8px; height: 8px; border-radius: 4px; background-color: rgb(255, 82, 82); margin-left: 8px; flex-shrink: 0; }
+.lg-switch { margin-top: 8px; }
+.lg-when { flex-grow: 1; flex-basis: 0; }
+.lg-link { min-height: 44px; margin-top: 8px; -unity-text-align: middle-center; }
+
+/* A team's page: the crest, the name, the region, then one strip of numbers. */
+.lg-team-head { align-items: center; padding: 8px 16px 0 16px; }
+.title.lg-team-name { margin-top: 16px; -unity-text-align: middle-center; }
+.caps.lg-team-region { margin-top: 4px; -unity-text-align: middle-center; }
+.caps.lg-scope-badge { margin-top: 8px; }
+.lg-stats { align-self: stretch; margin-top: 16px; }
+
+.lg-pickers { padding: 16px 16px 0 16px; }
+.lg-team-body { }
+.lg-caption { margin-top: 12px; }
+.lg-future { align-items: center; margin-top: 16px; }
+.lg-future-t { margin-top: 12px; margin-bottom: 4px; -unity-text-align: middle-center; }
+.caps.lg-season-dates { margin-top: 4px; }
+
+/* The "?" sheet (LeagueRulesModal), the team suggestion (RegionBanner), the tape button and past-season tiles. */
+.modal.lg-help { max-width: 460px; padding: 16px; }
+.lg-help-bar { flex-direction: row; align-items: center; }
+.lg-help-x { width: 44px; height: 44px; align-items: center; justify-content: center; flex-shrink: 0; margin-right: -12px; }
+.lg-help-d.lg-help-lead { margin-top: 4px; }
+.lg-help-line { height: 1px; background-color: rgb(38, 42, 46); margin-top: 16px; margin-bottom: 16px; }
+.lg-help-row { flex-direction: row; align-items: flex-start; margin-bottom: 16px; }
+.lg-help-disc { width: 24px; height: 24px; align-items: center; justify-content: center; flex-shrink: 0; }
+.lg-help-words { flex-basis: 0; margin-left: 12px; min-width: 0; }
+.lg-help-t { font-size: 15px; color: rgb(255, 255, 255); margin: 0; padding: 0; }
+.lg-help-d { font-size: 13px; color: rgb(139, 147, 153); margin: 4px 0 0 0; padding: 0; white-space: normal; }
+.lg-help .btn { margin-top: 0; }
+
+/* Picking a team. The picked cell: a lighter fill and a 1 px bright green edge. */
+.card.lg-suggest { flex-direction: row; align-items: center; margin-top: 16px; padding: 12px 16px; }
+.lg-suggest-words { flex-basis: 0; margin-left: 12px; min-width: 0; }
+.lg-suggest-t { font-size: 15px; color: rgb(255, 255, 255); margin: 0; padding: 0; white-space: normal; }
+.lg-suggest-d { font-size: 13px; color: rgb(139, 147, 153); margin: 4px 0 0 0; padding: 0; white-space: normal; }
+.lg-join .team-grid { margin: 12px -4px 0 -4px; }
+.lg-join .team-slot { padding: 4px; }
+.lg-join .team-cell { border-width: 1px; padding: 16px 8px; }
+.lg-join .team-on { background-color: rgb(34, 38, 42); border-color: rgb(122, 212, 70); }
+.caps.lg-foryou { position: absolute; top: 8px; right: 8px; color: rgb(122, 212, 70); }
+
+.lg-tape { justify-content: center; }
+.lg-tiles { align-items: stretch; }
+.lg-tile { flex-grow: 1; flex-basis: 0; align-items: center; justify-content: center; min-height: 64px; padding: 12px 4px; border-radius: 4px; background-color: rgb(34, 38, 42); margin-right: 8px; }
+.lg-tile:active { background-color: rgb(48, 53, 58); }
+.caps.lg-tile-t { color: rgb(255, 255, 255); margin-top: 8px; -unity-text-align: middle-center; white-space: normal; }

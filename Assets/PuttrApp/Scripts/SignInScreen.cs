@@ -20,8 +20,8 @@ namespace PuttrApp
         public SignInScreen(App app)
         {
             _app = app;
-            _codeCard = Ui.Box("glass hidden");
-            _codeCard.style.marginTop = 14;
+            _codeCard = Ui.Box("card sign-code-card hidden");
+            _codeCard.style.marginTop = 16;
             _body = new VisualElement();
             ScrollView scroll = Ui.Scroll();
             scroll.Add(_body);
@@ -32,18 +32,18 @@ namespace PuttrApp
         void Draw()
         {
             _body.Clear();
-            if (_busy) { _body.Add(Ui.Box("pad center-box", Ui.Text("Signing in...", "sub center", Ui.Medium).Margin(200))); return; }
+            if (_busy) { _body.Add(Ui.Box("pad center-box", Ui.Text("Signing in...", "body-2 center", Ui.Medium).Margin(200))); return; }
             var logo = new Image { image = Resources.Load<Texture2D>("PuttrArcade/LogoHeader"), scaleMode = ScaleMode.ScaleToFit };
             logo.AddToClassList("intro-logo");
-            Label second = Ui.Text("starts here.", "intro-hero", Ui.Bold);
+            Label second = Ui.Title("starts here.", "intro-hero");
             second.style.color = Ui.Bright;
             VisualElement chips = Ui.Box("row intro-chips",
-                Ui.Box("intro-chip", Ui.Icon("Target", 16, Ui.Bright), Ui.Text("Track putts", "muted", Ui.Medium)),
-                Ui.Box("intro-chip", Ui.Icon("Lightning", 16, Ui.Bright), Ui.Text("AI coaching", "muted", Ui.Medium)),
-                Ui.Box("intro-chip", Ui.Icon("Trophy", 16, Ui.Bright), Ui.Text("Compete", "muted", Ui.Medium)));
+                Ui.Box("intro-chip", Ui.Icon("Target", 16, Ui.Bright), Ui.Caps("Track putts", "caps")),
+                Ui.Box("intro-chip", Ui.Icon("Lightning", 16, Ui.Bright), Ui.Caps("AI coaching", "caps")),
+                Ui.Box("intro-chip", Ui.Icon("Trophy", 16, Ui.Bright), Ui.Caps("Compete", "caps")));
             _body.Add(Ui.Box("pad center-box intro",
                 logo,
-                Ui.Text("Better putting", "intro-hero", Ui.Bold), second,
+                Ui.Title("Better putting", "intro-hero"), second,
                 chips,
                 SocialSignIn.Supported ? Ui.Button("G   Continue with Google", () => Social(SocialSignIn.Google), "btn btn-white intro-btn") : null,
                 SocialSignIn.AppleSupported ? Ui.Button("Continue with Apple", () => Social(SocialSignIn.Apple), "btn btn-white intro-btn") : null,
@@ -103,8 +103,8 @@ namespace PuttrApp
                 yield break;
             }
             _codeCard.Clear();
-            _codeCard.Add(Ui.Text("YOUR CODE", "kick center", Ui.Bold));
-            _codeCard.Add(Ui.Text(J.Str(made, "userCode"), "code", Ui.Bold));
+            _codeCard.Add(Ui.Caps("Your code", "caps caps-green center"));
+            _codeCard.Add(Ui.Num(J.Str(made, "userCode"), "num-44 sign-code"));
             _codeCard.Add(Ui.Text("Open the link from a phone that has the Puttr app, and approve.", "sub center", Ui.Regular));
             _codeCard.Add(Ui.Text(link, "muted center", Ui.Regular));
             float interval = Mathf.Clamp((float)J.Num(made, "interval", 3), 2f, 10f);
@@ -143,7 +143,7 @@ namespace PuttrApp
             email.keyboardType = TouchScreenKeyboardType.EmailAddress;
             var password = Field("Password", true);
             var confirm = Field("Confirm password", true);
-            Label error = Ui.Text("", "sub", Ui.Medium), sent = Ui.Text("", "sub", Ui.Medium);
+            Label error = Ui.Text("", "body-2", Ui.Medium), sent = Ui.Text("", "body-2", Ui.Medium);
             error.style.color = Ui.Red;
             sent.style.color = Ui.Bright;
             void Draw()
@@ -154,13 +154,13 @@ namespace PuttrApp
                 card.Add(email.Margin(12));
                 card.Add(password);
                 if (signUp) card.Add(confirm);
-                card.Add(Ui.Text(show ? "Hide password" : "Show password", "sec-link", Ui.Medium).OnTap(() => { show = !show; Draw(); }));
-                card.Add(error.Margin(6));
+                card.Add(Ui.Text(show ? "Hide password" : "Show password", "sec-link sign-link", Ui.Medium).OnTap(() => { show = !show; Draw(); }));
+                card.Add(error.Margin(8));
                 card.Add(sent);
                 VisualElement go = Ui.Button(busy ? "..." : signUp ? "Create account" : "Sign in", Submit);
                 go.SetEnabled(!busy);
-                card.Add(go.Margin(10));
-                if (!signUp) card.Add(Ui.Text("Forgot password?", "sec-link center", Ui.Medium).Margin(10).OnTap(Reset));
+                card.Add(go.Margin(12));
+                if (!signUp) card.Add(Ui.Text("Forgot password?", "sec-link center sign-link", Ui.Medium).Margin(12).OnTap(Reset));
             }
             void Submit()
             {
@@ -188,7 +188,7 @@ namespace PuttrApp
             }
             Draw();
             card.RegisterCallback<ClickEvent>(e => e.StopPropagation());
-            dim = Ui.Box("modal-dim sheet-dim", card).OnTap(() => dim.RemoveFromHierarchy());
+            dim = Ui.Box("modal-dim sheet-dim", card).OnBackdropTap(() => dim.RemoveFromHierarchy());
             App.Layer(over).Add(dim);
         }
 

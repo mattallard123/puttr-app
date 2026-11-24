@@ -13,8 +13,26 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- A coach recording a lesson in the app (PuttrRecordService captures the screen as a foreground service). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Google TV / Android TV: the same package runs there (TvBuilds.cs turns on Unity's TV compatibility: the
+         leanback launcher and the banner). Nothing a TV lacks may be required, including what the permissions
+         above imply (location, microphone, Bluetooth, wifi, camera parts), or Play hides the app from TVs. -->
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.faketouch" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.front" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <uses-feature android:name="android.hardware.location" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.location.network" android:required="false" />
+    <uses-feature android:name="android.hardware.wifi" android:required="false" />
     <application>
         <!-- Profile photo: the system photo picker, from a see-through activity of our own. -->
         <activity android:name="co.puttr.app2.PuttrPhotoActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:exported="false" />
@@ -24,6 +42,9 @@
         </provider>
         <!-- Paying for a lesson: Stripe's PaymentSheet over a see-through activity (PuttrPayActivity). -->
         <activity android:name="co.puttr.app2.PuttrPayActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:exported="false" />
+        <!-- A coach's lesson recording: the system consent prompt over a see-through activity, then the capture service. -->
+        <activity android:name="co.puttr.app2.PuttrRecordActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:exported="false" />
+        <service android:name="co.puttr.app2.PuttrRecordService" android:foregroundServiceType="mediaProjection" android:exported="false" />
 
         <!-- Pushes that arrive while the app is open (PuttrMessagingService). -->
         <service android:name="co.puttr.app2.PuttrMessagingService" android:exported="false">

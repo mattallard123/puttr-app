@@ -187,7 +187,7 @@ namespace PuttrArcade
             yield return Roll(_ball, pts, 1.5f, _trail, BallR);
             if (v.Made)
             {
-                Sound("cup_plop", 0.7f);
+                Sound("switchback_make", "cup_plop", 0.7f);   // puttr-app-2: the game's own sound, the shared one until recorded
                 yield return Drop(_ball, rim, BallR);
                 _ring.sharedMaterial = _ringHot;
                 Arcade.Sparks(At(0, 6f, 0), v.Good ? 36 : 16);

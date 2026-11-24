@@ -289,6 +289,8 @@ namespace PuttrApp.Tests
             Assert.AreEqual(5, TournamentMath.CurrentRound(J.Parse("{\"r1_score\":1,\"r2_score\":2,\"r3_score\":3,\"r4_score\":4}")));
             Assert.AreEqual(1, TournamentMath.CurrentRound(null));
             Assert.AreEqual("https://puttr.imgix.net/tournaments/Nov_26_Prize.jpg?w=400&h=400", TournamentMath.Sized("https://storage.googleapis.com/images.puttr.co/tournaments/Nov_26_Prize.jpg", 400));
+            Assert.AreEqual("https://media0.giphy.com/media/146YfoNq3cuM7u/480w_s.jpg", TournamentMath.GiphyStill("https://media0.giphy.com/media/146YfoNq3cuM7u/giphy.gif?cid=abc&rid=giphy.gif"));
+            Assert.AreEqual("https://media0.giphy.com/media/146YfoNq3cuM7u/480w_s.jpg", TournamentMath.Art(J.Parse("{\"heroImage\":\"https://media0.giphy.com/media/146YfoNq3cuM7u/giphy.gif\"}"), 400));
             var nov = J.Parse("{\"startDate\":\"2026-11-01T00:00:00.000Z\",\"endDate\":\"2026-11-30T23:59:59.000Z\"}");
             Assert.AreEqual(TournamentMath.State.Upcoming, TournamentMath.StateOf(nov, new DateTime(2026, 10, 31, 12, 0, 0)));
             Assert.AreEqual(TournamentMath.State.Active, TournamentMath.StateOf(nov, new DateTime(2026, 11, 30, 23, 0, 0)));
@@ -565,9 +567,15 @@ namespace PuttrApp.Tests
             Assert.IsFalse(VersusMath.MyTurn(waiting, me));
             Assert.IsTrue(VersusMath.MyTurn(theirsPlayed, me));
             Assert.IsFalse(VersusMath.MyTurn(done, me));
-            Assert.IsTrue(VersusMath.Eligible(new Dictionary<string, object> { { "gameType", "STANDARD" }, { "hasLeaderboard", 1.0 } }));
-            Assert.IsFalse(VersusMath.Eligible(new Dictionary<string, object> { { "gameType", "ARCADESTREAK" }, { "hasLeaderboard", 1.0 } }));
-            Assert.IsTrue(VersusMath.Eligible(new Dictionary<string, object> { { "gameType", "STREAK" }, { "versusEnabled", 1.0 } }));
+            // Versus offers the Play tab's games that end in a score made alone, higher winning; the legacy Standard and
+            // Streak catalogue is out, whatever its flags say.
+            Assert.IsFalse(VersusMath.Eligible(new Dictionary<string, object> { { "gameType", "STANDARD" }, { "hasLeaderboard", 1.0 } }));
+            Assert.IsFalse(VersusMath.Eligible(new Dictionary<string, object> { { "gameType", "STREAK" }, { "versusEnabled", 1.0 } }));
+            Assert.IsTrue(VersusMath.Eligible(new Dictionary<string, object> { { "gameType", "CENTERCUT" }, { "multiPlayer", 3.0 } }));
+            Assert.IsTrue(VersusMath.Eligible(new Dictionary<string, object> { { "gameType", "ARCADESTREAK" } }));
+            Assert.IsFalse(VersusMath.Eligible(new Dictionary<string, object> { { "gameType", "CENTERCUT" }, { "multiPlayer", 2.0 } }));
+            Assert.IsFalse(VersusMath.Eligible(new Dictionary<string, object> { { "gameType", "PENDULUM" }, { "gameCat", "SENSOR" } }));
+            Assert.IsFalse(VersusMath.Eligible(new Dictionary<string, object> { { "gameType", "OPEN" } }));
         }
 
         [Test]
@@ -851,14 +859,47 @@ namespace PuttrApp.Tests
         }
     
         [Test]
-        public void PlayRecordsAreHeldOffProduction()
+        public void TvSignInQrCodeIsWellFormed()
         {
-            // Matt, 2026-11-17: nothing this build plays is written to production yet.
-            foreach (string path in new[] { "/game/new/", "/game/savePutt/", "/game/over/", "/club/leaderboard/add", "/tournaments/game/end/", "/league/score/submit", "/versus/create", "/multiplayer/savePutt/", "/tracks/round", "/lab/session/putt" })
-                Assert.IsTrue(Api.Held("POST", path), path);
-            Assert.IsFalse(Api.Held("GET", "/game/leaderboard/472"));
-            Assert.IsFalse(Api.Held("POST", "/profile/remove"));
-            Assert.IsFalse(Api.Held("POST", "/league/me/join"));
+            // Short, a real sign-in link's length, and long enough for version 7+ (version information blocks).
+            string[] texts = { "PUTTR", "https://api.puttr.co/w/tv/abcdefghijklmnopqrstuvwxyz012345", new string('x', 150) + "/https://app.puttr.co" };
+            string dir = Environment.GetEnvironmentVariable("PUTTR_QR_OUT");
+            for (int t = 0; t < texts.Length; t++)
+            {
+                bool[,] m = QrCode.Encode(texts[t]);
+                int size = m.GetLength(0);
+                Assert.AreEqual(0, (size - 17) % 4, "a QR is 4v+17 modules");
+                // The three finder patterns: dark corners, light ring, dark core.
+                foreach (var (cx, cy) in new[] { (3, 3), (size - 4, 3), (3, size - 4) })
+                {
+                    Assert.IsTrue(m[cy - 3, cx - 3] && m[cy + 3, cx + 3] && m[cy, cx], "finder at " + cx + "," + cy);
+                    Assert.IsFalse(m[cy - 2, cx - 2] || m[cy + 2, cx + 2], "finder ring at " + cx + "," + cy);
+                }
+                if (!string.IsNullOrEmpty(dir)) System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, "qr" + t + ".png"), UnityEngine.ImageConversion.EncodeToPNG(QrCode.Texture(texts[t], 6)));
+            }
+        }
+
+        [Test]
+        public void PlayRecordsAreWrittenUnlessHeldForDevelopment()
+        {
+            // Matt, 2026-11-18: play records go to the API as in production. -app2HoldPlay (development) still holds them.
+            string[] play = { "/game/new/", "/game/savePutt/", "/game/over/", "/club/leaderboard/add", "/tournaments/game/end/", "/league/score/submit", "/versus/create", "/multiplayer/savePutt/", "/tracks/round", "/video/saveGame/", "/video/agora/startRecording", "/video/agora/stopRecording" };
+            foreach (string path in play)
+            {
+                Assert.IsFalse(Api.IsHeld(false, "POST", path), "written by default: " + path);
+                Assert.IsTrue(Api.IsHeld(true, "POST", path), "held under -app2HoldPlay: " + path);
+            }
+            // Launched without the flag (as every test run and every Player's app is), nothing is held.
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-app2HoldPlay") < 0)
+            {
+                Assert.IsFalse(Api.HoldPlay);
+                Assert.IsTrue(Api.WritePlay);
+                Assert.IsFalse(Api.HoldsPlay);
+            }
+            Assert.IsFalse(Api.IsHeld(true, "POST", "/video/agora/token")); // the camera itself always starts
+            Assert.IsFalse(Api.IsHeld(true, "GET", "/game/leaderboard/472"));
+            Assert.IsFalse(Api.IsHeld(true, "POST", "/profile/remove"));
+            Assert.IsFalse(Api.IsHeld(true, "POST", "/league/me/join"));
         }
 }
 }

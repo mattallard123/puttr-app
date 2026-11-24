@@ -1,0 +1,64 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- App Store creative assets (iOS 27): ?c=header (1920x823 @2 = 3840x1646) or ?c=search (1920x1280 @2 = 3840x2560).
+     ?imgs=a.png|b.png|... the game stills, in order. Key art stays inside Apple's art safe area:
+     header 1646x661 at (1097,493), search 2168x1030 at (836,765), in output pixels. -->
+<style>
+@font-face{font-family:M;src:url(../screenshots/Montserrat-Bold.ttf);font-weight:700}
+@font-face{font-family:M;src:url(../screenshots/Montserrat-Medium.ttf);font-weight:500}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100vw;height:100vh;overflow:hidden;background:#05070a;font-family:M;color:#fff}
+#strip{position:absolute;inset:-6% -8%;display:flex;gap:1.1vw;transform:skewX(-12deg)}
+#strip div{flex:1;background-size:auto 138%;background-position:center 22%;transform:skewX(12deg) scale(1.25);transform-origin:center}
+#strip span{flex:1;display:flex;overflow:hidden;border-left:.18vw solid rgba(255,255,255,.12)}
+#shade{position:absolute;inset:0}
+#safe{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.lock{display:flex;align-items:center;gap:1.1vw}
+.lock img{height:2.6vw}
+.lock b{font-weight:500;font-size:1.6vw;letter-spacing:.42em;padding-left:1.1vw;border-left:.14vw solid rgba(255,255,255,.55)}
+h1{font-weight:700;line-height:.92;letter-spacing:-.035em;text-transform:uppercase;transform:skewX(-9deg);
+  -webkit-text-stroke:.022em #fff;text-shadow:0 .5vw 2.6vw rgba(0,0,0,.8)}
+h1 em{font-style:normal;color:#7ad446;-webkit-text-stroke:.022em #7ad446}
+.stripes{display:flex;gap:.6vw;width:16vw;height:.55vw;transform:skewX(-24deg)}
+.stripes i{flex:1;background:#7ad446}.stripes i+i{flex:.18}.stripes i+i+i{flex:.08}
+
+/* Header: every game as a slanted panel across the full width, the lockup in the middle. */
+body.header #shade{background:radial-gradient(34% 62% at 50% 52%,rgba(5,7,10,.93) 0%,rgba(5,7,10,.82) 45%,rgba(5,7,10,.25) 100%),
+  linear-gradient(180deg,rgba(5,7,10,.35),rgba(5,7,10,0) 30%,rgba(5,7,10,0) 70%,rgba(5,7,10,.5))}
+body.header #safe{left:28.57vw;top:29.95vh;width:42.86vw;height:40.16vh;gap:2.2vh}
+body.header h1{font-size:3.3vw}
+.tag{font-weight:700;font-size:1.05vw;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.88)}
+body.header .lock img{height:2.2vw} body.header .lock b{font-size:1.35vw}
+
+/* Search results: the games as a lit film strip through the middle, outer frames fading off. */
+body.search #strip{display:none}
+body.search #bg{position:absolute;inset:-5%;background-size:cover;background-position:center;filter:blur(2.4vw) brightness(.32) saturate(1.4)}
+body.search #shade{background:radial-gradient(70% 55% at 50% 52%,rgba(5,7,10,0),rgba(5,7,10,.7))}
+body.search #safe{left:21.77vw;top:29.88vh;width:56.46vw;height:40.23vh;gap:2.6vh}
+body.search h1{font-size:3.3vw}
+body.search .lock img{height:1.9vw} body.search .lock b{font-size:1.15vw}
+#reel{position:absolute;left:50%;top:var(--ry);transform:translateX(-50%);display:flex;gap:1.4vw;align-items:center}
+#reel div{width:var(--tw);aspect-ratio:16/9;border-radius:.9vw;background-size:cover;background-position:center;
+  border:.14vw solid rgba(255,255,255,.25);box-shadow:0 1.2vw 3vw rgba(0,0,0,.7)}
+#reel div.mid{width:calc(var(--tw)*1.18);border-color:rgba(122,212,70,.9);box-shadow:0 0 4vw rgba(122,212,70,.45),0 1.2vw 3vw rgba(0,0,0,.8)}
+#reel p{font-weight:700;font-size:1vw;letter-spacing:.28em;text-transform:uppercase;text-align:center;margin-top:1.1vh;color:rgba(255,255,255,.85)}
+</style></head><body>
+<div id="bg"></div><div id="strip"></div><div id="shade"></div><div id="reel"></div>
+<div id="safe"></div>
+<script>
+const q=new URLSearchParams(location.search), c=q.get('c')||'header';
+document.body.className=c;
+const imgs=(q.get('imgs')||'').split('|').filter(Boolean), names=(q.get('names')||'').split('|');
+const lock='<div class="lock"><img src="../screenshots/LogoHeader.png"></div>';
+if(c==='header'){
+  strip.innerHTML=imgs.map(u=>`<span><div style="background-image:url('${u}');${u.includes('/x-pqs')?'background-size:auto 66%;background-position:16% 46%;background-repeat:no-repeat;background-color:#101214':''}"></div></span>`).join('');
+  safe.innerHTML=lock+'<h1>The ultimate<br><em>putting experience</em></h1><div class="stripes"><i></i><i></i><i></i></div><p class="tag">AI coaching &nbsp;·&nbsp; Stats &nbsp;·&nbsp; 40+ games</p>';
+}else{
+  bg.style.backgroundImage=`url('${imgs[Math.floor(imgs.length/2)]}')`;
+  // Five frames: the middle three sit inside the safe area, the outer two run off into the dark.
+  document.body.style.setProperty('--tw','15.6vw');document.body.style.setProperty('--ry','49vh');
+  reel.innerHTML=imgs.map((u,i)=>`<section style="opacity:${i===0||i===imgs.length-1?.35:1}"><div class="${i===Math.floor(imgs.length/2)?'mid':''}" style="background-image:url('${u}')"></div><p>${names[i]||''}</p></section>`).join('');
+  safe.style.justifyContent='flex-start';
+  safe.innerHTML=lock+'<h1>Coaching. Stats. <em>40+ games.</em></h1>';
+}
+</script></body></html>

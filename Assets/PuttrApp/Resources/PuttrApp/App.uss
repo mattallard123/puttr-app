@@ -2,7 +2,7 @@
    Every colour is solid. The project renders in linear colour for the arcade, and see-through
    whites blended that way come out far brighter than the same values do in the app, so the
    glass colours here are the app's rgba values worked out over the page background. */
-.stage { flex-grow: 1; background-color: rgb(9, 11, 13); align-items: center; }
+.stage { flex-grow: 1; background-color: rgb(10, 12, 13); align-items: center; }
 .app { flex-grow: 1; width: 100%; max-width: 480px; color: rgb(255, 255, 255); font-size: 14px; }
 .screen-host { flex-grow: 1; }
 .screen { flex-grow: 1; }
@@ -10,76 +10,79 @@
 
 .top { flex-direction: row; align-items: center; justify-content: space-between; padding: 10px 16px 6px 16px; }
 .logo { width: 92px; height: 24px; }
-.pill { flex-direction: row; align-items: center; padding: 6px 10px; border-radius: 10px; border-width: 1px; border-color: rgb(38, 40, 42); background-color: rgb(8, 9, 9); font-size: 11px; }
+.pill { flex-direction: row; align-items: center; padding: 6px 10px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); background-color: rgb(10, 12, 13); font-size: 11px; }
 .dot { width: 7px; height: 7px; border-radius: 4px; margin-right: 6px; background-color: rgb(255, 179, 0); }
-.dot-on { background-color: rgb(122, 212, 70); }
+.dot-on { background-color: rgb(45, 140, 60); }
 
 .h1 { font-size: 24px; margin-top: 10px; margin-bottom: 4px; white-space: normal; }
 .h2 { font-size: 20px; white-space: normal; }
-.sub { font-size: 13px; color: rgb(184, 185, 185); white-space: normal; }
-.muted { font-size: 11px; color: rgb(132, 133, 134); white-space: normal; }
+.sub { font-size: 13px; color: rgb(196, 201, 205); white-space: normal; }
+.muted { font-size: 11px; color: rgb(139, 147, 153); white-space: normal; }
 .kick { font-size: 11px; letter-spacing: 1px; color: rgb(122, 212, 70); }
 .center { -unity-text-align: middle-center; }
 .error { font-size: 13px; color: rgb(255, 82, 82); white-space: normal; margin-top: 10px; }
 
-.sec { flex-direction: row; justify-content: space-between; align-items: flex-end; margin-top: 20px; margin-bottom: 10px; padding-left: 16px; padding-right: 16px; }
-.sec-title { font-size: 15px; }
-.sec-link { font-size: 12px; color: rgb(122, 212, 70); }
+.sec { flex-direction: row; justify-content: space-between; align-items: center; margin-top: 24px; margin-bottom: 12px; padding-left: 16px; padding-right: 16px; }
+.sec-title { font-size: 11px; letter-spacing: 1.5px; }
+.sec-slash { font-size: 13px; color: rgb(122, 212, 70); margin-right: 6px; }
+.top-title { font-size: 15px; }
+.sec-link { font-size: 13px; color: rgb(139, 147, 153); }
 
-.glass { background-color: rgb(24, 26, 28); border-width: 1px; border-color: rgb(32, 34, 36); border-radius: 14px; padding: 14px; }
-.hero { background-color: rgb(14, 30, 20); border-color: rgb(27, 76, 37); border-radius: 16px; margin-top: 12px; }
-.fire { background-color: rgb(43, 24, 15); border-color: rgb(132, 66, 35); border-radius: 16px; margin-top: 12px; }
+.glass { background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 14px; }
+.hero { background-color: rgb(21, 24, 27); border-color: rgb(38, 42, 46); border-radius: 4px; margin-top: 12px; }
+.fire { background-color: rgb(21, 24, 27); border-color: rgb(132, 66, 35); border-radius: 4px; margin-top: 12px; }
 .row { flex-direction: row; align-items: center; }
 .grow { flex-grow: 1; flex-shrink: 1; }
 
-.btn { background-color: rgb(45, 140, 60); border-radius: 12px; padding: 14px; margin-top: 14px; align-items: center; justify-content: center; }
+.btn { background-color: rgb(45, 140, 60); border-radius: 4px; padding: 14px; margin-top: 16px; align-items: center; justify-content: center; }
 .btn:hover { background-color: rgb(52, 158, 68); }
 .btn:active { background-color: rgb(36, 112, 48); }
-.btn-ghost { background-color: rgb(24, 26, 28); border-width: 1px; border-color: rgb(38, 40, 42); }
-.btn-ghost:hover { background-color: rgb(38, 40, 42); }
-.btn-ghost:active { background-color: rgb(19, 21, 23); }
+.btn-ghost { background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); }
+.btn-ghost:hover { background-color: rgb(34, 38, 42); }
+.btn-ghost:active { background-color: rgb(21, 24, 27); }
 .btn-off { opacity: 0.45; }
-.btn-text { font-size: 15px; color: rgb(255, 255, 255); }
+.btn-text { font-size: 16px; color: rgb(255, 255, 255); }
 
-.bar { height: 6px; border-radius: 3px; background-color: rgb(38, 40, 42); overflow: hidden; margin-top: 10px; }
-.bar-fill { height: 6px; border-radius: 3px; background-color: rgb(45, 140, 60); }
+.bar { height: 4px; border-radius: 2px; background-color: rgb(34, 38, 42); overflow: hidden; margin-top: 10px; }
+.bar-fill { height: 4px; border-radius: 2px; background-color: rgb(45, 140, 60); }
 
 .hscroll { flex-grow: 0; flex-shrink: 0; }
 .tile { width: 150px; height: 150px; margin-left: 10px; justify-content: space-between; }
 .tile-first { margin-left: 16px; }
 .tile-title { font-size: 14px; margin-top: 8px; }
 .tile .tile-desc { white-space: nowrap; text-overflow: ellipsis; }
-.tile-desc { font-size: 11px; color: rgb(132, 133, 134); white-space: normal; max-height: 28px; overflow: hidden; }
-.bubble { align-self: flex-start; flex-shrink: 0; width: 40px; height: 40px; border-radius: 12px; align-items: center; justify-content: center; }
+.tile-desc { font-size: 11px; color: rgb(139, 147, 153); white-space: normal; max-height: 28px; overflow: hidden; }
+.bubble { align-self: flex-start; flex-shrink: 0; width: 40px; height: 40px; border-radius: 4px; align-items: center; justify-content: center; }
 .chips { flex-direction: row; flex-wrap: wrap; margin-top: 6px; }
-.chip { font-size: 10px; padding: 3px 8px; border-radius: 8px; background-color: rgb(44, 46, 48); margin-right: 5px; margin-top: 4px; }
-.chip-green { background-color: rgb(27, 43, 23); color: rgb(122, 212, 70); }
-.chip-amber { background-color: rgb(58, 45, 10); color: rgb(255, 179, 0); }
+.chip { font-size: 11px; letter-spacing: 1px; padding: 4px 8px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); background-color: rgba(0, 0, 0, 0); color: rgb(139, 147, 153); margin-right: 5px; margin-top: 4px; }
+.chip-green { color: rgb(122, 212, 70); }
+.chip-amber { color: rgb(255, 179, 0); }
 
-.feed-row { flex-direction: row; align-items: center; padding: 11px 16px; border-bottom-width: 1px; border-bottom-color: rgb(24, 26, 28); }
-.avatar { width: 42px; height: 42px; border-radius: 21px; margin-right: 12px; background-color: rgb(38, 40, 42); align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
-.avatar-big { width: 72px; height: 72px; border-radius: 36px; }
-.avatar-letter { font-size: 16px; color: rgb(184, 185, 185); }
+.feed-row { flex-direction: row; align-items: center; padding: 11px 16px; border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); }
+.avatar { width: 42px; height: 42px; border-radius: 4px; margin-right: 12px; background-color: rgb(34, 38, 42); align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+.avatar-big { width: 72px; height: 72px; border-radius: 4px; }
+.avatar-letter { font-size: 16px; color: rgb(196, 201, 205); }
 .feed-name { font-size: 14px; }
 .feed-score { font-size: 16px; margin-left: 10px; }
 
 .list-row { flex-direction: row; align-items: center; margin: 0 16px 10px 16px; }
 
 .field { margin: 0 0 12px 0; }
-.field .unity-base-text-field__input { background-color: rgb(24, 26, 28); border-width: 1px; border-color: rgb(38, 40, 42); border-radius: 12px; padding: 12px 14px; color: rgb(255, 255, 255); font-size: 16px; min-height: 50px; }
+.field .unity-base-text-field__input { background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 12px 14px; color: rgb(255, 255, 255); font-size: 16px; min-height: 50px; }
 .field:focus .unity-base-text-field__input { border-color: rgb(122, 212, 70); }
-.field .unity-base-text-field__input--placeholder { color: rgb(107, 108, 109); }
+.field .unity-base-text-field__input--placeholder { color: rgb(139, 147, 153); }
 
 .code { font-size: 34px; letter-spacing: 6px; margin-top: 8px; margin-bottom: 4px; -unity-text-align: middle-center; }
 
-.tabs { flex-direction: row; flex-shrink: 0; border-top-width: 1px; border-top-color: rgb(32, 34, 36); padding: 8px 6px 8px 6px; background-color: rgb(6, 7, 7); }
-.tab { flex-grow: 1; flex-basis: 0; align-items: center; }
+.tabs { flex-direction: row; flex-shrink: 0; border-top-width: 1px; border-top-color: rgb(38, 42, 46); padding: 0 6px 8px 6px; background-color: rgb(0, 0, 0); }
+.tab { flex-grow: 1; flex-basis: 0; align-items: center; padding-top: 8px; border-top-width: 2px; border-top-color: rgba(0, 0, 0, 0); }
+.tab-on { border-top-color: rgb(122, 212, 70); }
 .tab-icon { width: 24px; height: 24px; margin-bottom: 3px; }
-.tab-label { font-size: 10px; color: rgb(107, 108, 109); }
+.tab-label { font-size: 10px; color: rgb(139, 147, 153); }
 .tab-on .tab-label { color: rgb(122, 212, 70); }
 
-.toast { position: absolute; left: 16px; right: 16px; bottom: 84px; background-color: rgb(20, 24, 26); border-width: 1px; border-color: rgb(44, 48, 50); border-radius: 12px; padding: 12px 14px; font-size: 13px; white-space: normal; -unity-text-align: middle-center; }
-.perf { position: absolute; left: 8px; right: 8px; bottom: 76px; background-color: rgb(0, 0, 0); border-radius: 8px; padding: 6px 8px; font-size: 10px; color: rgb(122, 212, 70); white-space: normal; }
+.toast { position: absolute; left: 16px; right: 16px; bottom: 84px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 12px 14px; font-size: 13px; white-space: normal; -unity-text-align: middle-center; }
+.perf { position: absolute; left: 8px; right: 8px; bottom: 76px; background-color: rgb(0, 0, 0); border-radius: 4px; padding: 6px 8px; font-size: 10px; color: rgb(122, 212, 70); white-space: normal; }
 .hidden { display: none; }
 
 /* Pushed screens */
@@ -88,64 +91,79 @@
 .back-chevron { font-size: 34px; padding: 0 0 4px 2px; -unity-text-align: middle-left; height: 44px; }
 .crest-image { -unity-background-scale-mode: scale-to-fit; }
 .score-big { font-size: 76px; -unity-text-align: middle-center; margin-top: 8px; }
-.board-row { flex-direction: row; align-items: center; padding: 9px 0; border-bottom-width: 1px; border-bottom-color: rgb(32, 34, 36); }
-.board-place { width: 26px; font-size: 13px; color: rgb(132, 133, 134); }
+.board-row { flex-direction: row; align-items: center; padding: 9px 0; border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); }
+.board-place { width: 26px; font-size: 13px; color: rgb(139, 147, 153); }
 
 /* Free putt */
-.choice { flex-direction: row; margin-top: 10px; background-color: rgb(14, 16, 18); border-radius: 12px; padding: 4px; }
-.choice-item { flex-grow: 1; flex-basis: 0; align-items: center; justify-content: center; padding: 11px 4px; border-radius: 9px; }
-.choice-on { background-color: rgb(45, 140, 60); }
+.choice { flex-direction: row; margin-top: 12px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 4px; }
+.choice-item { flex-grow: 1; flex-basis: 0; align-items: center; justify-content: center; padding: 12px 4px; border-radius: 4px; }
+.choice-on { background-color: rgb(255, 255, 255); }
 .choice-text { font-size: 13px; -unity-text-align: middle-center; white-space: normal; }
-.stepper { flex-direction: row; align-items: center; justify-content: space-between; background-color: rgb(14, 16, 18); border-radius: 12px; padding: 4px; }
-.stepper-button { width: 48px; height: 44px; border-radius: 9px; background-color: rgb(38, 40, 42); align-items: center; justify-content: center; }
-.stepper-button:active { background-color: rgb(52, 56, 58); }
-.stepper-sign { font-size: 22px; }
-.stepper-value { font-size: 17px; -unity-text-align: middle-center; flex-grow: 1; }
-.score-mid { font-size: 54px; -unity-text-align: middle-center; margin-top: 2px; }
+.stepper { flex-direction: row; align-items: center; justify-content: space-between; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 4px; }
+.stepper-button { width: 48px; height: 44px; border-radius: 4px; background-color: rgb(34, 38, 42); align-items: center; justify-content: center; }
+.stepper-button:active { background-color: rgb(48, 53, 58); }
+.stepper-sign { font-size: 20px; }
+.stepper-value { font-size: 15px; -unity-text-align: middle-center; flex-grow: 1; }
+.score-mid { font-size: 44px; -unity-font-style: bold-and-italic; -unity-text-align: middle-center; margin-top: 4px; }
 .stat { align-items: center; flex-basis: 0; }
-.stat-value { font-size: 24px; -unity-text-align: middle-center; }
-.putt-view { height: 190px; margin-top: 12px; border-radius: 12px; overflow: hidden; background-color: rgb(14, 16, 18); }
+.stat-value { font-size: 20px; -unity-font-style: bold-and-italic; -unity-text-align: middle-center; margin: 0; padding: 0; }
+.putt-view { height: 190px; margin-top: 12px; border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; overflow: hidden; background-color: rgb(21, 24, 27); }
 
 /* A game sharing the screen with one of the app's panels */
 .stage-clear { background-color: rgba(0, 0, 0, 0); }
-.sheet { position: absolute; background-color: rgb(9, 11, 13); border-top-width: 1px; border-top-color: rgb(38, 40, 42); padding-left: 12px; padding-right: 12px; color: rgb(255, 255, 255); font-size: 14px; }
-.sheet-wide { border-top-width: 0; border-left-width: 1px; border-left-color: rgb(38, 40, 42); }
-.sheet-card { background-color: rgb(24, 26, 28); border-width: 1px; border-color: rgb(32, 34, 36); border-radius: 14px; padding: 12px; margin-top: 10px; }
-.sheet-note { background-color: rgb(27, 76, 37); border-radius: 12px; padding: 10px 12px; margin-top: 10px; font-size: 14px; -unity-text-align: middle-center; white-space: normal; }
-.btn-small { background-color: rgb(38, 40, 42); border-radius: 10px; padding: 10px 18px; align-items: center; justify-content: center; flex-shrink: 0; }
-.btn-small:active { background-color: rgb(52, 56, 58); }
+.sheet { position: absolute; background-color: rgb(10, 12, 13); border-top-width: 1px; border-top-color: rgb(38, 42, 46); padding-left: 12px; padding-right: 12px; color: rgb(255, 255, 255); font-size: 13px; }
+.sheet-wide { border-top-width: 0; border-left-width: 1px; border-left-color: rgb(38, 42, 46); }
+/* A rule game on a wide screen (RulePanel): no column. The game's world fills the screen and the cards lie over it. */
+.sheet-over { background-color: rgba(9, 11, 13, 0); border-left-width: 0; }
+.sheet-over .sheet-card { background-color: rgba(14, 16, 18, 0.86); border-color: rgba(255, 255, 255, 0.1); }
+/* Wide, the cards are two docks at the sides of the screen (left: tee and the game's cards; right: under the ideal putt). */
+.sheet-dock { padding-left: 0; padding-right: 0; }
+.sheet-over .tee-band { background-color: rgba(14, 16, 18, 0.86); border-bottom-width: 0; border-radius: 4px; }
+.tee-docked.tee-sign { position: relative; left: 0; top: 0; align-self: flex-start; }
+.sheet-card { background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 12px; margin-top: 10px; }
+.sheet-note { background-color: rgb(34, 38, 42); border-radius: 4px; padding: 10px 12px; margin-top: 10px; font-size: 13px; -unity-text-align: middle-center; white-space: normal; }
+.btn-small { background-color: rgb(34, 38, 42); border-radius: 4px; min-height: 44px; min-width: 44px; padding: 8px 16px; align-items: center; justify-content: center; flex-shrink: 0; }
+.btn-small:active { background-color: rgb(48, 53, 58); }
+.btn-small > .btn-text { font-size: 13px; letter-spacing: 0.5px; -unity-font-style: bold-and-italic; }
+/* The row and score a game's panels and result pages share (a name at 15, a score as a 20 numeral). */
+.g-name { font-size: 15px; }
+.g-score { font-size: 20px; margin-left: 12px; -unity-font-style: bold-and-italic; }
 
 /* The tee button and its picker */
-.icon-btn { width: 44px; height: 44px; border-radius: 12px; background-color: rgb(27, 43, 23); border-width: 1px; border-color: rgb(27, 76, 37); align-items: center; justify-content: center; margin-right: 8px; flex-shrink: 0; }
-.icon-btn:active { background-color: rgb(27, 76, 37); }
+.icon-btn { width: 44px; height: 44px; border-radius: 4px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); align-items: center; justify-content: center; margin-right: 8px; flex-shrink: 0; }
+.icon-btn:active { background-color: rgb(34, 38, 42); }
 .modal-dim { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.6); align-items: center; justify-content: center; padding: 16px; color: rgb(255, 255, 255); font-size: 14px; }
-.modal { width: 100%; max-width: 380px; background-color: rgb(18, 20, 22); border-width: 1px; border-color: rgb(44, 48, 50); border-radius: 18px; padding: 18px; }
-.tee-grid { flex-direction: row; flex-wrap: wrap; margin-top: 6px; margin-left: -4px; margin-right: -4px; }
+.modal { width: 100%; max-width: 380px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 16px; }
+.tee-grid { flex-direction: row; flex-wrap: wrap; margin-top: 8px; margin-left: -4px; margin-right: -4px; }
 .tee-cell { width: 33.33%; padding: 4px; align-items: center; }
 .tee-cell > .tee-number { }
-.tee-number { font-size: 22px; -unity-text-align: middle-center; }
-.tee-cell { height: 62px; justify-content: center; border-radius: 12px; }
+.tee-number { font-size: 20px; -unity-text-align: middle-center; }
+.tee-cell { height: 62px; justify-content: center; border-radius: 4px; }
 .tee-on { background-color: rgb(45, 140, 60); }
 
 /* Profile */
 .avatar-member { border-width: 2px; border-color: rgb(122, 212, 70); }
-.profile-row { flex-direction: row; align-items: center; margin-top: 14px; padding-top: 14px; border-top-width: 1px; border-top-color: rgb(32, 34, 36); }
-.profile-counts { margin-top: 14px; padding-top: 14px; border-top-width: 1px; border-top-color: rgb(32, 34, 36); }
+.profile-row { flex-direction: row; align-items: center; margin-top: 14px; padding-top: 14px; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.profile-counts { margin-top: 14px; padding-top: 14px; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
 .medal-item { width: 96px; margin-left: 10px; align-items: center; }
-.medal { width: 64px; height: 64px; border-radius: 32px; align-items: center; justify-content: center; }
-.medal-title { font-size: 12px; margin-top: 8px; -unity-text-align: upper-center; white-space: normal; }
-.medal-desc { font-size: 11px; color: rgb(132, 133, 134); margin-top: 2px; -unity-text-align: upper-center; white-space: normal; }
-.challenge { width: 250px; margin-left: 10px; }
+.medal { width: 64px; height: 64px; border-radius: 4px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); align-items: center; justify-content: center; }
+.medal-title { font-size: 13px; margin-top: 8px; -unity-text-align: upper-center; white-space: normal; }
+.medal-desc { font-size: 11px; color: rgb(139, 147, 153); margin-top: 2px; -unity-text-align: upper-center; white-space: normal; }
+.challenge { width: 250px; margin-left: 12px; padding: 16px; }
+.challenge .challenge-time { color: rgb(255, 179, 0); margin-top: 8px; }
+.challenge .challenge-pct { margin-top: 8px; }
+.challenge-bar { height: 4px; border-radius: 0; margin-top: 12px; }
+.challenge-bar > .bar-fill { height: 4px; border-radius: 0; }
 .challenge .chip { align-self: flex-start; }
 .activity-words { margin-left: 14px; justify-content: center; }
 .heat { flex-direction: row; flex-wrap: wrap; margin-top: 12px; }
 .heat-cell { width: 14.2857%; padding: 3px; }
-.heat-dot { height: 22px; border-radius: 6px; }
+.heat-dot { height: 22px; border-radius: 4px; }
 .months { flex-direction: row; align-items: flex-end; height: 150px; }
 .month { flex-grow: 1; flex-basis: 0; align-items: center; height: 100%; }
-.month-value { font-size: 11px; color: rgb(184, 185, 185); -unity-text-align: middle-center; height: 16px; }
+.month-value { font-size: 11px; color: rgb(196, 201, 205); -unity-text-align: middle-center; height: 16px; }
 .month-track { flex-grow: 1; width: 60%; justify-content: flex-end; margin-top: 4px; margin-bottom: 6px; }
-.month-bar { background-color: rgb(45, 140, 60); border-radius: 5px; width: 100%; }
+.month-bar { background-color: rgb(45, 140, 60); border-radius: 4px; width: 100%; }
 .legend { margin-bottom: 6px; flex-wrap: wrap; }
 .legend-item { margin-right: 14px; margin-bottom: 4px; }
 .legend-dot { width: 9px; height: 9px; border-radius: 5px; margin-right: 6px; }
@@ -155,85 +173,99 @@
 .ring-value { font-size: 17px; -unity-text-align: middle-center; }
 
 /* Home: this week */
-.week { flex-direction: row; margin-top: 12px; }
+.week { flex-direction: row; margin-top: 16px; }
 .week-day { flex-grow: 1; flex-basis: 0; align-items: center; }
-.week-dot { width: 30px; height: 30px; border-radius: 15px; background-color: rgb(24, 40, 28); align-items: center; justify-content: center; }
-.week-on { background-color: rgb(45, 140, 60); }
+.week-dot { width: 34px; height: 34px; border-radius: 10px; background-color: rgba(255, 255, 255, 0.05); border-width: 1px; border-color: rgba(255, 255, 255, 0.06); align-items: center; justify-content: center; }
+.week-on { background-color: rgb(45, 140, 60); border-color: rgba(155, 240, 106, 0.5); }
 .week-today { border-width: 2px; border-color: rgb(122, 212, 70); }
-.week-letter { font-size: 11px; color: rgb(184, 185, 185); -unity-text-align: middle-center; }
+.week-letter { font-size: 11px; color: rgb(196, 201, 205); -unity-text-align: middle-center; }
 .week-on .week-letter { color: rgb(255, 255, 255); }
 
 /* Rounds, tournaments */
-.hero-card { background-color: rgb(14, 30, 20); border-color: rgb(27, 76, 37); }
-.sheet-warn { background-color: rgb(58, 45, 10); color: rgb(255, 179, 0); }
-.poster { border-radius: 14px; overflow: hidden; background-color: rgb(24, 26, 28); justify-content: flex-end; flex-shrink: 0; -unity-background-scale-mode: scale-and-crop; }
+.hero-card { background-color: rgb(21, 24, 27); border-color: rgb(38, 42, 46); }
+.sheet-warn { background-color: rgb(34, 38, 42); color: rgb(255, 179, 0); }
+.poster { border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); overflow: hidden; background-color: rgb(21, 24, 27); flex-shrink: 0; }
 .poster-hero { height: 200px; margin-bottom: 4px; }
-.poster-panel { background-color: rgba(9, 11, 13, 0.86); padding: 10px 12px; }
-.poster-line { margin-top: 4px; }
-.poster-chip { position: absolute; left: 10px; top: 10px; }
-.prize-words { margin-left: 12px; }
-.champion { border-color: rgb(120, 100, 20); }
-.champion-row { margin-top: 10px; }
-.round-tiles { margin-left: -4px; margin-right: -4px; }
-.round-tile { flex-grow: 1; flex-basis: 0; margin: 0 4px; padding: 12px 6px; align-items: center; }
-.round-now { border-color: rgb(122, 212, 70); }
-.round-chip { margin-top: 8px; margin-right: 0; }
-.board-me { background-color: rgb(14, 30, 20); border-radius: 10px; }
+.poster-art { background-color: rgb(0, 0, 0); flex-shrink: 0; -unity-background-scale-mode: scale-and-crop; }
+.poster-bar { flex-grow: 1; padding: 12px; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.poster-title { font-size: 15px; letter-spacing: 0.5px; color: rgb(255, 255, 255); margin: 0; padding: 0; white-space: normal; }
+.caps.poster-when { margin-top: 4px; white-space: normal; }
+.poster-tags { margin-top: 4px; }
+.champion { border-color: rgb(38, 42, 46); }
+.champion-row { margin-top: 12px; }
+.round-tiles { margin: 0; }
+.round-now { background-color: rgb(34, 38, 42); }
+.strip-cap.round-done { color: rgb(122, 212, 70); }
+.round-results { margin-top: 0; padding-left: 16px; padding-right: 16px; flex-shrink: 0; }
+.round-last { border-bottom-width: 0; }
+.num-20.round-points { margin-left: 8px; }
+.board-me { background-color: rgb(34, 38, 42); }
 
 /* League Night */
 .crest { align-items: center; justify-content: center; flex-shrink: 0; }
 .crest-letter { color: rgb(255, 255, 255); -unity-text-align: middle-center; }
 .crest-words { margin-left: 12px; }
-.scope { padding: 8px 14px; border-radius: 18px; background-color: rgb(24, 26, 28); margin-right: 8px; }
-.scope-on { background-color: rgb(45, 140, 60); }
-.scope-text { font-size: 12px; }
+/* The chip (design guidelines): one style, two states. */
+.scope { min-height: 44px; justify-content: center; padding: 8px 14px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); background-color: rgba(0, 0, 0, 0); margin-right: 8px; }
+.scope-on { background-color: rgb(255, 255, 255); border-color: rgb(255, 255, 255); }
+.scope-on Label { color: rgb(0, 0, 0); }
+.scope-text { font-size: 11px; letter-spacing: 1.2px; }
 .team-grid { flex-direction: row; flex-wrap: wrap; margin: 12px -5px 0 -5px; }
 .team-slot { width: 50%; padding: 5px; }
 .team-cell { align-items: center; padding: 14px 8px; border-width: 2px; }
-.team-on { background-color: rgb(30, 32, 34); }
+.team-on { background-color: rgb(34, 38, 42); }
 
 /* Profile pages */
-.social-tab { flex-grow: 1; flex-basis: 0; padding: 12px 0; border-radius: 12px; background-color: rgb(16, 18, 20); align-items: center; margin-right: 6px; }
-.social-on { background-color: rgb(38, 40, 42); }
-.social-count { font-size: 18px; -unity-text-align: middle-center; }
-.social-find { width: 64px; border-radius: 12px; background-color: rgb(24, 26, 28); align-items: center; justify-content: center; }
-.member-row { flex-direction: row; align-items: center; padding: 8px 2px; }
+/* Social: the two counts are one stat strip (the chosen one lit), Find is the header's icon square. */
+.social-strip { margin-bottom: 12px; }
+.social-strip .social-on { background-color: rgb(34, 38, 42); }
+.social-strip .social-on > .strip-cap { color: rgb(255, 255, 255); }
+.social-list { padding: 0 16px; }
+.social-find { align-items: flex-end; justify-content: center; }
+.social-note { margin-top: 32px; }
+.member-row { flex-direction: row; align-items: center; padding: 12px 0; border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); }
 .member-row .avatar { margin-right: 12px; }
-.follow { background-color: rgb(45, 140, 60); border-radius: 8px; padding: 7px 14px; }
-.follow-on { background-color: rgb(32, 34, 36); }
-.follow-text { font-size: 12px; }
-.follow-on .follow-text { color: rgb(132, 133, 134); }
-.count-tile { background-color: rgb(24, 26, 28); border-radius: 12px; padding: 10px 14px; align-items: center; min-width: 86px; }
-.chip-join { align-self: flex-start; background-color: rgb(45, 140, 60); border-radius: 6px; padding: 5px 14px; font-size: 12px; }
-.challenge-hero { align-items: center; }
-.medal-big { width: 90px; height: 90px; border-radius: 45px; margin-bottom: 10px; }
-.challenge-unit { margin-left: 8px; align-self: flex-end; margin-bottom: 10px; }
-.challenge-earned { align-self: flex-start; margin-bottom: 10px; }
+/* Follow and Following in a list: both quiet (a list has no main button). Following is the outlined one. */
+.follow { background-color: rgb(34, 38, 42); border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); min-width: 96px; height: 44px; padding: 0 12px; margin-left: 8px; align-items: center; justify-content: center; flex-shrink: 0; }
+.follow:active { background-color: rgb(48, 53, 58); }
+.follow-on { background-color: rgba(0, 0, 0, 0); border-color: rgb(38, 42, 46); }
+.follow-text { font-size: 11px; letter-spacing: 1.5px; color: rgb(255, 255, 255); margin: 0; padding: 0; }
+.follow-on .follow-text { color: rgb(139, 147, 153); }
+/* Games played: one strip that scrolls sideways, a cell a game. */
+.count-strip { margin-left: 16px; flex-shrink: 0; }
+.count-strip > .count-cell { flex-grow: 0; flex-basis: auto; min-width: 96px; padding: 12px 16px; }
+.chip-join { align-self: flex-start; background-color: rgb(34, 38, 42); border-radius: 4px; padding: 8px 12px; font-size: 11px; letter-spacing: 1.5px; color: rgb(255, 255, 255); }
+.challenge-hero { align-items: center; padding: 16px; }
+.challenge-hero .challenge-name { -unity-text-align: middle-center; margin-bottom: 4px; }
+.challenge-hero .challenge-when { color: rgb(255, 179, 0); margin-top: 12px; -unity-text-align: middle-center; }
+.medal-big { width: 72px; height: 72px; border-radius: 4px; margin-bottom: 12px; }
+.challenge-unit { margin-left: 8px; align-self: flex-end; margin-bottom: 8px; }
+.challenge-earned { align-self: flex-start; margin-bottom: 12px; }
 .challenge-line { margin-top: 8px; }
-.tier-dot { width: 26px; height: 26px; border-radius: 13px; margin-right: 12px; }
+.tier-dot { width: 12px; height: 12px; border-radius: 6px; margin-right: 12px; flex-shrink: 0; }
 
 /* The month calendar and the line chart */
-.calendar { background-color: rgb(16, 18, 20); border-radius: 12px; padding: 6px 4px 10px 4px; }
+.calendar { background-color: rgb(21, 24, 27); border-radius: 4px; padding: 6px 4px 10px 4px; }
 .calendar-head { padding: 4px 6px 8px 6px; }
-.calendar-arrow { font-size: 22px; color: rgb(107, 108, 109); width: 36px; -unity-text-align: middle-center; }
-.calendar-month { font-size: 14px; -unity-text-align: middle-center; }
+.calendar-arrow { font-size: 20px; color: rgb(139, 147, 153); width: 44px; -unity-text-align: middle-center; }
+.calendar-month { font-size: 15px; -unity-text-align: middle-center; }
 .calendar-cell { width: 14.2857%; height: 40px; align-items: center; justify-content: center; }
-.calendar-name { font-size: 11px; color: rgb(107, 108, 109); -unity-text-align: middle-center; }
-.calendar-day { width: 36px; height: 36px; border-radius: 18px; align-items: center; justify-content: center; }
+.calendar-name { font-size: 11px; color: rgb(139, 147, 153); -unity-text-align: middle-center; }
+.calendar-day { width: 36px; height: 36px; border-radius: 4px; align-items: center; justify-content: center; }
 .calendar-on { background-color: rgb(45, 140, 60); }
-.calendar-today { border-width: 1.5px; border-color: rgb(45, 140, 60); }
-.calendar-number { font-size: 14px; color: rgb(184, 185, 185); -unity-text-align: middle-center; }
+.calendar-today { border-width: 1px; border-color: rgb(45, 140, 60); }
+.calendar-number { font-size: 13px; color: rgb(196, 201, 205); -unity-text-align: middle-center; }
 .calendar-on .calendar-number { color: rgb(255, 255, 255); }
 .line-chart { height: 220px; }
-.chart-label { position: absolute; font-size: 10px; color: rgb(107, 108, 109); }
+.chart-label { position: absolute; font-size: 11px; color: rgb(139, 147, 153); }
 
 /* Make % by distance, as the app draws it */
-.distance-row { flex-direction: row; align-items: center; padding: 10px 0; border-top-width: 1px; border-top-color: rgb(32, 34, 36); }
+.distance-row { flex-direction: row; align-items: center; padding: 10px 0; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
 .distance-feet { width: 44px; align-items: center; }
-.distance-number { font-size: 22px; -unity-text-align: middle-center; }
+.distance-number { font-size: 20px; -unity-text-align: middle-center; }
 .distance-bars { margin-left: 12px; }
 .line { align-items: center; margin-top: 2px; margin-bottom: 2px; }
-.line-track { height: 6px; border-radius: 3px; background-color: rgb(32, 34, 36); overflow: hidden; }
+.line-track { height: 4px; background-color: rgb(34, 38, 42); overflow: hidden; }
 .line-value { font-size: 11px; }
 
 /* Play, as the sports UI draws it */
@@ -244,67 +276,175 @@
 /* Improve and Full analysis */
 .next-score { width: 90px; align-items: center; justify-content: center; }
 .next-words { margin-left: 12px; }
-.spots { margin-left: -5px; margin-right: -5px; }
-.spot-card { margin: 0 5px; }
+.spots { margin-left: -6px; margin-right: -6px; }
+.spot-card { margin: 0 6px; flex-basis: 0; }
+.an-gap { margin-top: 12px; }
+.an-gap-4 { margin-top: 4px; }
+.an-gap-8 { margin-top: 8px; }
+.an-row { flex-direction: row; align-items: center; padding: 12px 0; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.an-row-first { border-top-width: 0; padding-top: 0; }
+.an-row-words { flex-grow: 1; flex-basis: 0; }
+.an-row-end { margin-left: 12px; flex-shrink: 0; }
+.an-zone { flex-grow: 1; flex-basis: 0; align-items: center; }
+.an-drill { margin-top: 12px; }
 .spot-row { align-items: center; height: 44px; }
 .spot-feet { width: 52px; flex-shrink: 0; }
-.spot-cell { align-items: center; }
-.spot-dot { width: 38px; height: 38px; border-radius: 19px; background-color: rgb(32, 34, 36); align-items: center; justify-content: center; }
-.spot-value { font-size: 12px; -unity-text-align: middle-center; }
-.split { height: 8px; border-radius: 4px; overflow: hidden; margin-top: 8px; }
+.spot-cell { align-items: center; justify-content: center; height: 44px; }
+.spot-dot { width: 40px; height: 40px; border-radius: 4px; background-color: rgb(34, 38, 42); align-items: center; justify-content: center; }
+.spot-cell:active > .spot-dot { background-color: rgb(48, 53, 58); }
+.spot-value { font-size: 13px; -unity-text-align: middle-center; }
+.split { height: 8px; overflow: hidden; margin-top: 8px; }
 .split-a { height: 8px; }
 .split-b { height: 8px; }
 .entry-arc { height: 190px; }
-.entry-value { color: rgb(255, 255, 255); font-size: 12px; }
+.entry-value { color: rgb(255, 255, 255); font-size: 11px; }
 
 /* The shared game frame */
-.frame { position: absolute; left: 0; top: 0; right: 0; bottom: 0; color: rgb(255, 255, 255); font-size: 14px; }
+.frame { position: absolute; left: 0; top: 0; right: 0; bottom: 0; color: rgb(255, 255, 255); font-size: 13px; }
 .frame-over { position: absolute; align-items: center; }
 .frame-bug { align-items: center; }
-.bug { flex-direction: row; align-items: stretch; background-color: rgb(9, 11, 13); border-width: 1px; border-color: rgb(44, 48, 50); border-radius: 12px; overflow: hidden; }
+.bug { flex-direction: row; align-items: stretch; background-color: rgb(10, 12, 13); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; overflow: hidden; }
 .bug-player { padding: 6px 12px 6px 6px; }
-.bug-avatar { width: 30px; height: 30px; border-radius: 15px; margin-right: 8px; }
-.bug-name { font-size: 14px; margin-right: 12px; }
+.bug-avatar { width: 30px; height: 30px; border-radius: 4px; margin-right: 8px; }
+.bug-name { font-size: 13px; margin-right: 12px; }
 .bug-score { font-size: 20px; -unity-font-style: bold-and-italic; }
+/* Frame.TeeBand: across the screen under the game's picture: three circles, the tee to putt from solid, the distance. */
+.tee-band { flex-direction: row; align-items: center; justify-content: center; flex-shrink: 0; padding: 10px 16px 8px 16px; border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); }
+.tee-dot { width: 26px; height: 26px; border-radius: 13px; border-width: 3px; border-color: rgb(139, 147, 153); margin: 0 5px; flex-shrink: 0; }
+.tee-dot-on { background-color: rgb(255, 255, 255); border-color: rgb(255, 255, 255); }
+.tee-band-ft { flex-direction: row; align-items: flex-end; margin-left: 16px; }
+.tee-band-num { font-size: 38px; -unity-font-style: bold-and-italic; color: rgb(255, 255, 255); margin: 0; padding: 0; }
+.tee-band-unit { font-size: 13px; letter-spacing: 2px; color: rgb(196, 201, 205); margin: 0 0 8px 5px; padding: 0; }
 .bug-progress { background-color: rgb(45, 140, 60); padding: 0 12px; justify-content: center; }
-.bug-round { font-size: 12px; letter-spacing: 1px; }
-.tee-sign { position: absolute; left: 12px; top: 54px; background-color: rgb(9, 11, 13); border-width: 1px; border-color: rgb(44, 48, 50); border-radius: 14px; padding: 10px 16px; align-items: center; }
-.tee-feet { font-size: 30px; -unity-font-style: bold-and-italic; -unity-text-align: middle-center; }
-.read-head { font-size: 26px; -unity-font-style: bold-and-italic; letter-spacing: 1px; }
-.read-points { align-items: center; margin-left: 10px; }
-.read-number { font-size: 34px; -unity-font-style: bold-and-italic; -unity-text-align: middle-center; }
-.read-line { align-items: center; padding: 9px 0; border-top-width: 1px; border-top-color: rgb(32, 34, 36); }
-.read-label { font-size: 11px; letter-spacing: 1px; color: rgb(132, 133, 134); width: 64px; }
+.bug-round { font-size: 11px; letter-spacing: 1.5px; }
+.tee-sign { position: absolute; left: 12px; top: 54px; }
+.splash { position: absolute; left: 0; top: 0; align-items: center; justify-content: center; }
+.splash-card { background-color: rgba(9, 11, 13, 0.9); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 18px 40px 22px 40px; align-items: center; }
+.splash-big { font-size: 112px; -unity-text-align: middle-center; -unity-font-style: bold-and-italic; }
+.splash-small { font-size: 20px; color: rgb(196, 201, 205); letter-spacing: 2px; margin-top: 2px; -unity-text-align: middle-center; }
+.hoppers { flex-direction: row; justify-content: space-around; margin-top: 10px; }
+.hopper { flex-grow: 1; flex-basis: 0; align-items: center; margin: 0 4px; }
+.hopper-art { width: 100%; max-width: 170px; height: 190px; }
+.hopper-name { font-size: 13px; color: rgb(255, 255, 255); margin-top: 6px; }
+.hopper-count { font-size: 28px; -unity-font-style: bold-and-italic; }
+.hopper-now .hopper-name { color: rgb(122, 212, 70); }
+.tee-lab-slot { position: absolute; align-items: center; justify-content: center; }
+.tee-band-lab { background-color: rgba(9, 11, 13, 0.92); border-bottom-width: 0; border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 6px 12px; }
+/* The tee marker (Frame.TeeMarker): the distance, and the three tees with a ball on the one to putt from. A game
+   panel is on the stage, outside .app, so .tablet never reaches it: the size is a class on the marker itself. */
+.tee-marker { background-color: rgb(10, 12, 13); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 6px 14px 12px 14px; align-items: center; flex-shrink: 0; }
+.tee-marker-top { flex-direction: row; align-items: flex-end; justify-content: center; }
+.tee-num { font-size: 46px; -unity-font-style: bold-and-italic; color: rgb(255, 255, 255); margin: 0; padding: 0; }
+.tee-unit { font-size: 13px; letter-spacing: 2px; color: rgb(196, 201, 205); margin: 0 0 9px 6px; padding: 0; }
+.tee-spots { flex-direction: row; align-items: center; justify-content: center; margin-top: 2px; }
+.tee-spot { width: 30px; height: 30px; border-radius: 15px; border-width: 2px; border-color: rgb(139, 147, 153); background-color: rgb(10, 12, 13); margin: 0 5px; align-items: center; justify-content: center; flex-shrink: 0; }
+.tee-spot-on { border-color: rgb(255, 255, 255); background-color: rgb(48, 53, 58); }
+.tee-ball { width: 18px; height: 18px; border-radius: 9px; background-color: rgb(255, 255, 255); border-width: 1px; border-color: rgb(196, 201, 205); }
+.tee-caption { font-size: 11px; letter-spacing: 1px; color: rgb(196, 201, 205); margin-top: 6px; -unity-text-align: middle-center; }
+.tee-marker-tablet { border-radius: 4px; padding: 8px 20px 16px 20px; }
+.tee-marker-tablet .tee-num { font-size: 72px; }
+.tee-marker-tablet .tee-unit { font-size: 18px; letter-spacing: 3px; margin: 0 0 14px 8px; }
+.tee-marker-tablet .tee-spots { margin-top: 4px; }
+.tee-marker-tablet .tee-spot { width: 46px; height: 46px; border-radius: 23px; border-width: 3px; margin: 0 7px; }
+.tee-marker-tablet .tee-ball { width: 28px; height: 28px; border-radius: 14px; }
+.tee-marker-tablet .tee-caption { font-size: 13px; margin-top: 8px; }
+.tee-marker-tv { border-radius: 4px; border-width: 2px; padding: 10px 26px 20px 26px; }
+.tee-marker-tv .tee-num { font-size: 100px; }
+.tee-marker-tv .tee-unit { font-size: 24px; letter-spacing: 4px; margin: 0 0 20px 10px; }
+.tee-marker-tv .tee-spots { margin-top: 6px; }
+.tee-marker-tv .tee-spot { width: 62px; height: 62px; border-radius: 31px; border-width: 4px; margin: 0 9px; }
+.tee-marker-tv .tee-ball { width: 38px; height: 38px; border-radius: 19px; }
+.tee-marker-tv .tee-caption { font-size: 16px; margin-top: 10px; }
+/* The same circles as buttons (Frame.TeePicker): no plate of its own inside a card or a sheet. */
+.tee-picker { background-color: rgba(0, 0, 0, 0); border-width: 0; padding: 8px 0 4px 0; }
+.tee-picker .tee-spot { width: 44px; height: 44px; border-radius: 22px; border-width: 3px; margin: 0 8px; }
+.tee-picker .tee-ball { width: 26px; height: 26px; border-radius: 13px; }
+.tee-picker.tee-marker-tv .tee-spot { width: 72px; height: 72px; border-radius: 36px; margin: 0 16px; }
+.tee-picker.tee-marker-tv .tee-ball { width: 44px; height: 44px; border-radius: 22px; }
+/* Free putt: the marker in the sheet's first card, with the change and End buttons beside it. */
+/* Where to putt from on a setup screen (Frame.SpotRow, Open.js): the distance and the tee's way, tap for the 27 spots. */
+/* height: auto, or the practice grid's .spot-row above (44px) squeezes the distance onto the tee's way under it */
+.spot-row { align-items: center; height: auto; padding: 12px 16px; border-radius: 4px; margin-bottom: 8px; }
+.spot-row-ft { font-size: 20px; -unity-font-style: bold-and-italic; color: rgb(255, 255, 255); }
+.spot-row-way { font-size: 13px; color: rgb(139, 147, 153); margin-top: 4px; }
+.spot-row-icon { width: 44px; height: 44px; align-items: center; justify-content: center; }
+/* "Select tee position" (Frame.TeeSheet, Green.js): nine rows of three spots, the distance under each row. */
+.spot-sheet { max-width: 360px; }
+.spot-head { align-items: center; margin-bottom: 8px; }
+.spot-grid { align-items: center; }
+.spot-line { flex-direction: row; justify-content: center; margin-top: 4px; }
+.spot { width: 30px; height: 30px; border-radius: 15px; border-width: 2px; border-color: rgb(139, 147, 153); margin: 0 30px; align-items: center; justify-content: center; }
+.spot-on { border-color: rgb(255, 255, 255); background-color: rgb(48, 53, 58); }
+.spot-mark { border-width: 0; }
+.spot-ball { width: 18px; height: 18px; border-radius: 9px; background-color: rgb(255, 255, 255); }
+.spot-logo { width: 30px; height: 30px; }
+.spot-ft { font-size: 13px; color: rgb(196, 201, 205); margin-top: 1px; -unity-text-align: middle-center; }
+.tv .spot { width: 34px; height: 34px; border-radius: 17px; }
+.tv .spot.tv-focus:focus { border-width: 3px; border-color: rgb(255, 255, 255); }
+.tee-from { justify-content: space-between; }
+.tee-from > .tee-marker { margin-right: 10px; }
+/* A round's progress, a segment a putt (Frame.PuttProgress). */
+.putt-segs { flex-direction: row; margin-top: 12px; height: 4px; }
+.putt-seg { flex-grow: 1; flex-basis: 0; height: 4px; background-color: rgb(34, 38, 42); margin-right: 4px; }
+.putt-seg-made { background-color: rgb(45, 140, 60); }
+.putt-seg-missed { background-color: rgb(255, 82, 82); }
+.putt-seg-now { background-color: rgb(255, 255, 255); }
+/* PuttStrip and the test putt buttons (TestPutts.cs) */
+.putt-strip { flex-shrink: 0; }
+.putt-strip-float { position: absolute; left: 0; right: 0; align-items: center; }
+.putt-notice { background-color: rgb(34, 38, 42); color: rgb(255, 179, 0); border-radius: 4px; padding: 10px 12px; margin-top: 10px; font-size: 13px; -unity-text-align: middle-center; white-space: normal; }
+.putt-strip-float > .putt-notice { max-width: 420px; margin-bottom: 8px; }
+.putt-offline { flex-direction: row; align-items: center; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 8px 8px 8px 12px; margin-top: 10px; }
+.putt-offline-dot { width: 8px; height: 8px; border-radius: 4px; background-color: rgb(255, 179, 0); margin-right: 8px; flex-shrink: 0; }
+.read-head { font-size: 28px; -unity-font-style: bold-and-italic; letter-spacing: 0.5px; }
+.read-points { align-items: center; margin-left: 12px; }
+.read-number { font-size: 28px; -unity-font-style: bold-and-italic; -unity-text-align: middle-center; }
+.read-line { align-items: center; padding: 9px 0; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.read-label { font-size: 11px; letter-spacing: 1.5px; color: rgb(139, 147, 153); width: 64px; }
 .read-text { font-size: 15px; }
 .read-grade { font-size: 13px; margin-left: 8px; }
 .player-card { align-items: center; padding: 16px; }
 .card-rating { align-items: center; width: 84px; }
 
 /* Settings and notifications */
-.set-card { padding: 0 14px; }
-.set-row { flex-direction: row; align-items: center; padding: 14px 0; border-bottom-width: 1px; border-bottom-color: rgb(32, 34, 36); min-height: 52px; }
-.set-row:active { background-color: rgb(30, 32, 34); }
+.set-card { padding: 0 16px; }
+.set-row { flex-direction: row; align-items: center; padding: 12px 0; border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); min-height: 52px; }
+.set-row:active { background-color: rgb(34, 38, 42); }
+/* The last row of a block has no divider under it (Rows.Card, and any list that marks its last row). */
+.set-row-last { border-bottom-width: 0; }
 .set-words { margin-left: 12px; margin-right: 8px; }
 .set-right { flex-direction: row; align-items: center; }
-.set-links { justify-content: center; margin-top: 22px; }
-.switch { width: 46px; height: 28px; border-radius: 14px; background-color: rgb(52, 54, 56); padding: 3px; flex-shrink: 0; }
+.set-links { justify-content: center; margin-top: 24px; }
+/* A row's title (15) and its second line (13), and a numeral at the end of a row. */
+.set-title { font-size: 15px; color: rgb(255, 255, 255); }
+.set-sub { font-size: 13px; color: rgb(139, 147, 153); white-space: normal; }
+.num-20.set-num { margin-left: 12px; flex-shrink: 0; }
+.set-danger { color: rgb(255, 82, 82); }
+.set-strip { margin-top: 12px; }
+.set-center { -unity-text-align: middle-center; }
+.switch { width: 46px; height: 28px; border-radius: 14px; background-color: rgb(48, 53, 58); padding: 3px; flex-shrink: 0; }
 .switch-knob { width: 22px; height: 22px; border-radius: 11px; background-color: rgb(255, 255, 255); }
 .switch-on { background-color: rgb(45, 140, 60); align-items: flex-end; }
 .center-box { align-items: center; }
 .head-icon { width: 44px; height: 44px; align-items: center; justify-content: center; flex-shrink: 0; }
-.bell-count { position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; border-radius: 9px; background-color: rgb(45, 140, 60); font-size: 10px; color: rgb(255, 255, 255); -unity-text-align: middle-center; padding: 0 4px; }
-.note-row { flex-direction: row; align-items: flex-start; padding: 12px 0; border-bottom-width: 1px; border-bottom-color: rgb(32, 34, 36); }
-.note-face { width: 44px; height: 44px; border-radius: 22px; background-color: rgb(44, 46, 48); align-items: center; justify-content: center; flex-shrink: 0; -unity-background-scale-mode: scale-and-crop; }
-.note-icon { background-color: rgb(27, 43, 23); }
-.note-initial { font-size: 18px; color: rgb(255, 255, 255); }
-.note-badge { position: absolute; right: -2px; bottom: -2px; width: 18px; height: 18px; border-radius: 9px; background-color: rgb(45, 140, 60); align-items: center; justify-content: center; border-width: 2px; border-color: rgb(24, 26, 28); }
-.note-dot { width: 9px; height: 9px; border-radius: 5px; background-color: rgb(122, 212, 70); margin-top: 6px; flex-shrink: 0; }
+.bell-count { position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; border-radius: 4px; background-color: rgb(45, 140, 60); font-size: 11px; color: rgb(255, 255, 255); -unity-text-align: middle-center; padding: 0 4px; }
+.note-row { flex-direction: row; align-items: flex-start; padding: 12px 0; border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); }
+.note-face { width: 44px; height: 44px; border-radius: 4px; background-color: rgb(34, 38, 42); align-items: center; justify-content: center; flex-shrink: 0; -unity-background-scale-mode: scale-and-crop; }
+.note-icon { background-color: rgba(0, 0, 0, 0); }
+.note-initial { font-size: 15px; color: rgb(255, 255, 255); }
+.note-badge { position: absolute; right: -4px; bottom: -4px; width: 18px; height: 18px; border-radius: 4px; background-color: rgb(45, 140, 60); align-items: center; justify-content: center; border-width: 1px; border-color: rgb(38, 42, 46); }
+.note-dot { width: 8px; height: 8px; border-radius: 4px; background-color: rgb(45, 140, 60); margin-top: 8px; flex-shrink: 0; }
+.note-body { max-height: 54px; overflow: hidden; }
+.note-when { margin-top: 4px; }
+.note-empty { padding-top: 32px; }
+.note-empty .note-empty-title { margin-top: 12px; -unity-text-align: middle-center; }
+.note-empty .note-empty-text { margin-top: 4px; -unity-text-align: middle-center; }
 .profile-top { flex-direction: row; align-items: center; }
 .level-root { flex-grow: 1; }
 .level-stage { min-height: 260px; align-items: center; justify-content: flex-end; }
-.level-big { font-size: 40px; color: rgb(255, 255, 255); }
-.level-axis { font-size: 22px; color: rgb(255, 255, 255); margin-top: 4px; }
-.level-pill { position: absolute; top: 12px; align-self: center; font-size: 13px; letter-spacing: 2px; color: rgb(255, 255, 255); background-color: rgb(45, 140, 60); border-radius: 14px; padding: 6px 16px; }
+.level-big { font-size: 44px; color: rgb(255, 255, 255); }
+.level-axis { font-size: 20px; color: rgb(255, 255, 255); margin-top: 4px; }
+.level-pill { position: absolute; top: 12px; align-self: center; font-size: 11px; letter-spacing: 1.5px; color: rgb(255, 255, 255); background-color: rgb(45, 140, 60); border-radius: 4px; padding: 4px 12px; }
 
 /* Tablets and phones on their side (App.Layout sets .tablet, and .wide when there is room for two columns).
    The app fills the screen; the page is a centred column up to 1000 wide (the RN app's tablet width);
@@ -312,7 +452,7 @@
 .app.tablet { max-width: none; }
 .wide .page-viewport { align-items: center; }
 .wide .page-column { width: 100%; max-width: 1000px; }
-.wide .tabs { padding-left: 15%; padding-right: 15%; }
+.wide .tabs { flex-direction: row; flex-shrink: 0; border-top-width: 1px; border-top-color: rgb(38, 42, 46); padding: 0 6px 8px 6px; background-color: rgb(0, 0, 0); }
 .cols { }
 .wide .cols { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
 .wide .cols > .col { width: 50%; }
@@ -320,284 +460,421 @@
 .wide .toast { max-width: 520px; align-self: center; }
 
 /* Quests */
-.quest-card { width: 190px; margin-right: 10px; padding: 0 0 12px 0; overflow: hidden; }
-.quest-card > .chips, .quest-card > .quest-desc, .quest-card > .row { margin-left: 12px; margin-right: 12px; }
-.quest-head { height: 84px; align-items: center; justify-content: center; padding: 8px; margin-bottom: 6px; }
-.quest-title { font-size: 15px; color: rgb(255, 255, 255); -unity-text-align: middle-center; white-space: normal; }
-.quest-desc { max-height: 36px; overflow: hidden; margin-top: 6px; }
+.quest-card { width: 190px; margin-right: 12px; overflow: hidden; }
+.quest-head { margin-bottom: 4px; }
+.title-20.quest-title { margin-top: 4px; }
+.quest-desc { max-height: 36px; overflow: hidden; margin-top: 8px; }
 .quest-lock { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.72); align-items: center; justify-content: center; }
 .star-row { align-items: center; }
 .star { border-radius: 50%; margin-right: 4px; }
 .level-grid { flex-direction: row; flex-wrap: wrap; justify-content: center; }
-.level-tile { width: 104px; height: 122px; margin: 5px; align-items: center; justify-content: center; padding: 8px; }
+.card.level-tile { width: 104px; height: 122px; margin: 4px; align-items: center; justify-content: center; padding: 8px; }
 .level-locked { opacity: 0.45; }
-.level-num { font-size: 34px; color: rgb(255, 255, 255); margin-bottom: 6px; }
+.num.level-num { color: rgb(255, 255, 255); margin-bottom: 8px; }
 
 /* Train & learn */
 .lib-grid { flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
-.lib-tile { width: 48.5%; flex-direction: row; align-items: center; margin-bottom: 10px; padding: 12px; }
+.lib-tile { width: 48.5%; flex-direction: row; align-items: center; margin-bottom: 12px; padding: 12px; }
 .wide .lib-tile { width: 32%; }
-.lib-title { margin-left: 10px; font-size: 13px; white-space: normal; flex-shrink: 1; color: rgb(255, 255, 255); }
-.lesson-card { width: 180px; height: 220px; margin-right: 10px; border-radius: 14px; overflow: hidden; background-color: rgb(24, 26, 28); justify-content: flex-end; -unity-background-scale-mode: scale-and-crop; }
-.lesson-words { background-color: rgb(12, 14, 16); padding: 10px; }
-.lesson-desc { max-height: 30px; overflow: hidden; }
+.lib-title { margin-left: 12px; font-size: 13px; white-space: normal; flex-grow: 1; flex-basis: 0; color: rgb(255, 255, 255); }
+/* A lesson in a row (LearnScreen): the thumbnail in a bordered window, its name and words under it. */
+.learn-card { width: 200px; margin-right: 12px; flex-shrink: 0; }
+.learn-thumb { height: 112px; -unity-background-scale-mode: scale-and-crop; }
+.learn-card > .learn-name { margin: 8px 0 0 0; padding: 0; }
+.learn-card > .lesson-desc { margin: 4px 0 0 0; padding: 0; }
+.lesson-card { width: 180px; height: 220px; margin-right: 12px; border-radius: 4px; overflow: hidden; background-color: rgb(21, 24, 27); justify-content: flex-end; -unity-background-scale-mode: scale-and-crop; }
+.lesson-words { background-color: rgb(10, 12, 13); padding: 10px; }
+.lesson-desc { max-height: 36px; overflow: hidden; }
 .lesson-chip { position: absolute; left: 8px; top: 8px; }
-.lesson-hero { height: 210px; border-radius: 14px; overflow: hidden; background-color: rgb(24, 26, 28); align-items: center; justify-content: center; -unity-background-scale-mode: scale-and-crop; }
+.lesson-hero { height: 210px; border-radius: 4px; overflow: hidden; background-color: rgb(21, 24, 27); align-items: center; justify-content: center; -unity-background-scale-mode: scale-and-crop; }
 .wide .lesson-hero { height: 380px; }
-.lesson-play { width: 64px; height: 64px; border-radius: 32px; background-color: rgb(45, 140, 60); align-items: center; justify-content: center; }
-.lesson-play-mark { font-size: 24px; color: rgb(255, 255, 255); }
-.rate-star { width: 46px; height: 46px; border-radius: 23px; background-color: rgb(38, 40, 42); align-items: center; justify-content: center; margin-right: 8px; }
-.rate-on { background-color: rgb(255, 179, 0); }
+/* Play: a plain solid square on the picture. */
+.lesson-play { width: 44px; height: 44px; border-radius: 4px; background-color: rgb(10, 12, 13); align-items: center; justify-content: center; }
+.lesson-play-mark { font-size: 20px; color: rgb(255, 255, 255); }
+/* A rating from 1 to 5: the chip's two states (clear, then white with black text). */
+.rate-star { width: 44px; height: 44px; border-radius: 4px; background-color: rgb(34, 38, 42); align-items: center; justify-content: center; margin-right: 8px; }
+.rate-on { background-color: rgb(255, 255, 255); }
+.rate-on Label { color: rgb(0, 0, 0); }
 
 /* Versus and Live */
-.rival-card { width: 150px; margin-right: 10px; align-items: center; padding: 12px; }
-.versus-card { width: 230px; margin-right: 10px; }
-.live-card { border-color: rgb(140, 40, 40); }
-.chip-red { background-color: rgb(60, 20, 20); color: rgb(255, 82, 82); }
-.friend { width: 84px; align-items: center; margin-right: 8px; padding: 6px; border-radius: 12px; border-width: 2px; border-color: rgba(0, 0, 0, 0); }
+.rival-card { width: 150px; margin-right: 12px; align-items: center; }
+.card.rival-card { padding: 12px; }
+.rival-card > .avatar { margin-right: 0; margin-bottom: 8px; }
+.versus-card { width: 230px; margin-right: 12px; }
+.live-card { border-color: rgb(38, 42, 46); }
+.chip-red { color: rgb(255, 82, 82); }
+.caps.live-red { color: rgb(255, 82, 82); }
+.friend { width: 96px; align-items: center; margin-right: 8px; padding: 8px; border-radius: 4px; border-width: 1px; border-color: rgba(0, 0, 0, 0); }
+.friend > .avatar { margin-right: 0; margin-bottom: 4px; }
 .friend-on { border-color: rgb(122, 212, 70); }
-.match-card { margin: 0 5px 10px 5px; }
+.match-card { margin: 0 0 12px 0; }
+.wide .col > .match-card { margin-right: 12px; }
 .live-sheet { padding: 12px; }
+/* Versus and Live lists: rows of one bordered block with dividers; who and what on the left, where it stands on the right. */
+.card.vs-list { padding: 0 16px; }
+.vs-row { flex-direction: row; align-items: center; min-height: 44px; padding: 12px 0; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.vs-row-first { border-top-width: 0; }
+.vs-words { flex-grow: 1; flex-basis: 0; margin-right: 8px; overflow: hidden; }
+.vs-name { font-size: 15px; color: rgb(255, 255, 255); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vs-name-mid { align-self: stretch; margin-top: 4px; -unity-text-align: middle-center; }
+.vs-side { align-items: flex-end; flex-shrink: 0; }
+.vs-half { flex-grow: 1; flex-basis: 0; align-items: center; overflow: hidden; }
+.vs-half > .avatar { margin-right: 0; }
+.caps.vs-half-name { align-self: stretch; overflow: hidden; text-overflow: ellipsis; -unity-text-align: middle-center; }
+.caps.vs-record { margin-top: 4px; }
+.btn.vs-small { margin-top: 12px; align-self: stretch; }
+.btn.vs-small .btn-text { font-size: 13px; }
 
 /* Profiles */
-.player-switch { flex-direction: row; align-items: center; padding: 4px 10px 4px 4px; border-radius: 20px; background-color: rgb(24, 26, 28); border-width: 1px; border-color: rgb(38, 40, 42); }
-.player-switch > Label { margin-left: 6px; }
-.player-grid { flex-direction: row; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
-.player-tile { width: 80px; align-items: center; margin: 6px; padding: 6px; border-radius: 12px; }
+.player-switch { flex-direction: row; align-items: center; min-height: 44px; padding: 4px 12px 4px 4px; border-radius: 4px; background-color: rgb(34, 38, 42); }
+.player-switch > Label { margin-left: 8px; }
+.player-grid { flex-direction: row; flex-wrap: wrap; justify-content: center; margin-top: 12px; }
+.player-tile { width: 88px; align-items: center; margin: 4px; padding: 8px; border-radius: 4px; border-width: 1px; border-color: rgba(0, 0, 0, 0); }
 /* Who's putting: avatar, name and OWNER/KID mark all on the tile's middle (the avatar's row margin and the mark's
    letter spacing pulled them left). */
 .player-tile .avatar { margin-left: 0; margin-right: 0; }
 .player-tile > Label { align-self: stretch; -unity-text-align: middle-center; white-space: normal; margin-left: 0; margin-right: 0; padding-left: 0; padding-right: 0; }
 .player-tile > .kick { letter-spacing: 0; }
-.player-me { background-color: rgb(27, 43, 23); }
-.player-add { width: 58px; height: 58px; border-radius: 29px; border-width: 2px; border-color: rgb(80, 82, 84); align-items: center; justify-content: center; }
-.pin-pad { flex-direction: row; flex-wrap: wrap; justify-content: center; margin: 10px 0; }
-.pin-key { width: 30%; height: 54px; margin: 1.5%; border-radius: 12px; background-color: rgb(38, 40, 42); align-items: center; justify-content: center; }
+.player-me { background-color: rgb(34, 38, 42); border-color: rgb(38, 42, 46); }
+.player-add { width: 58px; height: 58px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); background-color: rgb(34, 38, 42); align-items: center; justify-content: center; }
+.who-title { -unity-text-align: middle-center; }
+.who-name { font-size: 15px; color: rgb(255, 255, 255); margin-top: 8px; }
+.who-mark { margin-top: 4px; }
+.pin-dots { font-size: 28px; -unity-text-align: middle-center; margin-top: 12px; }
+.prof-intro { margin-bottom: 12px; }
+.prof-face { align-items: center; }
+.prof-face .prof-name { margin-top: 12px; margin-bottom: 4px; -unity-text-align: middle-center; }
+.caps.prof-label { margin-top: 16px; }
+.pin-pad { flex-direction: row; flex-wrap: wrap; justify-content: center; margin: 12px 0; }
+.pin-key { width: 30%; height: 54px; margin: 1.5%; border-radius: 4px; background-color: rgb(34, 38, 42); align-items: center; justify-content: center; }
 .pin-blank { background-color: rgba(0, 0, 0, 0); }
-.crew-preview { width: 110px; height: 110px; border-radius: 55px; background-color: rgb(38, 40, 42); -unity-background-scale-mode: scale-to-fit; }
+.crew-preview { width: 110px; height: 110px; border-radius: 4px; background-color: rgb(34, 38, 42); -unity-background-scale-mode: scale-to-fit; }
 .crew-grid { flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
-.crew-pick { width: 23%; height: 72px; margin-bottom: 8px; border-radius: 36px; border-width: 3px; border-color: rgba(0, 0, 0, 0); -unity-background-scale-mode: scale-to-fit; }
-.crew-on { border-color: rgb(122, 212, 70); }
-.swatch { width: 32px; height: 32px; border-radius: 16px; margin-right: 10px; border-width: 3px; border-color: rgba(0, 0, 0, 0); }
+.crew-pick { width: 23%; height: 72px; margin-bottom: 8px; border-radius: 4px; border-width: 2px; border-color: rgba(0, 0, 0, 0); -unity-background-scale-mode: scale-to-fit; }
+.crew-on { border-color: rgb(255, 255, 255); background-color: rgb(34, 38, 42); }
+.swatch { width: 44px; height: 44px; border-radius: 4px; margin-right: 8px; border-width: 3px; border-color: rgba(0, 0, 0, 0); }
 .swatch-on { border-color: rgb(255, 255, 255); }
 
 /* Pages */
 .medal-grid { flex-direction: row; flex-wrap: wrap; }
-.medal-cell { width: 25%; align-items: center; margin-bottom: 10px; }
-.edit-group { margin-top: 16px; }
+.medal-cell { width: 25%; align-items: center; margin-bottom: 12px; }
+.edit-group { margin-top: 24px; }
+.caps.edit-label { margin-top: 12px; margin-bottom: 4px; }
+.edit-photo-note { margin-top: 8px; -unity-text-align: middle-center; }
+.edit-persona-icon { margin-right: 12px; flex-shrink: 0; }
+/* A played game's page: who and what on one card, the three numbers as a strip under it. */
+.gv-head .gv-title { margin-bottom: 4px; }
+.gv-who { margin-top: 12px; }
+.gv-actions { margin-top: 12px; }
+.gv-actions > .btn { margin-top: 0; flex-grow: 1; flex-basis: 0; }
+.gv-gap { width: 8px; flex-shrink: 0; }
+.gv-value { font-size: 15px; color: rgb(255, 255, 255); flex-shrink: 0; margin-left: 8px; }
+.gv-key { font-size: 13px; color: rgb(139, 147, 153); flex-grow: 1; flex-basis: 0; }
+/* Challenges list: a card a challenge (each is one object), flat. */
+.challenge-card { margin-bottom: 12px; padding: 16px; }
+.challenge-card .challenge-meta { margin-top: 8px; }
+/* Puttr Club page */
+.club-in .club-title { margin-bottom: 4px; }
 
 /* Admin */
-.adm-card { padding: 12px 14px; }
-.adm-key { width: 40%; white-space: normal; }
-.adm-value { flex-grow: 1; flex-shrink: 1; -unity-text-align: upper-right; white-space: normal; font-size: 13px; }
+/* Dense lists (docs/design-guidelines.md): rows in one bordered block with dividers, status as caps text in a
+   meaning colour, one main button a page or sheet. */
+.adm-card { padding: 12px 16px; }
+.adm-card > .adm-last { border-bottom-width: 0; }
+.adm-key { width: 40%; font-size: 13px; color: rgb(139, 147, 153); white-space: normal; margin: 0; padding: 0; }
+.adm-value { flex-grow: 1; flex-basis: 0; -unity-text-align: upper-right; white-space: normal; font-size: 13px; color: rgb(255, 255, 255); margin: 0; padding: 0; }
 .adm-tiles { flex-direction: row; flex-wrap: wrap; }
-.adm-tile { width: 33.3%; padding: 6px 4px 10px 0; }
-.adm-thumb { width: 54px; height: 54px; border-radius: 10px; background-color: rgb(38, 40, 42); flex-shrink: 0; -unity-background-scale-mode: scale-and-crop; }
-.adm-cert { background-color: rgb(14, 22, 38); border-color: rgb(52, 80, 140); }
-.adm-device { width: 170px; margin-right: 10px; }
-.adm-labtile { width: 84px; height: 84px; margin-right: 8px; align-items: center; justify-content: center; padding: 6px; }
-.adm-bars { flex-direction: row; align-items: flex-end; height: 110px; margin-top: 8px; }
+.adm-tile { width: 33.3%; padding: 4px 8px 12px 0; }
+.adm-sub { font-size: 11px; color: rgb(139, 147, 153); white-space: normal; margin: 4px 0 0 0; padding: 0; }
+.adm-thumb { width: 56px; height: 56px; border-radius: 4px; margin-right: 12px; background-color: rgb(34, 38, 42); flex-shrink: 0; -unity-background-scale-mode: scale-and-crop; }
+.adm-list { margin: 0 16px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; overflow: hidden; }
+.adm-row { flex-direction: row; align-items: center; min-height: 44px; padding: 12px 16px; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.adm-row.adm-first { border-top-width: 0; }
+.adm-row:active { background-color: rgb(34, 38, 42); }
+.adm-words { flex-grow: 1; flex-basis: 0; min-width: 0; margin-right: 8px; }
+.adm-name { font-size: 15px; color: rgb(255, 255, 255); white-space: normal; margin: 0; padding: 0; }
+.adm-line { font-size: 13px; color: rgb(139, 147, 153); white-space: normal; margin: 4px 0 0 0; padding: 0; }
+.adm-tags { flex-direction: row; flex-wrap: wrap; margin-top: 4px; }
+.adm-tags > .caps { margin-right: 12px; margin-top: 4px; }
+.caps.adm-status { margin-left: 8px; flex-shrink: 0; }
+.caps.adm-label { margin-top: 12px; margin-bottom: 4px; }
+.adm-score { margin-left: 8px; flex-shrink: 0; }
+.adm-head { flex-direction: row; align-items: center; }
+.adm-head > .adm-mini { margin-left: 8px; }
+.adm-actions { flex-direction: row; align-items: center; }
+.adm-actions > .btn { margin-top: 0; margin-left: 8px; flex-grow: 1; flex-basis: 0; }
+.adm-actions > .btn.adm-first { margin-left: 0; }
+.adm-actions > .btn.adm-mini { flex-grow: 0; flex-basis: auto; }
+.btn.adm-mini { margin-top: 0; padding-left: 16px; padding-right: 16px; flex-shrink: 0; }
+.adm-mini .btn-text { font-size: 13px; }
+.adm-scopes { flex-direction: row; flex-wrap: wrap; margin-top: 8px; }
+.adm-scopes > .scope { margin-bottom: 8px; }
+.adm-device { width: 172px; margin-right: 12px; }
+.adm-labtile { width: 88px; height: 88px; margin-right: 8px; align-items: center; justify-content: center; padding: 8px; }
+.adm-bars { flex-direction: row; align-items: flex-end; height: 112px; margin-top: 8px; }
 .adm-barcol { flex-grow: 1; flex-basis: 0; align-items: center; justify-content: flex-end; }
-.adm-barcol > Label { font-size: 9px; white-space: nowrap; }
-.adm-bar { width: 60%; border-radius: 3px; margin: 2px 0; }
-.adm-putt { margin: 0 5px 10px 5px; }
-.adm-path { height: 200px; border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
-.adm-proof { width: 44px; height: 44px; border-radius: 8px; background-color: rgb(38, 40, 42); -unity-background-scale-mode: scale-and-crop; }
-.adm-criterion { padding: 10px 0; border-bottom-width: 1px; border-bottom-color: rgb(32, 34, 36); }
+.adm-barcol > Label { font-size: 11px; color: rgb(139, 147, 153); white-space: nowrap; margin: 0; padding: 0; -unity-text-align: middle-center; }
+.adm-bar { width: 60%; margin: 4px 0; }
+.adm-putt { margin: 0 4px 8px 4px; padding: 12px; }
+.adm-path { height: 200px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); overflow: hidden; margin-bottom: 8px; }
+.adm-proof { width: 44px; height: 44px; border-radius: 4px; background-color: rgb(34, 38, 42); -unity-background-scale-mode: scale-and-crop; }
+.adm-criterion { padding: 12px 0; border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); }
 .adm-reason { margin-bottom: 8px; }
 .adm-log { flex-direction: row; align-items: flex-start; padding: 8px 0; }
-.adm-dot { width: 10px; height: 10px; border-radius: 5px; margin-top: 5px; flex-shrink: 0; }
-.adm-member { padding: 10px 12px; align-items: center; flex-wrap: wrap; }
+.adm-dot { width: 8px; height: 8px; border-radius: 4px; margin-top: 6px; flex-shrink: 0; }
+.adm-member { flex-direction: row; align-items: center; flex-wrap: wrap; padding: 12px 0; border-top-width: 1px; border-top-color: rgb(38, 42, 46); border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); }
 .btn-red { background-color: rgb(140, 34, 34); }
 
 /* Profile photo */
 .photo-pick { width: 96px; height: 96px; align-items: center; justify-content: center; }
-.photo-badge { position: absolute; right: 2px; bottom: 2px; width: 30px; height: 30px; border-radius: 15px; background-color: rgb(45, 140, 60); align-items: center; justify-content: center; border-width: 2px; border-color: rgb(9, 11, 13); }
+.photo-badge { position: absolute; right: 0; bottom: 0; width: 32px; height: 32px; border-radius: 4px; background-color: rgb(34, 38, 42); align-items: center; justify-content: center; border-width: 1px; border-color: rgb(38, 42, 46); }
 .photo-busy { opacity: 0.4; }
 
 /* Club plans */
-.plan { flex-direction: row; align-items: center; padding: 14px; border-radius: 14px; border-width: 1px; border-color: rgb(44, 46, 48); margin-top: 10px; }
-.plan-on { background-color: rgb(18, 36, 22); border-color: rgb(45, 140, 60); }
-.plan-dot { width: 18px; height: 18px; border-radius: 9px; border-width: 2px; border-color: rgb(107, 108, 109); }
-.plan-dot-on { border-color: rgb(45, 140, 60); background-color: rgb(45, 140, 60); }
+.plan { flex-direction: row; align-items: center; padding: 16px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); background-color: rgb(21, 24, 27); margin-top: 12px; }
+.plan-on { border-color: rgb(122, 212, 70); }
+.plan-dot { width: 18px; height: 18px; border-radius: 9px; border-width: 2px; border-color: rgb(139, 147, 153); }
+.plan-dot-on { border-color: rgb(122, 212, 70); background-color: rgb(45, 140, 60); }
 
 /* Chats */
 .chat-screen { flex-grow: 1; }
 .chat-screen > .screen { flex-grow: 1; }
-.chat-top { padding: 4px 16px 8px 16px; border-bottom-width: 1px; border-bottom-color: rgb(32, 34, 36); }
-.chat-pill { flex-direction: row; align-items: center; padding: 7px 12px; border-radius: 999px; background-color: rgb(32, 34, 36); }
-.chat-intro { margin: 14px 0; }
+.chat-top { padding: 4px 16px 8px 16px; border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); }
+.chat-pill { flex-direction: row; align-items: center; padding: 8px 12px; border-radius: 4px; background-color: rgb(34, 38, 42); }
+.chat-intro { margin: 16px 0; }
+.chat-intro > .body { margin-top: 8px; }
 .chat-row { flex-direction: row; align-items: flex-end; padding: 4px 16px; }
 .chat-row-mine { justify-content: flex-end; }
-.chat-bubble { max-width: 80%; padding: 10px 14px; border-radius: 16px; border-bottom-left-radius: 4px; background-color: rgb(30, 32, 34); margin-left: 8px; }
-.chat-mine { background-color: rgb(45, 140, 60); border-bottom-left-radius: 16px; border-bottom-right-radius: 4px; margin-left: 0; }
-.chat-text { font-size: 14px; color: rgb(255, 255, 255); white-space: normal; }
-.chat-typing { color: rgb(122, 212, 70); font-size: 18px; margin-left: 46px; }
-.chat-recs { padding: 6px 16px 10px 52px; }
-.chat-composer { flex-direction: row; align-items: flex-end; padding: 8px 12px; border-top-width: 1px; border-top-color: rgb(32, 34, 36); background-color: rgb(6, 7, 7); flex-shrink: 0; }
+.chat-bubble { max-width: 80%; padding: 8px 12px; border-radius: 4px; background-color: rgb(34, 38, 42); margin-left: 8px; }
+.chat-mine { background-color: rgb(45, 140, 60); margin-left: 0; }
+.chat-text { font-size: 15px; color: rgb(255, 255, 255); white-space: normal; }
+.chat-typing { color: rgb(122, 212, 70); font-size: 20px; margin-left: 44px; }
+/* The lessons and games a coach's answer points to: under the answer, in line with its bubble. */
+.chat-recs { padding: 8px 16px 12px 48px; }
+.chat-recs > .list-row { margin: 8px 0 0 0; }
+.chat-composer { flex-direction: row; align-items: flex-end; padding: 8px 12px; border-top-width: 1px; border-top-color: rgb(38, 42, 46); background-color: rgb(10, 12, 13); flex-shrink: 0; }
 .chat-input { flex-grow: 1; margin: 0 8px 0 0; }
-.chat-input .unity-base-text-field__input { background-color: rgb(24, 26, 28); border-radius: 20px; border-width: 0; padding: 10px 14px; color: rgb(255, 255, 255); font-size: 15px; min-height: 40px; }
-.chat-send { width: 40px; height: 40px; border-radius: 20px; background-color: rgb(45, 140, 60); align-items: center; justify-content: center; flex-shrink: 0; }
-.chat-locked { padding: 14px 16px; background-color: rgb(40, 32, 12); border-top-width: 1px; border-top-color: rgb(90, 70, 20); flex-shrink: 0; }
+.chat-input .unity-base-text-field__input { background-color: rgb(21, 24, 27); border-radius: 4px; border-width: 0; padding: 12px 12px; color: rgb(255, 255, 255); font-size: 15px; min-height: 44px; }
+.chat-send { width: 44px; height: 44px; border-radius: 4px; background-color: rgb(45, 140, 60); align-items: center; justify-content: center; flex-shrink: 0; }
+.chat-locked { padding: 16px; background-color: rgb(21, 24, 27); border-top-width: 1px; border-top-color: rgb(38, 42, 46); flex-shrink: 0; }
+.chat-caddie-face { margin-right: 0; }
 
 /* Sign in and onboarding */
-.intro { padding-top: 70px; }
-.intro-logo { width: 220px; height: 70px; margin-bottom: 26px; }
-.intro-hero { font-size: 34px; color: rgb(255, 255, 255); -unity-text-align: middle-center; }
-.intro-chips { margin: 22px 0 30px 0; justify-content: center; }
-.intro-chip { flex-direction: row; align-items: center; padding: 6px 10px; margin: 0 4px; border-radius: 14px; background-color: rgb(24, 26, 28); }
-.intro-chip > Label { margin-left: 6px; }
-.intro-btn { width: 100%; max-width: 420px; margin-top: 10px; }
+.intro { padding-top: 32px; }
+.intro-logo { width: 220px; height: 70px; margin-bottom: 32px; }
+.intro-hero { font-size: 28px; letter-spacing: 0.5px; color: rgb(255, 255, 255); -unity-text-align: middle-center; margin: 0; padding: 0; }
+.intro-chips { margin: 24px 0 32px 0; justify-content: center; }
+.intro-chip { flex-direction: row; align-items: center; padding: 4px 8px; margin: 0 4px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); background-color: rgba(0, 0, 0, 0); }
+.intro-chip > Label { margin-left: 4px; }
+.intro-btn { width: 100%; max-width: 420px; margin-top: 12px; }
+/* Sign in with Apple / Google: the providers' own white button, square ends, their wording. It never goes green. */
 .btn-white { background-color: rgb(255, 255, 255); }
-.btn-white .btn-text { color: rgb(9, 11, 13); }
+.btn.btn-white:hover { background-color: rgb(255, 255, 255); }
+.btn.btn-white:active { background-color: rgb(196, 201, 205); }
+.btn-white .btn-text { color: rgb(0, 0, 0); }
 .email-sheet { max-width: 480px; }
+/* A text link in a sheet or under a button (Show password, Forgot password?, Skip for now): 44 tall to tap. */
+.sign-link { min-height: 44px; -unity-text-align: middle-left; }
+.center.sign-link { -unity-text-align: middle-center; }
+.sign-code-card { width: 100%; max-width: 420px; }
+.card > .sign-code { letter-spacing: 6px; margin-top: 8px; margin-bottom: 4px; -unity-text-align: middle-center; }
 .onboard-top { align-items: center; height: 44px; }
-.onboard { padding-top: 30px; }
-.onboard-choice { height: 120px; align-items: center; justify-content: center; }
-.choice-on { border-color: rgb(45, 140, 60); background-color: rgb(18, 36, 22); }
+.onboard { padding-top: 32px; }
+.onboard-choice { height: 120px; flex-grow: 1; flex-basis: 0; align-items: center; justify-content: center; }
+.card.onboard-choice-on { border-color: rgb(122, 212, 70); }
+.card.onb-list { padding: 0 16px; }
+.choice-on { border-color: rgb(45, 140, 60); background-color: rgb(21, 24, 27); }
+/* The rule above (a picked card) would dim a segmented tab's light to almost nothing: tabs keep the solid green. */
+/* A segmented choice picks like a chip: white when on, black text (design guidelines: brand green is not a 'selected' fill). */
+.choice-item.choice-on { background-color: rgb(255, 255, 255); }
+.choice-item.choice-on Label { color: rgb(0, 0, 0); }
 .hcp-grid { flex-direction: row; flex-wrap: wrap; }
-.hcp { margin-bottom: 8px; min-width: 56px; align-items: center; }
+.hcp { margin-bottom: 8px; min-width: 56px; min-height: 44px; align-items: center; justify-content: center; }
 
 /* Creator */
-.creator-card { margin: 0 5px 10px 5px; }
-.diff-dot { width: 8px; height: 8px; border-radius: 4px; margin: 6px 3px 0 0; }
-.green-grid { background-color: rgb(20, 48, 26); border-radius: 12px; padding: 8px; }
-.green-row { align-items: center; justify-content: space-between; height: 30px; }
+.creator-card { margin: 0 6px 12px 6px; padding: 16px; }
+.btn.creator-btn { margin-top: 0; min-height: 44px; padding-left: 24px; padding-right: 24px; flex-shrink: 0; }
+.diff-dot { width: 8px; height: 8px; border-radius: 4px; margin: 4px 4px 0 0; }
+.green-grid { background-color: rgb(34, 38, 42); border-radius: 4px; padding: 8px; }
+.green-row { align-items: center; justify-content: space-between; height: 36px; }
 .green-ft { width: 46px; }
-.green-tee { width: 22px; height: 22px; border-radius: 11px; background-color: rgb(40, 80, 48); }
+.green-tee { width: 44px; height: 32px; border-radius: 4px; background-color: rgb(48, 53, 58); }
 .green-on { background-color: rgb(255, 255, 255); }
 
 /* Coaching, lessons, Junior (Coaching.cs, Lessons.cs, CoachDesk.cs, Junior.cs) */
-.form-label { font-size: 11px; color: rgb(140, 142, 144); letter-spacing: 1px; margin-top: 14px; margin-bottom: 6px; }
+.form-label { font-size: 11px; color: rgb(139, 147, 153); letter-spacing: 1.5px; margin-top: 16px; margin-bottom: 8px; }
 .pills { flex-direction: row; flex-wrap: wrap; }
 .pills > .scope { margin-bottom: 8px; }
 .area .unity-base-text-field__input { min-height: 120px; white-space: normal; -unity-text-align: upper-left; }
-.check-row { flex-direction: row; align-items: flex-start; padding: 8px 0; }
-.check-box { width: 22px; height: 22px; border-radius: 6px; border-width: 2px; border-color: rgb(107, 108, 109); margin-right: 10px; flex-shrink: 0; align-items: center; justify-content: center; }
+.check-row { flex-direction: row; align-items: flex-start; padding: 8px 0; min-height: 44px; }
+.check-box { width: 24px; height: 24px; border-radius: 4px; border-width: 1px; border-color: rgb(139, 147, 153); margin-right: 12px; flex-shrink: 0; align-items: center; justify-content: center; }
 .check-on { background-color: rgb(45, 140, 60); border-color: rgb(45, 140, 60); }
-.check-text { font-size: 13px; white-space: normal; flex-shrink: 1; color: rgb(220, 222, 224); }
+.check-text { font-size: 13px; white-space: normal; flex-shrink: 1; color: rgb(196, 201, 205); }
 .wrap { white-space: normal; }
 .stat-tiles { flex-direction: row; margin-top: 12px; }
-.stat-tile { flex-grow: 1; flex-basis: 0; align-items: center; padding: 12px 6px; margin: 0 4px; }
+.stat-tile { flex-grow: 1; flex-basis: 0; align-items: center; padding: 12px 4px; margin: 0 4px; }
 .stat-value { font-size: 20px; color: rgb(255, 255, 255); }
-.stat-label { font-size: 10px; color: rgb(140, 142, 144); letter-spacing: 1px; margin-top: 2px; }
-.dash-card { flex-direction: row; align-items: center; margin-bottom: 10px; }
-.dots { flex-direction: row; margin-top: 6px; }
-.dot { width: 10px; height: 10px; border-radius: 5px; margin-right: 5px; background-color: rgb(44, 46, 48); }
-.dot-on { background-color: rgb(122, 212, 70); }
-.timeline-row { flex-direction: row; align-items: flex-start; padding: 6px 0; }
-.thumb { width: 80px; height: 56px; border-radius: 8px; background-color: rgb(24, 26, 28); margin-right: 12px; flex-shrink: 0; }
-.thumb-big { width: 100%; height: 200px; border-radius: 12px; background-color: rgb(14, 16, 18); align-items: center; justify-content: center; }
-.dashed { border-width: 2px; border-color: rgb(38, 40, 42); border-radius: 14px; height: 170px; align-items: center; justify-content: center; }
+.stat-label { font-size: 11px; color: rgb(139, 147, 153); letter-spacing: 1.5px; margin-top: 4px; }
+.dash-card { flex-direction: row; align-items: center; margin-bottom: 12px; }
+.dots { flex-direction: row; margin-top: 8px; }
+.dot { width: 10px; height: 10px; border-radius: 5px; margin-right: 5px; background-color: rgb(48, 53, 58); }
+.dot-on { background-color: rgb(45, 140, 60); }
+.timeline-row { flex-direction: row; align-items: flex-start; padding: 8px 0; }
+/* Pictures and videos sit in a bordered window; nothing is written over them but a plain play square and the length. */
+.thumb { width: 80px; height: 56px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); background-color: rgb(34, 38, 42); margin-right: 12px; flex-shrink: 0; overflow: hidden; align-items: center; justify-content: center; }
+.thumb-big { width: 100%; height: 200px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); background-color: rgb(0, 0, 0); overflow: hidden; align-items: center; justify-content: center; }
+.thumb-big > .chip { background-color: rgb(10, 12, 13); color: rgb(255, 255, 255); margin: 0; }
+.coach-play { width: 44px; height: 44px; border-radius: 4px; background-color: rgb(10, 12, 13); align-items: center; justify-content: center; }
+.dashed { border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; height: 170px; align-items: center; justify-content: center; }
+/* The pieces the coaching, lesson, chat and Junior screens share (Form.Glyph, Form.Mini, the lists and rows). */
+.coach-glyph { width: 24px; height: 24px; flex-shrink: 0; align-items: center; justify-content: center; }
+.coach-list { background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 0 16px; overflow: hidden; }
+.coach-list > .set-row { padding: 12px 0; min-height: 44px; }
+.coach-list > .body { margin-top: 16px; }
+.coach-list > .body-2 { margin-bottom: 12px; }
+.coach-list > .sub { margin-bottom: 12px; }
+.card.coach-on { background-color: rgb(34, 38, 42); border-color: rgb(255, 255, 255); }
+.set-row.coach-on { background-color: rgb(34, 38, 42); }
+.coach-dash { flex-direction: row; align-items: center; margin-bottom: 12px; min-height: 44px; }
+.coach-words { margin-right: 12px; }
+.btn.coach-mini { margin-top: 0; margin-left: 8px; padding-left: 16px; padding-right: 16px; flex-shrink: 0; }
+.btn.coach-rowbtn { margin-top: 0; }
+.coach-count { align-items: flex-end; flex-shrink: 0; margin-left: 12px; }
+.chip.coach-chip { margin: 0 0 0 8px; flex-shrink: 0; }
+.coach-well { background-color: rgb(34, 38, 42); border-radius: 4px; padding: 12px; margin-top: 8px; }
+.coach-link { color: rgb(255, 255, 255); margin-left: 12px; flex-shrink: 0; }
+.avatar.coach-face { border-radius: 4px; margin-right: 8px; -unity-background-scale-mode: scale-and-crop; }
 .ring { width: 54px; height: 54px; border-radius: 27px; border-width: 3px; border-color: rgb(45, 140, 60); align-items: center; justify-content: center; }
 
 /* Tracks: broadcast golf graphics over the 3D hole */
 .tracks-root { flex-grow: 1; background-color: rgb(156, 194, 222); overflow: hidden; }
 .tracks-top { position: absolute; left: 10px; right: 10px; top: 10px; flex-direction: row; align-items: flex-start; }
-.tracks-back { width: 40px; height: 40px; border-radius: 20px; background-color: rgba(8, 10, 12, 0.72); color: rgb(255, 255, 255); font-size: 26px; -unity-text-align: middle-center; margin-right: 8px; }
-.tracks-holecard { flex-direction: row; border-radius: 10px; overflow: hidden; background-color: rgba(8, 10, 12, 0.82); }
+.tracks-back { width: 44px; height: 44px; border-radius: 4px; background-color: rgba(8, 10, 12, 0.72); color: rgb(255, 255, 255); font-size: 28px; -unity-text-align: middle-center; margin-right: 8px; }
+.tracks-holecard { flex-direction: row; border-radius: 4px; overflow: hidden; background-color: rgba(8, 10, 12, 0.82); }
 .tracks-numbox { width: 46px; background-color: rgb(45, 140, 60); align-items: center; justify-content: center; }
-.tracks-num { font-size: 26px; color: rgb(255, 255, 255); -unity-text-align: middle-center; }
+.tracks-num { font-size: 28px; -unity-font-style: bold-and-italic; color: rgb(255, 255, 255); -unity-text-align: middle-center; }
 .tracks-metabox { padding: 6px 12px 6px 10px; max-width: 200px; }
-.tracks-name { font-size: 14px; color: rgb(255, 255, 255); white-space: normal; }
-.tracks-meta { font-size: 11px; color: rgb(190, 200, 196); margin-top: 1px; }
-.tracks-scorebox { border-radius: 10px; background-color: rgba(8, 10, 12, 0.82); padding: 6px 12px; align-items: center; min-width: 64px; }
-.tracks-k { font-size: 9px; letter-spacing: 1.2px; color: rgb(122, 212, 70); }
-.tracks-topar { font-size: 26px; color: rgb(255, 255, 255); }
-.tracks-card { position: absolute; left: 10px; top: 96px; flex-direction: row; border-radius: 8px; overflow: hidden; background-color: rgba(8, 10, 12, 0.72); }
+.tracks-name { font-size: 15px; color: rgb(255, 255, 255); white-space: normal; }
+.tracks-meta { font-size: 11px; color: rgb(196, 201, 205); margin-top: 1px; }
+.tracks-scorebox { border-radius: 4px; background-color: rgba(8, 10, 12, 0.82); padding: 6px 12px; align-items: center; min-width: 64px; }
+.tracks-k { font-size: 11px; letter-spacing: 1.2px; color: rgb(122, 212, 70); }
+.tracks-topar { font-size: 28px; color: rgb(255, 255, 255); }
+.tracks-card { position: absolute; left: 10px; top: 96px; flex-direction: row; border-radius: 4px; overflow: hidden; background-color: rgba(8, 10, 12, 0.72); }
 .tracks-cell { width: 28px; align-items: center; padding: 3px 0 4px 0; }
 .tracks-cell-now { background-color: rgba(45, 140, 60, 0.85); }
-.tracks-cell-n { font-size: 9px; color: rgb(170, 180, 176); }
+.tracks-cell-n { font-size: 11px; color: rgb(196, 201, 205); }
 .tracks-cell-s { font-size: 13px; color: rgb(255, 255, 255); min-height: 16px; -unity-text-align: middle-center; }
 .tracks-under { color: rgb(255, 120, 110); }
 .tracks-over { color: rgb(120, 180, 255); }
 .tracks-cams { position: absolute; right: 10px; top: 96px; }
-.tracks-cam { border-radius: 8px; background-color: rgba(8, 10, 12, 0.66); padding: 6px 10px; margin-bottom: 6px; align-items: center; }
+.tracks-cam { border-radius: 4px; background-color: rgba(8, 10, 12, 0.66); padding: 6px 10px; margin-bottom: 6px; align-items: center; }
 .tracks-cam-on { background-color: rgba(45, 140, 60, 0.92); }
 .tracks-cam-t { font-size: 11px; color: rgb(255, 255, 255); }
 .tracks-bottom { position: absolute; left: 10px; right: 10px; bottom: 10px; }
 .tracks-lower { align-items: flex-start; margin-bottom: 8px; }
 .tracks-simrow { flex-direction: row; justify-content: flex-end; }
-.tracks-change { font-size: 11px; color: rgb(122, 212, 70); margin-top: 6px; }
-.tracks-cap-t { font-size: 18px; color: rgb(255, 255, 255); background-color: rgb(45, 140, 60); padding: 4px 12px; border-radius: 6px 6px 0 0; }
-.tracks-cap-s { font-size: 13px; color: rgb(230, 236, 232); background-color: rgba(8, 10, 12, 0.85); padding: 6px 12px; border-radius: 0 6px 6px 6px; white-space: normal; max-width: 420px; }
+/* Wide screens keep the club list down the right, so the tester's button sits on the left, clear of it. */
+.tracks-wide .tracks-simrow { justify-content: flex-start; }
+.tracks-cap-t { font-size: 20px; -unity-font-style: bold-and-italic; color: rgb(255, 255, 255); background-color: rgb(45, 140, 60); padding: 4px 12px; border-radius: 4px 4px 0 0; }
+.tracks-cap-s { font-size: 13px; color: rgb(255, 255, 255); background-color: rgba(8, 10, 12, 0.85); padding: 6px 12px; border-radius: 0 4px 4px 4px; white-space: normal; max-width: 420px; }
 .tracks-shotbar { flex-direction: row; align-items: stretch; }
-.tracks-club { width: 132px; border-radius: 12px; background-color: rgba(8, 10, 12, 0.86); padding: 10px 12px; margin-right: 8px; }
-.tracks-club-v { font-size: 18px; color: rgb(255, 255, 255); margin-top: 2px; white-space: normal; }
-.tracks-club-s { font-size: 11px; color: rgb(190, 200, 196); white-space: normal; }
-.tracks-matcard { border-radius: 12px; background-color: rgba(8, 10, 12, 0.86); padding: 10px 12px; }
+.tracks-matcard { border-radius: 4px; background-color: rgba(8, 10, 12, 0.86); padding: 10px 12px; }
 .tracks-mat { flex-direction: row; margin: 6px 0 6px 0; }
-.tracks-tick { flex-grow: 1; height: 8px; border-radius: 4px; margin-right: 3px; background-color: rgb(52, 56, 58); }
-.tracks-tick-on { background-color: rgb(122, 212, 70); }
+.tracks-tick { flex-grow: 1; height: 8px; border-radius: 4px; margin-right: 3px; background-color: rgb(48, 53, 58); }
+.tracks-tick-on { background-color: rgb(45, 140, 60); }
 .tracks-words { font-size: 13px; color: rgb(255, 255, 255); white-space: normal; }
-.tracks-sim { min-height: 36px; padding: 0 14px; margin-bottom: 8px; }
 
 /* Rule games (RuleGames.cs) */
 .rule-how { align-items: flex-start; margin-bottom: 8px; }
-.rule-dot { width: 6px; height: 6px; border-radius: 3px; background-color: rgb(122, 212, 70); margin: 7px 10px 0 0; }
+.rule-dot { width: 6px; height: 6px; border-radius: 3px; background-color: rgb(45, 140, 60); margin: 6px 12px 0 0; }
 .rule-callcard { align-items: center; padding-top: 14px; padding-bottom: 14px; }
-.rule-call { font-size: 30px; -unity-font-style: bold-and-italic; -unity-text-align: middle-center; white-space: normal; }
+.rule-call { font-size: 28px; -unity-font-style: bold-and-italic; -unity-text-align: middle-center; white-space: normal; }
 .rule-pips { flex-direction: row; flex-wrap: wrap; margin-top: 8px; }
-.rule-pip { min-width: 30px; height: 30px; border-radius: 8px; background-color: rgb(38, 41, 44); color: rgb(132, 133, 134); font-size: 13px; -unity-text-align: middle-center; margin: 0 6px 6px 0; padding: 0 6px; }
+.rule-pip { min-width: 30px; height: 30px; border-radius: 4px; background-color: rgb(34, 38, 42); color: rgb(139, 147, 153); font-size: 13px; -unity-text-align: middle-center; margin: 0 6px 6px 0; padding: 0 6px; }
 .rule-pip-on { background-color: rgb(45, 140, 60); color: rgb(255, 255, 255); }
 .rule-swatch { width: 10px; height: 10px; border-radius: 5px; margin-right: 10px; }
-.rule-now { background-color: rgba(255, 255, 255, 0.05); border-radius: 8px; }
-.rule-big { font-size: 40px; -unity-font-style: bold-and-italic; -unity-text-align: middle-center; margin-top: 6px; }
-.rule-pip-now { border-width: 2px; border-color: rgb(122, 212, 70); }
-.rule-pip-miss { background-color: rgb(58, 28, 28); color: rgb(255, 120, 110); }
-.rule-pip-label { background-color: rgba(0, 0, 0, 0); color: rgb(170, 180, 176); min-width: 20px; }
+.rule-now { background-color: rgb(34, 38, 42); border-radius: 4px; }
+.sheet-over .rule-now { background-color: rgb(48, 53, 58); }
+.rule-big { font-size: 44px; -unity-font-style: bold-and-italic; -unity-text-align: middle-center; margin-top: 6px; }
+.rule-pip-now { border-width: 2px; border-color: rgb(255, 255, 255); }
+.rule-pip-miss { background-color: rgb(34, 38, 42); color: rgb(255, 82, 82); }
+.rule-pip-label { background-color: rgba(0, 0, 0, 0); color: rgb(196, 201, 205); min-width: 20px; }
 .rule-cups { align-items: center; margin-top: 8px; }
 .rule-cuprow { flex-direction: row; justify-content: center; }
-.rule-cup { width: 46px; height: 46px; border-radius: 23px; background-color: rgb(196, 40, 48); border-width: 3px; border-color: rgb(240, 240, 240); margin: 3px; align-items: center; justify-content: center; }
+.rule-cup { width: 46px; height: 46px; border-radius: 4px; background-color: rgb(196, 40, 48); border-width: 3px; border-color: rgb(255, 255, 255); margin: 3px; align-items: center; justify-content: center; }
 .rule-cup-now { border-color: rgb(122, 212, 70); }
-.rule-cup-sunk { background-color: rgb(38, 41, 44); border-color: rgb(52, 56, 58); }
+.rule-cup-sunk { background-color: rgb(34, 38, 42); border-color: rgb(38, 42, 46); }
 .rule-cup-t { color: rgb(255, 255, 255); font-size: 13px; }
 
 /* Game cards (GameCards.cs): the arcade's look */
-.gcard { width: 170px; height: 112px; margin-left: 10px; border-radius: 14px; overflow: hidden; -unity-background-scale-mode: scale-and-crop; background-color: rgb(24, 26, 28); border-width: 1px; border-color: rgba(255, 255, 255, 0.08); justify-content: space-between; }
-.gcard-big { width: auto; height: 158px; margin: 0 0 12px 0; border-radius: 16px; }
+.gcard { width: 170px; height: 112px; margin-left: 10px; border-radius: 4px; overflow: hidden; -unity-background-scale-mode: scale-and-crop; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgba(255, 255, 255, 0.08); justify-content: space-between; }
+.gcard-big { width: auto; height: 158px; margin: 0 0 12px 0; border-radius: 4px; }
 .gcard-shade { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
 .gcard-top { flex-direction: row; justify-content: flex-end; flex-wrap: wrap; padding: 8px 8px 0 8px; }
-.gcard-chip { font-size: 10px; color: rgb(255, 255, 255); background-color: rgba(8, 10, 12, 0.62); border-radius: 7px; padding: 3px 7px; margin-left: 4px; margin-bottom: 4px; }
+.gcard-chip { font-size: 10px; color: rgb(255, 255, 255); background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 2px 7px; margin-left: 4px; margin-bottom: 4px; }
 .gcard-bottom { padding: 0 12px 10px 12px; }
-.gcard-name { font-size: 14px; -unity-font-style: bold-and-italic; color: rgb(255, 255, 255); white-space: normal; }
+.gcard-name { font-size: 14px; -unity-font-style: bold-and-italic; color: rgb(255, 255, 255); white-space: normal; text-shadow: 0 1px 0 rgb(0, 0, 0); }
 .gcard-name-big { font-size: 22px; letter-spacing: 0.5px; }
-.gcard-line { font-size: 11px; color: rgb(200, 206, 204); margin-top: 1px; }
+.gcard-line { font-size: 11px; color: rgb(196, 201, 205); margin-top: 1px; text-shadow: 0 1px 0 rgb(0, 0, 0); }
 .gcard-first { margin-left: 16px; }
+/* GameCards.Raised: a card that stands off the page, as a key does. .gcard-3d is the footprint (8 px taller than the
+   face): a black shadow along the very bottom, then the lip (.gcard-lip, the card's own thickness, a slate lighter
+   than the page so it shows on black), then the face on top. Pressed, the face sinks onto the lip. Nothing here has a
+   see-through light border: the app draws in linear colour, where a faint white line comes out bright. */
+.gcard.gcard-3d { height: 120px; background-color: rgba(0, 0, 0, 0); border-width: 0; overflow: visible; }
+.gcard.gcard-3d.gcard-big { height: 166px; margin-bottom: 10px; }
+.gcard-shadow { position: absolute; left: 7px; right: 7px; bottom: 0; height: 24px; border-radius: 4px; background-color: rgb(0, 0, 0); }
+.gcard-lip { position: absolute; left: 0; right: 0; top: 10px; bottom: 3px; border-radius: 4px; background-color: rgb(34, 38, 42); border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); }
+.gcard-big > .gcard-lip { border-radius: 4px; }
+.gcard-face { position: absolute; left: 0; right: 0; top: 0; bottom: 8px; justify-content: space-between; overflow: hidden; border-radius: 4px; background-color: rgb(10, 12, 13); border-width: 0; transition-property: translate; transition-duration: 0.07s; }
+.gcard-big > .gcard-face { border-radius: 4px; }
+.gcard-art { position: absolute; left: 0; right: 0; top: 0; bottom: 0; -unity-background-scale-mode: scale-and-crop; }
+.gcard-fade { position: absolute; left: 0; right: 0; top: 0; bottom: 0; -unity-background-scale-mode: stretch-to-fill; }
+.gcard-pressed > .gcard-face { translate: 0 4px; }
 .picker-row { align-items: center; }
 .picker-row .field { margin: 0; }
-.picker-add { margin-left: 8px; border-width: 2px; border-color: rgb(45, 140, 60); border-radius: 22px; padding: 1px; }
-.picker-remove { width: 34px; height: 34px; border-radius: 10px; background-color: rgb(255, 82, 82); align-items: center; justify-content: center; margin-left: 8px; }
+.picker-add { margin-left: 8px; border-width: 2px; border-color: rgb(45, 140, 60); border-radius: 4px; padding: 1px; }
+.picker-remove { width: 34px; height: 34px; border-radius: 4px; background-color: rgb(255, 82, 82); align-items: center; justify-content: center; margin-left: 8px; }
 .picker-remove-t { color: rgb(255, 255, 255); font-size: 18px; }
 .gcard-list { flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
 .gcard-list > .muted, .gcard-list > .sub { width: 100%; }
 .mode-scroll { margin: 0 0 6px 0; }
 .mode-row { flex-direction: row; padding: 0 16px 6px 16px; }
 .mode-box { width: 140px; margin-right: 10px; padding: 12px; }
-.mode-line { font-size: 11px; color: rgb(132, 133, 134); white-space: normal; }
+.mode-line { font-size: 11px; color: rgb(139, 147, 153); white-space: normal; }
 .tab-top { justify-content: flex-end; }
-.totw { height: auto; min-height: 250px; margin: 0; }
-.totw-top { padding: 12px 14px 0 14px; }
-.totw-bottom { padding: 60px 14px 12px 14px; }
-.totw-btn { margin-top: 10px; padding: 11px; }
-.totw-kick { align-self: flex-start; background-color: rgba(8, 10, 12, 0.72); border-radius: 8px; padding: 4px 8px; }
+/* Track of the week: the same raised card, as tall as its words (the face is in the flow and sets the height). */
+.gcard.gcard-3d.totw { height: auto; margin: 0; padding-bottom: 8px; }
+.totw > .gcard-face { position: relative; bottom: auto; min-height: 250px; }
+/* The flat card (TrackOfTheWeek.Fill): the course card's window and bar, an eyebrow row, two secondary buttons. */
+.totw-kick { align-items: center; margin-bottom: 8px; }
+.chip.totw-new { margin: 0 0 0 8px; }
+.totw-actions { margin-top: 4px; }
+.btn.totw-btn { margin-top: 12px; flex-basis: 0; }
+.btn.tracks-btn-2 { margin-left: 8px; }
 /* ConnectSheet: the Puttr connection card (BleModal.js) */
 .connect-card { align-items: center; }
-.connect-chip { flex-direction: row; align-items: center; align-self: center; background-color: rgba(45, 140, 60, 0.15); padding: 8px 14px; border-radius: 20px; margin-bottom: 20px; }
-.connect-chip-off { background-color: rgba(255, 82, 82, 0.15); }
-.connect-chip-text { font-size: 12px; margin-left: 8px; letter-spacing: 0.5px; color: rgba(255, 255, 255, 0.5); }
-.connect-ring { width: 80px; height: 80px; border-radius: 40px; background-color: rgba(255, 255, 255, 0.06); align-items: center; justify-content: center; margin-bottom: 16px; align-self: center; }
-.connect-on { background-color: rgba(45, 140, 60, 0.12); }
-.connect-off { background-color: rgba(255, 82, 82, 0.12); }
-.connect-amber { background-color: rgba(255, 179, 0, 0.12); }
+/* The link's chip: the one chip style (clear, 1 px line, caps); green or red text says on or off. */
+.connect-chip { flex-direction: row; align-items: center; align-self: center; background-color: rgba(0, 0, 0, 0); border-width: 1px; border-color: rgb(38, 42, 46); padding: 4px 8px; border-radius: 4px; margin-bottom: 24px; }
+.connect-chip-off { min-height: 44px; padding: 4px 12px; }
+.connect-chip-text { font-size: 11px; margin: 0 0 0 8px; padding: 0; letter-spacing: 1.5px; color: rgb(139, 147, 153); }
+/* The Puttr mark, plain: its colour is the state. No disc behind it. */
+.connect-ring { width: 80px; height: 80px; align-items: center; justify-content: center; margin-bottom: 16px; align-self: center; }
+.connect-on { }
+.connect-off { }
+.connect-amber { }
 .connect-logo { width: 46px; height: 50px; }
-.connect-title { font-size: 16px; letter-spacing: 0.5px; -unity-text-align: middle-center; color: rgb(255, 255, 255); }
-.connect-sub { font-size: 11px; margin-top: 6px; -unity-text-align: middle-center; color: rgba(255, 255, 255, 0.4); white-space: normal; }
-.connect-retry { flex-direction: row; align-self: center; margin-top: 12px; background-color: rgba(255, 255, 255, 0.06); padding: 8px 16px; border-radius: 20px; border-width: 1px; border-color: rgba(255, 255, 255, 0.08); }
-.connect-warn { background-color: rgba(255, 82, 82, 0.1); border-radius: 14px; border-width: 1px; border-color: rgba(255, 82, 82, 0.2); padding: 16px; margin-top: 20px; width: 100%; }
-.connect-step { margin-top: 10px; }
-.connect-tester { width: 100%; margin-top: 22px; padding-top: 14px; border-top-width: 1px; border-top-color: rgb(44, 48, 50); }
+.connect-title { font-size: 20px; letter-spacing: 0.5px; -unity-text-align: middle-center; color: rgb(255, 255, 255); margin: 0; padding: 0; }
+.connect-sub { font-size: 13px; margin-top: 8px; -unity-text-align: middle-center; color: rgb(139, 147, 153); white-space: normal; }
+.connect-retry { align-self: stretch; margin-top: 16px; }
+.connect-warn { background-color: rgb(10, 12, 13); border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); padding: 16px; margin-top: 24px; width: 100%; }
+.connect-warn-title { font-size: 15px; color: rgb(255, 82, 82); margin-left: 8px; }
+.connect-step { margin-top: 12px; }
+.connect-tester { width: 100%; margin-top: 24px; padding-top: 16px; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
 .connect-done { align-self: stretch; }
+.connect-pair { margin-top: 8px; }
+.connect-pair > .btn { margin-top: 0; flex-grow: 1; flex-basis: 0; }
+.connect-gap { width: 8px; flex-shrink: 0; }
 
 /* GameScreen: GameIntro's layout. A column up to 500 wide (setup above the fold), Start pinned under it, and in
    landscape the leaderboard as a panel down the right. */
@@ -607,22 +884,22 @@
 .game-scroll .page-viewport { align-items: center; }
 .game-column { width: 100%; max-width: 500px; padding: 0 16px; align-self: center; }
 .game-head { flex-direction: row; align-items: center; margin-top: 4px; }
-.game-title { font-size: 22px; white-space: normal; padding: 0 8px; }
-.game-trophy { width: 40px; height: 40px; border-radius: 20px; background-color: rgba(255, 255, 255, 0.08); align-items: center; justify-content: center; }
+.game-title { white-space: normal; padding: 0 8px; flex-basis: 0; }
 .game-about { margin-top: 4px; white-space: normal; }
-.game-rules { flex-direction: row; align-items: center; align-self: flex-start; margin-top: 10px; padding: 6px 12px; border-radius: 14px; background-color: rgba(255, 255, 255, 0.06); }
-.game-rules-t { font-size: 12px; margin-left: 6px; color: rgba(255, 255, 255, 0.7); }
-.game-foot { flex-shrink: 0; align-items: center; padding: 10px 16px; background-color: rgb(9, 11, 13); border-top-width: 1px; border-top-color: rgb(38, 40, 42); }
+/* "How to play": a secondary button as wide as its words, under the game's chips. Start is the page's one main button. */
+.btn.game-rules { align-self: flex-start; margin-top: 12px; padding-left: 24px; padding-right: 24px; }
+.game-foot { flex-shrink: 0; align-items: center; padding: 12px 16px; background-color: rgb(10, 12, 13); border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
 .game-go { margin-top: 0; width: 100%; max-width: 468px; }
-.game-side { flex-shrink: 0; max-width: 500px; background-color: rgba(0, 0, 0, 0.4); border-left-width: 1px; border-left-color: rgba(255, 255, 255, 0.06); }
-.game-board { padding: 16px 14px; }
+.game-side { flex-shrink: 0; max-width: 500px; background-color: rgb(10, 12, 13); border-left-width: 1px; border-left-color: rgb(38, 42, 46); }
+.game-board { padding: 16px 12px; }
 .game-head > .back { width: auto; padding-right: 4px; }
 .game-scroll .page-column { width: 100%; }
-/* The game page over its backdrop (the game's set, GameBridge.ShowBackdrop): the set shows round a dark panel. */
+/* The game page over its backdrop (the game's set, GameBridge.ShowBackdrop): the set shows round solid panels.
+   Every word is on a solid ground (the column, the foot, the side panel), never on the scene itself. */
 .game-see { background-color: rgba(9, 11, 13, 0.25); }
-.game-see .game-column { background-color: rgba(9, 11, 13, 0.78); border-radius: 18px; padding: 10px 16px 16px 16px; margin-top: 10px; }
-.game-see .game-foot { background-color: rgba(9, 11, 13, 0.85); border-top-color: rgba(255, 255, 255, 0.08); }
-.game-see .game-side { background-color: rgba(9, 11, 13, 0.78); }
+.game-see .game-column { background-color: rgb(10, 12, 13); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 12px 16px 16px 16px; margin-top: 12px; }
+.game-see .game-foot { background-color: rgb(10, 12, 13); border-top-color: rgb(38, 42, 46); }
+.game-see .game-side { background-color: rgb(10, 12, 13); }
 /* Spinner (PuttrSpinner): centred in its box; the cover sits over a screen that has nothing in it yet. */
 .spinner { align-items: center; justify-content: center; padding: 16px; }
 .spinner-center { position: absolute; left: 0; top: 0; right: 0; bottom: 0; align-items: center; justify-content: center; }
@@ -630,36 +907,34 @@
 
 /* Tracks play HUD: camera pill, entry panel, mat putt card, bottom scorecard */
 .tracks-camdock { position: absolute; right: 10px; top: 10px; align-items: flex-end; }
-.tracks-campill { flex-direction: row; align-items: center; border-radius: 10px; background-color: rgba(8, 10, 12, 0.82); padding: 5px 8px 5px 12px; min-height: 40px; }
+.tracks-campill { flex-direction: row; align-items: center; border-radius: 4px; background-color: rgba(8, 10, 12, 0.82); padding: 5px 8px 5px 12px; min-height: 40px; }
 .tracks-campill-text { align-items: flex-start; }
 .tracks-chev { width: 18px; height: 18px; margin-left: 6px; }
-.tracks-camlist { border-radius: 10px; background-color: rgba(8, 10, 12, 0.9); padding: 4px; min-width: 132px; }
+.tracks-camlist { border-radius: 4px; background-color: rgba(8, 10, 12, 0.9); padding: 4px; min-width: 132px; }
 .tracks-camlist-head { flex-direction: row; align-items: center; padding: 4px 4px 4px 8px; }
-.tracks-camopt { border-radius: 8px; padding: 8px 10px; margin-top: 2px; }
+.tracks-camopt { border-radius: 4px; padding: 8px 10px; margin-top: 2px; }
 .tracks-camopt-on { background-color: rgba(45, 140, 60, 0.92); }
-.tracks-entry { position: absolute; left: 10px; top: 104px; border-radius: 12px; background-color: rgba(8, 10, 12, 0.82); padding: 6px 8px 8px 8px; align-items: center; }
-.tracks-entry-mat { width: 112px; height: 112px; margin-top: 4px; border-radius: 8px; overflow: hidden; background-color: rgba(10, 30, 15, 0.95); border-width: 1px; border-color: rgba(255, 255, 255, 0.12); }
+.tracks-entry { position: absolute; left: 10px; top: 104px; border-radius: 4px; background-color: rgba(8, 10, 12, 0.82); padding: 6px 8px 8px 8px; align-items: center; }
+.tracks-entry-mat { width: 112px; height: 112px; margin-top: 4px; border-radius: 4px; overflow: hidden; background-color: rgba(10, 12, 13, 0.95); border-width: 1px; border-color: rgb(38, 42, 46); }
 .tracks-entry-view { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
-.tracks-entry-k { position: absolute; left: 0; right: 0; top: 3px; font-size: 8px; letter-spacing: 0.5px; color: rgba(255, 255, 255, 0.55); -unity-text-align: middle-center; }
-.tracks-entry-v { position: absolute; left: 0; right: 0; bottom: 3px; font-size: 9px; letter-spacing: 0.6px; color: rgb(122, 212, 70); -unity-text-align: middle-center; }
+.tracks-entry-k { position: absolute; left: 0; right: 0; top: 3px; font-size: 11px; letter-spacing: 0.5px; color: rgb(139, 147, 153); -unity-text-align: middle-center; }
+.tracks-entry-v { position: absolute; left: 0; right: 0; bottom: 3px; font-size: 11px; letter-spacing: 0.6px; color: rgb(122, 212, 70); -unity-text-align: middle-center; }
 .tracks-entry-miss { color: rgb(255, 82, 82); }
 .tracks-wide .tracks-entry-mat { width: 168px; height: 168px; }
-.tracks-wide .tracks-entry-k { font-size: 10px; }
+.tracks-wide .tracks-entry-k { font-size: 11px; }
 .tracks-wide .tracks-entry-v { font-size: 11px; }
-.tracks-puttcard { border-radius: 12px; background-color: rgba(8, 10, 12, 0.86); padding: 10px 12px; justify-content: center; }
-.tracks-putt-v { font-size: 20px; color: rgb(255, 255, 255); margin-top: 2px; margin-bottom: 2px; }
-.tracks-sc { margin-top: 8px; border-radius: 12px; background-color: rgba(8, 10, 12, 0.86); padding: 6px; }
+.tracks-sc { margin-top: 8px; border-radius: 4px; background-color: rgba(8, 10, 12, 0.86); padding: 6px; }
 .tracks-sc-row { flex-direction: row; align-items: stretch; }
-.tracks-sc-col { flex-grow: 1; flex-basis: 0; min-width: 0; align-items: center; border-radius: 6px; padding: 2px 0; }
-.tracks-sc-lab { flex-grow: 0; flex-basis: auto; width: 40px; align-items: flex-start; padding-left: 4px; }
-.tracks-sc-lab > .tracks-sc-n, .tracks-sc-lab > .tracks-sc-p, .tracks-sc-lab > .tracks-sc-s { font-size: 8px; letter-spacing: 0.6px; color: rgba(255, 255, 255, 0.5); -unity-text-align: middle-left; }
+.tracks-sc-col { flex-grow: 1; flex-basis: 0; min-width: 0; align-items: center; border-radius: 4px; padding: 2px 0; }
+.tracks-sc-lab { flex-grow: 0; flex-basis: auto; width: 48px; align-items: flex-start; padding-left: 4px; overflow: hidden; }
+.tracks-sc-lab > .tracks-sc-n, .tracks-sc-lab > .tracks-sc-p, .tracks-sc-lab > .tracks-sc-s { font-size: 11px; letter-spacing: 0; color: rgb(139, 147, 153); -unity-text-align: middle-left; }
 .tracks-sc-now { background-color: rgba(45, 140, 60, 0.85); }
 .tracks-sc-sum { flex-grow: 0; flex-basis: auto; width: 36px; background-color: rgba(255, 255, 255, 0.07); margin-left: 3px; }
-.tracks-sc-n { font-size: 10px; color: rgb(170, 180, 176); height: 16px; -unity-text-align: middle-center; }
-.tracks-sc-p { font-size: 10px; color: rgb(190, 200, 196); height: 16px; -unity-text-align: middle-center; }
+.tracks-sc-n { font-size: 11px; color: rgb(196, 201, 205); height: 16px; -unity-text-align: middle-center; }
+.tracks-sc-p { font-size: 11px; color: rgb(196, 201, 205); height: 16px; -unity-text-align: middle-center; }
 .tracks-sc-s { font-size: 13px; color: rgb(255, 255, 255); height: 18px; -unity-text-align: middle-center; }
-.tracks-sc-parbox { width: 54px; margin-left: 4px; border-radius: 8px; background-color: rgba(45, 140, 60, 0.3); align-items: center; justify-content: center; }
-.tracks-sc-topar { font-size: 22px; color: rgb(255, 255, 255); }
+.tracks-sc-parbox { width: 54px; margin-left: 4px; border-radius: 4px; background-color: rgba(45, 140, 60, 0.3); align-items: center; justify-content: center; }
+.tracks-sc-topar { font-size: 20px; -unity-font-style: bold-and-italic; color: rgb(255, 255, 255); }
 .tracks-wide .tracks-sc-n { font-size: 11px; }
 .tracks-wide .tracks-sc-s { font-size: 15px; height: 20px; }
 .tracks-wide .tracks-bottom { left: 16px; right: 16px; bottom: 14px; }
@@ -667,10 +942,11 @@
 .tracks-sc-s.tracks-under, .tracks-sc-topar.tracks-under { color: rgb(255, 120, 110); }
 .tracks-sc-s.tracks-over { color: rgb(120, 180, 255); }
 /* PlayerPicker: Add player, who goes first, Puttr as a Player. */
-.picker-first { padding: 6px 10px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.06); margin-left: 8px; }
+.picker-first { min-height: 44px; justify-content: center; padding: 0 12px; border-radius: 4px; background-color: rgb(34, 38, 42); margin-left: 8px; flex-shrink: 0; }
+.picker-first:active { background-color: rgb(48, 53, 58); }
 .picker-first-on { background-color: rgb(45, 140, 60); }
-.picker-first-t { font-size: 11px; color: rgb(255, 255, 255); }
-.picker-puttr { background-color: rgb(16, 34, 20); }
+.picker-first-t { font-size: 11px; letter-spacing: 1.2px; color: rgb(255, 255, 255); }
+.picker-puttr { background-color: rgb(21, 24, 27); }
 .picker-add-btn { margin-top: 8px; }
 
 /* Putter brand marks on the league and tournament leaderboards (PutterBrands.cs), and the putter
@@ -680,75 +956,170 @@
 .brand-letter { color: rgb(255, 255, 255); -unity-text-align: middle-center; padding: 0; margin: 0; }
 .brand-hit { margin-left: 8px; margin-right: 2px; padding: 6px; flex-shrink: 0; justify-content: center; }
 .putter-sheet-dim { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.6); justify-content: flex-end; align-items: center; color: rgb(255, 255, 255); font-size: 14px; }
-.putter-sheet { width: 100%; max-width: 480px; background-color: rgb(10, 10, 10); border-top-left-radius: 24px; border-top-right-radius: 24px; border-top-width: 1px; border-left-width: 1px; border-right-width: 1px; border-color: rgb(30, 30, 30); padding-top: 12px; padding-left: 20px; padding-right: 20px; transition-property: translate; transition-duration: 0.25s; transition-timing-function: ease-out-cubic; }
+.putter-sheet { width: 100%; max-width: 480px; background-color: rgb(10, 12, 13); border-top-left-radius: 4px; border-top-right-radius: 4px; border-top-width: 1px; border-left-width: 1px; border-right-width: 1px; border-color: rgb(38, 42, 46); padding-top: 12px; padding-left: 20px; padding-right: 20px; transition-property: translate; transition-duration: 0.25s; transition-timing-function: ease-out-cubic; }
 .putter-sheet-grab-row { align-items: center; margin-bottom: 8px; }
-.putter-sheet-grab { width: 42px; height: 4px; border-radius: 2px; background-color: rgb(49, 49, 49); }
+.putter-sheet-grab { width: 42px; height: 4px; border-radius: 2px; background-color: rgb(48, 53, 58); }
 .putter-sheet-head { flex-direction: row; align-items: center; margin-bottom: 18px; }
-.putter-sheet-head .avatar { width: 40px; height: 40px; border-radius: 20px; margin-right: 12px; }
+.putter-sheet-head .avatar { width: 40px; height: 40px; border-radius: 4px; margin-right: 12px; }
 .putter-sheet-who { overflow: hidden; }
-.putter-sheet-kick { font-size: 10px; letter-spacing: 1px; color: rgb(108, 108, 108); }
+.putter-sheet-kick { font-size: 11px; letter-spacing: 1.5px; color: rgb(139, 147, 153); }
 .putter-sheet-name { font-size: 15px; color: rgb(255, 255, 255); }
-.putter-sheet-town { font-size: 11px; color: rgb(120, 120, 120); margin-top: 1px; }
-.putter-sheet-close { width: 32px; height: 32px; border-radius: 16px; align-items: center; justify-content: center; background-color: rgb(25, 25, 25); margin-left: 8px; }
-.putter-sheet-card { flex-direction: row; align-items: center; background-color: rgb(20, 20, 20); border-width: 1px; border-color: rgb(30, 30, 30); border-radius: 16px; padding: 16px; }
-.putter-sheet-disc { width: 64px; height: 64px; border-radius: 32px; align-items: center; justify-content: center; background-color: rgb(34, 34, 34); margin-right: 16px; flex-shrink: 0; }
-.putter-sheet-unknown { font-size: 20px; color: rgb(132, 132, 132); }
+.putter-sheet-town { font-size: 13px; color: rgb(139, 147, 153); margin-top: 4px; }
+.putter-sheet-close { width: 32px; height: 32px; border-radius: 4px; align-items: center; justify-content: center; background-color: rgb(21, 24, 27); margin-left: 8px; }
+.putter-sheet-card { flex-direction: row; align-items: center; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 16px; }
+.putter-sheet-disc { width: 64px; height: 64px; border-radius: 4px; align-items: center; justify-content: center; background-color: rgb(34, 38, 42); margin-right: 16px; flex-shrink: 0; }
+.putter-sheet-unknown { font-size: 20px; color: rgb(139, 147, 153); }
 .putter-sheet-words { overflow: hidden; }
-.putter-sheet-brand { font-size: 17px; color: rgb(255, 255, 255); }
-.putter-sheet-model { font-size: 14px; color: rgb(206, 206, 206); margin-top: 2px; }
-.putter-sheet-specs { font-size: 11px; color: rgb(120, 120, 120); margin-top: 4px; letter-spacing: 0.5px; white-space: normal; }
-.tracks-sc-row > .tracks-sc-lab > .tracks-sc-n, .tracks-sc-row > .tracks-sc-lab > .tracks-sc-p, .tracks-sc-row > .tracks-sc-lab > .tracks-sc-s { font-size: 8px; letter-spacing: 0.6px; color: rgba(255, 255, 255, 0.5); -unity-text-align: middle-left; }
+.putter-sheet-brand { font-size: 20px; color: rgb(255, 255, 255); }
+.putter-sheet-model { font-size: 15px; color: rgb(196, 201, 205); margin-top: 4px; }
+.putter-sheet-specs { font-size: 11px; color: rgb(139, 147, 153); margin-top: 4px; letter-spacing: 0.5px; white-space: normal; }
+.tracks-sc-row > .tracks-sc-lab > .tracks-sc-n, .tracks-sc-row > .tracks-sc-lab > .tracks-sc-p, .tracks-sc-row > .tracks-sc-lab > .tracks-sc-s { font-size: 11px; letter-spacing: 0; color: rgb(139, 147, 153); -unity-text-align: middle-left; }
 .tracks-wide .tracks-bottom > .tracks-shotbar { width: auto; }
-.tracks-wide .tracks-puttcard { min-width: 280px; padding-right: 28px; }
 .tracks-wide .tracks-sc { align-self: flex-start; min-width: 640px; }
 .tracks-wide .tracks-sc-col { min-width: 44px; }
+
+/* Tracks: the shot interface. The app's caddie card, much larger: the club, the putt to hit as a big number of feet,
+   the three tees with a ball on the one to putt from, the lie, and the caddie's sentences or the short facts.
+   Everything sits on solid dark plates so it reads over the course. */
+.tracks-shot { flex-grow: 1; flex-shrink: 1; border-radius: 4px; background-color: rgb(10, 12, 13); border-width: 1px; border-color: rgb(38, 42, 46); padding: 10px 14px 12px 14px; }
+.tracks-shot-head { flex-direction: row; align-items: center; min-height: 30px; }
+.tracks-shot-club { font-size: 20px; -unity-font-style: bold-and-italic; color: rgb(122, 212, 70); margin: 0; padding: 0; }
+.tracks-shot-was { font-size: 11px; color: rgb(139, 147, 153); margin-left: 8px; }
+.tracks-shot-yds { font-size: 15px; color: rgb(196, 201, 205); }
+.tracks-shot-main { flex-direction: row; align-items: center; margin-top: 2px; }
+/* The tee marker sits in the shot plate here, so it gives up its own plate. */
+.tracks-shot-main > .tee-marker { background-color: rgb(10, 12, 13); border-width: 0; padding: 0 0 4px 0; }
+.tracks-ft { flex-direction: row; align-items: flex-end; flex-shrink: 0; }
+.tracks-ft-n { color: rgb(255, 255, 255); margin: 0; padding: 0; }
+.tracks-ft-u { color: rgb(196, 201, 205); margin-left: 4px; margin-right: 0; margin-top: 0; padding: 0; }
+.tracks-shot-facts { flex-grow: 1; flex-shrink: 1; margin-left: 14px; align-items: flex-start; }
+.tracks-shot-left { font-size: 13px; letter-spacing: 0.8px; color: rgb(255, 255, 255); margin-top: 4px; white-space: normal; }
+.tracks-shot-amber { font-size: 13px; color: rgb(255, 179, 0); margin-top: 2px; white-space: normal; }
+.tracks-shot-hint { font-size: 13px; color: rgb(196, 201, 205); margin-top: 2px; white-space: normal; }
+.tracks-lie { font-size: 11px; letter-spacing: 1px; padding: 2px 8px; border-radius: 4px; }
+.tracks-lie-green { color: rgb(122, 212, 70); background-color: rgb(21, 24, 27); }
+.tracks-lie-amber { color: rgb(255, 179, 0); background-color: rgb(34, 38, 42); }
+.tracks-lie-sand { color: rgb(232, 210, 122); background-color: rgb(34, 38, 42); }
+.tracks-lie-red { color: rgb(255, 82, 82); background-color: rgb(34, 38, 42); }
+.tracks-lie-pink { color: rgb(255, 95, 160); background-color: rgb(34, 38, 42); }
+.tracks-shot-say { font-size: 15px; color: rgb(255, 255, 255); white-space: normal; margin-top: 4px; }
+.tracks-shot-say-soft { color: rgb(196, 201, 205); }
+.tracks-shot-say-amber { color: rgb(255, 179, 0); }
+/* On its side (a tablet, a TV, a phone turned): the big distance block, the caddie beside it, the clubs down the right. */
+.tracks-wide .tracks-shot { flex-grow: 0; padding: 12px 18px 14px 18px; }
+.tracks-wide .tracks-shot-club { font-size: 28px; }
+.tracks-wide .tracks-shot-facts { flex-grow: 0; min-width: 96px; max-width: 220px; margin-left: 22px; }
+.tracks-wide .tracks-shot-left { font-size: 15px; }
+.tracks-wide .tracks-shot-amber, .tracks-wide .tracks-shot-hint { font-size: 15px; }
+.tracks-wide .tracks-shot-side { flex-grow: 0; flex-shrink: 1; width: 400px; min-width: 200px; margin-left: 8px; justify-content: center; }
+.tracks-wide .tracks-shot-say { font-size: 15px; margin-top: 4px; }
+.tracks-clubs { position: absolute; right: 16px; top: 60px; width: 212px; border-radius: 4px; background-color: rgb(10, 12, 13); border-width: 1px; border-color: rgb(38, 42, 46); padding: 8px; overflow: hidden; }
+.tracks-clubrow { flex-direction: row; align-items: center; min-height: 34px; padding: 0 10px; margin-top: 4px; border-radius: 4px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); }
+.tracks-pickrow { flex-direction: row; align-items: center; padding: 9px 12px; margin-top: 6px; border-radius: 4px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); }
+.tracks-clubrow-n { font-size: 15px; color: rgb(255, 255, 255); min-width: 30px; }
+.tracks-clubrow-y { font-size: 11px; color: rgb(139, 147, 153); margin-left: 4px; }
+.tracks-clubrow-tag { font-size: 11px; letter-spacing: 0.5px; color: rgb(122, 212, 70); margin-left: 4px; }
+.tracks-clubrow-reach { color: rgb(139, 147, 153); }
+.tracks-clubrow-ft { font-size: 15px; -unity-font-style: bold-and-italic; color: rgb(255, 255, 255); }
+.tracks-pick-ft { font-size: 20px; margin-left: 12px; }
+.tracks-clubrow-u { font-size: 11px; color: rgb(139, 147, 153); margin-left: 4px; }
+.body.tracks-pick-name { white-space: nowrap; }
+.tracks-clubrow-sug { border-color: rgb(122, 212, 70); }
+.tracks-clubrow-on { background-color: rgb(34, 38, 42); border-color: rgb(45, 140, 60); }
+.tracks-clubrow-out > .tracks-clubrow-n, .tracks-clubrow-out > .tracks-clubrow-y, .tracks-clubrow-out > .tracks-clubrow-ft, .tracks-clubrow-out .tracks-pick-name { color: rgb(139, 147, 153); }
+.tracks-short .tracks-clubs { top: 54px; width: 190px; padding: 5px 6px; }
+.tracks-short .tracks-clubrow { min-height: 20px; margin-top: 2px; border-radius: 4px; padding: 0 8px; }
+.tracks-short .tracks-clubrow-n { font-size: 11px; }
+.tracks-short .tracks-clubrow-y { font-size: 11px; }
+.tracks-short .tracks-clubrow-ft { font-size: 11px; }
+.tracks-short .tracks-shot { padding: 6px 14px 8px 14px; }
+.tracks-short .tracks-shot-head { min-height: 22px; }
+.tracks-short .tracks-shot-club { font-size: 20px; }
+.tracks-short .tracks-shot-say { font-size: 13px; margin-top: 3px; }
+.tracks-short .tracks-entry { top: 58px; }
+.tracks-short .tracks-entry-mat { width: 96px; height: 96px; }
+/* The shot card (the app's ShotResultCard) mid-screen, and the hole-done card over the scorecard. */
+.tracks-center { position: absolute; left: 0; top: 0; right: 0; bottom: 0; align-items: center; justify-content: center; }
+.tracks-result { align-items: center; border-radius: 4px; background-color: rgb(10, 12, 13); border-width: 1px; border-color: rgb(45, 140, 60); padding: 8px 12px; }
+.tracks-result-where { flex-direction: row; align-items: center; justify-content: center; }
+.tracks-result-sub { font-size: 11px; color: rgb(139, 147, 153); -unity-text-align: middle-center; white-space: normal; }
+.tracks-result-cols { flex-direction: row; align-self: stretch; margin-top: 6px; }
+.tracks-result-col { flex-grow: 1; flex-basis: 0; align-items: center; }
+.tracks-result-rule { width: 1px; background-color: rgb(48, 53, 58); margin-left: 5px; margin-right: 5px; }
+.tracks-result-k { font-size: 11px; letter-spacing: 1px; color: rgb(139, 147, 153); -unity-text-align: middle-center; }
+.tracks-result-v { font-size: 13px; -unity-text-align: middle-center; }
+.tracks-result-next { font-size: 11px; color: rgb(196, 201, 205); margin-top: 6px; -unity-text-align: middle-center; white-space: normal; }
+.tracks-result-big { padding: 12px 16px; }
+.tracks-result-big .tracks-result-sub { font-size: 13px; }
+.tracks-result-big .tracks-result-cols { margin-top: 10px; }
+.tracks-result-big .tracks-result-rule { margin-left: 8px; margin-right: 8px; }
+.tracks-result-big .tracks-result-k { font-size: 11px; }
+.tracks-result-big .tracks-result-v { font-size: 15px; }
+.tracks-result-big .tracks-result-next { font-size: 13px; margin-top: 10px; }
+.tracks-doneslot { align-items: center; }
+.tracks-wide .tracks-doneslot { align-items: flex-start; }
+.tracks-holedone { align-items: center; min-width: 220px; max-width: 86%; border-radius: 4px; background-color: rgb(10, 12, 13); border-width: 1px; border-color: rgb(38, 42, 46); padding: 18px 22px; margin-bottom: 8px; }
+.tracks-center > .tracks-holedone { margin-bottom: 0; }
+.tracks-holedone-k { font-size: 11px; letter-spacing: 0.6px; color: rgb(139, 147, 153); -unity-text-align: middle-center; white-space: normal; }
+.tracks-holedone-score { flex-direction: row; align-items: flex-end; margin-top: 8px; }
+.tracks-holedone-v { font-size: 28px; -unity-font-style: bold-and-italic; color: rgb(255, 255, 255); }
+.tracks-holedone-s { font-size: 13px; color: rgb(139, 147, 153); margin-left: 8px; margin-bottom: 4px; }
+.tracks-holedone-next { font-size: 13px; color: rgb(196, 201, 205); margin-top: 16px; -unity-text-align: middle-center; white-space: normal; }
+/* The tones come last so they win over the classes above: the lie, LINE and SPEED, the score. */
+.tracks-tone-good { color: rgb(122, 212, 70); }
+.tracks-tone-bad { color: rgb(255, 82, 82); }
+.tracks-tone-amber { color: rgb(255, 179, 0); }
+.tracks-tone-plain { color: rgb(196, 201, 205); }
+.tracks-switches { padding-top: 0; padding-bottom: 0; }
+.num-44.tracks-final, .title.tracks-final { margin-top: 8px; margin-bottom: 4px; -unity-text-align: middle-center; }
+.body.tracks-row-v { white-space: nowrap; margin-left: 12px; flex-shrink: 0; }
 /* Play tab: the ways to play as top tabs, white titles (a sports game's mode bar). */
 .play-page { flex-grow: 1; }
 .play-body { flex-grow: 1; flex-shrink: 1; min-height: 0; }
-.play-tabs { padding: 8px 16px 0 16px; border-bottom-width: 1px; border-bottom-color: rgb(32, 34, 36); flex-shrink: 0; }
+.play-tabs { padding: 0 16px 0 16px; border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); flex-shrink: 0; }
 .play-tab { padding: 12px 4px 10px 4px; margin-right: 22px; border-bottom-width: 3px; border-bottom-color: rgba(0, 0, 0, 0); }
-.play-tab-on { border-bottom-color: rgb(255, 255, 255); }
-.play-tab-t { font-size: 17px; color: rgba(255, 255, 255, 0.45); letter-spacing: 0.5px; }
+.play-tab-on { border-bottom-color: rgb(122, 212, 70); }
+.play-tab-t { font-size: 15px; color: rgb(139, 147, 153); letter-spacing: 0.5px; }
 .play-tab-on .play-tab-t { color: rgb(255, 255, 255); }
 .play-online { padding-top: 12px; }
 .play-sensor { flex-direction: row; align-items: center; margin-bottom: 12px; width: 100%; }
 .gcard-list { justify-content: flex-start; }
 /* Ui.IconButton (.ibtn; .icon-btn is the square icon button above): a clean button with an icon (Chat with your coach, History, New chat). */
-.ibtn { flex-direction: row; align-items: center; padding: 9px 14px; border-radius: 12px; background-color: rgb(30, 32, 34); border-width: 1px; border-color: rgb(46, 48, 50); }
+.ibtn { flex-direction: row; align-items: center; padding: 9px 14px; border-radius: 4px; background-color: rgb(34, 38, 42); border-width: 1px; border-color: rgb(38, 42, 46); }
 .ibtn-primary { background-color: rgb(45, 140, 60); border-color: rgb(45, 140, 60); }
 .ibtn-t { font-size: 13px; color: rgb(255, 255, 255); margin-left: 8px; }
 /* Challenge cards: icon and title in a row, the title wrapped to two lines inside the card. */
 .challenge-head { align-items: center; }
-.challenge-title { white-space: normal; flex-shrink: 1; min-width: 0; margin-left: 10px; max-height: 40px; overflow: hidden; -unity-text-overflow-position: end; text-overflow: ellipsis; }
+.challenge-title { font-size: 15px; white-space: normal; flex-shrink: 1; min-width: 0; margin-left: 12px; max-height: 40px; overflow: hidden; -unity-text-overflow-position: end; text-overflow: ellipsis; }
 .challenge-head .challenge-title { margin-top: 0; }
 /* Tournaments list: rows of fixed 220 square posters scrolled sideways (puttr-app TournamentCard). */
 .tourn-row { flex-shrink: 0; }
 /* League Night in landscape: the Teams and Players boards side by side, half the width each. */
 .league-split { flex-direction: row; align-items: flex-start; }
 .league-half { flex-grow: 1; flex-shrink: 1; flex-basis: 0; min-width: 0; }
-.league-half-l { margin-right: 6px; }
-.league-half-r { margin-left: 6px; }
-.league-half-title { margin-top: 12px; }
+.league-half-l { margin-right: 8px; }
+.league-half-r { margin-left: 8px; }
+.caps.league-half-title { margin-top: 12px; }
 /* Profile header (UserOverview): actions in a row under the name, compact membership and putter rows,
    identity and info side by side on a tablet. */
 .profile-head { }
 .profile-id { flex-shrink: 1; }
 .profile-info { }
 .profile-actions { flex-direction: row; flex-wrap: wrap; margin-top: 8px; }
-.profile-action { font-size: 12px; padding: 4px 0; margin: 4px 16px 0 0; -unity-text-align: middle-left; }
+.profile-action { font-size: 13px; padding: 4px 0; margin: 4px 16px 0 0; -unity-text-align: middle-left; }
 .profile-action-green { color: rgb(122, 212, 70); }
-.profile-action-blue { color: rgb(86, 135, 255); }
-.profile-action-grey { color: rgb(150, 151, 152); }
-.profile-mini { flex-direction: row; align-items: center; margin-top: 10px; padding-top: 10px; border-top-width: 1px; border-top-color: rgb(32, 34, 36); }
-.profile-mini-icon { width: 30px; height: 30px; border-radius: 9px; align-items: center; justify-content: center; margin-right: 10px; flex-shrink: 0; }
+.profile-action-blue { color: rgb(255, 255, 255); }
+.profile-action-grey { color: rgb(139, 147, 153); }
+.profile-mini { flex-direction: row; align-items: center; margin-top: 12px; padding-top: 12px; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.profile-mini-icon { width: 32px; height: 32px; border-radius: 4px; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; }
 .profile-mini-words { flex-shrink: 1; overflow: hidden; margin-right: 8px; }
-.profile-mini-title { font-size: 14px; color: rgb(255, 255, 255); margin: 0; padding: 0; }
-.profile-mini-detail { font-size: 12px; color: rgb(132, 133, 134); margin: 2px 0 0 0; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-mini-title { font-size: 15px; color: rgb(255, 255, 255); margin: 0; padding: 0; }
+.profile-mini-detail { font-size: 13px; color: rgb(139, 147, 153); margin: 4px 0 0 0; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .profile-join { margin: 0; flex-shrink: 0; }
 .profile-info > .profile-counts { margin-top: 10px; padding-top: 10px; }
 .wide .profile-head { flex-direction: row; align-items: flex-start; }
 .wide .profile-id { width: 50%; padding-right: 20px; }
-.wide .profile-info { width: 50%; padding-left: 20px; border-left-width: 1px; border-left-color: rgb(32, 34, 36); }
+.wide .profile-info { width: 50%; padding-left: 20px; border-left-width: 1px; border-left-color: rgb(38, 42, 46); }
 .wide .profile-info > .profile-mini-first { margin-top: 0; padding-top: 0; border-top-width: 0; }
 .profile-all { }
 .profile-all-second { margin-top: 14px; }
@@ -759,119 +1130,510 @@
 .profile-breaks { flex-direction: row; justify-content: space-around; align-items: flex-start; padding-top: 6px; padding-bottom: 2px; }
 .profile-break { align-items: center; flex-grow: 1; flex-basis: 0; }
 .profile-ring { width: 76px; height: 76px; min-width: 76px; min-height: 76px; flex-shrink: 0; align-items: center; justify-content: center; margin-bottom: 8px; }
-.profile-break-name { font-size: 12px; color: rgb(132, 133, 134); -unity-text-align: middle-center; white-space: nowrap; }
-.tourn-title-row { align-items: flex-start; }
-.tourn-title { white-space: normal; flex-shrink: 1; min-width: 0; margin-right: 8px; }
+.profile-break-name { font-size: 13px; color: rgb(139, 147, 153); -unity-text-align: middle-center; white-space: nowrap; }
 
 /* Chats as texting (Chat.cs ChatThread) */
 .chat-thread { flex-grow: 1; flex-shrink: 1; }
 .chat-thread > .chat-scroll { flex-grow: 1; flex-shrink: 1; }
 .chat-list { padding-bottom: 12px; }
-.chat-loading { align-items: center; padding: 30px 0; }
-.chat-stamp { font-size: 11px; color: rgb(132, 133, 134); -unity-text-align: middle-center; margin: 16px 0 4px 0; }
-.chat-line { flex-direction: row; align-items: flex-end; padding: 0 12px; margin-top: 8px; }
-.chat-line-cont { margin-top: 2px; }
+.chat-loading { align-items: center; padding: 32px 0; }
+.chat-stamp { font-size: 11px; color: rgb(139, 147, 153); -unity-text-align: middle-center; margin: 16px 0 4px 0; }
+.chat-line { flex-direction: row; align-items: flex-end; padding: 0 16px; margin-top: 8px; }
+.chat-line-cont { margin-top: 4px; }
 .chat-line-mine { justify-content: flex-end; }
-.chat-line > .chat-face { width: 28px; height: 28px; min-width: 28px; border-radius: 14px; margin-right: 8px; margin-bottom: 1px; flex-shrink: 0; }
+.chat-line > .chat-face { width: 28px; height: 28px; min-width: 28px; border-radius: 4px; margin-right: 8px; margin-bottom: 0; flex-shrink: 0; }
 .chat-face .avatar-letter { font-size: 13px; }
-.chat-bubble-theirs { max-width: 78%; flex-shrink: 1; padding: 9px 13px; border-radius: 18px; border-bottom-left-radius: 6px; background-color: rgb(38, 40, 43); }
-.chat-bubble-mine { max-width: 78%; flex-shrink: 1; padding: 9px 13px; border-radius: 18px; border-bottom-right-radius: 6px; background-color: rgb(45, 140, 60); }
-.chat-line-cont > .chat-bubble-theirs { border-top-left-radius: 6px; }
-.chat-line-cont > .chat-bubble-mine { border-top-right-radius: 6px; }
+/* Bubbles: theirs on surface-2, mine on brand green with white text; radius 4 all round. */
+.chat-bubble-theirs { max-width: 78%; flex-shrink: 1; padding: 8px 12px; border-radius: 4px; background-color: rgb(34, 38, 42); }
+.chat-bubble-mine { max-width: 78%; flex-shrink: 1; padding: 8px 12px; border-radius: 4px; background-color: rgb(45, 140, 60); }
+.chat-line-cont > .chat-bubble-theirs { border-top-left-radius: 4px; }
+.chat-line-cont > .chat-bubble-mine { border-top-right-radius: 4px; }
 .chat-words { font-size: 15px; color: rgb(255, 255, 255); white-space: normal; margin: 0; padding: 0; }
-.chat-status { font-size: 11px; color: rgb(132, 133, 134); -unity-text-align: middle-right; margin: 3px 14px 0 0; display: none; }
-.chat-status-failed { color: rgb(235, 87, 87); }
-.chat-row-failed > .chat-bubble-mine { opacity: 0.5; }
-.chat-typing-bubble { flex-direction: row; align-items: center; padding: 14px 14px; }
-.chat-dot { width: 7px; height: 7px; border-radius: 4px; background-color: rgb(175, 177, 179); margin: 0 2px; opacity: 0.35; }
-.chat-bar { flex-direction: row; align-items: flex-end; padding: 8px 10px 8px 12px; background-color: rgb(9, 11, 13); border-top-width: 1px; border-top-color: rgb(32, 34, 36); flex-shrink: 0; }
-.chat-pill-input { flex-grow: 1; flex-shrink: 1; min-height: 40px; border-radius: 20px; border-width: 1.5px; border-color: rgb(52, 54, 57); background-color: rgb(24, 26, 28); margin-right: 8px; justify-content: center; }
-.chat-pill-input.chat-focus { border-color: rgb(122, 212, 70); background-color: rgb(19, 27, 19); }
+.chat-status { font-size: 11px; color: rgb(139, 147, 153); -unity-text-align: middle-right; margin: 4px 16px 0 0; display: none; }
+.chat-status-failed { color: rgb(255, 82, 82); }
+.chat-row-failed > .chat-bubble-mine { background-color: rgb(48, 53, 58); }
+.chat-typing-bubble { flex-direction: row; align-items: center; padding: 16px 12px; }
+.chat-dot { width: 8px; height: 8px; border-radius: 4px; background-color: rgb(139, 147, 153); margin: 0 2px; opacity: 0.35; }
+.chat-bar { flex-direction: row; align-items: flex-end; padding: 8px 12px 8px 12px; background-color: rgb(10, 12, 13); border-top-width: 1px; border-top-color: rgb(38, 42, 46); flex-shrink: 0; }
+.chat-pill-input { flex-grow: 1; flex-shrink: 1; min-height: 44px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); background-color: rgb(21, 24, 27); margin-right: 8px; justify-content: center; }
+.chat-pill-input.chat-focus { border-color: rgb(122, 212, 70); background-color: rgb(21, 24, 27); }
 .chat-field { margin: 0; flex-grow: 1; --unity-cursor-color: rgb(122, 212, 70); }
-.chat-field .unity-base-text-field__input { background-color: rgba(0, 0, 0, 0); border-width: 0; padding: 9px 14px; margin: 0; color: rgb(255, 255, 255); font-size: 15px; min-height: 37px; max-height: 120px; }
+.chat-field .unity-base-text-field__input { background-color: rgba(0, 0, 0, 0); border-width: 0; padding: 12px 12px; margin: 0; color: rgb(255, 255, 255); font-size: 15px; min-height: 42px; max-height: 120px; }
 .chat-field .unity-text-element { white-space: normal; }
-.chat-field .unity-base-text-field__input--placeholder { color: rgb(120, 122, 124); }
-.chat-send-btn { width: 40px; height: 40px; border-radius: 20px; background-color: rgb(45, 140, 60); align-items: center; justify-content: center; flex-shrink: 0; }
+.chat-field .unity-base-text-field__input--placeholder { color: rgb(139, 147, 153); }
+/* Send: the chat's one main action, a 44 point icon square in brand green (surface-2 until there is something to send). */
+.chat-send-btn { width: 44px; height: 44px; border-radius: 4px; background-color: rgb(45, 140, 60); align-items: center; justify-content: center; flex-shrink: 0; }
 .chat-send-btn:active { background-color: rgb(36, 112, 48); }
-.chat-send-btn.chat-send-off { background-color: rgb(44, 46, 49); opacity: 0.55; }
-.chat-keyboard-room { flex-shrink: 0; height: 0; background-color: rgb(9, 11, 13); }
+.chat-send-btn.chat-send-off { background-color: rgb(34, 38, 42); }
+.chat-keyboard-room { flex-shrink: 0; height: 0; background-color: rgb(10, 12, 13); }
 /* Tracks course cards: the whole course from overhead (TracksArt), 2:1, the hole numbers laid over it. */
-.tracks-ccard { padding: 0; overflow: hidden; }
-.tracks-ccard-body { padding: 12px 14px 14px 14px; }
-.tracks-art { height: 180px; background-color: rgb(20, 30, 18); overflow: hidden; }
+.tracks-ccard { padding: 0; overflow: hidden; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; }
+.tracks-ccard:active { background-color: rgb(34, 38, 42); }
+.tracks-ccard-body { padding: 12px 16px 16px 16px; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.tracks-art { height: 180px; background-color: rgb(0, 0, 0); overflow: hidden; }
 .tracks-art-pic { position: absolute; left: 0; top: 0; right: 0; bottom: 0; opacity: 0; transition-property: opacity; transition-duration: 0.45s; }
 .tracks-art-pic.tracks-art-on { opacity: 1; }
 .tracks-art-top { position: absolute; left: 10px; right: 10px; top: 8px; flex-direction: row; align-items: center; }
 .tracks-art-top > .chip { margin-top: 0; margin-right: 0; }
-.tracks-art-chip { font-size: 10px; letter-spacing: 1px; color: rgb(122, 212, 70); background-color: rgba(8, 10, 12, 0.8); border-radius: 7px; padding: 4px 8px; }
-.tracks-artnum { position: absolute; width: 17px; height: 17px; margin-left: -8px; margin-top: -8px; border-radius: 9px; background-color: rgba(8, 10, 12, 0.85); border-width: 1px; border-color: rgba(255, 255, 255, 0.6); color: rgb(255, 255, 255); font-size: 8px; padding: 0; -unity-text-align: middle-center; }
+.tracks-art-chip { font-size: 11px; letter-spacing: 1px; color: rgb(122, 212, 70); background-color: rgba(8, 10, 12, 0.8); border-radius: 4px; padding: 4px 8px; }
+.tracks-artnum { position: absolute; width: 17px; height: 17px; margin-left: -8px; margin-top: -8px; border-radius: 4px; background-color: rgba(8, 10, 12, 0.85); border-width: 1px; border-color: rgba(255, 255, 255, 0.6); color: rgb(255, 255, 255); font-size: 8px; padding: 0; -unity-text-align: middle-center; }
 /* Tracks setup over the blimp: the course flown high and slow behind a dark glass panel. */
-.tracks-setup { flex-grow: 1; background-color: rgb(9, 11, 13); overflow: hidden; }
-.tracks-fly-still { position: absolute; left: 0; top: 0; right: 0; bottom: 0; opacity: 0.5; }
+.tracks-setup { flex-grow: 1; background-color: rgb(10, 12, 13); overflow: hidden; }
+.tracks-fly-box { height: 200px; background-color: rgb(0, 0, 0); overflow: hidden; }
+.wide .tracks-fly-box { height: 240px; }
+.tracks-setup-name { align-items: flex-start; }
+.tracks-setup-words { flex-basis: 0; min-width: 0; margin-right: 8px; }
+.tracks-setup-form { margin-top: 4px; }
+/* Tee off to the first hole: the flyover paused under the Puttr spinner (TracksLoading). */
+.tracks-loading { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgb(10, 12, 13); align-items: center; justify-content: center; transition-property: opacity; transition-duration: 0.45s; }
+.tracks-loading.tracks-loading-off { opacity: 0; }
+.tracks-loading-still { position: absolute; left: 0; top: 0; right: 0; bottom: 0; opacity: 0.55; }
+.tracks-loading-box { align-items: center; padding: 22px 30px; border-radius: 4px; background-color: rgba(9, 11, 13, 0.72); }
+.tracks-loading-t { font-size: 15px; color: rgb(255, 255, 255); margin-top: 16px; -unity-text-align: middle-center; }
+.tracks-loading-s { font-size: 13px; color: rgb(196, 201, 205); margin-top: 4px; -unity-text-align: middle-center; white-space: normal; max-width: 260px; }
 .tracks-fly { position: absolute; left: 0; top: 0; right: 0; bottom: 0; opacity: 0; transition-property: opacity; transition-duration: 1.2s; }
 .tracks-fly.tracks-fly-on { opacity: 1; }
 .tracks-fly-dim { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(9, 11, 13, 0.3); }
-.tracks-setup-page { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.tracks-setup-page { flex-grow: 1; flex-shrink: 1; min-height: 0; }
 .tracks-fly-top { position: absolute; left: 0; right: 0; top: 0; height: 150px; }
-.tracks-panel { width: 100%; max-width: 560px; align-self: center; margin-top: 12px; padding: 14px 16px 16px 16px; border-radius: 18px; background-color: rgba(9, 11, 13, 0.8); border-width: 1px; border-color: rgba(255, 255, 255, 0.08); }
-.tracks-how { border-radius: 14px; padding: 14px; background-color: rgba(30, 33, 35, 0.85); }
-.tracks-setup-page .btn { max-width: 560px; align-self: center; width: 100%; }
-/* Poster captions stay readable over light artwork: a near-solid band, the dates and Players brighter. */
-.poster-panel { background-color: rgba(10, 12, 14, 0.97); }
-.poster-line .muted { color: rgb(170, 172, 174); }
+.tracks-panel { width: 100%; max-width: 560px; align-self: center; margin-top: 12px; padding: 14px 16px 16px 16px; border-radius: 4px; background-color: rgba(9, 11, 13, 0.8); border-width: 1px; border-color: rgba(255, 255, 255, 0.08); }
+.tracks-panel-head { align-items: center; margin-left: -4px; margin-bottom: 2px; }
+.tracks-panel-head .back { width: 44px; }
+.tracks-help { width: 36px; height: 36px; border-radius: 4px; align-items: center; justify-content: center; background-color: rgba(255, 255, 255, 0.1); }
+.tracks-teebar { flex-shrink: 0; padding: 12px 16px 16px 16px; background-color: rgb(10, 12, 13); border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.tracks-teebar .btn { max-width: 560px; align-self: center; width: 100%; margin-top: 0; }
+.tracks-scroll-end { height: 104px; }
+/* Poster captions sit on the solid bar under the picture (Compete.Poster), never over it. */
+.poster-bar .chip { font-size: 11px; margin-right: 8px; }
 /* Challenge titles wrap in full beside the icon (no ellipsis). */
 .challenge-head .challenge-title { max-height: none; overflow: visible; text-overflow: clip; }
 /* Tracks naming: "Inspired by" in light text before the course name; a pin before the place. */
-.tracks-inspired { font-size: 11px; color: rgba(255, 255, 255, 0.5); letter-spacing: 0.5px; margin-bottom: 1px; }
+.tracks-inspired { font-size: 13px; color: rgb(139, 147, 153); margin-bottom: 0; }
 .tracks-where { align-items: center; margin-top: 2px; }
 .tracks-where > Label { margin-left: 4px; }
-/* Tournament page hero (TournamentView): phone = square art with title on a scrim; wide = art boxed at 240 beside the info. */
+/* Tournament page hero (TournamentView): the art in a bordered window, the words on the card's solid ground: under the
+   art on a phone, beside it (art boxed at 240) when wide. Nothing is written over the picture. */
 .tourn-hero { overflow: hidden; }
 .tourn-hero-narrow { padding: 0; }
-.tourn-hero-wide { flex-direction: row; align-items: stretch; }
-.tourn-art { flex-shrink: 0; flex-grow: 0; border-radius: 12px; overflow: hidden; background-color: rgba(45, 140, 60, 0.1); -unity-background-scale-mode: scale-and-crop; justify-content: flex-end; }
-.tourn-hero-narrow .tourn-art { border-radius: 0; align-self: center; }
+.tourn-hero-wide { flex-direction: row; align-items: stretch; padding: 16px; }
+.tourn-art { flex-shrink: 0; flex-grow: 0; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); overflow: hidden; background-color: rgb(0, 0, 0); -unity-background-scale-mode: scale-and-crop; }
+.tourn-hero-narrow .tourn-art { border-radius: 0; border-width: 0; border-bottom-width: 1px; align-self: center; }
 .tourn-art-icon { position: absolute; left: 0; right: 0; top: 0; bottom: 0; align-items: center; justify-content: center; }
-.tourn-scrim { padding: 16px; background-color: rgba(0, 0, 0, 0.72); }
-.tourn-status { position: absolute; top: 12px; right: 12px; margin: 0; font-size: 10px; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 10px; }
-.tourn-hero-wide .tourn-status { position: relative; top: 0; right: 0; align-self: flex-start; }
-.tourn-col { flex-grow: 1; flex-shrink: 1; min-width: 0; margin-left: 16px; }
-.tourn-hero-title { font-size: 22px; white-space: normal; margin-top: 8px; }
-.tourn-hero-narrow .tourn-hero-title { margin-top: 0; }
-.tourn-hero-wide .tourn-hero-title { font-size: 24px; }
-.tourn-meta { flex-direction: row; flex-wrap: wrap; margin-top: 6px; }
-.tourn-pill { font-size: 11px; padding: 5px 9px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.9); margin-right: 6px; margin-top: 4px; }
-.tourn-hero-narrow .tourn-pill { background-color: rgba(0, 0, 0, 0.45); border-width: 1px; border-color: rgba(255, 255, 255, 0.18); }
-.tourn-desc { font-size: 13px; color: rgba(255, 255, 255, 0.55); white-space: normal; margin-top: 10px; }
-.tourn-hero-narrow .tourn-desc { margin: 12px 14px 14px 14px; }
-.tourn-host { flex-direction: row; align-items: center; }
-.tourn-host-flat { margin-top: 12px; }
-.tourn-host-pill { position: absolute; top: 12px; left: 12px; max-width: 70%; background-color: rgba(0, 0, 0, 0.55); border-radius: 21px; padding: 5px 13px 5px 5px; }
-.tourn-host .avatar { width: 32px; height: 32px; border-radius: 16px; margin-right: 0; }
+.tourn-status { align-self: flex-start; margin: 0; font-size: 11px; }
+.tourn-col { flex-grow: 1; flex-shrink: 1; flex-basis: 0; min-width: 0; margin-left: 16px; }
+.tourn-hero-narrow .tourn-col { flex-grow: 0; flex-basis: auto; margin-left: 0; padding: 16px; }
+.title.tourn-hero-title { margin-top: 8px; }
+.caps.tourn-meta { margin-top: 8px; white-space: normal; }
+.tourn-desc { margin-top: 12px; }
+.tourn-host { flex-direction: row; align-items: center; margin-top: 16px; }
+.tourn-host .avatar { width: 32px; height: 32px; border-radius: 4px; margin-right: 0; }
 .tourn-host .avatar-letter { font-size: 13px; }
-.tourn-host-words { margin-left: 9px; flex-shrink: 1; min-width: 0; }
-.tourn-kick { font-size: 9px; letter-spacing: 1px; color: rgba(255, 255, 255, 0.5); }
-.tourn-host-name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
+.tourn-host-words { flex-grow: 1; flex-basis: 0; margin-left: 8px; min-width: 0; }
+.tourn-host-name { font-size: 15px; margin: 4px 0 0 0; padding: 0; overflow: hidden; text-overflow: ellipsis; }
 .tourn-prize { align-items: center; }
-.tourn-prize-words { margin-left: 12px; margin-right: 8px; }
-.tourn-prize-text { font-size: 12px; color: rgba(255, 255, 255, 0.45); white-space: normal; }
-.tourn-prize-in { margin-top: 12px; padding-top: 12px; border-top-width: 1px; border-top-color: rgba(255, 255, 255, 0.08); }
+.tourn-prize-words { flex-basis: 0; margin-left: 12px; margin-right: 8px; }
+.tourn-prize-text { margin-top: 4px; }
+.tourn-prize-in { margin-top: 16px; padding-top: 16px; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
 .tourn-prize-card { margin-top: 12px; }
-/* Tournament leaderboard rows (LeaderRow): a tap opens the round scores in place; a played round opens its game. */
-.tourn-leader { border-radius: 12px; margin-bottom: 2px; }
-.tourn-leader-head { flex-direction: row; align-items: center; padding: 10px 4px; }
-.tourn-leader-words { margin-left: 0; margin-right: 10px; min-width: 0; }
-.tourn-total { font-size: 15px; background-color: rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 7px 12px; min-width: 52px; -unity-text-align: middle-center; margin-left: 10px; }
-.tourn-rounds { flex-direction: row; overflow: hidden; height: 0; opacity: 0; padding: 0 4px; transition-property: height, opacity; transition-duration: 0.22s, 0.22s; transition-timing-function: ease-in-out, ease-in-out; }
-.tourn-leader-open .tourn-rounds { height: 62px; opacity: 1; }
-.tourn-round { flex-grow: 1; flex-basis: 0; margin: 2px 3px 10px 3px; padding: 8px 0; border-radius: 8px; background-color: rgba(255, 255, 255, 0.04); align-items: center; justify-content: center; }
-.tourn-round-played { background-color: rgba(45, 140, 60, 0.15); }
-.tourn-round-label { font-size: 10px; color: rgba(255, 255, 255, 0.4); -unity-text-align: middle-center; margin-bottom: 2px; }
-.tourn-round-score { font-size: 14px; color: rgba(255, 255, 255, 0.2); -unity-text-align: middle-center; }
+/* Tournament leaderboard rows (LeaderRow): rows in one bordered block, a 1 px divider above each but the first. A tap
+   opens the round scores in place; a played round opens its game. */
+.tourn-board { background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; overflow: hidden; }
+.tourn-board-empty { padding: 16px; }
+.tourn-leader { border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.tourn-leader-first { border-top-width: 0; }
+.tourn-leader-head { flex-direction: row; align-items: center; min-height: 64px; padding: 8px 12px; }
+.tourn-leader-words { flex-basis: 0; margin-left: 0; margin-right: 8px; min-width: 0; }
+.tourn-leader-name { font-size: 15px; color: rgb(255, 255, 255); margin: 0; padding: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tourn-leader-town { font-size: 13px; color: rgb(139, 147, 153); margin: 4px 0 0 0; padding: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tourn-place { font-size: 15px; width: 32px; flex-shrink: 0; margin: 0; padding: 0; color: rgb(255, 255, 255); }
+.tourn-total { font-size: 20px; min-width: 44px; margin: 0 0 0 8px; padding: 0; -unity-text-align: middle-right; }
+.tourn-rounds { flex-direction: row; overflow: hidden; height: 0; opacity: 0; padding: 0 8px; transition-property: height, opacity; transition-duration: 0.22s, 0.22s; transition-timing-function: ease-in-out, ease-in-out; }
+.tourn-leader-open .tourn-rounds { height: 64px; opacity: 1; }
+.tourn-round { flex-grow: 1; flex-basis: 0; margin: 0 4px 12px 4px; padding: 8px 0; border-radius: 4px; background-color: rgb(10, 12, 13); align-items: center; justify-content: center; }
+.tourn-round-played:active { background-color: rgb(48, 53, 58); }
+.caps.tourn-round-label { margin-bottom: 4px; -unity-text-align: middle-center; }
+.tourn-round-score { font-size: 15px; color: rgb(139, 147, 153); margin: 0; padding: 0; -unity-text-align: middle-center; }
 .tourn-round-played .tourn-round-score { color: rgb(122, 212, 70); }
 /* Game view putt rows: the cup with the entry dot after the number, pace over entry on the right. */
 .gv-what { flex-shrink: 1; min-width: 0; }
 .gv-hole { width: 34px; height: 34px; flex-shrink: 0; margin: 0 10px 0 0; }
 .gv-read { align-items: flex-end; flex-shrink: 0; margin-left: 8px; }
 .gv-pace { font-size: 13px; color: rgb(255, 255, 255); }
-.gv-entry { font-size: 11px; color: rgb(132, 133, 134); margin-top: 2px; }
+.gv-entry { font-size: 11px; color: rgb(139, 147, 153); margin-top: 2px; }
+
+/* ── TV (Tv.cs): ten feet away, driven by the remote ── */
+.tv .tv-focus { transition-property: scale, border-color; transition-duration: 0.12s; }
+.tv .tv-focus:focus { border-width: 3px; border-color: rgb(255, 255, 255); scale: 1.04 1.04; }
+.tv .play-tab.tv-focus:focus { scale: 1 1; border-width: 0 0 3px 0; border-bottom-color: rgb(122, 212, 70); }
+.tv .play-tab.tv-focus:focus .play-tab-t { color: rgb(255, 255, 255); }
+.tv .scope.tv-focus:focus { scale: 1.08 1.08; }
+/* A raised game card takes its focus ring on the face, so the ring follows the card's rounded edge, not the shadow. */
+.tv .gcard-3d.tv-focus:focus { border-width: 0; }
+.tv .gcard-3d.tv-focus:focus > .gcard-face { border-width: 3px; border-color: rgb(255, 255, 255); }
+/* Room for the focus ring: a rail across clips what it holds, and a focused card grows (scale) and takes a ring, so the
+   top and bottom (and the first and last card's outer edge) were cut off. The rail's content is padded by what the
+   ring needs, and the rail is pulled out by the same, so nothing else on the page moves. The tabs' focus is an
+   underline, inside the tab: they need none. */
+.tv .hscroll { margin: -10px -10px -10px -10px; }
+.tv .hscroll .unity-scroll-view__content-container { padding: 10px 10px 10px 10px; }
+.tv .hscroll.play-tabs { margin: 0; }
+.tv .hscroll.play-tabs .unity-scroll-view__content-container { padding: 0; }
+/* A text field for the remote (Tv.TextEntry): looks like .field, takes the focus ring, OK opens the TV's keyboard. */
+.tv-entry { background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 12px 14px; min-height: 50px; justify-content: center; }
+.tv-entry-t { font-size: 16px; color: rgb(255, 255, 255); }
+.tv-entry-empty { color: rgb(139, 147, 153); }
+/* Back on a TV: the chevron on a solid square (an icon button), so the focus ring is round something that can be seen.
+   The border is there, clear, when it is not focused, so the square does not move as the ring comes on. */
+.tv .back-chevron { width: 52px; height: 52px; flex-shrink: 0; margin-right: 24px; padding: 0 3px 6px 0; border-radius: 4px; border-width: 3px; border-color: rgba(255, 255, 255, 0); background-color: rgb(34, 38, 42); color: rgb(255, 255, 255); -unity-text-align: middle-center; }
+.tv .back-chevron.tv-focus:focus { background-color: rgb(48, 53, 58); border-color: rgb(255, 255, 255); scale: 1.08 1.08; }
+.tv-bar { align-items: center; padding: 6px 28px 0 28px; border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); }
+.tv-bar .play-tabs { border-bottom-width: 0; padding-left: 20px; }
+.tv-logo { width: 120px; height: 28px; flex-shrink: 0; }
+.tv-pill { margin-right: 14px; }
+.tv-account-btn { align-items: center; padding: 4px 12px 4px 4px; border-radius: 4px; background-color: rgb(34, 38, 42); }
+.tv-account-btn .avatar { margin-right: 10px; }
+.tv-sheet { align-items: center; min-width: 380px; }
+.tv-sheet .btn { align-self: stretch; }
+.tv-signin { flex-grow: 1; flex-direction: row; align-items: center; justify-content: center; padding: 40px 80px; }
+.tv-signin-left { flex-grow: 1; flex-basis: 0; max-width: 560px; margin-right: 80px; }
+.tv-signin-logo { width: 220px; height: 52px; margin-bottom: 36px; }
+.tv-signin-title { font-size: 40px; color: rgb(255, 255, 255); margin-bottom: 30px; white-space: normal; }
+.tv-signin-step { align-items: center; margin-bottom: 18px; }
+.tv-signin-num { width: 44px; height: 44px; border-radius: 4px; background-color: rgb(45, 140, 60); align-items: center; justify-content: center; margin-right: 18px; }
+.tv-signin-num-t { font-size: 20px; color: rgb(255, 255, 255); }
+.tv-signin-step-t { font-size: 24px; color: rgb(255, 255, 255); }
+.tv-signin-green { margin-top: 30px; align-items: flex-start; }
+.tv-signin-green > .grow { margin-left: 12px; }
+.tv-signin-right { width: 440px; min-height: 440px; align-items: center; justify-content: center; }
+.tv-qr-card { background-color: rgb(255, 255, 255); border-radius: 4px; padding: 18px; }
+.tv-qr { width: 380px; height: 380px; }
+.tv-welcome-avatar { width: 180px; height: 180px; border-radius: 4px; margin-right: 0; margin-bottom: 26px; }
+.tv-welcome-avatar .avatar-letter { font-size: 72px; }
+
+/* ── Loading placeholders (Skeleton.cs) ── */
+.sk-bar { background-color: rgb(34, 38, 42); border-radius: 4px; }
+.sk-card { padding: 16px; justify-content: flex-start; }
+.sk-strip { overflow: hidden; }
+.sk-header { padding: 4px 0; }
+.sk-lines { margin-left: 16px; justify-content: center; }
+.sk-num { align-items: center; }
+.sk-num .sk-bar { align-self: center; }
+.sk-art { background-color: rgb(34, 38, 42); }
+.sk-cover { position: absolute; left: 0; top: 56px; right: 0; bottom: 0; overflow: hidden; }
+
+/* League Night: the week's button stays at the bottom, the boards scroll behind it */
+.league-page { flex-grow: 1; }
+.league-action { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 16px 16px 16px; background-color: rgb(10, 12, 13); border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.league-action .btn { margin-top: 12px; }
+.league-action-note { margin-top: 16px; }
+.loader-cover { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgb(10, 12, 13); }
+
+/* Recent games: title and when on the left, the score on the right; a gap between cards */
+.game-row { flex-direction: row; align-items: center; margin-bottom: 12px; padding: 16px; }
+.game-row:active { background-color: rgb(34, 38, 42); }
+.game-score { font-size: 20px; color: rgb(255, 255, 255); margin-left: 12px; flex-shrink: 0; }
+.game-tag { align-self: flex-start; margin-top: 8px; }
+
+/* Avatars: a photo fills the circle, cropped, never stretched */
+.avatar { -unity-background-scale-mode: scale-and-crop; }
+
+/* A letter or number alone in a circle or badge fills it and is centred in it. A label sized to its text sits
+   off centre (its measured box is wider and taller than the glyphs), so the shape, not the text, sets the box. */
+.week-letter, .avatar-letter, .crest-letter, .brand-letter, .ring-value, .spot-value, .calendar-number, .rp-num-t, .tracks-num {
+    position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: 0; padding: 0; -unity-text-align: middle-center;
+}
+
+/* Tracks: search + Add a track, community cards, the add sheet, the board */
+.tracks-search { align-items: center; }
+.tracks-search > .field { margin: 0; flex-grow: 1; }
+.btn.tracks-add-btn { min-height: 50px; padding-left: 16px; padding-right: 16px; margin-top: 0; margin-left: 8px; flex-shrink: 0; }
+.tracks-by { align-items: center; margin-bottom: 8px; }
+.tracks-by .avatar { width: 28px; height: 28px; border-radius: 4px; margin-right: 8px; }
+.tracks-by .avatar-letter { font-size: 13px; }
+.tracks-by-k { font-size: 11px; letter-spacing: 1.2px; color: rgb(139, 147, 153); }
+.tracks-by-mine { color: rgb(122, 212, 70); }
+.tracks-board-link { align-items: center; padding: 14px; }
+.tracks-board-link > Label { margin-left: 10px; }
+.tracks-add-dim { justify-content: flex-start; padding-top: 70px; }
+.tracks-add { width: 92%; max-width: 560px; }
+.tracks-add-x { width: 44px; height: 44px; margin: -8px -8px -8px 0; align-items: center; justify-content: center; flex-shrink: 0; }
+.tracks-add-field > .field { margin: 0; }
+.body-2.tracks-add-error { color: rgb(255, 82, 82); margin-top: 12px; }
+.tracks-add-results { margin-top: 6px; max-height: 320px; }
+.tracks-add-row { flex-direction: row; align-items: center; min-height: 44px; padding: 12px 0; border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); }
+.tracks-add-tag { margin: 0 8px 0 0; }
+.tracks-add-confirm { margin-top: 12px; }
+.tracks-add-picked { flex-direction: row; align-items: center; padding: 12px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); background-color: rgb(34, 38, 42); }
+.tracks-add-picked > .tracks-add-x { margin: -8px -8px -8px 0; }
+
+/* Tracks with 1 to 4 Players: the Players card on the setup, whose shot it is, a scorecard row each, everyone on
+   the hole-done card, and the result's chips. Each Player's colour is set from code (RulePanel.PlayerColour). */
+.tracks-players { margin-top: 12px; }
+.tracks-turn { flex-direction: row; align-items: center; align-self: flex-start; margin-bottom: 8px; padding: 6px 12px 6px 10px; border-radius: 4px; border-width: 2px; border-color: rgb(86, 135, 255); background-color: rgb(10, 12, 13); }
+.tracks-turn-swatch { width: 12px; height: 12px; border-radius: 6px; margin-right: 8px; }
+.tracks-turn-t { font-size: 15px; color: rgb(255, 255, 255); margin: 0; padding: 0; }
+.tracks-turn-s { font-size: 11px; color: rgb(196, 201, 205); margin: 0 0 0 10px; padding: 0; }
+.tracks-wide .tracks-turn-t { font-size: 20px; }
+.tracks-shot-turn { border-left-width: 5px; }
+.tracks-sc-multi .tracks-sc-s { font-size: 11px; height: 15px; }
+.tracks-wide .tracks-sc-multi .tracks-sc-s { font-size: 13px; height: 17px; }
+.tracks-sc-row > .tracks-sc-lab > .tracks-sc-s.tracks-sc-turn { background-color: rgb(48, 53, 58); border-radius: 4px; padding-left: 2px; }
+.tracks-sc-topar-small { font-size: 13px; height: 15px; -unity-text-align: middle-center; }
+.tracks-result-who { font-size: 11px; letter-spacing: 1px; margin-bottom: 2px; }
+.tracks-holedone-who { font-size: 15px; margin-right: 8px; margin-bottom: 3px; }
+.tracks-holedone-v-small { font-size: 20px; }
+.tracks-result-chips { flex-wrap: wrap; }
+.tracks-result-chips { margin-top: 16px; }
+.scope.tracks-pchip { flex-direction: row; align-items: center; min-height: 44px; margin-bottom: 8px; }
+.tracks-pchip-s { margin-left: 8px; }
+.card.tb-card { padding: 0 16px; }
+.tb-intro { margin-top: 4px; }
+.tb-row { flex-direction: row; align-items: center; min-height: 44px; padding: 12px 0; border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); }
+.tb-me { background-color: rgb(34, 38, 42); margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; }
+.tb-rank { width: 28px; font-size: 13px; -unity-font-style: bold-and-italic; color: rgb(139, 147, 153); }
+.tb-row > .avatar { width: 36px; height: 36px; border-radius: 4px; margin-right: 12px; }
+.tb-row > .avatar .avatar-letter { font-size: 13px; }
+.tb-words { min-width: 0; }
+.tb-name { font-size: 15px; color: rgb(255, 255, 255); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-track { font-size: 13px; color: rgb(139, 147, 153); margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-meta { align-items: center; margin-top: 4px; flex-wrap: nowrap; }
+.tb-words > Label, .tb-meta > Label, .tb-right > Label { margin: 0; padding-top: 0; padding-bottom: 0; }
+.tb-set { flex-shrink: 0; margin-top: 0; margin-right: 8px; }
+.tb-when { font-size: 11px; color: rgb(139, 147, 153); flex-grow: 1; flex-basis: 0; flex-shrink: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-right { align-items: flex-end; margin-left: 8px; }
+.tb-score { font-size: 20px; }
+.tb-par { font-size: 11px; color: rgb(139, 147, 153); }
+.tb-meta > .tb-set { margin-right: 8px; margin-top: 0; }
+
+/* Home: Today */
+.greet { font-size: 21px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 8px; }
+.hero { border-radius: 4px; border-width: 1px; border-color: rgba(122, 212, 70, 0.28); padding: 16px; margin-top: 12px; overflow: hidden; }
+.hero-glow { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.hero-top { flex-direction: row; align-items: center; }
+.today-ring { width: 104px; height: 104px; flex-shrink: 0; align-items: center; justify-content: center; }
+.today-mid { align-items: center; }
+.today-count { font-size: 34px; color: rgb(255, 255, 255); margin: 0; padding: 0; -unity-text-align: middle-center; }
+.today-of { font-size: 10px; letter-spacing: 1.2px; color: rgba(255, 255, 255, 0.5); margin: -2px 0 0 0; padding: 0; -unity-text-align: middle-center; }
+.hero-words { flex-grow: 1; flex-shrink: 1; min-width: 0; margin-left: 16px; }
+.hero-kickrow { flex-direction: row; align-items: center; flex-wrap: wrap; }
+.hero-kickrow > .kick { margin: 0 8px 0 0; }
+.hero-chip { flex-direction: row; align-items: center; padding: 3px 8px; border-radius: 4px; background-color: rgba(255, 159, 46, 0.14); border-width: 1px; border-color: rgba(255, 159, 46, 0.35); }
+.hero-chip-t { font-size: 10px; color: rgb(255, 190, 110); margin: 0 0 0 4px; padding: 0; }
+.hero-title { font-size: 22px; color: rgb(255, 255, 255); white-space: normal; margin: 6px 0 0 0; }
+.hero-sub { font-size: 12px; color: rgba(255, 255, 255, 0.6); white-space: normal; margin: 4px 0 0 0; }
+.hero-btn { margin-top: 16px; }
+.player-loading { height: 150px; width: 100%; align-items: center; justify-content: center; }
+
+/* The feedback card (Feedback.cs) */
+.fb-stars { justify-content: center; margin-top: 16px; }
+.fb-star { width: 44px; height: 44px; margin: 0 4px; border-radius: 4px; }
+.fb-title { -unity-text-align: middle-center; }
+.fb-line { margin-top: 8px; -unity-text-align: middle-center; }
+.fb-ask { margin-top: 16px; }
+.fb-words { margin-top: 12px; margin-bottom: 0; }
+.fb-words .unity-base-text-field__input { min-height: 70px; white-space: normal; }
+/* Host games (Host.cs BrandGamesScreen): a tick top left of each card's picture, a Feature chip on the card's bar
+   under its name (the one chip: clear with a line, white when on), the quick buttons. */
+.host-tick { position: absolute; left: 8px; top: 8px; width: 28px; height: 28px; border-radius: 4px; border-width: 2px; border-color: rgb(255, 255, 255); background-color: rgb(0, 0, 0); align-items: center; justify-content: center; }
+.host-tick-on { background-color: rgb(45, 140, 60); border-color: rgb(45, 140, 60); }
+.host-feature { flex-direction: row; align-items: center; height: 32px; padding: 0 12px; border-radius: 4px; background-color: rgba(0, 0, 0, 0); border-width: 1px; border-color: rgb(38, 42, 46); flex-shrink: 0; }
+.host-feature-t { font-size: 11px; letter-spacing: 1.2px; color: rgb(255, 255, 255); margin: 0 0 0 8px; padding: 0; }
+.host-feature-on { background-color: rgb(255, 255, 255); border-color: rgb(255, 255, 255); }
+.host-feature-on .host-feature-t { color: rgb(0, 0, 0); }
+.host-feature-card { align-self: flex-start; margin-top: 8px; }
+.btn.host-quick { margin-top: 0; }
+.host-arrow { width: 48px; height: 48px; border-radius: 4px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); align-items: center; justify-content: center; }
+/* The brand kit editor (BrandKitScreen), the staff pad and the host's home overlay. */
+.caps.host-label { margin-bottom: 8px; }
+.host-stack { margin-bottom: 4px; }
+.host-hit { width: 44px; height: 44px; align-items: center; justify-content: center; flex-shrink: 0; }
+.host-thumb { width: 72px; height: 32px; margin-right: 12px; border-radius: 4px; background-color: rgb(34, 38, 42); flex-shrink: 0; }
+.host-swatch { width: 44px; height: 44px; margin-right: 8px; margin-bottom: 8px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); }
+.host-swatch-on { border-width: 3px; border-color: rgb(255, 255, 255); }
+.host-plate { align-self: flex-start; margin-top: 8px; padding: 12px 16px; background-color: rgb(10, 12, 13); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; }
+.host-link { min-height: 44px; margin-left: 12px; -unity-text-align: middle-left; flex-shrink: 0; }
+/* App.PinHeader: a pushed page's title and back button above its scroll view, so they stay while it scrolls. */
+.pinned-page { flex-direction: column; flex-grow: 1; }
+.pinned-page > .screen { flex-grow: 1; flex-shrink: 1; min-height: 0; }
+.pinned-top { flex-shrink: 0; border-bottom-width: 1px; border-bottom-color: rgba(255, 255, 255, 0.05); }
+.pinned-top-bare { border-bottom-width: 0; }
+
+/* Greenlands (Greenlands.cs, GreenlandsScreens.cs): the world map, its nodes, the stage panel and the result card. */
+.gl-head { margin-top: 4px; }
+.gl-world { margin-top: 2px; }
+.gl-totals { flex-shrink: 0; }
+.gl-total { font-size: 15px; -unity-font-style: bold-and-italic; margin-left: 6px; margin-right: 12px; }
+.gl-totals > .gl-total:last-child { margin-right: 0; }
+.gl-marker { width: 15px; height: 15px; border-radius: 4px; background-color: rgb(255, 179, 0); border-width: 3px; border-color: rgb(38, 42, 46); }
+.gl-worlds { margin-top: 10px; flex-wrap: wrap; }
+.gl-worldchip { width: 34px; height: 34px; border-radius: 4px; background-color: rgb(34, 38, 42); color: rgb(139, 147, 153); font-size: 15px; -unity-font-style: bold-and-italic; -unity-text-align: middle-center; margin-right: 8px; }
+.gl-worldchip-open { color: rgb(255, 255, 255); }
+.gl-worldchip-done { background-color: rgb(45, 140, 60); color: rgb(255, 255, 255); }
+.gl-worldchip-on { border-width: 2px; border-color: rgb(255, 179, 0); }
+.gl-map { width: 100%; height: 300px; border-radius: 4px; overflow: hidden; }
+.gl-spot { position: absolute; width: 0; height: 0; }
+.gl-node { position: absolute; width: 52px; height: 52px; left: -26px; top: -26px; border-radius: 4px; border-width: 4px; border-color: rgb(38, 42, 46); align-items: center; justify-content: center; }
+.gl-node-word { font-size: 20px; -unity-font-style: bold-and-italic; -unity-text-align: middle-center; color: rgb(9, 11, 13); padding: 0; margin: 0; }
+.gl-node-done { background-color: rgb(45, 140, 60); }
+.gl-node-open { background-color: rgb(255, 255, 255); }
+.gl-node-shut { background-color: rgb(34, 38, 42); }
+.gl-node-diamond { border-radius: 4px; }
+.gl-node-square { border-radius: 4px; }
+.gl-node-boss { border-radius: 4px; }
+.gl-node-boss.gl-node-open, .gl-node-boss.gl-node-shut { background-color: rgb(34, 38, 42); border-color: rgb(255, 82, 82); }
+.gl-node-boss.gl-node-open > .gl-node-word { color: rgb(255, 82, 82); }
+.gl-node-secret.gl-node-shut { border-color: rgb(255, 179, 0); }
+.gl-node-secret.gl-node-shut > .gl-node-word { color: rgb(255, 179, 0); }
+.gl-node-picked { border-color: rgb(255, 179, 0); }
+.gl-lock { width: 12px; height: 10px; border-radius: 2px; background-color: rgb(139, 147, 153); border-top-width: 0; }
+.gl-pill { position: absolute; padding: 3px 6px; border-radius: 4px; background-color: rgb(10, 12, 13); }
+.gl-pin { position: absolute; border-radius: 4px; background-color: rgb(255, 179, 0); border-width: 3px; border-color: rgb(38, 42, 46); align-items: center; justify-content: center; }
+.gl-pin-ball { width: 40%; height: 40%; border-radius: 999px; background-color: rgb(255, 255, 255); }
+.gl-gate-word { position: absolute; font-size: 11px; letter-spacing: 1px; color: rgb(9, 11, 13); width: 80px; -unity-text-align: middle-right; }
+.gl-card { margin-top: 12px; }
+.title-20.gl-card-name, .title.gl-hero-name, .title.gl-world { margin-top: 4px; }
+.title.gl-result-name { margin-top: 8px; -unity-text-align: middle-center; }
+.body.gl-row-v { white-space: nowrap; margin-left: 12px; flex-shrink: 0; }
+.body.gl-line-v { flex-grow: 1; flex-basis: 0; }
+.card.gl-result-list { padding: 4px 16px; }
+.gl-locked-why { margin-top: 12px; color: rgb(255, 179, 0); }
+.gl-starline { margin-top: 12px; }
+.title-20.gl-stage-name { margin-top: 4px; }
+.gl-line { margin-top: 8px; }
+.gl-line:first-child { margin-top: 0; }
+.gl-line-word { width: 104px; flex-shrink: 0; color: rgb(139, 147, 153); }
+.gl-line > .rule-pips { margin-top: 0; }
+.gl-line > .rule-pips > .rule-pip { margin-bottom: 0; height: 24px; min-width: 24px; }
+.gl-balls { flex-direction: row; }
+.gl-ball { width: 20px; height: 20px; border-radius: 10px; background-color: rgb(255, 255, 255); margin-right: 6px; }
+.gl-ball-out { background-color: rgba(0, 0, 0, 0); border-width: 2px; border-color: rgb(38, 42, 46); }
+.gl-result { margin-top: 16px; }
+.gl-result-stars { align-items: center; margin-top: 16px; margin-bottom: 8px; }
+.gl-lost { color: rgb(255, 82, 82); }
+.gl-split { align-items: flex-start; margin-top: 8px; }
+.gl-split-map { flex-grow: 1; flex-shrink: 1; flex-basis: 0; min-width: 0; }
+.gl-split-side { width: 340px; flex-shrink: 0; margin-left: 20px; }
+.gl-split-side > .gl-head { margin-top: 0; }
+.gl-split-side > .gl-card { margin-top: 14px; }
+.gl-split-side .gl-worldchip { width: 30px; height: 30px; margin-right: 8px; font-size: 13px; }
+.gl-result-col { width: 100%; max-width: 560px; align-self: center; }
+/* Greenlands home: the hero world and the world cards. */
+.gl-home-head { margin-top: 6px; margin-bottom: 8px; align-items: center; }
+.gl-art { width: 100%; height: 100%; }
+.gl-hero { padding: 0; overflow: hidden; }
+.gl-hero-art { overflow: hidden; }
+.gl-hero-art > .gl-map { border-radius: 0; }
+.gl-hero-words { padding: 16px; }
+.gl-hero-wide { flex-direction: row; }
+.gl-hero-wide > .gl-hero-art { flex-grow: 1; flex-basis: 0; min-width: 0; }
+.gl-hero-wide > .gl-hero-words { width: 360px; flex-shrink: 0; padding: 20px; }
+.gl-hero-name { margin-top: 4px; }
+.gl-hero-stars { margin-top: 8px; }
+.gl-hero-next { margin-top: 14px; }
+.gl-hero-map { margin-top: 10px; }
+.gl-cards { flex-direction: row; flex-wrap: wrap; align-items: stretch; margin: 8px -6px 0 -6px; }
+.gl-cardslot { padding: 6px; }
+.gl-worldcard { padding: 0; overflow: hidden; flex-grow: 1; }
+.gl-worldcard-art { height: 96px; overflow: hidden; }
+.gl-worldcard-words { padding: 12px; }
+.gl-worldcard-name { font-size: 15px; letter-spacing: 0.5px; -unity-font-style: bold-and-italic; margin-top: 4px; }
+.gl-worldcard-stars { margin-top: 8px; }
+.gl-worldcard .chip { white-space: normal; }
+.gl-worldcard-shut > .gl-worldcard-art { opacity: 0.45; }
+.gl-total-small { font-size: 13px; margin-left: 4px; margin-right: 0; }
+.gl-card-state { margin-top: 4px; }
+.gl-hero-words > .gl-card { margin-top: 14px; padding: 0; background-color: rgba(0, 0, 0, 0); border-width: 0; }
+/* A world's page: on a wide screen the map is the page and the legend sits over a clear corner of it. */
+.gl-worldpage { flex-grow: 1; flex-direction: column; }
+.gl-worldbody { flex-grow: 1; flex-shrink: 1; min-height: 0; }
+.gl-map-fill { flex-grow: 1; height: auto; border-radius: 0; }
+.gl-legend { position: absolute; width: 340px; padding: 16px; border-radius: 4px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); }
+.gl-legend > .gl-head { margin-top: 0; }
+.gl-legend > .gl-card { margin-top: 12px; padding: 0; background-color: rgba(0, 0, 0, 0); border-width: 0; }
+/* Play tab: a sentence on what each way to play is. Game over: rate this game. */
+.play-intro { margin-top: 10px; margin-bottom: 4px; }
+.fb-game { margin-top: 16px; }
+.fb-game-stars { margin-top: 12px; }
+.fb-game .fb-star { width: 44px; height: 44px; margin: 0 2px; }
+.modal > .fb-game { margin-top: 6px; padding: 0; }
+.play-intro-in { width: 100%; max-width: 998px; align-self: center; }
+/* Settings: the "Need help?" bar stays at the bottom; the settings scroll behind it. */
+.set-help { flex-shrink: 0; padding-top: 12px; background-color: rgb(10, 12, 13); border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.set-help .set-help-card { align-items: center; padding: 12px 16px; }
+/* Puttr not connected, before a game. */
+.gate-card { align-items: stretch; }
+.gate-icon { align-items: center; justify-content: center; align-self: center; margin-bottom: 12px; }
+/* Quests on a phone: the stage and Play above the map, what it asks under it. */
+.gl-start { margin-top: 12px; }
+.gl-start > .btn { margin-top: 10px; }
+.gl-more { margin-top: 0; }
+.gl-hero-top { padding-bottom: 14px; }
+.gl-hero-under { padding-top: 12px; }
+.gl-hero-under > .gl-more { padding: 0; background-color: rgba(0, 0, 0, 0); border-width: 0; }
+.gl-hero-top .gl-card-name, .gl-start .gl-card-name { font-size: 20px; }
+/* Quests hero on a phone: the map, its details over the clear top left corner, then the title and Play. */
+.gl-hero-meta { position: absolute; left: 8px; top: 8px; width: 34%; padding: 6px 8px; border-radius: 4px; background-color: rgb(10, 12, 13); }
+.gl-hero-meta-name { font-size: 13px; -unity-font-style: bold-and-italic; color: rgb(255, 255, 255); margin-top: 1px; }
+.gl-hero-meta-stars { margin-top: 2px; align-items: center; }
+.gl-hero-meta .chips { margin-top: 0; }
+.gl-hero-meta .chip { margin-right: 4px; margin-top: 2px; padding: 2px 6px; }
+.gl-hero-phone { padding: 14px 16px 16px 16px; }
+.gl-hero-phone > .gl-start { margin-top: 0; }
+.gl-hero-rule { margin-top: 10px; }
+
+/* ---- Broadcast (docs/design-guidelines.md): the shared pieces every screen is built from ---- */
+.ital { -unity-font-style: bold-and-italic; }
+.title { font-size: 28px; letter-spacing: 0.5px; white-space: normal; margin: 0; padding: 0; }
+.title-20 { font-size: 20px; letter-spacing: 0.5px; white-space: normal; margin: 0; padding: 0; }
+.caps { font-size: 11px; letter-spacing: 1.5px; color: rgb(139, 147, 153); margin: 0; padding: 0; }
+.caps-green { color: rgb(122, 212, 70); }
+.num { font-size: 28px; margin: 0; padding: 0; }
+.num-44 { font-size: 44px; margin: 0; padding: 0; }
+.num-20 { font-size: 20px; margin: 0; padding: 0; }
+.body { font-size: 15px; color: rgb(255, 255, 255); white-space: normal; }
+.body-2 { font-size: 13px; color: rgb(139, 147, 153); white-space: normal; }
+.tab-head { flex-direction: row; align-items: center; justify-content: space-between; height: 44px; margin-top: 8px; padding-left: 16px; padding-right: 16px; flex-shrink: 0; }
+.tab-head-title { font-size: 28px; letter-spacing: 0.5px; margin: 0; padding: 0; }
+.tab-head-actions { flex-direction: row; align-items: center; flex-shrink: 0; }
+.icon-sq { width: 44px; height: 44px; border-radius: 4px; background-color: rgb(21, 24, 27); align-items: center; justify-content: center; margin-left: 8px; flex-shrink: 0; }
+.icon-sq:active { background-color: rgb(34, 38, 42); }
+.card { background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 16px; }
+.window { border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; overflow: hidden; background-color: rgb(0, 0, 0); }
+.strip { flex-direction: row; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; }
+.strip-cell { flex-grow: 1; flex-basis: 0; align-items: center; padding: 14px 4px; border-left-width: 1px; border-left-color: rgb(38, 42, 46); }
+.strip-cell-first { border-left-width: 0; }
+.strip-num { font-size: 20px; margin: 0; padding: 0; -unity-text-align: middle-center; }
+.strip-cap { font-size: 11px; letter-spacing: 1.2px; color: rgb(139, 147, 153); margin-top: 4px; -unity-text-align: middle-center; }
+.fchip { height: 32px; padding: 0 12px; margin-right: 8px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); align-items: center; justify-content: center; flex-shrink: 0; }
+.fchip-t { font-size: 11px; letter-spacing: 1.2px; color: rgb(255, 255, 255); }
+.fchip-on { background-color: rgb(255, 255, 255); border-color: rgb(255, 255, 255); }
+.fchip-on .fchip-t { color: rgb(0, 0, 0); }
+/* The slanted button: Ui.Button draws the shape in --fill, so the box itself is clear. Keep these last. */
+.btn { --fill: rgb(45, 140, 60); min-height: 52px; }
+.btn:hover { --fill: rgb(52, 158, 68); }
+.btn:active { --fill: rgb(36, 112, 48); }
+.btn-ghost { --fill: rgb(34, 38, 42); min-height: 44px; }
+.btn-ghost:hover { --fill: rgb(48, 53, 58); }
+.btn-ghost:active { --fill: rgb(21, 24, 27); }
+.btn-red { --fill: rgb(140, 34, 34); min-height: 44px; }
+.btn-red:hover { --fill: rgb(160, 40, 40); }
+.btn-red:active { --fill: rgb(112, 28, 28); }
+.btn.slant, .btn.slant:hover, .btn.slant:active { background-color: rgba(0, 0, 0, 0); border-width: 0; border-radius: 0; padding-top: 4px; padding-bottom: 4px; }
+.slant .btn-text { letter-spacing: 0.5px; -unity-font-style: bold-and-italic; }
+/* The game tile (GameCards.Make): a picture window, then a solid bar. No text on the picture, no raised edge. */
+.gcard.gtile { height: auto; overflow: hidden; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; justify-content: flex-start; }
+.gcard.gtile.gcard-big { width: auto; height: auto; margin: 0 0 12px 0; }
+.gtile-art { height: 92px; background-color: rgb(0, 0, 0); -unity-background-scale-mode: scale-and-crop; }
+.gtile-big > .gtile-art { height: 136px; }
+.gtile-bar { padding: 8px 12px 10px 12px; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.gtile-big > .gtile-bar { padding: 12px 12px 12px 12px; }
+.gtile-row { flex-direction: row; align-items: center; justify-content: space-between; }
+.gtile-under { margin-top: 6px; }
+.gtile-name { font-size: 13px; letter-spacing: 0.5px; color: rgb(255, 255, 255); margin: 0; padding: 0; flex-grow: 1; flex-basis: 0; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gtile-name-big { font-size: 20px; }
+.gtile-bar > .gtile-name { flex-grow: 0; flex-basis: auto; }
+.gtile-line { font-size: 11px; color: rgb(139, 147, 153); margin: 2px 0 0 0; padding: 0; flex-shrink: 0; }
+.gtile-line-big { font-size: 13px; margin: 0 0 0 8px; }
+.gtile-tags { font-size: 11px; letter-spacing: 1.2px; color: rgb(139, 147, 153); margin: 0; padding: 0; flex-grow: 1; flex-basis: 0; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gtile.gcard-pressed { background-color: rgb(34, 38, 42); }
+.tv .gtile.tv-focus:focus { border-width: 3px; border-color: rgb(255, 255, 255); }

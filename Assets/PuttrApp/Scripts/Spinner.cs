@@ -1,4 +1,4 @@
-// puttr-app's PuttrSpinner: the Puttr mark turning, muted on the dark theme. No loading words, the spinner alone.
+// puttr-app's PuttrSpinner: the Puttr mark turning, bright green on the page colour (docs/design-guidelines.md). No loading words, the spinner alone.
 //
 // Spinner.Small() / Spinner.Big() go wherever something is loading. Spinner.Cover(screen) is the app's guard against a
 // blank screen: App.Swap puts it over any screen that has next to nothing in it yet, and it lifts itself once the
@@ -56,7 +56,7 @@ namespace PuttrApp
                 _center?.RemoveFromHierarchy();
                 _center = Ui.Box("spinner-center");
                 _center.pickingMode = PickingMode.Ignore;
-                _image = Mark(46f, new Color(1f, 1f, 1f, 0.2f));
+                _image = Mark(46f, Ui.Bright);
                 _center.Add(_image);
                 layer.Add(_center);
                 _started = Time.realtimeSinceStartup;
@@ -97,7 +97,9 @@ namespace PuttrApp
             VisualElement root = screen.Root;
             if (root == null) return;
             VisualElement content = root is ScrollView sv ? sv.contentContainer : root;
-            VisualElement cover = Ui.Box("spinner-cover", Big());
+            // A black screen with the Puttr loader in the middle (Matt: a generic page of placeholders looked like the
+            // wrong screen). Screens that know their own shape draw their own placeholders (Skeleton.Hold).
+            VisualElement cover = Ui.Box("loader-cover", Big());
             cover.pickingMode = PickingMode.Ignore;
             bool gone = false;
             void Lift() { if (gone) return; gone = true; cover.RemoveFromHierarchy(); }

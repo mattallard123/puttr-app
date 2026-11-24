@@ -13,15 +13,18 @@
 // The socket runs on a background task. Call Pump() from Update: events are
 // raised there, on the main thread.
 //
-// Not available on WebGL, where System.Net.WebSockets does not exist.
+// On WebGL (the Samsung TV app) System.Net.WebSockets does not work and there are
+// no threads: the browser's WebSocket is used instead (JsWebSocket), read in Pump().
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
+#if !(UNITY_WEBGL && !UNITY_EDITOR)
+using System.Net.WebSockets;
 using System.Threading.Tasks;
+#endif
 
 namespace Puttr
 {
@@ -51,8 +54,15 @@ namespace Puttr
             _cts = cts;
             int generation = ++_generation;
             Interlocked.Exchange(ref _state, (int)SocketState.Connecting);
+#if UNITY_WEBGL && !UNITY_EDITOR
+            _js = new JsWebSocket("ws://" + host + ":" + port + "/socket.io/?EIO=4&transport=websocket");
+            _jsGeneration = generation;
+            _jsQuietLimitMs = 30000;
+            _jsHeard = UnityEngine.Time.realtimeSinceStartup;
+#else
             var uri = new Uri("ws://" + host + ":" + port + "/socket.io/?EIO=4&transport=websocket");
             Task.Run(() => Run(uri, generation, cts.Token));
+#endif
         }
 
         public void Close()
@@ -64,6 +74,10 @@ namespace Puttr
             {
                 try { cts.Cancel(); } catch (ObjectDisposedException) { }
             }
+#if UNITY_WEBGL && !UNITY_EDITOR
+            _js?.Dispose();
+            _js = null;
+#endif
             Interlocked.Exchange(ref _state, (int)SocketState.Closed);
         }
 
@@ -72,6 +86,9 @@ namespace Puttr
         /// <summary>Raise queued events. Call once per frame from the main thread.</summary>
         public void Pump()
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            PumpJs();
+#endif
             while (_main.TryDequeue(out Action action)) action();
         }
 
@@ -79,6 +96,46 @@ namespace Puttr
         {
             _main.Enqueue(() => { if (generation == _generation) action(); });
         }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        JsWebSocket _js;
+        int _jsGeneration, _jsQuietLimitMs;
+        float _jsHeard;
+
+        // The same protocol as Run below, a frame at a time on the main thread.
+        void PumpJs()
+        {
+            if (_js == null) return;
+            int generation = _jsGeneration;
+            string text;
+            while (_js != null && (text = _js.Receive()) != null)
+            {
+                _jsHeard = UnityEngine.Time.realtimeSinceStartup;
+                if (text.Length == 0) continue;
+                switch (text[0])
+                {
+                    case '0': _jsQuietLimitMs = HeartbeatLimit(text.Substring(1)); _js.Send("40"); break;
+                    case '2': _js.Send("3"); break;
+                    case '1': JsClosed(generation, "closed by console"); return;
+                    case '4': HandlePacket(text, generation); break;
+                }
+            }
+            if (_js == null) return;
+            if (_js.State == JsWebSocket.SocketState.Closed) JsClosed(generation, _js.Reason);
+            // A console that loses power never closes its socket: give up when it has been quiet
+            // for longer than its own heartbeat.
+            else if ((UnityEngine.Time.realtimeSinceStartup - _jsHeard) * 1000f > _jsQuietLimitMs) JsClosed(generation, "no heartbeat");
+        }
+
+        void JsClosed(int generation, string reason)
+        {
+            _js?.Dispose();
+            _js = null;
+            if (generation != _generation) return;
+            Interlocked.Exchange(ref _state, (int)SocketState.Closed);
+            Post(generation, () => Disconnected?.Invoke(reason));
+        }
+#else
 
         async Task Run(Uri uri, int generation, CancellationToken ct)
         {
@@ -150,6 +207,7 @@ namespace Puttr
             byte[] bytes = Encoding.UTF8.GetBytes(text);
             return ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
         }
+#endif
 
         static int HeartbeatLimit(string openJson)
         {

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Puttr 2 on Samsung TVs: the WebGL build (Builds/WebTV) packaged as a Tizen web app by
+     Tools/app-build.sh webtv. Keep xmlns:tizen="http://tizen.org/ns/widgets": the other Tizen
+     namespace makes the TV refuse to install it (learned in puttr-tv).
+     The 10-character package id is the app's identity on the TV: keep it, or a rebuild is a new app.
+     It is not PuttrTV's (Pq7zTvK2mX): to ship this as an update to the PuttrTV store listing, use that
+     id and a version above PuttrTV's. -->
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="http://puttr.co/PuttrApp" version="3.0.0" viewmodes="maximized">
+    <tizen:application id="PuttrAppTV.Puttr" package="PuttrAppTV" required_version="6.0"/>
+    <content src="index.html"/>
+    <feature name="http://tizen.org/feature/screen.size.all"/>
+    <icon src="icon.png"/>
+    <name>Puttr</name>
+    <description>Puttr on the big screen: sign in with the QR, play on your Puttr, see the leaderboards.</description>
+    <author email="matt@puttr.co" href="https://puttr.co">Puttr</author>
+    <tizen:profile name="tv"/>
+    <!-- api.puttr.co, Firebase, the multiplayer socket, the CDN and the green's LAN address. -->
+    <access origin="*" subdomains="true"/>
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
+    <!-- Register the remote's media keys (index.html). -->
+    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+    <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable" encryption="disable" install-location="auto" hwkey-event="enable"/>
+    <tizen:metadata key="http://samsung.com/tv/metadata/use.network" value="true"/>
+</widget>

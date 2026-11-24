@@ -21,12 +21,24 @@ namespace PuttrApp
             { "LAB", _ => new LabGame() },
             { "FULLWORKOUT", _ => new FullWorkoutGame() },
             { "FITTING", row => new CompareGame(row) },
+            // A Greenlands stage by its code (row["stage"], "1-4"); the first stage for a bare row (a script, the card pass).
+            { Greenlands.GameType, row => new StageGame(Greenlands.ByCode(J.Str(row, "stage")) ?? Greenlands.World(1).Stages[0]) },
         };
 
         static RuleCatalog() { RuleCatalogB.Register(); RuleCatalogC.Register(); SensorCatalog.Register(); }
         public static void Add(string type, Func<object, RuleGame> make) => Games[type] = make;
         public static bool Has(object game) => Games.ContainsKey(J.Str(game, "gameType").ToUpperInvariant());
-        public static RuleGame Make(object game) => Games.TryGetValue(J.Str(game, "gameType").ToUpperInvariant(), out var make) ? make(game) : null;
+        public static RuleGame Make(object game)
+        {
+            string type = J.Str(game, "gameType").ToUpperInvariant();
+            if (!Games.TryGetValue(type, out var make)) return null;
+            RuleGame made = make(game);
+            // The row's own title is the name the Player picked the game by (a renamed row, a custom game on this
+            // gameType). A row whose title is only its type again (a script's play:TYPE row) has no name of its own.
+            string title = J.Str(game, "title").Trim();
+            if (made != null && title.Length > 0 && title.ToUpperInvariant() != type) made.RowTitle = title;
+            return made;
+        }
         public static IEnumerable<string> Types => Games.Keys;
     }
 
@@ -55,17 +67,52 @@ namespace PuttrApp
             List<int> feet = Enumerable.Range(3, 9).OrderBy(_ => dice.Next()).ToList();
             return feet.Select(f => new TournamentMath.Dealt { Feet = f, Tee = dice.Next(1, 4) }).ToList();
         }
+
+        /// <summary>The nine putts of a level (GameLevels): Medium is NineDistances, the game as the app deals it. Easy is
+        /// nine from 3 to 6 ft and Hard nine from 8 to 11 ft, each distance in the range as often as nine putts allow.</summary>
+        public static List<TournamentMath.Dealt> NineFor(int level, System.Random dice)
+        {
+            if (GameLevels.Clamp(level) == GameLevels.Medium) return NineDistances(dice);
+            return NineFeet(level).OrderBy(_ => dice.Next()).Select(f => new TournamentMath.Dealt { Feet = f, Tee = dice.Next(1, 4) }).ToList();
+        }
+
+        /// <summary>Nine distances for a level, shortest first: 3 to 11 once each on Medium, else round the level's range.</summary>
+        public static List<int> NineFeet(int level)
+        {
+            (int lo, int hi) = GameLevels.Band(level);
+            return Enumerable.Range(0, 9).Select(i => lo + i % (hi - lo + 1)).OrderBy(f => f).ToList();
+        }
     }
 
     /// <summary>A game over a fixed list of putts that every Player plays in turn (putt 1 for each, then putt 2...).</summary>
     public abstract class ListGame : RuleGame
     {
-        protected List<TournamentMath.Dealt> List = new List<TournamentMath.Dealt>();
+        // Each Player's own list when they play at their own levels (Levels), else one list for all.
+        List<TournamentMath.Dealt> _list = new List<TournamentMath.Dealt>();
+        List<TournamentMath.Dealt>[] _lists;
+        protected List<TournamentMath.Dealt> List
+        {
+            get => _lists != null ? _lists[Math.Min(Math.Max(P, 0), _lists.Length - 1)] : _list;
+            set { _list = value; _lists = null; }   // one list for everyone (a League round's fixed putts)
+        }
         protected readonly System.Random Dice = new System.Random();
         protected int Index;          // the putt in the list being played
         protected int[] Played;       // putts played by each Player
         protected abstract List<TournamentMath.Dealt> MakeList();
-        protected override void Begin() { List = MakeList(); Index = 0; Played = new int[Players]; }
+        protected override void Begin()
+        {
+            _lists = null;
+            if (Levels != null && Levels.Length > 1 && Levels.Distinct().Count() > 1)
+            {
+                int was = P;
+                _lists = new List<TournamentMath.Dealt>[Players];
+                for (int p = 0; p < Players; p++) { P = p; _lists[p] = MakeList(); }
+                P = was;
+                _list = _lists[0];
+            }
+            else _list = MakeList();
+            Index = 0; Played = new int[Players];
+        }
         protected override void Deal() { TournamentMath.Dealt d = List[Math.Min(Index, List.Count - 1)]; Feet = d.Feet; Tee = d.Tee; }
         protected override void Next()
         {
@@ -93,7 +140,7 @@ namespace PuttrApp
 
     public sealed partial class TourJuiceGame : ListGame
     {
-        public override string Title => "Tour Juice";
+        protected override string OwnTitle => "Tour Juice";
         public override string GameType => "TOURJUICE";
         public override int MaxPlayers => 4;
         public override string Icon => "Lightning";
@@ -103,7 +150,8 @@ namespace PuttrApp
             "A make scores up to its distance: half for a centered entry, half for pace that finishes at the hole.",
             "Misses and back-door makes score nothing. 63 is perfect.",
         };
-        protected override List<TournamentMath.Dealt> MakeList() => Scoring.NineDistances(Dice);
+        // No Easy / Medium / Hard (Matt, 2026-11-21): always the nine from 3 to 11 ft.
+        protected override List<TournamentMath.Dealt> MakeList() => Scoring.NineFor(GameLevels.Medium, Dice);
         protected override Shot Take(AppPutt.Verdict v)
         {
             if (!v.Made) return Call(0, false, "MISS");
@@ -117,14 +165,13 @@ namespace PuttrApp
             return Call(score, true, word, Scoring.N1(score) + " of " + Feet + "   ·   accuracy " + Scoring.N1(entry / 2) + ", pace " + Scoring.N1(speed / 2) + (v.Rollout != null ? " (" + AppPutt.FmtRollout(v.Rollout) + ")" : ""));
         }
         public override string ScoreText(int p) => Scoring.N1(Score[p]);
-        public override string SoundFor(Shot s) => Over ? "rule_win" : s.Title == "TOUR QUALITY" ? "rule_bonus" : s.Good ? "rule_make" : "rule_miss";
     }
 
     // ── Speed Demon: pace only ──
 
     public sealed partial class SpeedDemonGame : ListGame
     {
-        public override string Title => "Speed Demon";
+        protected override string OwnTitle => "Speed Demon";
         public override string GameType => "SPEEDDEMON";
         public override int MaxPlayers => 4;
         public override string Icon => "Gauge";
@@ -134,17 +181,32 @@ namespace PuttrApp
             "A make scores up to its distance for pace: perfect when it dies at the hole, nothing at 3 feet past.",
             "Misses and back-door makes score nothing.",
         };
-        protected override List<TournamentMath.Dealt> MakeList() => Scoring.NineDistances(Dice);
+        // No Easy / Medium / Hard (Matt, 2026-11-21): always the nine from 3 to 11 ft.
+        protected override List<TournamentMath.Dealt> MakeList() => Scoring.NineFor(GameLevels.Medium, Dice);
         protected override Shot Take(AppPutt.Verdict v)
         {
             if (!v.Made) return Call(0, false, "MISS");
             if (Scoring.BackDoor(v, Feet, Tee)) return Call(0, false, "BACK DOOR", "Putts in the back of the cup don't count.");
             double score = v.Rollout == null ? Feet * 0.5 : Feet * Scoring.Speed(v.Rollout, 0, true) / 50;
             Score[P] += score;
-            string word = v.Rollout == null ? "MADE IT" : Math.Abs(v.Rollout.Value) < 1.5 ? "PERFECT SPEED" : Math.Abs(v.Rollout.Value) < 3 ? "GREAT SPEED" : Math.Abs(v.Rollout.Value) < 5 ? "GOOD SPEED" : v.Rollout < 0 ? "TOO SLOW" : "TOO FAST";
+            string word = PaceWord(v.Rollout, true);
             return Call(score, true, word, Scoring.N1(score) + " of " + Feet + (v.Rollout != null ? "   ·   " + AppPutt.FmtRollout(v.Rollout) : ""));
         }
         public override string ScoreText(int p) => Scoring.N1(Score[p]);
+
+        /// <summary>The call for a make's pace, in the putt read's own bands (PuttGrades.Pace: Ideal to 12 in past, Firm to 24, then
+        /// too firm), so the headline never says too fast over a read that says Ideal (Matt, 2026-11-21).</summary>
+        public static string PaceWord(double? rollout, bool made)
+        {
+            if (rollout == null) return "MADE IT";
+            switch (PuttGrades.Pace(rollout, made).grade)
+            {
+                case "Ideal": return rollout.Value <= 6 ? "PERFECT SPEED" : "GREAT SPEED";
+                case "Firm": return "A LITTLE FIRM";
+                case "Short": return "TOO SLOW";
+                default: return "TOO FAST";
+            }
+        }
     }
 
     // ── Metal: a make scores its distance ──
@@ -152,8 +214,8 @@ namespace PuttrApp
     public sealed partial class MetalGame : ListGame
     {
         static readonly int[] Counts = { 3, 9, 18, 27, 36, 45, 54, 63, 72 };
-        int _count = 9, _from = 3, _to = 11;
-        public override string Title => "Metal Play";
+        int _count = 9;
+        protected override string OwnTitle => "Metal Play";
         public override string GameType => "METAL";
         public override int MaxPlayers => 4;
         public override string Words => "FEET";
@@ -169,13 +231,10 @@ namespace PuttrApp
             VisualElement box = Ui.Box("");
             box.Add(Form.Label("Putts"));
             box.Add(Form.Pills(Counts.Select(c => c.ToString()).ToArray(), Array.IndexOf(Counts, _count), i => _count = Counts[i]));
-            box.Add(Form.Label("Distances"));
-            string[] ranges = { "3 to 11 ft", "3 to 6 ft", "6 to 9 ft", "8 to 11 ft" };
-            int[,] r = { { 3, 11 }, { 3, 6 }, { 6, 9 }, { 8, 11 } };
-            box.Add(Form.Pills(ranges, 0, i => { _from = r[i, 0]; _to = r[i, 1]; }));
             return box;
         }
-        protected override List<TournamentMath.Dealt> MakeList() => Enumerable.Range(0, _count).Select(_ => new TournamentMath.Dealt { Feet = Dice.Next(_from, _to + 1), Tee = Dice.Next(1, 4) }).ToList();
+        // No Easy / Medium / Hard (Matt, 2026-11-21): every putt from 3 to 11 ft.
+        protected override List<TournamentMath.Dealt> MakeList() => Enumerable.Range(0, _count).Select(_ => new TournamentMath.Dealt { Feet = Dice.Next(FeetFrom(), FeetTo() + 1), Tee = Dice.Next(1, 4) }).ToList();
         protected override Shot Take(AppPutt.Verdict v)
         {
             if (!v.Made) return Call(0, false, "MISS");
@@ -183,7 +242,6 @@ namespace PuttrApp
             Score[P] += Feet;
             return Call(Feet, true, "+" + Feet + " FT");
         }
-        public override string SoundFor(Shot s) => Over ? "rule_win" : s.Good ? "metal_chord" : "rule_miss";
         public override VisualElement Board() => _count <= 18 ? base.Board() : null;
     }
 
@@ -195,7 +253,7 @@ namespace PuttrApp
         int _feet = 5, _tee = 2;
         double _target;
         readonly List<double> _pace = new List<double>(), _entry = new List<double>();
-        public override string Title => "The Lab";
+        protected override string OwnTitle => "The Lab";
         public override string GameType => "LAB";
         public override string Icon => "Flask";
         public override string Words => "OUT OF 20";
@@ -208,10 +266,8 @@ namespace PuttrApp
         public override VisualElement Options()
         {
             VisualElement box = Ui.Box("");
-            box.Add(Form.Label("Distance"));
-            box.Add(Form.Pills(Enumerable.Range(3, 9).Select(f => f + "").ToArray(), _feet - 3, i => _feet = i + 3));
-            box.Add(Form.Label("Tee"));
-            box.Add(Form.Pills(new[] { "Left", "Center", "Right" }, _tee - 1, i => _tee = i + 1));
+            box.Add(Form.Label("Distance and tee"));
+            box.Add(Frame.SpotRow(_feet, _tee, (f, t) => { _feet = f; _tee = t; }));
             box.Add(Form.Label("Your speed"));
             double[] targets = { 0, 3, 6 };
             box.Add(Form.Pills(new[] { "Die it", "Firm", "Aggressive" }, 0, i => _target = targets[i]));
@@ -236,8 +292,8 @@ namespace PuttrApp
         {
             if (_pace.Count == 0) return null;
             return Card("AVERAGES", Ui.Box("stat-tiles",
-                Ui.Box("glass stat-tile", Ui.Text(Scoring.N1(_pace.Average()), "stat-value", Ui.Bold), Ui.Text("PACE", "stat-label", Ui.Bold)),
-                Ui.Box("glass stat-tile", Ui.Text(Scoring.N1(_entry.Average()), "stat-value", Ui.Bold), Ui.Text("ENTRY", "stat-label", Ui.Bold))));
+                Ui.Box("glass stat-tile", Ui.Text(Scoring.N1(_pace.Average()), "stat-value", Ui.Bold), Ui.Text("PACE", "caps", Ui.Bold)),
+                Ui.Box("glass stat-tile", Ui.Text(Scoring.N1(_entry.Average()), "stat-value", Ui.Bold), Ui.Text("ENTRY", "caps", Ui.Bold))));
         }
     }
 
@@ -246,7 +302,7 @@ namespace PuttrApp
     public sealed partial class FullWorkoutGame : ListGame
     {
         const double CenterCutDeg = 18, PaceMaxPast = 3;
-        public override string Title => "Full Workout";
+        protected override string OwnTitle => "Full Workout";
         public override string GameType => "FULLWORKOUT";
         public override string Icon => "Barbell";
         public override string[] HowTo => new[]
@@ -291,7 +347,7 @@ namespace PuttrApp
             for (int k = 0; k < 3; k++)
             {
                 double pts = Shots.Skip(k * 9).Take(9).Sum(s => s.Points);
-                tiles.Add(Ui.Box("glass stat-tile", Ui.Text(pts + "/45", "stat-value", Ui.Bold), Ui.Text(names[k], "stat-label", Ui.Bold)));
+                tiles.Add(Ui.Box("glass stat-tile", Ui.Text(pts + "/45", "stat-value", Ui.Bold), Ui.Text(names[k], "caps", Ui.Bold)));
             }
             return Card("TARGET 100   ·   MAX 135", tiles);
         }
@@ -309,7 +365,7 @@ namespace PuttrApp
             if (_list.Count == 0) for (int f = 3; f <= 11; f += 2) _list.Add(new TournamentMath.Dealt { Feet = f, Tee = 2 });
             Names = new List<string> { "Putter 1", "Putter 2" };
         }
-        public override string Title => "Compare";
+        protected override string OwnTitle => "Compare";
         public override string GameType => "FITTING";
         public override int MinPlayers => 2;
         public override int MaxPlayers => 4;
@@ -336,6 +392,6 @@ namespace PuttrApp
             return Call(pace + entry, v.Made, v.Made ? "MADE" : "MISS", "Accuracy " + Scoring.N1(entry) + "   ·   pace " + Scoring.N1(pace));
         }
         public override string ScoreText(int p) => Score[p].ToString("0.0", CultureInfo.InvariantCulture);
-        public override string Outcome() { int w = Winner; return w < 0 ? "A tie" : Names[w] + " is best overall"; }
+        public override string Outcome() { int w = Winner; return w < 0 ? "A tie" : Wording.Does(Names[w], "is", "are") + " best overall"; }
     }
 }

@@ -24,6 +24,15 @@ namespace PuttrApp
             new Persona { Id = "jax", Name = "Jax", Style = "Hype", VoiceId = "v6OEdxzPU9lTVAYr1BI8" },
         };
 
+        /// <summary>The coach's face in an avatar circle (Resources/PuttrApp/Coaches/{Name}.png), their initial if missing.</summary>
+        public static UnityEngine.UIElements.VisualElement Avatar(Persona p, bool big = false)
+        {
+            UnityEngine.UIElements.VisualElement a = Ui.Avatar(p.Name, null, big);
+            Texture2D face = Resources.Load<Texture2D>("PuttrApp/Coaches/" + p.Name);
+            if (face != null) { a.style.backgroundImage = new UnityEngine.UIElements.StyleBackground(face); a.Clear(); }
+            return a;
+        }
+
         public static Persona Of(string id)
         {
             foreach (Persona p in All) if (p.Id == id) return p;
@@ -62,6 +71,14 @@ namespace PuttrApp
             On = J.Get(settings, "voiceOn") == null || J.Flag(settings, "voiceOn");
         }
 
+        /// <summary>
+        /// Raised once Coach settings (CoachSettingsSheet) has saved a new coach, voice, daily goal or reminder, so screens
+        /// that show them (Home's goal ring, Improve's session) can read them again.
+        /// </summary>
+        public static event System.Action SettingsChanged;
+
+        public static void Changed() => SettingsChanged?.Invoke();
+
         /// <summary>Says a line after whatever is being said now.</summary>
         public static void Say(string text)
         {
@@ -83,8 +100,28 @@ namespace PuttrApp
         public static void Hush()
         {
             if (_one == null) return;
+            _one._said++;
             _one._lines.Clear();
             _one._source.Stop();
+        }
+
+        int _said;   // goes up on every Hush, so a line still being fetched is dropped rather than spoken over what follows
+
+        /// <summary>
+        /// A coach introducing themselves (coachVoice.js speakCoachIntro): the bundled {id}_intro mp3, at once and offline,
+        /// cutting off whatever was being said. Streams the words through coach-tts if the file is missing.
+        /// Played even with the voice off, as the app: it is how a Player hears who they are picking.
+        /// </summary>
+        public static void Intro(Coaches.Persona persona, string words)
+        {
+            Hush();
+            Persona = persona;
+            AudioClip clip = Resources.Load<AudioClip>("PuttrApp/Coaches/" + persona.Id + "_intro");
+            if (clip == null) { bool on = On; On = true; Say(words); On = on; return; }
+            Perf.Note("coach: " + persona.Id + " intro");
+            One._source.clip = clip;
+            One._source.Play();
+            Perf.Wake(clip.length + 0.5f);
         }
 
         IEnumerator Speak()
@@ -93,13 +130,18 @@ namespace PuttrApp
             while (_lines.Count > 0)
             {
                 string line = _lines.Dequeue();
+                int said = _said;
                 AudioClip clip = null;
                 yield return Fetch(line, c => clip = c);
-                if (clip == null) continue;
+                if (clip == null || said != _said) continue;
                 _source.clip = clip;
                 _source.Play();
                 Perf.Wake(clip.length + 0.5f);
-                while (_source.isPlaying) yield return null;
+                // By the wall clock too: with the phone's sound clock stopped a clip never ends, and whatever waits
+                // for the coach (the review's next moment, the video) would wait for ever.
+                float until = Time.realtimeSinceStartup + clip.length + 0.75f;
+                while (_source.isPlaying && Time.realtimeSinceStartup < until) yield return null;
+                if (_source.isPlaying) { _source.Stop(); Perf.Note("coach: that line did not finish playing (the sound clock is stopped)"); }
             }
             _speaking = false;
         }
@@ -114,12 +156,20 @@ namespace PuttrApp
             }
         }
 
-        IEnumerator Fetch(string text, System.Action<AudioClip> done)
+        IEnumerator Fetch(string text, System.Action<AudioClip> done) => Clip(Persona.VoiceId, text, false, done);
+
+        /// <summary>
+        /// A sentence in any voice through the same service and the same cache as the coach's lines (the Tracks caddie
+        /// speaks this way: TracksVoice). done gets the clip, or null if it could not be had; with no done the sentence is
+        /// only fetched into the cache. cachedOnly never touches the network: a sentence not on the phone yet is null.
+        /// </summary>
+        public static IEnumerator Clip(string voiceId, string text, bool cachedOnly, System.Action<AudioClip> done)
         {
-            string file = CachePath(Persona.VoiceId, text);
+            string file = CachePath(voiceId, text);
             if (!File.Exists(file))
             {
-                string url = Service + "?voiceId=" + UnityWebRequest.EscapeURL(Persona.VoiceId) + "&text=" + UnityWebRequest.EscapeURL(text).Replace("+", "%20");
+                if (cachedOnly) { done?.Invoke(null); yield break; }
+                string url = Service + "?voiceId=" + UnityWebRequest.EscapeURL(voiceId) + "&text=" + UnityWebRequest.EscapeURL(text).Replace("+", "%20");
                 using (UnityWebRequest req = UnityWebRequest.Get(url))
                 {
                     req.timeout = 15;

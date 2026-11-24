@@ -4,6 +4,8 @@
 //
 // Answers go to Unity: UnitySendMessage(target, "OnIap", "<id>|ok|<json>") or "<id>|error|<code>|<message>",
 // and "update" when IAPHUB says the user changed.
+// sdk and sdkVersion stay empty: IAPHUB only knows its own wrappers (react_native, flutter, cordova); "ios/unity"
+// came back {"error":"library_name_invalid"} on every request, which the SDK reports as network_error.
 import Foundation
 
 @_silgen_name("UnitySendMessage")
@@ -50,7 +52,7 @@ public func PuttrIap_Start(_ appId: UnsafePointer<CChar>, _ apiKey: UnsafePointe
         if me.started { return }
         me.started = true
         Iaphub.delegate = me
-        Iaphub.start(appId: app, apiKey: key, userId: nil, allowAnonymousPurchase: false, enableDeferredPurchaseListener: true, enableStorekitV2: false, environment: "production", lang: "", sdk: "unity", sdkVersion: "1.0")
+        Iaphub.start(appId: app, apiKey: key, userId: nil, allowAnonymousPurchase: false, enableDeferredPurchaseListener: true, enableStorekitV2: false, environment: "production", lang: "", sdk: "", sdkVersion: "")
     }
 }
 

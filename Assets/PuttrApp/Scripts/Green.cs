@@ -21,7 +21,14 @@ namespace PuttrApp
                 go.SetActive(false);
                 Object.DontDestroyOnLoad(go);
                 _console = go.AddComponent<PuttrConsole>();
-                if (WifiOnly)
+                if (Tv.On)
+                {
+                    // A TV is as a phone: Bluetooth first, then the wifi, where the green is found by name
+                    // (puttr.local, .lan, .home). The web (Samsung) build has no radio, so it goes straight to the wifi.
+                    _console.consoleName = Tv.GreenName;
+                    _console.host = "";
+                }
+                else if (WifiOnly)
                 {
                     _console.useBluetooth = false;
                     _console.host = WifiHost;

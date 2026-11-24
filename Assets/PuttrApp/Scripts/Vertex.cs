@@ -346,40 +346,40 @@ namespace PuttrApp
 
         void Intro()
         {
-            if (Vertex.Error != null) _body.Add(Ui.Box("pad", Ui.Box("glass", Ui.Text(Vertex.Error, "sub", Ui.Medium))).Margin(4));
-            _body.Add(Ui.Box("pad", Ui.Box("glass",
-                Ui.Text("CALIBRATE FIRST", "kick", Ui.Bold),
-                Ui.Text("Calibrate your sensor in the Vertex app before pairing it with Puttr.", "sub", Ui.Regular).Margin(4),
+            if (Vertex.Error != null) _body.Add(Ui.Box("pad", Ui.Box("card", Ui.Text(Vertex.Error, "body-2", Ui.Medium))).Margin(4));
+            _body.Add(Ui.Box("pad", Ui.Box("card",
+                Ui.Text("CALIBRATE FIRST", "caps caps-green", Ui.Bold),
+                Ui.Text("Calibrate your sensor in the Vertex app before pairing it with Puttr.", "body", Ui.Regular).Margin(8),
                 Ui.Button("Pair sensor", () => { _pairing = true; Vertex.Scan(30f); Draw(); }))));
             _body.Add(Ui.Section("What the sensor measures"));
-            _body.Add(Ui.Box("pad", Ui.Box("glass",
-                Ui.Text("Face change at impact, tempo, rhythm, putter speed, rotation and stroke length, on every putt.", "sub", Ui.Regular))));
-            _body.Add(Ui.Box("pad", Ui.Box("glass list-row-flat",
-                Ui.Text("Don't have one? Use code PUTTR15.", "sub", Ui.Medium),
-                Ui.Button("Buy now", () => Application.OpenURL("https://vertex-golf.com/?wt_coupon=puttr15"), "btn btn-ghost"))).Margin(10));
+            _body.Add(Ui.Box("pad", Ui.Box("card",
+                Ui.Text("Face change at impact, tempo, rhythm, putter speed, rotation and stroke length, on every putt.", "body-2", Ui.Regular))));
+            _body.Add(Ui.Box("pad", Ui.Box("card list-row-flat",
+                Ui.Text("Don't have one? Use code PUTTR15.", "body-2", Ui.Medium),
+                Ui.Button("Buy now", () => Application.OpenURL("https://vertex-golf.com/?wt_coupon=puttr15"), "btn btn-ghost"))).Margin(12));
         }
 
         void Connection()
         {
             _body.Add(Ui.Section("Connection"));
-            VisualElement card = Ui.Box("glass");
+            VisualElement card = Ui.Box("card");
             Vertex.Sensor s = Vertex.Current;
             if (Vertex.Connected && s != null)
             {
-                card.Add(Ui.Box("row", Ui.Box("grow", Ui.Text(s.Name ?? "Vertex", "feed-name", Ui.Bold)), Rows.Dot(Ui.Bright, Vertex.Live ? "Live" : "Connected")));
+                card.Add(Ui.Box("row", Ui.Box("grow", Ui.Text(s.Name ?? "Vertex", "set-title", Ui.Bold)), Rows.Dot(Ui.Bright, Vertex.Live ? "Live" : "Connected")));
                 if (s.Battery >= 0)
                 {
-                    Label battery = Ui.Text("Battery " + s.Battery + "%", "sub", Ui.Medium);
+                    Label battery = Ui.Caps("Battery " + s.Battery + "%").Margin(4);
                     battery.style.color = s.Battery <= 15 ? Ui.Red : s.Battery <= 30 ? Ui.Amber : Ui.Bright;
                     card.Add(battery);
                 }
-                if (Vertex.Putts.Count == 0) card.Add(Ui.Text("Hit a test putt to see your numbers.", "sub", Ui.Regular).Margin(6));
+                if (Vertex.Putts.Count == 0) card.Add(Ui.Text("Hit a test putt to see your numbers.", "body-2", Ui.Regular).Margin(8));
             }
             else
             {
                 string words = Vertex.Stage == "searching" ? (Vertex.Found.Count > 0 ? "Found " + Vertex.Found[0].Name : "Searching...") : Vertex.Stage == "connecting" ? "Connecting..." : "Not connected";
-                card.Add(Ui.Box("row", Ui.Box("grow", Ui.Text("Vertex", "feed-name", Ui.Bold)), Rows.Dot(Ui.Amber, words)));
-                if (Vertex.Error != null) card.Add(Ui.Text(Vertex.Error, "sub", Ui.Regular).Margin(6));
+                card.Add(Ui.Box("row", Ui.Box("grow", Ui.Text("Vertex", "set-title", Ui.Bold)), Rows.Dot(Ui.Amber, words)));
+                if (Vertex.Error != null) card.Add(Ui.Text(Vertex.Error, "body-2", Ui.Regular).Margin(8));
                 // While pairing, every sensor heard can be chosen.
                 if (_pairing) foreach (Vertex.Sensor f in Vertex.Found)
                 {
@@ -387,7 +387,7 @@ namespace PuttrApp
                     card.Add(Rows.Row("Lightning", f.Name + (f.Battery >= 0 ? "  ·  " + f.Battery + "%" : ""), () => Vertex.Connect(pick)));
                 }
                 if (!_pairing && Vertex.Stage != "searching") card.Add(Ui.Button("Search again", () => Vertex.Scan(30f), "btn btn-ghost"));
-                if (_pairing) card.Add(Ui.Text("Wake the sensor with a waggle and keep it within a few feet.", "muted", Ui.Regular).Margin(8));
+                if (_pairing) card.Add(Ui.Text("Wake the sensor with a waggle and keep it within a few feet.", "body-2", Ui.Regular).Margin(8));
             }
             _body.Add(Ui.Box("pad", card));
         }
@@ -397,23 +397,38 @@ namespace PuttrApp
             if (Vertex.Putts.Count == 0) return;
             VertexPutt v = Vertex.Putts[Vertex.Putts.Count - 1];
             _body.Add(Ui.Section("Last putt   ·   " + Vertex.Putts.Count + (Vertex.Putts.Count == 1 ? " putt" : " putts")));
-            Label face = Ui.Text((v.FaceChange > 0 ? "+" : "") + v.FaceChange.ToString("0.0") + "°", "score-big", Ui.Bold);
+            // The score block: face change as the one big numeral with its caption, then the nine readings as strips.
+            Label face = Ui.Num((v.FaceChange > 0 ? "+" : "") + v.FaceChange.ToString("0.0") + "°", "num-44");
             face.style.color = VertexPutt.FaceColour(v.FaceChange);
-            VisualElement card = Ui.Box("glass",
-                Ui.Box("row", Ui.Box("grow", Ui.Text("FACE CHANGE", "kick", Ui.Bold), face), Ui.Text(VertexPutt.FaceWords(v.FaceChange), "h2", Ui.Bold)),
-                Ui.Box("row", FreePuttScreen.Stat(v.Tempo.ToString("0") + " bpm", "Tempo"), FreePuttScreen.Stat(v.Rhythm.ToString("0.0") + " : 1", "Rhythm"), FreePuttScreen.Stat(v.Speed.ToString("0.00") + " m/s", "Speed")).Margin(10),
-                Ui.Box("row", FreePuttScreen.Stat(v.BackRotation.ToString("0.0") + "°", "Back rotation"), FreePuttScreen.Stat(v.ForwardRotation.ToString("0.0") + "°", "Forward rotation"), FreePuttScreen.Stat(v.BackLength.ToString("0") + " mm", "Backstroke")).Margin(10),
-                Ui.Box("row", FreePuttScreen.Stat(v.BackTime.ToString("0.00") + " s", "Back time"), FreePuttScreen.Stat(v.ForwardTime.ToString("0.00") + " s", "Forward time"), FreePuttScreen.Stat(v.Lie.ToString("0.0") + "°", "Lie angle")).Margin(10));
-            _body.Add(Ui.Box("pad", card));
+            VisualElement card = Ui.Box("card",
+                Ui.Caps("Face change", "caps caps-green"), face, Ui.Text(VertexPutt.FaceWords(v.FaceChange), "body", Ui.Bold));
+            _body.Add(Ui.Box("pad", card,
+                Strip((v.Tempo.ToString("0") + " bpm", "Tempo"), (v.Rhythm.ToString("0.0") + " : 1", "Rhythm"), (v.Speed.ToString("0.00") + " m/s", "Speed")),
+                Strip((v.BackRotation.ToString("0.0") + "°", "Back rotation"), (v.ForwardRotation.ToString("0.0") + "°", "Fwd rotation"), (v.BackLength.ToString("0") + " mm", "Backstroke")),
+                Strip((v.BackTime.ToString("0.00") + " s", "Back time"), (v.ForwardTime.ToString("0.00") + " s", "Fwd time"), (v.Lie.ToString("0.0") + "°", "Lie angle"))));
+        }
+
+        static VisualElement Strip(params (string value, string caption)[] cells)
+        {
+            VisualElement strip = Ui.StatStrip(cells);
+            strip.AddToClassList("set-strip");
+            return strip;
         }
 
         void Diagnostics()
         {
             _body.Add(Ui.Section("Sensor link"));
             string calibration = Vertex.Calibration == 3 ? "Calibrated" : Vertex.Calibration < 0 ? "Unknown" : "Status " + Vertex.Calibration;
-            _body.Add(Ui.Box("pad", Ui.Box("glass",
-                Ui.Box("row", FreePuttScreen.Stat(Vertex.Stage, "Stage"), FreePuttScreen.Stat(Vertex.Live ? "Confirmed" : "Sent", "Live mode"), FreePuttScreen.Stat(calibration, "Calibration")),
-                Ui.Box("row", FreePuttScreen.Stat(Vertex.Packets.ToString(), "Packets"), FreePuttScreen.Stat(Vertex.Reasserts.ToString(), "Reasserts"), FreePuttScreen.Stat(Vertex.Current?.Firmware ?? "–", "Firmware")).Margin(10))));
+            // Words, not scores: a row each (name left, value right) in one bordered block.
+            VisualElement card = Ui.Box("glass set-card");
+            foreach ((string key, string value) in new[]
+            {
+                ("Stage", Vertex.Stage), ("Live mode", Vertex.Live ? "Confirmed" : "Sent"), ("Calibration", calibration),
+                ("Packets", Vertex.Packets.ToString()), ("Reasserts", Vertex.Reasserts.ToString()), ("Firmware", Vertex.Current?.Firmware ?? "–"),
+            })
+                card.Add(Ui.Box("set-row", Ui.Text(key, "gv-key", Ui.Regular), Ui.Text(value, "gv-value", Ui.Bold)));
+            card[card.childCount - 1].AddToClassList("set-row-last");
+            _body.Add(Ui.Box("pad", card));
         }
     }
 }

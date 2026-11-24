@@ -107,6 +107,27 @@ void PuttrShare_File(const char *path)
     });
 }
 
+// A message and a link through the share sheet (react-native-share Share.open({ message, url })): the text and the
+// URL go as two items, so Messages and Mail show the words with the link after them and Copy copies both.
+void PuttrShare_Text(const char *text, const char *url)
+{
+    NSString *words = [NSString stringWithUTF8String:text ?: ""];
+    NSString *link = [NSString stringWithUTF8String:url ?: ""];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        UIViewController *top = UnityGetGLViewController();
+        while (top.presentedViewController) top = top.presentedViewController;
+        NSMutableArray *items = [NSMutableArray array];
+        if (words.length > 0) [items addObject:words];
+        NSURL *address = link.length > 0 ? [NSURL URLWithString:link] : nil;
+        if (address != nil) [items addObject:address];
+        if (items.count == 0) return;
+        UIActivityViewController *share = [[UIActivityViewController alloc] initWithActivityItems:items applicationActivities:nil];
+        share.popoverPresentationController.sourceView = top.view;
+        share.popoverPresentationController.sourceRect = CGRectMake(CGRectGetMidX(top.view.bounds), CGRectGetMidY(top.view.bounds), 1, 1);
+        [top presentViewController:share animated:YES completion:nil];
+    });
+}
+
 // A photo from the front camera (CrewPicker takePhoto: launchCamera, cameraType front): the system camera,
 // written as a JPEG; the path goes to Unity as OnPhoto, "" if cancelled or there is no camera.
 @interface PuttrCameraTaker : NSObject <UIImagePickerControllerDelegate, UINavigationControllerDelegate>

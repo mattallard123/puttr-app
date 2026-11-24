@@ -34,6 +34,7 @@ namespace PuttrArcade
     public sealed class MajorLeagueMode : StageMode
     {
         public override string Name => "Major League";
+        public override bool Branded => true;
         public override bool DealsTee => false;
         public override string Blurb => "A night at the ballpark.\nEvery putt is an at-bat.\nHole it straight to go deep.";
         public override string Rule => "Every putt is an at-bat: hole it for a hit, and the straighter it goes in, the further it flies.";
@@ -44,6 +45,8 @@ namespace PuttrArcade
         public override int MaxPlayers => 4;
         public override string SoloOpponent => "Puttr";
         public override GameAudio.Scene Sound => GameAudio.Scene.Ballpark;
+        // puttr-app-2: the park's own outro (the arcade's game-over until it is recorded).
+        public override string EndSlot => "majorleague_final";
         public override string[] HowTo => new[]
         {
             "Each putt is an at-bat. Putt from the distance and the tee the screen calls: left, center or right.",
@@ -56,6 +59,9 @@ namespace PuttrArcade
         public override bool SmallBanner => true; // the infield is where the big banner would be
         public override int Putter => _ai || _runs == null ? 0 : Mathf.Clamp(_side, 0, _players - 1); // whose difficulty applies to this putt
         public override string Tee => _over || _feet == 0 ? null : _feet + " feet, " + TeeWord[_tee - 1] + " tee";
+        // puttr-app-2: the at-bat is saved with the distance and tee it was dealt.
+        public override int PuttFeet => _feet;
+        public override int PuttTee => _tee;
 
         public override int Score(int player)
         {
@@ -65,7 +71,10 @@ namespace PuttrArcade
         }
         public override string ScoreWord(int n) => n == 1 ? "run" : "runs";
 
-        const int Innings = 3;
+        // puttr-app-2: three innings in Puttr Arcade; the app's game page offers 3, 6 or 9 (MajorLeague.js INNINGS_OPTIONS).
+        // Read when a game begins, so a game in play keeps the length it started with.
+        public static int EmbeddedInnings = 3;
+        int Innings = 3;
 
         // A play is the number of bases it is worth: none for an out, four for a home run.
         const int Out = 0, Base1 = 1, Base2 = 2, Base3 = 3, Homer = 4;
@@ -432,11 +441,13 @@ namespace PuttrArcade
         // puts it on its boards. It wants a dark ground behind it.
         static Texture2D _logo;
         static Material _logoPaint;
+        static int _logoBrand = -1;
         GameObject Lockup(Transform parent, Vector3 at, float height, int order)
         {
-            if (_logo == null) _logo = Resources.Load<Texture2D>("PuttrArcade/LogoHeader");
+            if (_logoBrand != Brand.Version) { _logoBrand = Brand.Version; _logo = Brand.Logo; _logoPaint = null; }
             if (_logoPaint == null) _logoPaint = Make.Glow(new Color(1.15f, 1.15f, 1.15f, 1f), false, _logo);
-            float width = _logo == null ? height * 4f : height * _logo.width / _logo.height;
+            float width = Mathf.Min(height * Brand.Aspect(_logo), height * Brand.Aspect(Brand.Puttr) * 1.1f);
+            height = width / Brand.Aspect(_logo);
             return Order(Card("Puttr", parent, at, new Vector2(width, height), _logoPaint), order);
         }
 
@@ -1089,6 +1100,7 @@ namespace PuttrArcade
             SetRunners();
             Show();
             _wheel.gameObject.SetActive(false);
+            if (Arcade != null && Arcade.Hud != null) Arcade.Hud.SetTeeSign(0, 0);
         }
 
         public override void Begin(int players)
@@ -1096,6 +1108,7 @@ namespace PuttrArcade
             _players = Mathf.Clamp(players, 1, 4);
             _ai = _players == 1;
             _sides = _ai ? 2 : _players;
+            Innings = EmbeddedInnings == 6 || EmbeddedInnings == 9 ? EmbeddedInnings : 3;   // puttr-app-2
             _line = new int[_sides, Innings];
             _batted = new bool[_sides, Innings];
             _runs = new int[_sides];
@@ -1121,7 +1134,7 @@ namespace PuttrArcade
                 // The line score: a row for each side, a box for each inning, and the runs.
                 var names = new List<string>();
                 for (int s = 0; s < _sides; s++) names.Add(Short(SideName(s)));
-                Arcade.Hud.BuildTable(names, Innings, false, 78f, true, "INNING", "RUNS");
+                Arcade.Hud.BuildTable(names, Innings, false, Innings > 6 ? 52f : Innings > 3 ? 64f : 78f, true, "INNING", "RUNS");   // puttr-app-2: narrower boxes for a longer game
                 Board();
             }
             Show();
@@ -1135,6 +1148,8 @@ namespace PuttrArcade
             _tee = _rng.Next(1, 4);
             _expected = PuttrAnalysis.ExpectedEntryAngle(_feet, _tee);
             ShowWheel(level);
+            // puttr-app-2: where to putt from, big on the left across from the hit wheel (Matt, 2026-11-21).
+            if (Arcade != null && Arcade.Hud != null) Arcade.Hud.SetTeeSign(_feet, _tee, true);
             if (aloud) Arcade.Audio.Voice("ml_distance_" + _feet + "_feet", "ml_tee_" + TeeWord[_tee - 1]);
         }
 
@@ -1247,6 +1262,7 @@ namespace PuttrArcade
             if (last && _inning == Innings - 1)
             {
                 _over = true;
+                if (Arcade.Hud != null) Arcade.Hud.SetTeeSign(0, 0);
                 int won = Winner();
                 string call = won < 0 ? audio.VoiceOne("ml_tie_", 2)
                     : !_ai ? "ml_win_" + (won + 1)
@@ -1518,7 +1534,7 @@ namespace PuttrArcade
                 if (hit == Homer && runs == 1) sub = "Solo shot   ·   1 run scores";
                 hud.Banner(slam ? "GRAND SLAM!" : HitShout[hit], sub, HitInk[hit], quick ? 1.3f : slam ? 3.4f : hit == Homer ? 2.8f : 2f);
                 audio.Roar(hit == Homer);
-                if (slam) audio.Bell();
+                if (slam) audio.Organ();   // puttr-app-2: the park's own organ, not the bell other games share
                 string then = runs >= 4 ? audio.VoiceOne("ml_grandslam_", 3) : runs > 0 ? "ml_runs_" + runs : Loaded && !full ? audio.VoiceOne("ml_loaded_", 2) : null;
                 Say(!quick || hit == Homer, audio.VoiceOne(HitVoice[hit], 8), then);
                 _buzz = Mathf.Max(_buzz, hit == Homer ? 3f : 1f);

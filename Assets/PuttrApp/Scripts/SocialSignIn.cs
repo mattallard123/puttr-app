@@ -1,4 +1,4 @@
-// Sign in with Apple and with Google, on iOS, without the Firebase or Google SDKs.
+// Sign in with Apple and with Google, on iOS and the Mac, without the Firebase or Google SDKs.
 //
 // Apple: the system sheet (Assets/Plugins/iOS/PuttrSignIn.m) gives an identity token, which
 // Firebase takes with the nonce it was asked for.
@@ -7,7 +7,11 @@
 // takes that.
 //
 // Either way the token goes to Firebase (Auth.SignInWithIdp): on iPhone to the native SDK,
-// which then holds the session.
+// which then holds the session; on the Mac to Firebase's REST API (Auth.cs).
+//
+// The Mac (Assets/PuttrApp/Native~/PuttrSignInMac.m, built into Plugins/macOS/PuttrSignIn.bundle) has the same two
+// sheets. A Mac plug-in cannot call back into Unity, so its answers are polled for (Update). Sign in with Apple is
+// only in the Mac App Store build: it needs that build's entitlement, and a token made for co.puttr.ios.
 //
 // SPIKE: this signs existing Players in. A first-time sign-up also needs the profile row
 // puttr-app's IntroScreen makes (initSocialProfile); that is not here yet.
@@ -35,12 +39,39 @@ namespace PuttrApp
         static void PuttrSignIn_WebAuth(string url, string scheme, string target) { }
         public static bool Supported => true;
         public static bool AppleSupported => false;
+#elif UNITY_STANDALONE_OSX && !UNITY_EDITOR
+        [DllImport("PuttrSignIn")] static extern void PuttrSignInMac_Apple(string hashedNonce);
+        [DllImport("PuttrSignIn")] static extern void PuttrSignInMac_WebAuth(string url, string scheme);
+        [DllImport("PuttrSignIn")] static extern int PuttrSignInMac_Poll(byte[] buffer, int capacity);
+        static void PuttrSignIn_Apple(string hashedNonce, string target) => PuttrSignInMac_Apple(hashedNonce);
+        static void PuttrSignIn_WebAuth(string url, string scheme, string target) => PuttrSignInMac_WebAuth(url, scheme);
+        public static bool Supported => true;
+        public static bool AppleSupported => Application.identifier == MacStoreId;
+        static readonly byte[] Buffer = new byte[16384];
+
+        // The plug-in's answers: "apple \t token", "web \t url", "error \t why".
+        void Update()
+        {
+            if (_done == null) return;
+            int length;
+            try { length = PuttrSignInMac_Poll(Buffer, Buffer.Length); }
+            catch (Exception) { Finish("Sign-in is not available in this build."); return; }   // the bundle is missing
+            if (length <= 0) return;
+            string line = Encoding.UTF8.GetString(Buffer, 0, length);
+            int tab = line.IndexOf('\t');
+            string kind = tab < 0 ? line : line.Substring(0, tab), text = tab < 0 ? "" : line.Substring(tab + 1);
+            if (kind == "apple") OnAppleToken(text);
+            else if (kind == "web") OnWebAuth(text);
+            else OnSignInError(text);
+        }
 #else
         static void PuttrSignIn_Apple(string hashedNonce, string target) { }
         static void PuttrSignIn_WebAuth(string url, string scheme, string target) { }
         public static bool Supported => false;
         public static bool AppleSupported => false;
 #endif
+        /// <summary>The Mac App Store build's bundle id: the iPhone app's (MacBuilds.StoreId).</summary>
+        public const string MacStoreId = "co.puttr.ios";
 
         const string ObjectName = "PuttrSignIn";
         static SocialSignIn _one;

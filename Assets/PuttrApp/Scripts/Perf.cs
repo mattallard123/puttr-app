@@ -29,10 +29,13 @@ namespace PuttrApp
         public static bool InGame;
         public static int ImagesLoaded, ImagesFromDisk;
 
+        static int _lowPower = -1;
+
         public static bool LowPower
         {
-            get => PlayerPrefs.GetInt(LowPowerPref, 1) == 1;
-            set { PlayerPrefs.SetInt(LowPowerPref, value ? 1 : 0); PlayerPrefs.Save(); }
+            // Read once: Tick asks every frame.
+            get { if (_lowPower < 0) _lowPower = PlayerPrefs.GetInt(LowPowerPref, 1); return _lowPower == 1; }
+            set { _lowPower = value ? 1 : 0; PlayerPrefs.SetInt(LowPowerPref, _lowPower); PlayerPrefs.Save(); }
         }
 
         /// <summary>A moment worth timing, in seconds since the app started.</summary>
@@ -44,10 +47,36 @@ namespace PuttrApp
             ToFile(line);
         }
 
-        /// <summary>perf.log in the app's documents folder: readable from the Mac with devicectl.</summary>
+        /// <summary>perf.log in the app's documents folder: readable from the Mac with devicectl. Lines are held
+        /// and written together (every two seconds from Tick, and when the app leaves the front), not one file
+        /// open per line; past 512 KB the older half is dropped.</summary>
+        static readonly StringBuilder _unwritten = new StringBuilder();
+        static float _writeAt;
+        const long LogLimit = 512 * 1024;
+
         static void ToFile(string line)
         {
-            try { File.AppendAllText(Path.Combine(Application.persistentDataPath, "perf.log"), System.DateTime.Now.ToString("s") + " " + line + "\n"); }
+            _unwritten.Append(System.DateTime.Now.ToString("s")).Append(' ').Append(line).Append('\n');
+            if (App.I == null) Flush();   // nothing ticking (a test, or before the app is up): write now
+        }
+
+        public static void Flush()
+        {
+            if (_unwritten.Length == 0) return;
+            string text = _unwritten.ToString();
+            _unwritten.Clear();
+            try
+            {
+                string file = Path.Combine(Application.persistentDataPath, "perf.log");
+                var info = new FileInfo(file);
+                if (info.Exists && info.Length > LogLimit)
+                {
+                    string all = File.ReadAllText(file);
+                    int cut = all.IndexOf('\n', all.Length / 2);
+                    File.WriteAllText(file, cut >= 0 ? all.Substring(cut + 1) : "");
+                }
+                File.AppendAllText(file, text);
+            }
             catch (System.Exception) { /* a log that cannot be written is not worth failing for */ }
         }
 
@@ -76,13 +105,26 @@ namespace PuttrApp
         /// <summary>Something changed on screen: draw every frame for a moment.</summary>
         public static void Wake(float seconds = AwakeSeconds) => _awakeUntil = Mathf.Max(_awakeUntil, Time.unscaledTime + seconds);
 
+        static int _lastW, _lastH;
+
         /// <summary>Once a frame, from App.Update.</summary>
         public static void Tick()
         {
             if (Touched()) Wake();
+            if (_unwritten.Length > 0 && Time.unscaledTime >= _writeAt) { _writeAt = Time.unscaledTime + 2f; Flush(); }
+            // Turning the device lays everything out again: draw every frame through it, or the new layout only
+            // shows on the next slow idle frame (the iPad's slow rotation on the Play tab).
+            if (Screen.width != _lastW || Screen.height != _lastH) { _lastW = Screen.width; _lastH = Screen.height; Wake(2f); }
             bool idle = !InGame && LowPower && Time.unscaledTime > _awakeUntil;
-            int want = idle ? IdleInterval : 1;
-            if (OnDemandRendering.renderFrameInterval != want) OnDemandRendering.renderFrameInterval = want;
+            // At rest the whole loop slows to 15 a second, not only the drawing: the loop itself (scripts, input,
+            // UI layout) was most of the idle CPU (2026-11-17 walk: 10 to 13% on every tab with the loop at 60).
+            // The first touch wakes it back to 60 within one slow frame.
+            int fps = idle ? 60 / IdleInterval : 60;
+            // In a game that is only waiting for the next putt: 30 a second. A putt playing out, a touch, or anything
+            // that wakes the app puts it straight back to 60 (the console's putt arrives through the socket regardless).
+            if (InGame && LowPower && !PuttrArcade.Arcade.Busy && Time.unscaledTime > _awakeUntil) fps = 30;
+            if (OnDemandRendering.renderFrameInterval != 1) OnDemandRendering.renderFrameInterval = 1;
+            if (Application.targetFrameRate != fps) Application.targetFrameRate = fps;
 
             _frames++;
             if (OnDemandRendering.willCurrentFrameRender) _rendered++;
@@ -112,7 +154,8 @@ namespace PuttrApp
             if (mouse != null && mouse.scroll.ReadValue().sqrMagnitude > 0.01f) return true;
             Keyboard keyboard = Keyboard.current;
             if (keyboard != null && keyboard.anyKey.isPressed) return true;
-            return TouchScreenKeyboard.visible;
+            // Typing in a field: full rate while it has focus (a hardware keyboard or a slow-to-open one sends no touches).
+            return TouchScreenKeyboard.visible || (App.I != null && App.I.Typing);
         }
 
         /// <summary>What the overlay on the Profile tab shows.</summary>

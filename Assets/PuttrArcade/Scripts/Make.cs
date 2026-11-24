@@ -28,19 +28,26 @@ namespace PuttrArcade
         static Material Base(ref Material cache, string name)
         {
             if (cache == null) cache = Resources.Load<Material>("PuttrArcade/" + name);
-            return cache != null ? new Material(cache) : new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            Material m = cache != null ? new Material(cache) : new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            // An old Apple chip draws the pipeline's Lit shader white: it gets the arcade's own (see PlainLit.shader).
+            if (Arcade.Plain && PlainLights.Lit != null) m.shader = PlainLights.Lit;
+            return m;
         }
 
         public static Material Lit(Color color, float smoothness = 0.5f, float metallic = 0f, Texture texture = null, Texture normal = null, float bump = 1f)
         {
-            Material m = normal != null ? Base(ref _litNormal, "LitNormal") : Base(ref _lit, "Lit");
+            // An old Apple chip (Arcade.Plain) draws every normal-mapped surface pure white, whatever lights it (an A9X
+            // iPad Pro, 2026-11-20: the mat and the floors, the only normal-mapped things, with every light off). There
+            // the normal map is kept on the material and never switched on (the arcade's own shader there does not use one).
+            bool bumps = normal != null && !Arcade.Plain;
+            Material m = bumps ? Base(ref _litNormal, "LitNormal") : Base(ref _lit, "Lit");
             m.SetColor("_BaseColor", color);
             m.SetFloat("_Smoothness", smoothness);
             m.SetFloat("_Metallic", metallic);
             if (texture != null) m.SetTexture("_BaseMap", texture);
             if (normal != null)
             {
-                m.EnableKeyword("_NORMALMAP");
+                if (bumps) m.EnableKeyword("_NORMALMAP");
                 m.SetTexture("_BumpMap", normal);
                 m.SetFloat("_BumpScale", bump);
             }
@@ -380,7 +387,15 @@ namespace PuttrArcade
         }
 
         /// <summary>Maple boards running along the lane (texture v).</summary>
+        static readonly System.Collections.Generic.Dictionary<int, Texture2D> _woods = new System.Collections.Generic.Dictionary<int, Texture2D>();
+        /// <summary>Floorboards. One texture a seed, made once and shared.</summary>
         public static Texture2D Wood(int seed = 7)
+        {
+            if (_woods.TryGetValue(seed, out Texture2D have) && have != null) return have;
+            return _woods[seed] = WoodMade(seed);
+        }
+
+        static Texture2D WoodMade(int seed)
         {
             const int w = 512, h = 512, boards = 12;
             var rng = new System.Random(seed);
@@ -408,7 +423,7 @@ namespace PuttrArcade
             }
             Texture2D tex = NewTexture(w, h, true);
             tex.SetPixels(px);
-            tex.Apply(true);
+            tex.Apply(true, true);
             return tex;
         }
 
@@ -449,7 +464,7 @@ namespace PuttrArcade
             }
             var tex = new Texture2D(w, ht, TextureFormat.RGBA32, true, true) { wrapMode = TextureWrapMode.Repeat, anisoLevel = 8 };
             tex.SetPixels(px);
-            tex.Apply(true);
+            tex.Apply(true, true);
             return tex;
         }
 
@@ -476,7 +491,16 @@ namespace PuttrArcade
         }
 
         /// <summary>The Puttr carpet: a short, dense pile. Returns color and normal maps.</summary>
+        // Made once and shared: every scene that asks gets the same pair (they used to be painted again, pixel by
+        // pixel, for every scene and every rebuild of one, and never freed).
+        static Texture2D _carpetColor, _carpetNormal;
         public static void Carpet(out Texture2D color, out Texture2D normal)
+        {
+            if (_carpetColor == null || _carpetNormal == null) CarpetMade(out _carpetColor, out _carpetNormal);
+            color = _carpetColor; normal = _carpetNormal;
+        }
+
+        static void CarpetMade(out Texture2D color, out Texture2D normal)
         {
             const int n = 512;
             var px = new Color[n * n];
@@ -495,7 +519,7 @@ namespace PuttrArcade
             }
             color = NewTexture(n, n, true);
             color.SetPixels(px);
-            color.Apply(true);
+            color.Apply(true, true);
             normal = NormalFromHeight(h, n, n, 1.6f);
         }
 
@@ -514,7 +538,16 @@ namespace PuttrArcade
         }
 
         /// <summary>A golf ball: white, dimpled, with one short green alignment line so the roll shows.</summary>
+        // Made once and shared: every scene that asks gets the same pair (they used to be painted again, pixel by
+        // pixel, for every scene and every rebuild of one, and never freed).
+        static Texture2D _ballColor, _ballNormal;
         public static void Ball(out Texture2D color, out Texture2D normal)
+        {
+            if (_ballColor == null || _ballNormal == null) BallMade(out _ballColor, out _ballNormal);
+            color = _ballColor; normal = _ballNormal;
+        }
+
+        static void BallMade(out Texture2D color, out Texture2D normal)
         {
             const int w = 1024, ht = 512;
             var px = new Color[w * ht];
@@ -536,7 +569,7 @@ namespace PuttrArcade
             }
             color = NewTexture(w, ht, true);
             color.SetPixels(px);
-            color.Apply(true);
+            color.Apply(true, true);
             normal = NormalFromHeight(h, w, ht, 3.2f);
         }
 
@@ -554,12 +587,15 @@ namespace PuttrArcade
             }
             Texture2D tex = NewTexture(w, h, false);
             tex.SetPixels(px);
-            tex.Apply(true);
+            tex.Apply(true, true);
             return tex;
         }
 
         /// <summary>A soft round dot, for glows and sparks.</summary>
-        public static Texture2D SoftDot()
+        static Texture2D _softDot;
+        public static Texture2D SoftDot() => _softDot != null ? _softDot : _softDot = SoftDotMade();
+
+        static Texture2D SoftDotMade()
         {
             const int n = 64;
             var px = new Color[n * n];
@@ -574,7 +610,7 @@ namespace PuttrArcade
             }
             Texture2D tex = NewTexture(n, n, false);
             tex.SetPixels(px);
-            tex.Apply(true);
+            tex.Apply(true, true);
             return tex;
         }
 
@@ -640,7 +676,7 @@ namespace PuttrArcade
                 }
                 cube.SetPixels(px, (CubemapFace)face);
             }
-            cube.Apply(true);
+            cube.Apply(true, true);
             return cube;
         }
     }

@@ -1,0 +1,33 @@
+/* The game page's leaderboard (GameScreens.cs Board) and its side panel: compact (Matt, 2026-11-17). */
+
+/* Landscape: a narrow panel down the right (GameScreen sets 30% of the width). */
+.game-side.gb-side { min-width: 250px; max-width: 340px; }
+.gb-side .game-board { padding: 12px 8px; }
+
+.glass.gb-card { padding: 12px 12px 8px 12px; border-radius: 4px; }
+/* The card's name is the shared section header (Ui.Section), without the page's side margins. */
+.sec.gb-head { margin: 0; padding: 0; }
+.gb-head .sec-link { padding: 8px 0 8px 12px; }
+
+.choice.gb-choice { margin-top: 8px; padding: 4px; border-radius: 4px; }
+.gb-choice .choice-item { padding: 8px 4px; border-radius: 4px; }
+.gb-choice .choice-text { font-size: 11px; }
+
+.gb-list { margin-top: 4px; }
+.gb-row { flex-direction: row; align-items: center; padding: 8px 4px; border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); }
+.gb-row.gb-me { background-color: rgb(34, 38, 42); border-radius: 4px; }
+.board-row.gb-me { background-color: rgb(34, 38, 42); border-radius: 4px; }
+.gb-place { width: 24px; font-size: 13px; color: rgb(139, 147, 153); flex-shrink: 0; }
+.avatar.gb-av { width: 28px; height: 28px; border-radius: 4px; margin-right: 8px; }
+.gb-av .avatar-letter { font-size: 11px; }
+.gb-words { min-width: 0; flex-basis: 0; }
+.gb-town { font-size: 11px; color: rgb(139, 147, 153); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.gb-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.g-score.gb-score { font-size: 15px; margin-left: 8px; flex-shrink: 0; }
+.gb-empty { font-size: 13px; white-space: normal; padding: 4px; }
+
+/* Loading: placeholder rows in the board, in place of the screen-centred spinner. */
+.gb-sk .gb-row { border-bottom-color: rgb(38, 42, 46); }
+.gb-sk .gb-place { width: 24px; }
+.gb-sk-name { margin-left: 8px; }
+.gb-sk-score { width: 28px; margin-left: 8px; flex-shrink: 0; }

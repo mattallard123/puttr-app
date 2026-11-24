@@ -27,6 +27,8 @@ namespace PuttrArcade
         public override int Putter => _player; // whose difficulty applies to this putt
         public override string Blurb => "A gravity puzzle.\nLine sets the start, pace the speed.\nBend it round to the relay.";
         public override GameAudio.Scene Sound => GameAudio.Scene.Space;
+        // puttr-app-2: mission complete (the arcade's game-over until it is recorded).
+        public override string EndSlot => "slingshot_win";
         public override int Score(int player) => Totals()[player];
         public override string ScoreWord(int n) => n == 1 ? "putt" : "putts";
         public override bool LowerIsBetter => true;
@@ -267,8 +269,15 @@ namespace PuttrArcade
             return false;
         }
 
+        // The ideal-putt card shows the putt the guide asks for (Matt, 2026-11-23: the guide said 2.1 in right of center
+        // while the card drew it straight in the middle).
+        float _aimLine;
+        public override float AimTargetInches => _aimLine;
+        public override float AimGoalInches => PuttrArcade.Arcade.HoleInches;
+
         void BuildGuide(Sector sector)
         {
+            _aimLine = 0f;
             // The widest stretch of rail that works, at the pace nearest a normal putt that has one.
             float bestPace = 0f, bestLow = 0f, bestHigh = 0f;
             foreach (float pace in new[] { 40f, 44f, 36f, 48f, 32f, 52f, 28f, 56f })
@@ -291,12 +300,14 @@ namespace PuttrArcade
                 if (wide > bestHigh - bestLow || bestPace == 0f && wide > 0f) { bestPace = pace; bestLow = at0; bestHigh = at1; }
                 if (bestHigh - bestLow >= 1.5f) break; // a normal pace does it: no need to ask for anything odd
             }
-            if (bestPace == 0f) return;
+            if (bestPace == 0f) { ShowAim(); return; }
 
             float aimY = (bestLow + bestHigh) * 0.5f;
             float line = -aimY / UnitsPerInchOfLine;                       // inches right of center
             float zone = Mathf.Max(0.06f, (bestHigh - bestLow) / UnitsPerInchOfLine);
             Color green = new Color(0.48f, 0.83f, 0.27f);
+            _aimLine = Mathf.Abs(line) < 0.1f ? 0f : line;
+            ShowAim();
 
             // On the rail: where to launch from.
             Card("Aim zone", _level, new Vector3(RailX, aimY, 0.4f), new Vector2(1.6f, Mathf.Max(0.8f, bestHigh - bestLow)), Make.Glow(new Color(green.r, green.g, green.b, 0.55f), false));
@@ -429,27 +440,27 @@ namespace PuttrArcade
                 case Fate.Relay:
                     ShowPutt(putt, "Relay locked", Make.Bright);
                     hud.Banner("RELAY LOCKED", _putts == 1 ? "First putt" : "In " + _putts + " putts", Make.Bright, 2.2f);
-                    Arcade.Audio.Bell();
-                    Arcade.Audio.Coin();
+                    if (Arcade.Audio.TryLibrary("slingshot_relay_lock", 0.9f)) Arcade.Audio.Excite(1f);   // puttr-app-2: its own lock-on, the shared bell and coin until recorded
+                    else { Arcade.Audio.Bell(); Arcade.Audio.Coin(); }
                     Arcade.Celebrate(90, At(sector.Gate.x, sector.Gate.y - 3f, 0f));
                     _gatePulse = 1f;
                     break;
                 case Fate.FellIn:
                     ShowPutt(putt, "Fell in", Make.Amber);
                     hud.Banner("PULLED IN", "Putt firmer, or start further from the planet", Make.Amber, 2.2f);
-                    Arcade.Audio.Boom();
+                    if (!Arcade.Audio.TryLibrary("slingshot_pulled_in", 0.9f)) Arcade.Audio.Boom();   // puttr-app-2
                     Arcade.Sparks(At(p.x, p.y, -1f), 40);
                     Arcade.Shake(0.4f);
                     break;
                 case Fate.Escaped:
                     ShowPutt(putt, "Escaped", Make.Red);
                     hud.Banner("MISSED", p.y > sector.Gate.y ? "Went above the relay" : "Went below the relay", Make.Red, 2.2f);
-                    Arcade.Audio.Miss();
+                    if (!Arcade.Audio.TryLibrary("slingshot_adrift", 0.8f)) Arcade.Audio.Miss();   // puttr-app-2
                     break;
                 default:
                     ShowPutt(putt, "Adrift", Make.Amber);
                     hud.Banner("ADRIFT", "Caught in orbit", Make.Amber, 1.8f);
-                    Arcade.Audio.Miss();
+                    if (!Arcade.Audio.TryLibrary("slingshot_adrift", 0.8f, 0.92f)) Arcade.Audio.Miss();   // puttr-app-2
                     break;
             }
             if (end != Fate.Relay) LeaveGhost(_putts + (end == Fate.FellIn ? "  fell in" : end == Fate.Escaped ? "  escaped" : "  adrift"), end == Fate.FellIn);

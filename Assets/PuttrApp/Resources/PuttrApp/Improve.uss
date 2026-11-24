@@ -1,0 +1,165 @@
+/* The Improve tab (ImproveTab.cs), to docs/design-guidelines.md ("Broadcast"): flat and solid, 3D only inside a
+   bordered window with its words on a solid bar under it. Its own sheet, added to the screen's root: the shared
+   pieces (title, caps, num, body, card, window, strip, btn, sec) are App.uss's and are only laid out here. */
+
+.imp { flex-grow: 1; flex-direction: column; }
+.imp-scroll { flex-grow: 1; }
+.imp-fill { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.imp .imp-m16 { margin-top: 16px; }
+.imp .imp-m24 { margin-top: 24px; }
+.imp .imp-gap-4 { margin-top: 4px; }
+.imp .imp-gap-8 { margin-top: 8px; }
+.imp .imp-gap-12 { margin-top: 12px; }
+
+/* The header's coach pill: the coach's face and Chat. */
+.imp-coach { flex-shrink: 0; flex-direction: row; align-items: center; height: 44px; padding: 0 12px 0 4px; border-radius: 4px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); }
+.imp-coach:active { background-color: rgb(34, 38, 42); }
+.imp-coach-face { flex-shrink: 0; width: 32px; height: 32px; border-radius: 4px; background-color: rgb(34, 38, 42); align-items: center; justify-content: center; -unity-background-scale-mode: scale-and-crop; }
+.imp .imp-coach-t { margin-left: 8px; color: rgb(255, 255, 255); }
+
+/* Pins: words that follow a point of a 3D scene. */
+.live3d-pin { font-size: 11px; }
+.imp-pin-count { font-size: 11px; color: rgb(122, 212, 70); background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(45, 140, 60); border-radius: 4px; padding: 0 4px; }
+
+/* A picture window with a solid bar under it (the 3D stroke session, the Practice tiles). */
+.imp .imp-win-top { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.imp-bar { background-color: rgb(21, 24, 27); border-width: 1px; border-top-width: 0; border-color: rgb(38, 42, 46); border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; }
+.imp-bar-16 { padding: 16px; }
+.imp-bar-12 { padding: 12px; }
+.imp-bar .btn { margin-top: 16px; }
+.imp-lab-win { height: 240px; }
+
+/* Cards and list rows. */
+.imp-card { background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; overflow: hidden; }
+.imp-pad { padding: 16px; }
+.imp-row { flex-direction: row; align-items: center; min-height: 44px; padding: 16px; }
+.imp-row:active { background-color: rgb(34, 38, 42); }
+.imp-row-words { margin-right: 12px; }
+.imp-streak { flex-direction: row; align-items: center; flex-shrink: 0; margin-right: 12px; }
+.imp-streak-t { font-size: 13px; color: rgb(255, 179, 0); margin-left: 4px; }
+
+/* Real coach review. */
+.imp-lesson { flex-direction: row; align-items: center; padding: 16px; }
+.imp-lesson-words { margin-right: 12px; }
+.imp-due { width: 44px; height: 44px; flex-shrink: 0; margin-right: 12px; align-items: center; justify-content: center; }
+.imp-due-text { font-size: 13px; color: rgb(255, 255, 255); }
+.imp-links { flex-direction: row; border-top-width: 1px; border-color: rgb(38, 42, 46); }
+.imp-link { flex-grow: 1; flex-basis: 0; -unity-text-align: middle-center; padding: 12px 0; font-size: 13px; color: rgb(255, 255, 255); }
+.imp-link-div { border-left-width: 1px; border-color: rgb(38, 42, 46); }
+
+/* PQS: the score block and its trend. */
+.imp-pqs-row { flex-direction: row; align-items: center; }
+.imp-pqs-lead { flex-shrink: 0; margin-right: 24px; }
+.imp-pqs-line { flex-direction: row; align-items: center; padding: 8px 0; }
+.imp-pqs-line-div { border-top-width: 1px; border-color: rgb(38, 42, 46); }
+.imp-ribbon { height: 96px; margin-top: 16px; }
+.imp-ribx { flex-direction: row; justify-content: space-between; margin-top: 4px; }
+.imp-ribx-t { font-size: 11px; color: rgb(139, 147, 153); }
+
+/* Practice: a row of tiles, the card art in a window and its words on the bar under it. */
+.imp-flow-gap { flex-shrink: 0; width: 16px; }
+.imp-flow-tail { flex-shrink: 0; width: 4px; }
+.imp-cf { flex-shrink: 0; width: 220px; margin-right: 12px; }
+.imp-cf-art { height: 132px; -unity-background-scale-mode: scale-and-crop; }
+.imp .imp-cf-club { flex-shrink: 0; margin-left: 8px; }
+
+/* The video library: a row of videos under each section. */
+.imp-vid { flex-shrink: 0; width: 200px; margin-right: 12px; }
+.imp-vid-thumb { width: 200px; height: 112px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); background-color: rgb(21, 24, 27); -unity-background-scale-mode: scale-and-crop; align-items: center; justify-content: center; overflow: hidden; }
+.imp-vid-play { width: 44px; height: 44px; border-radius: 4px; background-color: rgb(10, 12, 13); align-items: center; justify-content: center; }
+.imp-vid-name { font-size: 13px; color: rgb(255, 255, 255); margin-top: 8px; white-space: normal; }
+
+/* A tablet, or a phone on its side: the cards pair up in two columns. */
+.imp-pair { flex-direction: row; align-items: flex-start; }
+.imp-pair-col { width: 50%; }
+.imp-pair-a .pad { padding-right: 8px; }
+.imp-pair-b .pad { padding-left: 8px; }
+.imp-pair-a .sec { padding-right: 8px; }
+.imp-pair-b .sec { padding-left: 8px; }
+.imp-wide .imp-lab-win { height: 320px; }
+
+/* Arena.Lifted and Arena.Glowing (ImproveArena.cs) are no longer used by the tab: no shadows, no glow. */
+.imp-shadow { display: none; }
+.imp-glow { display: none; }
+
+/* Coach settings: the sheet (CoachSettings.cs). */
+.cs-sheet { max-height: 92%; background-color: rgb(21, 24, 27); padding-top: 16px; padding-left: 16px; padding-right: 16px; }
+.cs-head { margin-bottom: 8px; }
+.cs-title { font-size: 20px; color: rgb(255, 255, 255); }
+.cs-scroll { flex-shrink: 1; }
+.cs-coaches { flex-direction: row; justify-content: space-between; }
+.cs-coach { width: 23.5%; align-items: center; padding: 12px 4px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); background-color: rgb(21, 24, 27); }
+/* The picked coach: surface-2 with a white line, as a chip that is on. No persona colours round the card. */
+.cs-coach-on { background-color: rgb(34, 38, 42); border-color: rgb(255, 255, 255); }
+.cs-face { width: 48px; height: 48px; border-radius: 4px; margin-right: 0; }
+.cs-name { font-size: 13px; color: rgb(196, 201, 205); margin-top: 8px; }
+.cs-name-on { color: rgb(255, 255, 255); }
+.cs-style { font-size: 11px; letter-spacing: 0.5px; color: rgb(139, 147, 153); margin-top: 4px; -unity-text-align: middle-center; white-space: normal; }
+.cs-card { margin-top: 16px; }
+.cs-card .muted { margin-right: 4px; }
+.cs-goals { margin-left: -4px; margin-right: -4px; }
+.cs-goals > .scope { flex-grow: 1; flex-basis: 0; align-items: center; margin-left: 4px; margin-right: 4px; }
+.cs-picker { margin-top: 12px; }
+.cs-save { margin-top: 16px; }
+
+/* Full analysis: the start-line fans (StartLines.cs) and the spot card. */
+.sl-section { margin-top: 24px; }
+.sl-head { align-items: flex-start; margin-bottom: 12px; }
+.sl-dot { width: 6px; height: 6px; border-radius: 3px; margin-right: 4px; }
+.sl-key { font-size: 11px; color: rgb(139, 147, 153); margin-right: 12px; }
+.sl-key-last { margin-right: 0; }
+.sl-row { flex-direction: row; }
+.sl-col { flex-grow: 1; flex-basis: 0; align-items: stretch; }
+.sl-col-mid { margin-left: 8px; margin-right: 8px; }
+.sl-tee-name { font-size: 11px; color: rgb(139, 147, 153); margin-bottom: 8px; -unity-text-align: middle-center; }
+.sl-fan { border-radius: 4px; overflow: hidden; align-items: center; justify-content: center; }
+.sl-fan-spot { height: 170px; }
+.sl-none { font-size: 11px; color: rgb(139, 147, 153); -unity-text-align: middle-center; }
+.sl-none-sm { font-size: 11px; }
+.sl-tee-line { font-size: 11px; color: rgb(255, 255, 255); margin-top: 8px; -unity-text-align: middle-center; }
+.sl-faint { color: rgb(139, 147, 153); }
+.sl-tee-spread { font-size: 11px; color: rgb(139, 147, 153); margin-top: 4px; -unity-text-align: middle-center; }
+.sl-grid-head { margin-bottom: 12px; }
+.sl-modal { max-width: 340px; align-items: stretch; padding: 24px; }
+.sl-target { width: 44px; height: 44px; border-radius: 4px; background-color: rgb(21, 24, 27); align-items: center; justify-content: center; align-self: center; margin-bottom: 12px; }
+.sl-modal-title { font-size: 20px; color: rgb(255, 255, 255); -unity-text-align: middle-center; }
+.sl-stats { justify-content: center; align-items: stretch; margin-top: 16px; margin-bottom: 8px; }
+.sl-stat { align-items: center; padding: 0 8px; }
+.sl-stat-v { font-size: 20px; color: rgb(255, 255, 255); -unity-text-align: middle-center; }
+.sl-stat-l { font-size: 11px; color: rgb(139, 147, 153); margin-top: 4px; }
+.sl-stat-div { width: 1px; background-color: rgb(38, 42, 46); }
+.sl-spot { margin-top: 12px; }
+.sl-axis { margin-top: 4px; }
+.sl-axis-t { font-size: 11px; color: rgb(139, 147, 153); }
+.sl-tendency { font-size: 11px; color: rgb(139, 147, 153); margin-top: 8px; -unity-text-align: middle-center; white-space: normal; }
+.sl-done { align-self: center; padding: 12px 32px; margin-top: 12px; }
+
+/* The coach's plan (CoachPlan.cs): the row, the bar pinned under Full analysis, and the answer card. */
+.cp-bar { flex-shrink: 0; padding: 8px 16px; background-color: rgb(10, 12, 13); border-top-width: 1px; border-color: rgb(38, 42, 46); }
+.cp-card { background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; overflow: hidden; }
+.cp-card-green { border-color: rgb(38, 42, 46); }
+.cp-row { flex-direction: row; align-items: center; padding: 16px; min-height: 44px; }
+.cp-row-compact { padding: 12px; }
+.cp-lead { width: 36px; height: 36px; flex-shrink: 0; align-items: center; justify-content: center; }
+.cp-face { width: 36px; height: 36px; border-radius: 4px; margin-right: 0; }
+.cp-spin { width: 36px; height: 36px; border-radius: 4px; background-color: rgb(34, 38, 42); align-items: center; justify-content: center; overflow: hidden; }
+.cp-words { margin-left: 12px; }
+.cp-name { font-size: 15px; color: rgb(255, 255, 255); }
+.cp-line-row { margin-top: 4px; flex-wrap: wrap; }
+.cp-line { font-size: 13px; color: rgb(139, 147, 153); white-space: normal; flex-shrink: 1; }
+.cp-dots { font-size: 13px; color: rgb(139, 147, 153); margin-left: 4px; }
+/* The arrow: an icon square (surface-2), not a second green button on the page it sits on. */
+.cp-go { width: 44px; height: 44px; border-radius: 4px; background-color: rgb(34, 38, 42); align-items: center; justify-content: center; margin-left: 12px; flex-shrink: 0; }
+.cp-row:active .cp-go { background-color: rgb(48, 53, 58); }
+.cp-modal { max-width: 560px; height: 70%; padding: 16px; background-color: rgb(21, 24, 27); }
+.cp-modal-head { margin-bottom: 16px; }
+.cp-modal-face { width: 44px; height: 44px; border-radius: 4px; }
+.cp-modal-name { font-size: 15px; color: rgb(255, 255, 255); }
+.cp-modal-scope { font-size: 11px; color: rgb(139, 147, 153); }
+.cp-divider { height: 1px; background-color: rgb(38, 42, 46); margin-bottom: 12px; }
+.cp-modal-scroll { flex-grow: 1; flex-shrink: 1; }
+.cp-answer { font-size: 15px; color: rgb(196, 201, 205); white-space: normal; }
+.cp-modal .chat-recs { padding: 12px 0 0 0; }
+.cp-modal .list-row { margin: 8px 0 0 0; }
+.cp-continue { flex-direction: row; flex-shrink: 0; }
+.cp-continue > Image { margin-right: 8px; }

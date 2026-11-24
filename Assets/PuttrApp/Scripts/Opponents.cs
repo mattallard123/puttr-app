@@ -67,20 +67,21 @@ namespace PuttrApp
             Root.Clear();
             if (_pool.Count == 0)
             {
-                Root.Add(Ui.Box("glass center-box", Ui.Text("No opponents yet", "h2 center wrap", Ui.Bold), Ui.Text("Be the first to play this game online!", "sub center", Ui.Regular).Margin(6)));
+                Root.Add(Ui.Box("glass center-box", Ui.Title("No opponents yet", "title-20 center wrap"), Ui.Text("Be the first to play this game online!", "sub center", Ui.Regular).Margin(8)));
                 if (!_page) Root.Add(Ui.Button("Close", _close, "btn btn-ghost").Margin(8));
                 return;
             }
             object p = _pick;
             string hcp = J.Str(p, "handicap");
             if (hcp.StartsWith("-")) hcp = "+" + hcp.Substring(1);
-            VisualElement card = Ui.Box("glass center-box", Ui.Avatar(J.Str(p, "displayName"), J.Str(p, "photoURL"), true), Ui.Text(J.Str(p, "displayName"), "h2 center wrap", Ui.Bold).Margin(8), Ui.Text(J.Str(p, "homeTown"), "muted center", Ui.Regular));
-            if (_spinning) card.Add(Ui.Text("Searching…", "muted center", Ui.Regular).Margin(6));
-            else if (hcp.Length > 0) card.Add(AdminLabels.Pill(hcp + " HCP", Ui.Bright).Margin(6));
-            if (_starting) card.Add(Ui.Text("Setting up your match", "muted center", Ui.Regular).Margin(10));
+            VisualElement card = Ui.Box("glass center-box", Ui.Avatar(J.Str(p, "displayName"), J.Str(p, "photoURL"), true), Ui.Title(J.Str(p, "displayName"), "title-20 center wrap").Margin(8), Ui.Text(J.Str(p, "homeTown"), "muted center", Ui.Regular));
+            if (_spinning) card.Add(Ui.Text("Searching…", "muted center", Ui.Regular).Margin(8));
+            else if (hcp.Length > 0) card.Add(Ui.Text(hcp + " HCP", "chip chip-green").Margin(8));
+            if (_starting) card.Add(Ui.Text("Setting up your match", "muted center", Ui.Regular).Margin(12));
             Root.Add(card);
             if (_spinning || _starting) return;
-            Root.Add(Ui.Button("Accept", Accept).Margin(10));
+            // On the game page Start is the one main button, so Accept is a secondary one there; on its own page it is the main one.
+            Root.Add(Ui.Button("Accept", Accept, _page ? "btn" : "btn btn-ghost").Margin(12));
             VisualElement more = Ui.Box("row", Ui.Button("New opponent", () => App.Run(Shuffle()), "btn btn-ghost grow"));
             if (!_page) { more.Add(FreePuttScreen.Space(8).Width(8)); more.Add(Ui.Button("Cancel", _close, "btn btn-ghost grow")); }
             Root.Add(more.Margin(8));
@@ -117,6 +118,9 @@ namespace PuttrApp
             Root.style.height = 220;
             Root.style.justifyContent = Justify.Center;
             Root.Add(mute);
+            // A game made while play records are held (-app2HoldPlay) has a local id ("local-1"), the same on every phone:
+            // a call on that channel would put strangers on each other's screens.
+            if (gameId.StartsWith("local-", System.StringComparison.Ordinal)) { Root.style.display = DisplayStyle.None; return; }
             if (!Capture.Supported || Kid.IsKid(App.I.Profile)) { _status.text = Capture.Supported ? "" : "Video needs the phone app."; Root.style.display = Capture.Supported ? DisplayStyle.None : DisplayStyle.Flex; return; }
             int uid = J.Int(App.I.Profile, "id");
             if (uid <= 0) uid = Random.Range(1, 10000000);
@@ -140,6 +144,16 @@ namespace PuttrApp
             Capture.One.PlaceRemote(joined ? share : new Rect(0, 0, 0, 0));
             float w = share.width * 0.3f, h = w * (all.width / all.height) * (177f / 123f);
             Capture.One.Place(new Rect(share.xMax - w - 0.02f, share.y + 0.01f, w, Mathf.Min(h, share.height * 0.9f)));
+        }
+
+        /// <summary>
+        /// The match is over: end the call and take the card away. The native views sit over the app, so they
+        /// must go before the final screen is drawn where they were.
+        /// </summary>
+        public void End()
+        {
+            Stop();
+            Root.style.display = DisplayStyle.None;
         }
 
         void Stop()

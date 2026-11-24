@@ -59,7 +59,9 @@ namespace PuttrApp
         }
         protected abstract Shot Judge(AppPutt.Verdict v, SensorStroke s);
 
-        protected void DealRandom() { Feet = Dice.Next(3, 12); Tee = Dice.Next(1, 4); }
+        // 3 to 11 ft on Medium; the game page's Easy deals 3 to 6 ft and Hard 8 to 11 ft (the games that deal this way
+        // say so with DifficultyNotes).
+        protected void DealRandom() { Feet = Dice.Next(FeetFrom(), FeetTo() + 1); Tee = Dice.Next(1, 4); }
 
         // ── Setup: the sensor, then the game's own choices ──
 
@@ -76,30 +78,28 @@ namespace PuttrApp
         {
             bool on = Vertex.Connected;
             string name = Vertex.Current != null && !string.IsNullOrEmpty(Vertex.Current.Name) ? Vertex.Current.Name : "Vertex";
-            Label state = Ui.Text(on ? name + " connected" : "Vertex not connected", "feed-name", Ui.Bold);
+            Label state = Ui.Text(on ? name + " connected" : "Vertex not connected", "g-name", Ui.Bold);
             state.style.color = on ? (Color)Ui.Bright : Ui.Amber;
             string words = on ? "Every putt is paired with its stroke." : Vertex.Supported
                 ? "This game scores your stroke, so it needs the Vertex sensor on your putter."
                 : "Test putts here play with practice strokes. On a phone, connect the Vertex on your putter.";
             VisualElement card = Ui.Box("glass", Form.Label("Vertex sensor"), state, Ui.Text(words, "muted wrap", Ui.Regular));
             if (!on && Vertex.Supported) card.Add(Ui.Button("Connect Vertex", () => App.I.Push(new VertexScreen(App.I)), "btn btn-ghost").Margin(8));
-            return card.Margin(6);
+            return card.Margin(8);
         }
 
         protected static VisualElement DistanceTee(Func<int> feet, Action<int> setFeet, Func<int> tee, Action<int> setTee)
         {
             VisualElement box = Ui.Box("");
-            box.Add(Form.Label("Distance"));
-            box.Add(Form.Pills(Enumerable.Range(3, 9).Select(f => f + " ft").ToArray(), feet() - 3, i => setFeet(i + 3)));
-            box.Add(Form.Label("Tee"));
-            box.Add(Form.Pills(new[] { "Left", "Center", "Right" }, tee() - 1, i => setTee(i + 1)));
+            box.Add(Form.Label("Distance and tee"));
+            box.Add(Frame.SpotRow(feet(), tee(), (f, t) => { setFeet(f); setTee(t); }));
             return box;
         }
 
         protected static VisualElement Tiles(params (string value, string label)[] tiles)
         {
             VisualElement row = Ui.Box("stat-tiles");
-            foreach ((string value, string label) t in tiles) row.Add(Ui.Box("glass stat-tile", Ui.Text(t.value, "stat-value", Ui.Bold), Ui.Text(t.label, "stat-label", Ui.Bold)));
+            foreach ((string value, string label) t in tiles) row.Add(Ui.Box("glass stat-tile", Ui.Text(t.value, "stat-value", Ui.Bold), Ui.Text(t.label, "caps", Ui.Bold)));
             return row;
         }
 
@@ -117,11 +117,10 @@ namespace PuttrApp
         int _streak, _best, _pocket;
         readonly List<double> _tempos = new List<double>();
 
-        public override string Title => "Pendulum";
+        protected override string OwnTitle => "Pendulum";
         public override string GameType => "PENDULUM";
         public override string Icon => "Timer";
         public override Color Accent => new Color32(0x56, 0x87, 0xFF, 0xFF);
-        public override string Bed => "room_loop";
         public int Mult => Math.Max(1, Math.Min(MaxMult, _streak));
 
         protected override void GameOptions(VisualElement box)
@@ -133,6 +132,7 @@ namespace PuttrApp
         }
 
         protected override void Begin() { _streak = _best = _pocket = 0; _tempos.Clear(); }
+        public override string[] DifficultyNotes => GameLevels.RandomNotes;
         protected override void Deal() => DealRandom();
         public override bool Over => Shots.Count >= Putts;
         public override string Progress => "PUTT " + Math.Min(Shots.Count + 1, Putts) + " OF " + Putts;
@@ -174,11 +174,10 @@ namespace PuttrApp
         int _streak, _best, _inTime;
         readonly List<double> _ratios = new List<double>();
 
-        public override string Title => "Waltz";
+        protected override string OwnTitle => "Waltz";
         public override string GameType => "WALTZ";
         public override string Icon => "MusicNotes";
         public override Color Accent => new Color32(0xFF, 0x8A, 0x65, 0xFF);
-        public override string Bed => "room_loop";
         public int Streak => _streak;
         /// <summary>The click speed (whole-stroke tempo) for the putt now: it changes every 3 putts.</summary>
         public int ClickBpm => RoundBpm[Math.Min(RoundBpm.Length - 1, Math.Min(Shots.Count, Putts - 1) / PerRound)];
@@ -193,6 +192,7 @@ namespace PuttrApp
 
         protected override bool Accepts(SensorStroke s) => s.Rhythm > 0;
         protected override void Begin() { _streak = _best = _inTime = 0; _ratios.Clear(); }
+        public override string[] DifficultyNotes => GameLevels.RandomNotes;
         protected override void Deal() => DealRandom();
         public override bool Over => Shots.Count >= Putts;
         public override string Progress => "PUTT " + Math.Min(Shots.Count + 1, Putts) + " OF " + Putts;
@@ -233,13 +233,13 @@ namespace PuttrApp
         public (int face, int rhythm, int lie, int purity) Q;
         public bool LastStrike;
 
-        public override string Title => "Pure";
+        protected override string OwnTitle => "Pure";
         public override string GameType => "PURE";
         public override string Icon => "Diamond";
         public override Color Accent => new Color32(0xC7, 0xCF, 0xDA, 0xFF);
-        public override string Bed => "space_shimmer_loop";
 
         protected override void Begin() { _strikes = _made = 0; _purity.Clear(); Q = default; LastStrike = false; }
+        public override string[] DifficultyNotes => GameLevels.RandomNotes;
         protected override void Deal() => DealRandom();
         public override bool Over => Shots.Count >= Putts;
         public override string Progress => "PUTT " + Math.Min(Shots.Count + 1, Putts) + " OF " + Putts;
@@ -282,11 +282,10 @@ namespace PuttrApp
         public int LastMatch;
         readonly List<int> _matches = new List<int>();
 
-        public override string Title => "Carbon Copy";
+        protected override string OwnTitle => "Carbon Copy";
         public override string GameType => "CARBONCOPY";
         public override string Icon => "Copy";
         public override Color Accent => new Color32(0x4C, 0xC1, 0x62, 0xFF);
-        public override string Bed => "probe_loop";
         public static double TolFor(int copyIndex) => Tol[Math.Min(Tol.Length - 1, copyIndex / PerRound)];
         public int CopiesDone => _copies;
 
@@ -336,12 +335,11 @@ namespace PuttrApp
         public double LastGate, LastOff;
         public bool LastInside, Cleared;
 
-        public override string Title => "Square Up";
+        protected override string OwnTitle => "Square Up";
         public override string GameType => "SQUAREUP";
         public override string Icon => "Square";
         public override Color Accent => new Color32(0xF5, 0x9E, 0x0B, 0xFF);
         public override string Words => "SURVIVED";
-        public override string Bed => "wind_loop";
         public static double GateFor(int level) => Math.Max(Floor, StartGate - Step * (level - 1));
         public double Gate => GateFor(Level);
 
@@ -396,7 +394,6 @@ namespace PuttrApp
 
         public override VisualElement Board() => Card("THE GATE", Tiles(
             (Center == null ? "Finding" : SensorMath.Deg(Center.Value), Zero ? "TRUE ZERO" : "YOUR NORMAL"), (InLevel + "/" + PerLevel, "TO CLEAR LEVEL"), (Survived + "", "PUTTS SURVIVED")));
-        public override string SoundFor(Shot s) => Over ? "rule_win" : s.Title == "LEVEL CLEARED" || s.Title == "GATE SET" ? "rule_bonus" : s.Title.StartsWith("CALIB") ? null : s.Good ? "rule_make" : "rule_miss";
     }
 
     // ── Stretch: longer putt, longer stroke, same tempo ──
@@ -413,17 +410,16 @@ namespace PuttrApp
         public int LastTempoOk = -1, LastPace;
         public bool LastLengthOk, LastElastic;
 
-        public override string Title => "Stretch";
+        protected override string OwnTitle => "Stretch";
         public override string GameType => "STRETCH";
         public override string Icon => "Ruler";
         public override Color Accent => new Color32(0x00, 0xCC, 0xFF, 0xFF);
-        public override string Bed => "range_loop";
         public static (double lo, double hi, double center) BandFor(int feet) { double c = BandBase + BandPerFt * feet; return (c - BandHalf, c + BandHalf, c); }
 
         protected override void GameOptions(VisualElement box)
         {
             box.Add(Form.Label("Tee"));
-            box.Add(Form.Pills(new[] { "Left", "Center", "Right" }, _tee - 1, i => _tee = i + 1));
+            box.Add(Frame.TeePicker(_tee, t => _tee = t));
         }
         protected override void Begin() { _elastic = 0; Lock = null; _tempos.Clear(); _lengths.Clear(); LastRollout = double.NaN; LastTempoOk = -1; }
         // Short (3 to 6 ft), then long (8 to 11 ft), all on the tee picked.
@@ -477,11 +473,10 @@ namespace PuttrApp
         public double[] Ratios;
         public bool LastLock;
 
-        public override string Title => "Lockdown";
+        protected override string OwnTitle => "Lockdown";
         public override string GameType => "LOCKDOWN";
         public override string Icon => "Hexagon";
         public override Color Accent => new Color32(0xB5, 0x7B, 0xFF, 0xFF);
-        public override string Bed => "probe_loop";
 
         protected override void GameOptions(VisualElement box) => box.Add(DistanceTee(() => _feet, f => _feet = f, () => _tee, t => _tee = t));
         protected override void Begin() { Calib.Clear(); Centers = null; Band = Tightest = BandBefore = BandStart; Combo = BreakRun = Lockdowns = 0; Ratios = null; LastLock = false; }
@@ -515,7 +510,6 @@ namespace PuttrApp
 
         public override VisualElement Board() => Centers == null ? null : Card("THE RING", Tiles(
             (Lockdowns + "", "LOCKDOWNS"), (Math.Round(Tightest * 100) + "%", "TIGHTEST BAND"), (BreakRun + "/" + EndAfter, "BREAKS IN A ROW")));
-        public override string SoundFor(Shot s) => Over ? "rule_win" : s.Title.StartsWith("CALIB") ? null : base.SoundFor(s);
     }
 
     // ── The Yips: a boss battle against the twitch ──
@@ -528,17 +522,17 @@ namespace PuttrApp
         public int BossHp = BossMax, PlayerHp = PlayerMax, Combo, Damage, LastDmg, LastTaken, LastStage = 1, LastPurity;
         public bool LastCrit, LastTwitch, LastCollapse;
 
-        public override string Title => "The Yips";
+        protected override string OwnTitle => "The Yips";
         public override string GameType => "THEYIPS";
         public override string Icon => "Skull";
         public override Color Accent => new Color32(0xFF, 0x33, 0x66, 0xFF);
         public override string Words => "DAMAGE";
-        public override string Bed => "fire_small_loop";
         public static int StageFor(int hp) => hp > BossMax * 0.66 ? 1 : hp > BossMax * 0.33 ? 2 : 3;
         public int Stage => StageFor(BossHp);
         public bool Won => BossHp <= 0;
 
         protected override void Begin() { BossHp = BossMax; PlayerHp = PlayerMax; Combo = Damage = LastDmg = LastTaken = LastPurity = 0; LastStage = 1; LastCrit = LastTwitch = LastCollapse = false; }
+        public override string[] DifficultyNotes => GameLevels.RandomNotes;
         protected override void Deal() => DealRandom();
         public override bool Over => BossHp <= 0 || PlayerHp <= 0;
         public override string Progress => "STAGE " + Stage;
@@ -579,6 +573,5 @@ namespace PuttrApp
 
         public override VisualElement Board() => Shots.Count == 0 ? null : Card("STROKE CHECK", Tiles(
             (LastPurity + "", "PURITY"), ("±" + SensorMath.N(StrikeFace[Stage - 1]) + "°", "STRIKE WINDOW"), (SensorMath.Ratio(Stroke != null ? Stroke.Rhythm : 0), "RHYTHM")));
-        public override string SoundFor(Shot s) => Over ? (Won ? "rule_win" : "game_over") : LastTaken > 0 ? "rule_miss" : s.Good ? (LastCrit ? "rule_bonus" : "rule_make") : "rule_miss";
     }
 }

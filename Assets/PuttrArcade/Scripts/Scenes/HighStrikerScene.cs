@@ -100,6 +100,7 @@ namespace PuttrArcade
             Lights(0, false);
             _score.text = "";
             Sound("hammer_hit", 1f);                       // the hammer on the pad
+            Sound("highstriker_puck", 0.6f, tooHard ? 1.15f : 1f);   // puttr-app-2: up the rail (silent until recorded)
             float target = tooHard ? Top + 60f : Height(score);
             float rise = tooHard ? 0.45f : Mathf.Lerp(0.35f, 0.9f, score / 100f);
             for (float t = 0f; t < 1f; t += Time.deltaTime / rise)
@@ -111,7 +112,7 @@ namespace PuttrArcade
             }
             if (tooHard)
             {
-                Sound("rule_miss");
+                Sound("highstriker_dud", "rule_miss");   // puttr-app-2: the game's own sound, the shared one until recorded
                 _score.text = "TOO HARD";
                 _score.color = new Color(1f, 0.4f, 0.4f);
                 for (float t = 0f; t < 1f; t += Time.deltaTime / 0.6f) { _puck.localPosition = new Vector3(0, Mathf.Lerp(target, Base, t), -3f); yield return null; }

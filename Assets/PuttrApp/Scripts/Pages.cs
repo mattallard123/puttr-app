@@ -7,7 +7,7 @@
 //   FeedScreen              main/FeedScreen.js         Following | Community games
 //   MembershipScreen        MembershipScreen.js        a member's view (non-members get the Club paywall)
 //   PuttersScreen, EditPutterScreen  profile/MyPutters, EditPutter
-//   EditProfileScreen       profile/EditProfile.js     (no photo upload or city search yet)
+//   EditProfileScreen       profile/EditProfile.js     photo, names, home town, persona, side, handicap, gender, birthday, bio
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -29,8 +29,20 @@ namespace PuttrApp
             return scroll;
         }
 
-        public static VisualElement Note(string text) => Ui.Box("pad", Ui.Box("glass", Ui.Text(text, "sub", Ui.Regular)));
-        public static VisualElement Loading() => Ui.Box("pad", Spinner.Big()).Margin(10);
+        public static VisualElement Note(string text) => Ui.Box("pad", Ui.Box("card", Ui.Text(text, "body-2", Ui.Regular)));
+        public static VisualElement Loading() => Ui.Box("pad", Spinner.Big()).Margin(12);
+
+        /// <summary>FreePuttScreen.Choice (its lit option follows the tap).</summary>
+        public static VisualElement Switch(string[] names, int chosen, Action<int> pick) => FreePuttScreen.Choice(names, chosen, pick);
+
+        /// <summary>A tap on this child (a button on a tappable card) does not also tap the card under it.</summary>
+        public static T Swallow<T>(T element) where T : VisualElement
+        {
+            element.RegisterCallback<ClickEvent>(e => e.StopPropagation());
+            element.RegisterCallback<PointerDownEvent>(e => e.StopPropagation());
+            element.RegisterCallback<PointerUpEvent>(e => e.StopPropagation());
+            return element;
+        }
 
         /// <summary>The app's score badge: Tracks is to par (E, +2, -1); anything else its score, or a dash.</summary>
         public static string Score(object game)
@@ -49,15 +61,16 @@ namespace PuttrApp
         readonly string _id;
         readonly VisualElement _body;
         object _game, _user;
-        List<object> _putts, _chips;
-        string _video;
+        List<object> _putts, _chips, _recordings;
         bool _autoReplayed;
+        VisualElement _coach;
 
         public GameViewScreen(App app, string gameId)
         {
             _app = app;
             _id = gameId;
             Root = Page.Make(app, "Game", out _body);
+            if (PuttCards.Sheet != null) Root.styleSheets.Add(PuttCards.Sheet);
             _body.Add(Page.Loading());
             App.Run(Api.Open("/club/analytics/game/" + gameId, data =>
             {
@@ -68,7 +81,7 @@ namespace PuttrApp
                 Draw();
             }, _ => { _body.Clear(); _body.Add(Page.Note("Could not load this game.")); }));
             App.Run(Api.Get("/profile/game/putts/" + gameId, data => { _putts = J.List(data); Draw(); }, _ => { _putts = new List<object>(); Draw(); }));
-            App.Run(Api.Get("/video/recordings/" + gameId, data => { _video = J.Str(J.First(data), "videoUrl"); Draw(); }));
+            App.Run(Api.Get("/video/recordings/" + gameId, data => { _recordings = GameReplay.Segments(J.List(data)); Draw(); }));
         }
 
         void Draw()
@@ -76,21 +89,23 @@ namespace PuttrApp
             if (_game == null || _putts == null) return;
             _body.Clear();
             string name = J.Str(_user, "displayName", "A Player");
-            VisualElement who = Ui.Box("row", Ui.Avatar(name, J.Str(_user, "photoURL")), Ui.Box("grow", Ui.Text(name, "feed-name", Ui.Bold), Ui.Text(J.Str(_user, "homeTown"), "muted", Ui.Regular)).Margin(0));
+            VisualElement who = Ui.Box("row gv-who", Ui.Avatar(name, J.Str(_user, "photoURL")), Ui.Box("grow", Ui.Text(name, "set-title", Ui.Bold), Ui.Text(J.Str(_user, "homeTown"), "set-sub", Ui.Regular)));
             string userId = J.Str(_user, "userId");
             who.OnTap(() => ProfileScreen.Open(_app, userId, _user));
             int made = 0;
             foreach (object p in _putts) if (J.Int(p, "made") == 1) made++;
             bool tracks = J.Str(_game, "gameType") == "TRACKS";
-            VisualElement head = Ui.Box("glass",
-                Ui.Text(J.Str(_game, "title", "Game"), "h2", Ui.Bold),
-                Ui.Text(Ago.Words(ProfileMath.Date(_game, "created_at"), DateTime.UtcNow), "muted", Ui.Regular),
-                who.Margin(12),
-                Ui.Box("row",
-                    FreePuttScreen.Stat(Page.Score(_game), tracks ? "To par" : "Score"),
-                    FreePuttScreen.Stat(_putts.Count.ToString(), "Putts"),
-                    FreePuttScreen.Stat(_putts.Count > 0 ? Mathf.RoundToInt(made * 100f / _putts.Count) + "%" : "–", "Made")).Margin(14));
-            _body.Add(Ui.Box("pad", head));
+            // The game and who played it on one card; its three numbers as a stat strip under it.
+            VisualElement head = Ui.Box("card gv-head",
+                Ui.Title(J.Str(_game, "title", "Game"), "title-20 gv-title"),
+                Ui.Text(Ago.Words(ProfileMath.Date(_game, "created_at"), DateTime.UtcNow), "body-2", Ui.Regular),
+                who);
+            VisualElement numbers = Ui.StatStrip(
+                (Page.Score(_game), tracks ? "To par" : "Score"),
+                (_putts.Count.ToString(), "Putts"),
+                (_putts.Count > 0 ? Mathf.RoundToInt(made * 100f / _putts.Count) + "%" : "–", "Made"));
+            numbers.AddToClassList("set-strip");
+            _body.Add(Ui.Box("pad", head, numbers));
 
             if (J.Str(_game, "gameCat") == "CHIPPING") { if (_chips != null) Chipping.Build(_body, _chips); return; }
 
@@ -109,60 +124,91 @@ namespace PuttrApp
                 if (pace.Count > 0)
                 {
                     double sum = 0; foreach (double v in pace) sum += v;
-                    insights.Add(Ui.Box("set-row", Ui.Text("Avg pace", "sub grow", Ui.Regular), Ui.Text(AppPutt.FmtRollout(sum / pace.Count) ?? "no read", "feed-name", Ui.Bold).Margin(0), AdminLabels.Pill(a.SpeedConsistency, a.SpeedConsistency == "not consistent" ? Ui.Red : Ui.Bright)));
+                    insights.Add(Ui.Box("set-row", Ui.Text("Avg pace", "gv-key", Ui.Regular), Ui.Text(AppPutt.FmtRollout(sum / pace.Count) ?? "no read", "gv-value", Ui.Bold), AdminLabels.Pill(a.SpeedConsistency, a.SpeedConsistency == "not consistent" ? Ui.Red : Ui.Bright)));
                 }
-                insights.Add(Ui.Box("set-row", Ui.Text("Tendency", "sub grow", Ui.Regular), Ui.Text(a.PushPull == "none" ? "No push/pull tendency" : a.PushPull + " (" + a.PushPullPercent + "%)", "feed-name", Ui.Bold)));
-                if (a.High > 0 || a.Low > 0) insights.Add(Ui.Box("set-row", Ui.Text("Breaking putts", "sub grow", Ui.Regular), Ui.Text(a.High + " high side, " + a.Low + " low side", "feed-name", Ui.Bold)));
+                insights.Add(Ui.Box("set-row", Ui.Text("Tendency", "gv-key", Ui.Regular), Ui.Text(a.PushPull == "none" ? "No push/pull tendency" : a.PushPull + " (" + a.PushPullPercent + "%)", "gv-value", Ui.Bold)));
+                if (a.High > 0 || a.Low > 0) insights.Add(Ui.Box("set-row", Ui.Text("Breaking putts", "gv-key", Ui.Regular), Ui.Text(a.High + " high side, " + a.Low + " low side", "gv-value", Ui.Bold)));
+                insights[insights.childCount - 1].AddToClassList("set-row-last");
                 _body.Add(Ui.Section("Session insights"));
                 _body.Add(Ui.Box("pad", insights));
             }
             if (VertexSummary.Build(_putts) is VisualElement vertex) _body.Add(Ui.Box("pad", vertex));
-
-            VisualElement actions = Ui.Box("row");
-            actions.Add(Ui.Button("Share game", () => { GUIUtility.systemCopyBuffer = "https://app.puttr.co/game/" + J.Str(_game, "id", _id); _app.Toast("Link copied."); }, "btn btn-ghost grow"));
-            if (!string.IsNullOrEmpty(_video) && _video.StartsWith("http"))
+            // The coach analysis row ("<coach> · Ready to analyze", GameView renderCoach): your own game only, never a Kid profile.
+            // Made once (it reads the coach's settings), then moved into each redraw of the page.
+            if (!Kid.IsKid(_app.Profile) && J.Str(_game, "userId", userId) == J.Str(_app.Profile, "userId"))
             {
-                actions.Add(FreePuttScreen.Space(0).Width(10));
-                string url = _video;
-                actions.Add(Ui.Button("Game replay", () => SetupGuide.Play(Root, url), "btn grow"));
-                // Fixture runs only: PUTTR_FIXTURE_REPLAY_AT=seconds opens the replay by itself (for photographing the player).
-                if (Fixtures.On && !_autoReplayed && float.TryParse(Environment.GetEnvironmentVariable("PUTTR_FIXTURE_REPLAY_AT"), NumberStyles.Float, CultureInfo.InvariantCulture, out float at))
-                { _autoReplayed = true; Root.schedule.Execute(() => SetupGuide.Play(Root, url)).ExecuteLater((long)(at * 1000)); }
+                if (_coach == null) _coach = CoachPlan.GameRow(_app, J.Str(_game, "id", _id));
+                if (_coach != null) _body.Add(Ui.Box("pad", _coach).Margin(12));
             }
-            _body.Add(Ui.Box("pad", actions).Margin(12));
+
+            // Game replay is the page's one main button when there is a recording; Share is the secondary.
+            VisualElement actions = Ui.Box("row gv-actions");
+            // GameView shareGame: the system share sheet with the line and the game's link (off the phone, the clipboard).
+            actions.Add(Ui.Button("Share game", () =>
+            {
+                if (!Share.Text("Check out the game I just played on Puttr!", "https://app.puttr.co/game/" + J.Str(_game, "id", _id), "Puttr Game")) _app.Toast("Link copied.");
+            }, "btn btn-ghost"));
+            bool replay = _recordings != null && _recordings.Count > 0;
+            if (replay)
+            {
+                actions.Add(Ui.Box("gv-gap"));
+                actions.Add(Ui.Button("Game replay", () => GameReplay.Open(Root, _recordings, _putts), "btn"));
+                // Fixture runs only: PUTTR_FIXTURE_REPLAY_AT=seconds opens the replay by itself (for photographing the player),
+                // on putt PUTTR_FIXTURE_REPLAY_PUTT (1 = the first) when that is set.
+                if (Fixtures.On && !_autoReplayed && float.TryParse(Environment.GetEnvironmentVariable("PUTTR_FIXTURE_REPLAY_AT"), NumberStyles.Float, CultureInfo.InvariantCulture, out float at))
+                {
+                    _autoReplayed = true;
+                    int.TryParse(Environment.GetEnvironmentVariable("PUTTR_FIXTURE_REPLAY_PUTT"), out int first);
+                    Root.schedule.Execute(() => GameReplay.Open(Root, _recordings, _putts, Mathf.Max(0, first - 1))).ExecuteLater((long)(at * 1000));
+                }
+            }
+            _body.Add(Ui.Box("pad", actions));
 
             if (_putts.Count == 0) return;
             if (MatSummary.HasMatPutts(_putts)) { double score = J.Num(_game, "score"); _body.Add(Ui.Box("pad", Ui.Button("Putt scatter chart", () => MatSummary.Show(Root, _putts, score), "btn btn-ghost"))); }
             _body.Add(Ui.Section("All putts"));
-            VisualElement list = Ui.Box("glass set-card");
+            // PuttCard for each putt: grade and score, distance and break, the pace bar, the entry. A tap opens its
+            // ball path replayed on the green; with a recording, the detail also offers that putt's clip.
+            VisualElement list = Ui.Box("pc-list");
             for (int i = 0; i < _putts.Count; i++)
             {
-                object p = _putts[i];
-                bool m = J.Int(p, "made") == 1;
-                int tee = J.Int(p, "tee", 2);
-                int[][] bp = PuttAssessment.Bp(p); double[] hb = PuttAssessment.Hb(p);
-                bool tracked = bp.Length >= 2 && hb != null;
-                // Pace as PuttCard reads it: the stored rollout, else projected from the ball's path.
-                double? ro = J.Get(p, "rollout") != null ? J.Num(p, "rollout") : tracked ? AppPutt.ProjectRollout(AppPutt.AnalyzeRollout(bp, hb), m ? (bool?)null : false) : null;
-                string rollout = ro.HasValue ? AppPutt.FmtRollout(ro.Value) : null;
-                // Entry as PuttCard reads it: where the ball crossed the lip against the tee's line (getHoleEntry - getTeeEntry).
-                double? entry = null;
-                if (m && tracked)
-                {
-                    double at = AppPutt.HoleEntry(bp, hb, out bool found);
-                    if (found) entry = at - AppPutt.TeeEntry(J.Num(p, "distance"), tee);
-                }
-                Label result = Ui.Text(m ? "Made" : tracked ? "Missed " + AppPutt.MissResult(bp, hb).ToLowerInvariant() : "Missed", "sub", Ui.Bold);
-                result.style.color = m ? Ui.Bright : Ui.Red;
-                VisualElement read = Ui.Box("gv-read");
-                if (rollout != null) read.Add(Ui.Text(rollout, "gv-pace", Ui.Bold));
-                if (entry.HasValue) read.Add(Ui.Text(EntryWords(entry.Value), "gv-entry", Ui.Regular));
-                list.Add(Ui.Box("board-row", Ui.Text((i + 1).ToString(), "board-place", Ui.Bold),
-                    tracked ? new GvHole(m, entry) : Ui.Box("gv-hole"),
-                    Ui.Box("grow gv-what", Ui.Text(J.Int(p, "distance") + " ft   ·   " + PracticeSession.TeeName(tee) + " tee", "feed-name", Ui.Medium), result),
-                    read));
+                int index = i;
+                list.Add(PuttCards.Card(_putts[i], i, Root, null, false, replay ? () => GameReplay.Open(Root, _recordings, _putts, index) : (Action)null));
             }
             _body.Add(Ui.Box("pad", list));
+        }
+
+        /// <summary>A putt as PuttCard reads it, for its row here and its card in the replay's strip.</summary>
+        internal struct PuttRead
+        {
+            public bool Made, Tracked;
+            public string Result, Rollout;
+            public double? Entry;
+        }
+
+        internal static PuttRead Read(object p)
+        {
+            bool m = J.Int(p, "made") == 1;
+            int tee = J.Int(p, "tee", 2);
+            int[][] bp = PuttAssessment.Bp(p); double[] hb = PuttAssessment.Hb(p);
+            bool tracked = bp.Length >= 2 && hb != null;
+            // Pace: the stored rollout, else projected from the ball's path.
+            double? ro = J.Get(p, "rollout") != null ? J.Num(p, "rollout") : tracked ? AppPutt.ProjectRollout(AppPutt.AnalyzeRollout(bp, hb), m ? (bool?)null : false) : null;
+            // Entry: where the ball crossed the lip against the tee's line (getHoleEntry - getTeeEntry).
+            double? entry = null;
+            if (m && tracked)
+            {
+                double at = AppPutt.HoleEntry(bp, hb, out bool found);
+                if (found) entry = at - AppPutt.TeeEntry(J.Num(p, "distance"), tee);
+            }
+            return new PuttRead
+            {
+                Made = m,
+                Tracked = tracked,
+                Result = m ? "Made" : tracked ? "Missed " + AppPutt.MissResult(bp, hb).ToLowerInvariant() : "Missed",
+                Rollout = ro.HasValue ? AppPutt.FmtRollout(ro.Value) : null,
+                Entry = entry,
+            };
         }
 
         /// <summary>"8° right · Right center", "Dead center · Center cut": the entry off the tee's line and its zone (getEntryDescription).</summary>
@@ -200,17 +246,17 @@ namespace PuttrApp
             Vector2 c = new Vector2(w * 0.5f, h * 0.5f);
             float r = Mathf.Min(w, h) * 0.33f;
             Painter2D p = context.painter2D;
-            p.fillColor = new Color32(12, 13, 14, 255);
+            p.fillColor = Ui.Base;
             p.BeginPath(); p.Arc(c, r, Angle.Degrees(0), Angle.Degrees(360)); p.Fill();
             p.lineWidth = 1.5f;
-            p.strokeColor = _made ? new Color(1f, 1f, 1f, 0.35f) : new Color(1f, 1f, 1f, 0.14f);
+            p.strokeColor = _made ? Ui.Faint : Ui.Line;
             p.BeginPath(); p.Arc(c, r, Angle.Degrees(0), Angle.Degrees(360)); p.Stroke();
             if (!_entry.HasValue) return;
             float rad = (float)_entry.Value * Mathf.Deg2Rad;
             Vector2 lip = c + new Vector2(Mathf.Sin(rad), Mathf.Cos(rad)) * r;
             // The ball's last roll in, from just outside the lip.
             p.lineWidth = 2f;
-            p.strokeColor = new Color(Ui.Bright.r, Ui.Bright.g, Ui.Bright.b, 0.45f);
+            p.strokeColor = Ui.Green;
             p.BeginPath(); p.MoveTo(c + (lip - c) * 1.45f); p.LineTo(lip); p.Stroke();
             p.fillColor = Ui.Bright;
             p.BeginPath(); p.Arc(lip, 3.5f, Angle.Degrees(0), Angle.Degrees(360)); p.Fill();
@@ -231,7 +277,7 @@ namespace PuttrApp
             _app = app;
             Root = Page.Make(app, "Challenges", out _body);
             _list = new VisualElement();
-            _body.Add(Ui.Box("pad", FreePuttScreen.Choice(Tabs, 0, i => { _tab = i; Load(); })));
+            _body.Add(Ui.Box("pad", Page.Switch(Tabs, 0, i => { _tab = i; Load(); })));
             _body.Add(_list);
         }
 
@@ -261,17 +307,18 @@ namespace PuttrApp
                     : _tab == 2 ? "Ended " + Ago.Words(end, now) : "Ends " + (end?.ToString("MMM d", CultureInfo.InvariantCulture) ?? "");
                 int percent = ChallengeMath.Percent(score, levels, out int reached, out double goal);
                 string pill = _tab == 2 ? (reached >= 0 ? J.Str(levels[reached], "title") + " earned" : joined ? "Played" : "Ended") : joined ? "Joined" : "Join";
-                VisualElement card = Ui.Box(joined && _tab == 0 ? "glass challenge-on" : "glass",
-                    Ui.Box("row", Ui.Box("grow", Ui.Text(J.Str(c, "title"), "feed-name", Ui.Bold), Ui.Text(J.Str(c, "subTitle"), "sub", Ui.Regular)),
+                VisualElement card = Ui.Box("glass challenge-card",
+                    Ui.Box("row", Ui.Box("grow", Ui.Text(J.Str(c, "title"), "set-title", Ui.Bold), Ui.Text(J.Str(c, "subTitle"), "set-sub", Ui.Regular)),
                         Ui.Text(pill, joined || reached >= 0 ? "chip chip-green" : "chip", Ui.Bold)),
-                    Ui.Text(J.Int(row, "participants") + " Players   ·   " + timing, "muted", Ui.Regular).Margin(6));
+                    Ui.Caps(J.Int(row, "participants") + " Players   ·   " + timing, "caps challenge-meta"));
                 if (joined && levels.Count > 0 && _tab != 1)
                 {
-                    card.Add(Ui.Progress(percent / 100f).Margin(10));
-                    card.Add(Ui.Text(ProfileMath.Number(score) + " / " + ProfileMath.Number(goal) + " " + ChallengeMath.Unit(J.Str(c, "cType")) + "   ·   " + percent + "%", "muted", Ui.Regular).Margin(4));
+                    VisualElement bar = Ui.Progress(percent / 100f);
+                    bar.AddToClassList("challenge-bar");
+                    card.Add(bar);
+                    card.Add(Ui.Caps(ProfileMath.Number(score) + " / " + ProfileMath.Number(goal) + " " + ChallengeMath.Unit(J.Str(c, "cType")) + "   ·   " + percent + "%", "caps challenge-meta"));
                 }
                 object tapped = row;
-                card.style.marginBottom = 10;
                 _list.Add(Ui.Box("pad", card.OnTap(() => _app.Push(new ChallengeScreen(_app, tapped)))));
             }
         }
@@ -286,6 +333,8 @@ namespace PuttrApp
         public AchievementsScreen(App app)
         {
             Root = Page.Make(app, "Achievements", out VisualElement body);
+            StyleSheet sheet = Resources.Load<StyleSheet>("PuttrApp/Profile");
+            if (sheet != null) Root.styleSheets.Add(sheet);
             body.Add(Page.Loading());
             App.Run(Api.Get("/profile/achievements/recent", data =>
             {
@@ -295,16 +344,16 @@ namespace PuttrApp
                 {
                     var mine = all.FindAll(a => J.Str(a, "aType") == kind.type || (kind.type == "QUESTS" && J.Str(a, "aType") == "QUEST_STARS"));
                     mine.Sort((a, b) => J.Num(a, "number").CompareTo(J.Num(b, "number")));
+                    // The Profile's coin shelf, one per kind, the coins wrapping onto as many rows as they need.
                     body.Add(Ui.Section(kind.name));
-                    VisualElement grid = Ui.Box("glass medal-grid");
-                    if (mine.Count == 0) grid.Add(Ui.Text("No achievements yet", "sub", Ui.Regular));
+                    VisualElement grid = Ui.Box("pf-coin-grid");
+                    if (mine.Count == 0) grid.Add(Ui.Text("No achievements yet", "body-2 pf-coin-none", Ui.Regular));
                     foreach (object a in mine)
                     {
                         ProfileScreen.Look(J.Str(a, "aType"), out string icon, out Color tint);
-                        VisualElement medal = Ui.Box("medal", Ui.Icon(icon, 26, tint));
-                        medal.style.backgroundColor = Color.Lerp(Ui.Ink, tint, 0.22f);
-                        grid.Add(Ui.Box("medal-cell", medal, Ui.Text(J.Str(a, "title"), "medal-title", Ui.Bold)));
+                        grid.Add(Ui.Box("pf-coin-item", new Coin(icon, tint, 0f), Ui.Text(J.Str(a, "title"), "pf-coin-title", Ui.Bold), Ui.Text(J.Str(a, "description"), "pf-coin-desc", Ui.Regular)));
                     }
+                    // Flat crests on the page itself, as the Profile tab draws them: no shelf, no gradient.
                     body.Add(Ui.Box("pad", grid));
                 }
             }));
@@ -324,9 +373,10 @@ namespace PuttrApp
             _app = app;
             _community = community;
             Root = Page.Make(app, "Activity", out VisualElement body);
+            if (PuttCards.Sheet != null) Root.styleSheets.Add(PuttCards.Sheet);
             _list = new VisualElement();
             if (Kid.Blocked(app, Kid.Social, body)) return;
-            body.Add(Ui.Box("pad", FreePuttScreen.Choice(new[] { "Following", "Community" }, community ? 1 : 0, i => { _community = i == 1; Load(); })));
+            body.Add(Ui.Box("pad", Page.Switch(new[] { "Following", "Community" }, community ? 1 : 0, i => { _community = i == 1; Load(); })));
             body.Add(_list);
             Load();
         }
@@ -345,22 +395,84 @@ namespace PuttrApp
             rows = rows.FindAll(r => J.Str(r, "gameType") != "COACHSESSION");
             if (rows.Count == 0)
             {
-                _list.Add(Page.Note(_community ? "No games yet." : "No activity yet. Follow Players to see their games here."));
-                if (!_community) _list.Add(Ui.Box("pad", Ui.Button("Find players", () => _app.Push(new FindPlayersScreen(_app)))));
+                // FeedScreen's empty states: a bubble, a title and a line, and for Following the way to find Players.
+                VisualElement empty = Ui.Box("fd-empty", Ui.Box("fd-empty-icon", Ui.Icon(_community ? "Planet" : "UsersThree", 28, Ui.Faint)),
+                    Ui.Text(_community ? "No games yet" : "No activity yet", "fd-empty-title", Ui.Bold),
+                    Ui.Text(_community ? "Community games will appear here as Players complete sessions." : "Follow other Players to see their games in your feed.", "fd-empty-text", Ui.Regular));
+                if (!_community) empty.Add(Ui.Button("Find Players", () => _app.Push(new FindPlayersScreen(_app)), "btn fd-empty-btn"));
+                _list.Add(empty);
                 return;
             }
-            if (!_community) _list.Add(Ui.Box("pad", Ui.Text("Find new friends  ›", "sec-link", Ui.Medium).OnTap(() => _app.Push(new FindPlayersScreen(_app)))));
-            VisualElement card = Ui.Box("glass set-card");
-            foreach (object row in rows)
+            // The slim find-friends row over the friends feed.
+            if (!_community)
+                _list.Add(Ui.Box("pad", Ui.Box("fd-find", Ui.Icon("UserPlus", 18, Ui.Bright), Ui.Text("Find new friends", "fd-find-t grow", Ui.Medium), Ui.Icon("CaretRight", 14, Ui.Faint))
+                    .OnTap(() => _app.Push(new FindPlayersScreen(_app)))));
+            VisualElement grid = Ui.Box("fd-grid");
+            foreach (object row in rows) grid.Add(Card(row));
+            _list.Add(Ui.Box("pad", grid));
+        }
+
+        /// <summary>
+        /// One activity, as FeedScreen's card: who (avatar, name, how long ago) with the score in its green box, then the
+        /// game as GameCard has it (title, the three-bar difficulty, the description, Solo or Players, putts, feet and the
+        /// round Play button). The card opens the played game; Play opens that game's page.
+        /// </summary>
+        VisualElement Card(object row)
+        {
+            string name = J.Str(row, "displayName", "A Player"), gameId = J.Str(row, "gameId");
+            VisualElement head = Ui.Box("fd-head", Ui.Avatar(name, J.Str(row, "photoURL")),
+                Ui.Box("grow fd-who", Ui.Text(name, "fd-name", Ui.Bold), Ui.Text(Ago.Words(ProfileMath.Date(row, "updated_at"), DateTime.UtcNow), "fd-ago", Ui.Regular)),
+                Ui.Box("fd-score", Ui.Text(Badge(row), "fd-score-t", Ui.Bold)));
+
+            VisualElement title = Ui.Box("fd-title-row", Ui.Text(J.Str(row, "title", "Game"), "fd-title grow", Ui.Bold), Meter(row));
+            VisualElement game = Ui.Box("fd-game", title);
+            string about = J.Str(row, "description");
+            if (about.Length > 0) game.Add(Ui.Text(about, "fd-desc", Ui.Regular));
+
+            int m = J.Int(row, "multiPlayer");
+            VisualElement stats = Ui.Box("fd-stats",
+                Ui.Box("fd-players grow", Ui.Icon(m >= 1 ? "UsersThree" : "User", 14, Ui.Faint), Ui.Text(m == 1 ? "2 players" : m == 2 ? "2+ players" : m == 3 ? "1+ players" : "Solo", "fd-players-t", Ui.Medium)),
+                Stat(J.Int(row, "putts"), "putts"), Stat(J.Int(row, "distance"), "feet"));
+            if (J.Str(row, "gameType").Length > 0)
             {
-                string name = J.Str(row, "displayName", "A Player"), gameId = J.Str(row, "gameId");
-                bool scored = J.Int(row, "hasLeaderboard") == 1 && J.Get(row, "score") != null;
-                string what = scored ? Phrase(row) + " on " + J.Str(row, "title") : "played " + J.Str(row, "title");
-                card.Add(Ui.Box("note-row", Ui.Avatar(name, J.Str(row, "photoURL")),
-                    Ui.Box("grow set-words", Ui.Text(name, "feed-name", Ui.Bold), Ui.Text(what, "sub", Ui.Regular), Ui.Text(Ago.Words(ProfileMath.Date(row, "updated_at"), DateTime.UtcNow), "muted", Ui.Regular)),
-                    scored ? Ui.Text(Page.Score(row), "feed-score", Ui.Bold) : null).OnTap(() => _app.Push(new GameViewScreen(_app, gameId))));
+                VisualElement play = Ui.Box("fd-play", Ui.Icon("Play", 14, Color.white)).OnTap(() => Play(row));
+                Page.Swallow(play);
+                stats.Add(play);
             }
-            _list.Add(Ui.Box("pad", card));
+            return Ui.Box("glass fd-card", head, game, stats).OnTap(() => _app.Push(new GameViewScreen(_app, gameId)));
+        }
+
+        // The row carries the game's own columns (games.*), so it opens the game's page as a catalog card would.
+        void Play(object row)
+        {
+            if (J.Str(row, "gameType") == "TRACKS") _app.Push(new TracksCoursesScreen(_app));
+            else _app.Push(new GameScreen(_app, row));
+        }
+
+        static VisualElement Stat(int value, string label) =>
+            Ui.Box("fd-stat", Ui.Text(value == 0 ? "∞" : value.ToString(), "fd-stat-v", Ui.Bold), Ui.Text(label, "fd-stat-l", Ui.Regular));
+
+        /// <summary>GameCard's difficulty: one bar lit up to 3, two up to 6, three above, in green, amber or red.</summary>
+        static VisualElement Meter(object game)
+        {
+            int lit = GameLevels.Bars(J.Num(game, "difficulty"));
+            Color colour = lit == 1 ? Ui.Green : lit == 2 ? Ui.Amber : Ui.Red;
+            VisualElement meter = Ui.Box("fd-meter");
+            for (int i = 1; i <= 3; i++)
+            {
+                VisualElement bar = Ui.Box("fd-meter-bar");
+                bar.style.backgroundColor = i <= lit ? colour : Ui.Surface2;
+                meter.Add(bar);
+            }
+            return meter;
+        }
+
+        /// <summary>activityScore.js scoreBadge: the score as stored ("12", "17.58", "0"); Tracks to par ("E", "+3", "-2").</summary>
+        public static string Badge(object row)
+        {
+            double s = J.Num(row, "score");
+            if (J.Str(row, "gameType") == "TRACKS") return s == 0 ? "E" : s > 0 ? "+" + s.ToString("0", CultureInfo.InvariantCulture) : s.ToString("0", CultureInfo.InvariantCulture);
+            return J.Get(row, "score") == null ? "" : s.ToString("0.##", CultureInfo.InvariantCulture);
         }
 
         // utils/activityScore.js scorePhrase.
@@ -381,6 +493,13 @@ namespace PuttrApp
         readonly VisualElement _list;
         int _tab;
 
+        /// <summary>Opens the membership page, or for a non-member who can join, the Club plans directly (no page with just a button).</summary>
+        public static void Open(App app)
+        {
+            if (!Club.Member(app.Profile) && string.IsNullOrEmpty(J.Str(app.Profile, "managedBy"))) app.Push(new ClubScreen(app, null));
+            else app.Push(new MembershipScreen(app));
+        }
+
         public MembershipScreen(App app)
         {
             _app = app;
@@ -395,9 +514,9 @@ namespace PuttrApp
                 return;
             }
             if (!Club.Member(app.Profile)) { body.Add(Ui.Box("pad", Ui.Button("See Puttr Club", () => { app.Pop(); app.Push(new ClubScreen(app, null)); }))); return; }
-            body.Add(Ui.Box("pad", Ui.Box("glass", Ui.Text("You're in the club!", "h2", Ui.Bold), Ui.Text(ProfileMath.Membership(app.Profile, DateTime.UtcNow), "sub", Ui.Regular).Margin(4))));
+            body.Add(Ui.Box("pad", Ui.Box("card club-in", Ui.Title("You're in the club!", "title-20 club-title"), Ui.Text(ProfileMath.Membership(app.Profile, DateTime.UtcNow), "body-2", Ui.Regular))));
             body.Add(Ui.Section("Top members"));
-            body.Add(Ui.Box("pad", FreePuttScreen.Choice(new[] { "Putts", "Handicap" }, 0, i => { _tab = i; Load(); })));
+            body.Add(Ui.Box("pad", Page.Switch(new[] { "Putts", "Handicap" }, 0, i => { _tab = i; Load(); })));
             body.Add(_list);
             Load();
         }
@@ -419,7 +538,7 @@ namespace PuttrApp
                     string name = J.Str(row, "displayName", "A Player"), userId = J.Str(row, "userId");
                     string value = _tab == 0 ? ProfileMath.Number(J.Num(row, "totalPutts", J.Num(row, "putts"))) : ProfileMath.Handicap(row);
                     card.Add(Ui.Box("board-row", Ui.Text((i + 1).ToString(), "board-place", Ui.Bold), Ui.Avatar(name, J.Str(row, "photoURL")),
-                        Ui.Box("grow", Ui.Text(name, "feed-name", Ui.Bold), Ui.Text(J.Str(row, "homeTown"), "muted", Ui.Regular)), Ui.Text(value, "feed-score", Ui.Bold))
+                        Ui.Box("grow", Ui.Text(name, "set-title", Ui.Bold), Ui.Text(J.Str(row, "homeTown"), "set-sub", Ui.Regular)), Ui.Num(value, "num-20 set-num"))
                         .OnTap(() => ProfileScreen.Open(_app, userId, row)));
                 }
                 _list.Add(Ui.Box("pad", card));
@@ -454,13 +573,14 @@ namespace PuttrApp
             {
                 object putter = row;
                 bool primary = J.Int(row, "isPrimary") == 1;
-                VisualElement words = Ui.Box("grow set-words", Ui.Text(Clean(J.Str(row, "brand")), "feed-name", Ui.Bold), Ui.Text(Clean(J.Str(row, "model")), "sub", Ui.Regular));
+                VisualElement words = Ui.Box("grow set-words", Ui.Text(Clean(J.Str(row, "brand")), "set-title", Ui.Bold), Ui.Text(Clean(J.Str(row, "model")), "set-sub", Ui.Regular));
                 string detail = ProfileMath.PutterDetail(row);
-                if (detail.Length > 0) words.Add(Ui.Text(detail, "muted", Ui.Regular));
+                if (detail.Length > 0) words.Add(Ui.Text(detail, "set-sub", Ui.Regular));
                 VisualElement right = primary ? Ui.Text("Your gamer", "chip chip-green", Ui.Bold)
-                    : Ui.Box("btn-small", Ui.Text("Set as gamer", "btn-text", Ui.Bold)).OnTap(() => App.Run(Api.Do("PATCH", "/user-putters/" + J.Str(putter, "id") + "/primary", null, _ => Shown(), _ => Shown())));
-                card.Add(Ui.Box("set-row", Ui.Icon("Target", 20, Ui.Bright), words, right).OnTap(() => _app.Push(new EditPutterScreen(_app, putter))));
+                    : Ui.Box("follow", Ui.Text("SET AS GAMER", "follow-text", Ui.Bold)).OnTap(() => { Haptics.Medium(); App.Run(Api.Do("PATCH", "/user-putters/" + J.Str(putter, "id") + "/primary", null, _ => Shown(), _ => Shown())); });
+                card.Add(Ui.Box("set-row", Ui.Icon("Target", 20, Ui.Faint), words, right).OnTap(() => _app.Push(new EditPutterScreen(_app, putter))));
             }
+            card[card.childCount - 1].AddToClassList("set-row-last");
             _list.Add(Ui.Box("pad", card));
         }
 
@@ -516,7 +636,7 @@ namespace PuttrApp
                 string option = o;
                 row.Add(Ui.Box(o == chosen ? "scope scope-on" : "scope", Ui.Text(o + suffix, "scope-text", Ui.Bold)).OnTap(() => { pick(chosen == option ? null : option); Draw(); }));
             }
-            return Ui.Box("edit-group", Ui.Text(title.ToUpperInvariant(), "kick", Ui.Bold), row.Margin(6));
+            return Ui.Box("edit-group", Ui.Text(title.ToUpperInvariant(), "caps caps-green", Ui.Bold), row.Margin(8));
         }
 
         void Draw()
@@ -532,9 +652,9 @@ namespace PuttrApp
             form.Add(Chips("Shaft", Shafts, _shaft, v => _shaft = v));
             form.Add(Chips("Grip", Grips, _grip, v => _grip = v));
             bool lockedPrimary = _putter != null && J.Int(_putter, "isPrimary") == 1;
-            form.Add(Ui.Box("set-row", Ui.Box("grow set-words", Ui.Text("Set as your gamer", "feed-name", Ui.Bold)), lockedPrimary ? Ui.Text("Your gamer", "chip chip-green", Ui.Bold) : Rows.Switch(_primary, v => _primary = v)));
-            form.Add(Ui.Button(_putter == null ? "Add putter" : "Save changes", Save).Margin(14));
-            if (_putter != null) form.Add(Ui.Button("Remove putter", Remove, "btn btn-ghost"));
+            form.Add(Ui.Box("set-row", Ui.Box("grow set-words", Ui.Text("Set as your gamer", "set-title", Ui.Bold)), lockedPrimary ? Ui.Text("Your gamer", "chip chip-green", Ui.Bold) : Rows.Switch(_primary, v => _primary = v)));
+            form.Add(Ui.Button(_putter == null ? "Add putter" : "Save changes", Save).Margin(16));
+            if (_putter != null) form.Add(Ui.Button("Remove putter", Remove, "btn btn-red").Margin(12));
             _body.Add(form);
         }
 
@@ -559,12 +679,26 @@ namespace PuttrApp
     public sealed class EditProfileScreen : AppScreen
     {
         static readonly string[] Handicaps = BuildHandicaps();
+        // UserPersona.js: what the Player wants from Puttr.
+        static readonly (string title, string desc, string icon)[] Personas =
+        {
+            ("GRINDER", "Improve my putting and compete", "Target"),
+            ("GAME NIGHTER", "Play with my friends and family", "UsersThree"),
+            ("E-SPORTER", "Play online against the Puttr community", "Trophy"),
+        };
+        // EditProfile.js GENDER_OPTIONS: the label shown and the value stored.
+        static readonly (string label, string value)[] Genders = { ("Male", "M"), ("Female", "F"), ("Non-Binary", "APP") };
         readonly App _app;
         readonly VisualElement _body;
         readonly TextField _display, _first, _last, _town, _bio, _web;
         readonly Label _error;
-        string _hand, _handicap;
-        bool _busy;
+        string _hand, _handicap, _persona, _gender;
+        // The birthday as month, day and year steppers (no native date picker here); sent only once it is changed,
+        // as EditProfile sends birthDate only when the picker was used.
+        int _bMonth = 1, _bDay = 1, _bYear = 1990;
+        bool _birthSet, _birthChanged, _genderChanged;
+        bool _busy, _photoBusy;
+        static bool _cityOpened;
         object _lat, _lng;
 
         static string[] BuildHandicaps()
@@ -579,6 +713,7 @@ namespace PuttrApp
             _app = app;
             object p = app.Profile;
             Root = Page.Make(app, "Edit profile", out _body);
+            if (PuttCards.Sheet != null) Root.styleSheets.Add(PuttCards.Sheet);
             if (Kid.Blocked(app, Kid.Social, _body)) return;
             _display = Field("Display name", J.Str(p, "displayName"));
             _first = Field("First name", J.Str(p, "firstName"));
@@ -592,10 +727,21 @@ namespace PuttrApp
             _web = Field("Website", J.Str(p, "webLink"));
             _hand = J.Str(p, "handedness", "RIGHTY");
             _handicap = J.Str(p, "realHandicap");
-            _error = Ui.Text("", "sub", Ui.Medium);
+            _persona = J.Str(p, "persona");
+            _gender = J.Str(p, "gender");
+            // The stored birthDate is a calendar day (the app shows it as UTC), so its date part is the day.
+            string born = J.Str(p, "birthDate");
+            if (born.Length >= 10 && DateTime.TryParseExact(born.Substring(0, 10), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime b))
+            {
+                _bMonth = b.Month; _bDay = b.Day; _bYear = b.Year; _birthSet = true;
+            }
+            _error = Ui.Text("", "body-2", Ui.Medium);
             _error.style.color = Ui.Red;
             if (Kid.IsKid(p)) return;
             Draw();
+            // -app2CityQuery "Austin": straight on to the home town search (for checking it from a script).
+            if (!_cityOpened && Array.IndexOf(Environment.GetCommandLineArgs(), "-app2CityQuery") >= 0)
+                _body.schedule.Execute(() => { if (_cityOpened) return; _cityOpened = true; _app.Push(new CityScreen(_app, _town.value, (place, lat, lng) => { _town.value = place; _lat = lat; _lng = lng; Draw(); })); }).StartingIn(400);
         }
 
         static TextField Field(string label, string value)
@@ -607,11 +753,14 @@ namespace PuttrApp
             return f.Face(Ui.Medium);
         }
 
-        static VisualElement Named(string label, TextField field) => Ui.Box("", Ui.Text(label, "muted", Ui.Medium).Margin(8), field.Margin(4));
+        static VisualElement Named(string label, TextField field) => Ui.Box("", Sub(label), field);
+
+        /// <summary>A field's name over it: a grey caps label (the group's own name is the green one).</summary>
+        static Label Sub(string label) => Ui.Caps(label, "caps edit-label");
 
         static VisualElement Group(string title, params VisualElement[] parts)
         {
-            VisualElement g = Ui.Box("edit-group", Ui.Text(title.ToUpperInvariant(), "kick", Ui.Bold));
+            VisualElement g = Ui.Box("edit-group", Ui.Text(title.ToUpperInvariant(), "caps caps-green", Ui.Bold));
             foreach (VisualElement part in parts) g.Add(part);
             return g;
         }
@@ -627,27 +776,80 @@ namespace PuttrApp
             }
             // The photo (ProfilePhotoPicker): the library, then saved at once.
             string name = J.Str(_app.Profile, "displayName", "?");
-            VisualElement face = Ui.Avatar(name, J.Str(_app.Profile, "photoURL"), true);
+            // Aspect-filled (scale-and-crop), never stretched to the circle.
+            VisualElement face = Images.Cover(Ui.Avatar(name, J.Str(_app.Profile, "photoURL"), true));
             VisualElement badge = Ui.Box("photo-badge", Ui.Icon("VideoCamera", 14, Color.white));
             VisualElement photo = Ui.Box("photo-pick", face, badge);
-            if (PhotoPicker.Supported) photo.OnTap(() => { badge.AddToClassList("photo-busy"); PhotoPicker.ChangeProfilePhoto(_app, ok => { if (ok) Draw(); else badge.RemoveFromClassList("photo-busy"); }); });
+            if (PhotoPicker.Supported) photo.OnTap(() =>
+            {
+                if (_photoBusy) return;
+                // Once a photo is chosen: the Puttr loader over the dimmed avatar until the new one is here to show.
+                VisualElement spin = null;
+                void Busy(bool on)
+                {
+                    _photoBusy = on;
+                    if (on) { face.AddToClassList("photo-busy"); badge.AddToClassList("photo-busy"); spin = Spinner.Small(); spin.style.position = Position.Absolute; photo.Add(spin); }
+                    else { face.RemoveFromClassList("photo-busy"); badge.RemoveFromClassList("photo-busy"); spin?.RemoveFromHierarchy(); }
+                }
+                PhotoPicker.ChangeProfilePhoto(_app, ok =>
+                {
+                    if (!ok) { Busy(false); return; }
+                    string fresh = J.Str(_app.Profile, "photoURL");
+                    // The new picture downloaded first, so the redrawn avatar shows it at once (no letter flash).
+                    if (fresh.StartsWith("http")) Images.Load(fresh, _ => { _photoBusy = false; Draw(); });
+                    else { _photoBusy = false; Draw(); }
+                }, () => Busy(true));
+            });
             // Home town: Google's city search (SetUserLocation); typed here only off the phone.
             VisualElement town = Rows.Row("Target", _town.value.Length > 0 ? _town.value : "Set your home town", () => _app.Push(new CityScreen(_app, _town.value, (place, lat, lng) => { _town.value = place; _lat = lat; _lng = lng; Draw(); })));
-            _body.Add(Ui.Box("pad center-box", photo, Ui.Text(PhotoPicker.Supported ? "Tap to change your photo" : "Change your photo in the phone app", "muted", Ui.Regular).Margin(6)));
+            _body.Add(Ui.Box("pad center-box", photo, Ui.Text(PhotoPicker.Supported ? "Tap to change your photo" : "Change your photo in the phone app", "body-2 edit-photo-note", Ui.Regular)));
+            // Persona (UserPersona.js): the three kinds of Player, the chosen one lit.
+            VisualElement personas = Ui.Box("ep-personas");
+            foreach (var option in Personas)
+            {
+                string value = option.title;
+                bool on = value == _persona;
+                VisualElement bubble = Ui.Box("edit-persona-icon", Ui.Icon(option.icon, 24, on ? Ui.Bright : Color.white));
+                personas.Add(Ui.Box(on ? "ep-persona ep-persona-on" : "ep-persona", bubble,
+                    Ui.Box("grow", Ui.Text(value, "ep-persona-title", Ui.Bold), Ui.Text(option.desc, "ep-persona-desc", Ui.Regular)),
+                    on ? Ui.Icon("CheckCircle", 18, Ui.Bright) : null).OnTap(() => { _persona = value; Draw(); }));
+            }
+            // Gender: Male, Female or Non-Binary (nothing lit until one is chosen or stored).
+            int genderAt = Array.FindIndex(Genders, g => g.value == _gender);
+            VisualElement gender = FreePuttScreen.Choice(Array.ConvertAll(Genders, g => g.label), genderAt, i => { _gender = Genders[i].value; _genderChanged = true; Draw(); });
+            // Birthday: month, day and year steppers (as the Junior application's), with the date it makes under them.
+            string[] months = CultureInfo.InvariantCulture.DateTimeFormat.AbbreviatedMonthNames;
+            Label birthday = Ui.Text(BirthWords(), "body-2", Ui.Regular);
+            void Touched() { _birthSet = true; _birthChanged = true; birthday.text = BirthWords(); }
+            VisualElement birth = Ui.Box("row ep-birth",
+                FreePuttScreen.Stepper(() => months[_bMonth - 1], d => { _bMonth = (_bMonth - 1 + d + 12) % 12 + 1; Touched(); }),
+                FreePuttScreen.Stepper(() => _bDay.ToString(), d => { _bDay = (_bDay - 1 + d + 31) % 31 + 1; Touched(); }),
+                FreePuttScreen.Stepper(() => _bYear.ToString(), d => { _bYear = Mathf.Clamp(_bYear + d, 1920, DateTime.Today.Year); Touched(); }));
             _body.Add(Ui.Box("pad",
-                Group("Personal info", Named("Display name", _display), Named("First name", _first), Named("Last name", _last), Ui.Text("Home town", "muted", Ui.Medium).Margin(8), town),
-                Group("Golf", FreePuttScreen.Choice(new[] { "Righty", "Lefty" }, _hand == "LEFTY" ? 1 : 0, i => _hand = i == 1 ? "LEFTY" : "RIGHTY").Margin(6),
-                    Ui.Text("Handicap", "muted", Ui.Medium).Margin(10), handicaps.Margin(6),
+                Group("Personal info", Named("Display name", _display), Named("First name", _first), Named("Last name", _last), Sub("Home town"), town),
+                Group("Golf", Sub("Persona"), personas,
+                    Sub("Your side"), Page.Switch(new[] { "Righty", "Lefty" }, _hand == "LEFTY" ? 1 : 0, i => _hand = i == 1 ? "LEFTY" : "RIGHTY"),
+                    Sub("Handicap"), handicaps,
                     Rows.Row("Target", "My putters", () => _app.Push(new PuttersScreen(_app)))),
-                Group("More", Named("Bio", _bio), Named("Website", _web)),
+                Group("More", Sub("Gender"), gender,
+                    Sub("Birthday"), birth, birthday.Margin(4),
+                    Named("Bio", _bio), Named("Website", _web)),
                 _error.Margin(8),
-                Ui.Button("Save", Save).Margin(8)));
+                Ui.Button("Save", Save).Margin(16)));
         }
+
+        DateTime Birth => new DateTime(_bYear, _bMonth, Mathf.Min(_bDay, DateTime.DaysInMonth(_bYear, _bMonth)));
+
+        string BirthWords() => _birthSet ? Birth.ToString("MMM d, yyyy", CultureInfo.InvariantCulture) : "Not set";
 
         void Save()
         {
             string name = _display.value.Trim();
-            if (!Regex.IsMatch(name, "^[a-zA-Z0-9]+$")) { _error.text = "Display name can only have letters and numbers."; return; }
+            // The rule onboarding applies (OnboardingGuide: letters, numbers and spaces; the API checks nothing).
+            // A name left as it was is not held to it: names from Google or Apple sign-in were never checked,
+            // and their owners must still be able to save the rest of the page.
+            if (name.Length == 0) { _error.text = "Enter a display name."; return; }
+            if (name != J.Str(_app.Profile, "displayName").Trim() && !Regex.IsMatch(name, "^[a-zA-Z0-9 ]+$")) { _error.text = "Display name can only have letters, numbers and spaces."; return; }
             if (_busy) return;
             _busy = true;
             _error.text = "";
@@ -657,11 +859,15 @@ namespace PuttrApp
                 object taken = J.First(data);
                 if (taken != null && J.Str(taken, "userId") != me) { _busy = false; _error.text = "Display name already taken."; return; }
                 object p = _app.Profile;
+                // birthDate and gender go only once changed here ("yyyy-MM-dd" and M, F or APP), as EditProfile sends them;
+                // otherwise false, and /profile/save only writes a field whose value is truthy, so false leaves it as it is.
                 var body = new Dictionary<string, object>
                 {
                     { "displayName", name }, { "homeTown", _town.value.Trim() }, { "lat", _lat }, { "lng", _lng },
-                    { "firstName", _first.value.Trim() }, { "lastName", _last.value.Trim() }, { "birthDate", false }, { "gender", false },
-                    { "realHandicap", _handicap }, { "handedness", _hand }, { "persona", J.Get(p, "persona") },
+                    { "firstName", _first.value.Trim() }, { "lastName", _last.value.Trim() },
+                    { "birthDate", _birthChanged ? (object)Birth.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : false },
+                    { "gender", _genderChanged && !string.IsNullOrEmpty(_gender) ? (object)_gender : false },
+                    { "realHandicap", _handicap }, { "handedness", _hand }, { "persona", string.IsNullOrEmpty(_persona) ? J.Get(p, "persona") : _persona },
                     { "ownsPuttr", J.Int(p, "ownsPuttr") == 1 ? "YES" : "NO" }, { "bio", _bio.value }, { "webLink", _web.value.Trim() },
                 };
                 App.Run(Api.Post("/profile/save", body, _ =>

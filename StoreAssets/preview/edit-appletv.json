@@ -1,0 +1,250 @@
+{
+ "bpm": 148,
+ "seconds": 15,
+ "bed": "audio/bed-148.wav",
+ "bed_start": 0.0,
+ "bed_gain": 0.85,
+ "texts": {
+  "w1": {
+   "h": "The ultimate",
+   "size": 10.5
+  },
+  "w2": {
+   "h": "putting",
+   "size": 11
+  },
+  "w3": {
+   "h": "<em>experience</em>",
+   "size": 11.5
+  },
+  "games": {
+   "h": "40+ <em>games</em>",
+   "k": "On your mat",
+   "size": 12
+  },
+  "tracks": {
+   "h": "Play the <em>world's</em> courses",
+   "k": "Tracks",
+   "size": 7.4
+  },
+  "players": {
+   "h": "1 to 4 <em>Players</em>",
+   "size": 11
+  },
+  "logo": {
+   "c": "logo",
+   "size": 16
+  },
+  "end": {
+   "c": "end",
+   "h": "The ultimate <em>putting experience</em>",
+   "sub": "iPhone · iPad · Apple TV",
+   "size": 9.5
+  },
+  "measured": {
+   "h": "Every putt <em>measured</em>",
+   "k": "Stats",
+   "size": 8.5,
+   "portrait_scale": 1.75
+  }
+ },
+ "cuts": [
+  {
+   "card": "black",
+   "beats": 2,
+   "text": "logo",
+   "flash": true
+  },
+  {
+   "take": "lanes",
+   "at": 25.7,
+   "beats": 2,
+   "text": "w1",
+   "push": 1.12,
+   "dim": 0.1
+  },
+  {
+   "take": "spotkick",
+   "at": 12.4,
+   "beats": 2,
+   "text": "w2",
+   "push": 1.1,
+   "dim": 0.1
+  },
+  {
+   "take": "majorleague",
+   "at": 10.6,
+   "beats": 2,
+   "text": "w3",
+   "flash": true,
+   "push": 1.12,
+   "dim": 0.12
+  },
+  {
+   "take": "onfire",
+   "at": 26.0,
+   "beats": 2,
+   "push": 1.08,
+   "text": "measured",
+   "dim": 0.2
+  },
+  {
+   "take": "sendit",
+   "at": 1.0,
+   "beats": 2,
+   "push": 1.06
+  },
+  {
+   "take": "puttstar",
+   "at": 20.0,
+   "beats": 1,
+   "flash": true
+  },
+  {
+   "take": "archery",
+   "at": 22.3,
+   "beats": 1,
+   "push": 1.1
+  },
+  {
+   "take": "turfwar",
+   "at": 12.0,
+   "beats": 1,
+   "push": 1.08
+  },
+  {
+   "take": "derby",
+   "at": 36.0,
+   "beats": 1,
+   "push": 1.08
+  },
+  {
+   "take": "windmill",
+   "at": 11.5,
+   "beats": 2,
+   "text": "games",
+   "dim": 0.15,
+   "flash": true
+  },
+  {
+   "take": "slingshot",
+   "at": 15.3,
+   "beats": 1,
+   "push": 1.08
+  },
+  {
+   "take": "underthecup",
+   "at": 11.3,
+   "beats": 1,
+   "push": 1.08
+  },
+  {
+   "take": "balloonpop",
+   "at": 7.0,
+   "beats": 1,
+   "push": 1.06
+  },
+  {
+   "take": "cricket",
+   "at": 20.2,
+   "beats": 1,
+   "push": 1.08
+  },
+  {
+   "take": "tugofwar",
+   "at": 13.0,
+   "beats": 1,
+   "push": 1.12
+  },
+  {
+   "take": "spotkick",
+   "at": 1.0,
+   "beats": 1,
+   "push": 1.1
+  },
+  {
+   "take": "lanes",
+   "at": 33.8,
+   "beats": 2,
+   "text": "players",
+   "dim": 0.1,
+   "push": 1.08
+  },
+  {
+   "take": "tracks",
+   "at": 6.0,
+   "beats": 2,
+   "text": "tracks",
+   "dim": 0.12,
+   "flash": true
+  },
+  {
+   "take": "tracks",
+   "at": 20.0,
+   "beats": 2,
+   "push": 1.06
+  },
+  {
+   "take": "majorleague",
+   "at": 23.2,
+   "beats": 2,
+   "push": 1.1
+  },
+  {
+   "take": "majorleague",
+   "at": 24.0,
+   "beats": 7,
+   "text": "end",
+   "flash": true,
+   "blur": 22,
+   "dim": 0.32
+  }
+ ],
+ "sfx": [
+  {
+   "file": "audio/hit.wav",
+   "beat": 0,
+   "gain": 0.9
+  },
+  {
+   "file": "audio/whoosh.wav",
+   "beat": 1.6,
+   "gain": 0.55
+  },
+  {
+   "file": "audio/hit.wav",
+   "beat": 6,
+   "gain": 0.7
+  },
+  {
+   "file": "audio/riser.wav",
+   "beat": 7.0,
+   "gain": 0.35
+  },
+  {
+   "file": "audio/hit.wav",
+   "beat": 16,
+   "gain": 0.6
+  },
+  {
+   "file": "audio/whoosh.wav",
+   "beat": 23.6,
+   "gain": 0.5
+  },
+  {
+   "file": "audio/hit.wav",
+   "beat": 26,
+   "gain": 0.6
+  },
+  {
+   "file": "audio/roar.wav",
+   "beat": 28,
+   "gain": 0.5
+  },
+  {
+   "file": "audio/hit.wav",
+   "beat": 30,
+   "gain": 1.0
+  }
+ ]
+}

@@ -182,3 +182,43 @@ namespace Puttr.Tests
         }
     }
 }
+
+namespace Puttr.Tests
+{
+    /// <summary>Bluetooth first, WiFi as the fallback (PuttrConsole.WifiTurn).</summary>
+    public class LinkOrderTests
+    {
+        const float Head = PuttrConsole.BluetoothFirstSeconds;
+
+        [Test]
+        public void WifiWaitsWhileBluetoothIsLooking()
+        {
+            Assert.IsFalse(PuttrConsole.WifiFallback(true, true, BluetoothState.Scanning, false, false, 0f));
+            Assert.IsFalse(PuttrConsole.WifiFallback(true, true, BluetoothState.Unavailable, false, false, Head - 1f));
+            Assert.IsFalse(PuttrConsole.WifiFallback(true, true, BluetoothState.Connecting, false, false, Head - 0.1f));
+        }
+
+        [Test]
+        public void WifiTakesOverWhenBluetoothHasNotConnected()
+        {
+            Assert.IsTrue(PuttrConsole.WifiFallback(true, true, BluetoothState.Scanning, false, false, Head));
+            Assert.IsTrue(PuttrConsole.WifiFallback(true, true, BluetoothState.Unavailable, false, false, Head + 5f));
+        }
+
+        [Test]
+        public void WifiStartsAtOnceWhenBluetoothCannotBeUsed()
+        {
+            Assert.IsTrue(PuttrConsole.WifiFallback(true, false, BluetoothState.Unavailable, false, false, 0f));   // no radio, or switched off by a tester
+            Assert.IsTrue(PuttrConsole.WifiFallback(true, true, BluetoothState.Off, false, false, 0f));
+            Assert.IsTrue(PuttrConsole.WifiFallback(true, true, BluetoothState.NotAllowed, false, false, 0f));
+            Assert.IsTrue(PuttrConsole.WifiFallback(true, true, BluetoothState.Scanning, false, true, 0f));        // a host asked for by name
+        }
+
+        [Test]
+        public void WifiIsNotLookedForWhileBluetoothHolds()
+        {
+            Assert.IsFalse(PuttrConsole.WifiFallback(true, true, BluetoothState.Connected, true, false, 100f));
+            Assert.IsFalse(PuttrConsole.WifiFallback(false, false, BluetoothState.Off, false, false, 100f));
+        }
+    }
+}

@@ -23,6 +23,8 @@ namespace PuttrApp
             object profile = null;
             bool failed = false;
             yield return Api.Get("/profile/", d => profile = J.First(d), _ => failed = true);
+            // -app2NewPlayer with -app2Fixture: the made-up Player as a brand new account (no handedness, no coach).
+            if (profile != null && NewPlayer && Fixtures.On) J.Obj(profile)?.Remove("handedness");
             if (profile != null || failed) { done(profile); yield break; }
 
             object claims = null;
@@ -47,6 +49,18 @@ namespace PuttrApp
             done(profile);
         }
 
+        /// <summary>-app2NewPlayer: look at the first-run screens with -app2Fixture (onboarding on Home, the coach picker on Improve).</summary>
+        public static bool NewPlayer => Arg("-app2NewPlayer");
+
+        /// <summary>A switch on the command line (or PUTTR_ARGS on a simulator), for checking screens from a script.</summary>
+        public static bool Arg(string name)
+        {
+            var args = new List<string>(Environment.GetCommandLineArgs());
+            string extra = Environment.GetEnvironmentVariable("PUTTR_ARGS");
+            if (!string.IsNullOrEmpty(extra)) args.AddRange(extra.Split(' '));
+            return args.Contains(name);
+        }
+
         public static bool NeedsOnboarding(object profile) => profile != null && J.Str(profile, "handedness").Length == 0 && !Kid.Managed(profile);
     }
 
@@ -62,6 +76,13 @@ namespace PuttrApp
         bool _nameOk = true, _checking, _saving, _showBle;
         int _asked;
         string _nameError = "";
+
+        /// <summary>Opens the onboarding guide over Home when the signed-in Player has not done it (and it is not up already).</summary>
+        public static void Lead(App app)
+        {
+            if (!ProfileSetup.NeedsOnboarding(app.Profile) || app.Top is OnboardingScreen) return;
+            app.Push(new OnboardingScreen(app));
+        }
 
         public OnboardingScreen(App app)
         {
@@ -91,66 +112,69 @@ namespace PuttrApp
                 case 0:
                     var logo = new Image { image = Resources.Load<Texture2D>("PuttrArcade/LogoHeader"), scaleMode = ScaleMode.ScaleToFit };
                     logo.AddToClassList("intro-logo");
-                    page.Add(Ui.Box("center-box", logo, Ui.Text("Welcome to Puttr", "h1 center", Ui.Bold).Margin(20), Ui.Text("Let's set up your profile in\nunder a minute", "sub center", Ui.Regular).Margin(8)));
-                    page.Add(Ui.Button("Let's go", Next).Margin(30));
+                    page.Add(Ui.Box("center-box", logo, Ui.Title("Welcome to Puttr", "title center").Margin(24), Ui.Text("Let's set up your profile in\nunder a minute", "sub center", Ui.Regular).Margin(8)));
+                    page.Add(Ui.Button("Let's go", Next).Margin(32));
                     break;
                 case 1:
                     var name = Field("e.g. PuttKing42", _display);
-                    Label state = Ui.Text(_checking ? "Checking..." : _nameError.Length > 0 ? _nameError : _nameOk && _display.Length > 0 ? "✓ Available" : "", "sub", Ui.Medium);
+                    Label state = Ui.Text(_checking ? "Checking..." : _nameError.Length > 0 ? _nameError : _nameOk && _display.Length > 0 ? "✓ Available" : "", "body-2", Ui.Medium);
                     state.style.color = _nameError.Length > 0 ? Ui.Red : Ui.Bright;
                     name.RegisterValueChangedCallback(e => CheckName(e.newValue, state));
                     VisualElement go = Ui.Button("Continue", Next);
                     go.SetEnabled(_display.Trim().Length > 0 && _nameOk && !_checking);
-                    page.Add(Ui.Text("Pick a display name", "h1", Ui.Bold));
-                    page.Add(Ui.Text("This is how other players will see you", "sub", Ui.Regular).Margin(6));
-                    page.Add(name.Margin(18));
+                    page.Add(Ui.Title("Pick a display name"));
+                    page.Add(Ui.Text("This is how other Players will see you", "sub", Ui.Regular).Margin(8));
+                    page.Add(name.Margin(16));
                     page.Add(state);
-                    page.Add(go.Margin(18));
+                    page.Add(go.Margin(16));
                     break;
                 case 2:
                     var first = Field("Your first name", _first);
                     VisualElement next = Ui.Button("Continue", Next);
                     next.SetEnabled(_first.Trim().Length > 0);
                     first.RegisterValueChangedCallback(e => { _first = e.newValue; next.SetEnabled(_first.Trim().Length > 0); });
-                    page.Add(Ui.Text("What's your first name?", "h1", Ui.Bold));
-                    page.Add(Ui.Text("Used to personalize your experience", "sub", Ui.Regular).Margin(6));
-                    page.Add(first.Margin(18));
-                    page.Add(next.Margin(18));
+                    page.Add(Ui.Title("What's your first name?"));
+                    page.Add(Ui.Text("Used to personalize your experience", "sub", Ui.Regular).Margin(8));
+                    page.Add(first.Margin(16));
+                    page.Add(next.Margin(16));
                     break;
                 case 3:
-                    page.Add(Ui.Text("Which hand do you\nputt with?", "h1", Ui.Bold));
-                    page.Add(Ui.Box("row", Choice("Right-handed", _hand == "RIGHTY", () => Pick(ref _hand, "RIGHTY")), FreePuttScreen.Space(0).Width(10), Choice("Left-handed", _hand == "LEFTY", () => Pick(ref _hand, "LEFTY"))).Margin(20));
+                    page.Add(Ui.Title("Which hand do you\nputt with?"));
+                    page.Add(Ui.Box("row", Choice("Right-handed", _hand == "RIGHTY", () => Pick(ref _hand, "RIGHTY")), FreePuttScreen.Space(0).Width(12), Choice("Left-handed", _hand == "LEFTY", () => Pick(ref _hand, "LEFTY"))).Margin(24));
                     break;
                 case 4:
-                    page.Add(Ui.Text("What's your putting goal?", "h1", Ui.Bold));
-                    foreach (var g in Goals) { var goal = g; page.Add(Rows.Row(goal.icon, goal.words, () => Pick(ref _persona, goal.id), _persona == goal.id ? Ui.Text("✓", "feed-name", Ui.Bold) : null).Margin(10)); }
+                    page.Add(Ui.Title("What's your putting goal?"));
+                    // The goals are rows of one bordered block; the picked one carries a green tick.
+                    VisualElement goals = Ui.Box("card onb-list");
+                    foreach (var g in Goals) { var goal = g; goals.Add(Rows.Row(goal.icon, goal.words, () => Pick(ref _persona, goal.id), _persona == goal.id ? Ui.Icon("Check", 20, Ui.Bright) : null)); }
+                    page.Add(goals.Margin(24));
                     break;
                 case 5:
-                    page.Add(Ui.Text("What's your handicap?", "h1", Ui.Bold));
-                    page.Add(Ui.Text("Helps your coach set the right difficulty. Pick NONE if you don't keep one.", "sub", Ui.Regular).Margin(6));
+                    page.Add(Ui.Title("What's your handicap?"));
+                    page.Add(Ui.Text("Helps your coach set the right difficulty. Pick NONE if you don't keep one.", "sub", Ui.Regular).Margin(8));
                     VisualElement grid = Ui.Box("hcp-grid");
                     var options = new List<string> { "NONE", "PRO", "+5", "+4", "+3", "+2", "+1" };
                     for (int i = 0; i <= 36; i++) options.Add(i.ToString());
                     foreach (string o in options) { string v = o; grid.Add(Ui.Box(v == _handicap ? "scope scope-on hcp" : "scope hcp", Ui.Text(v, "scope-text", Ui.Bold)).OnTap(() => { _handicap = v; Draw(); })); }
-                    page.Add(grid.Margin(14));
+                    page.Add(grid.Margin(16));
                     VisualElement cont = Ui.Button("Continue", Next);
                     cont.SetEnabled(!string.IsNullOrEmpty(_handicap));
-                    page.Add(cont.Margin(14));
+                    page.Add(cont.Margin(16));
                     break;
                 default:
-                    page.Add(Ui.Box("center-box", Ui.Icon("Medal", 64, Ui.Bright), Ui.Text("You're all set!", "h1 center", Ui.Bold).Margin(14), Ui.Text("Ready to start putting?", "sub center", Ui.Regular).Margin(6)));
+                    page.Add(Ui.Box("center-box", Ui.Icon("Medal", 64, Ui.Bright), Ui.Title("You're all set!", "title center").Margin(16), Ui.Text("Ready to start putting?", "sub center", Ui.Regular).Margin(8)));
                     if (!_showBle)
                     {
                         page.Add(Ui.Button("Connect your Puttr", () => { _showBle = true; Draw(); }).Margin(24));
-                        page.Add(Ui.Text("Skip for now", "sec-link center", Ui.Medium).Margin(14).OnTap(Save));
+                        page.Add(Ui.Text("Skip for now", "sec-link center sign-link", Ui.Medium).Margin(12).OnTap(Save));
                     }
                     else
                     {
                         bool on = Green.Console.Online;
-                        page.Add(Ui.Box("glass", Ui.Text(on ? "Connected to " + Green.Link : "Looking for your Puttr...", "feed-name", Ui.Bold),
-                            Ui.Text(on ? "You're ready to putt." : "Turn your Puttr on and keep this phone close.", "sub", Ui.Regular)).Margin(18));
-                        if (!on) page.Add(Ui.Text("Watch setup guide", "sec-link center", Ui.Medium).Margin(12).OnTap(() => SetupGuide.Play(Root)));
-                        page.Add(Ui.Button(_saving ? "Saving..." : on ? "Start putting" : "Continue", Save).Margin(18));
+                        page.Add(Ui.Box("card", Ui.Text(on ? "Connected to " + Green.Link : "Looking for your Puttr...", "body", Ui.Bold),
+                            Ui.Text(on ? "You're ready to putt." : "Turn your Puttr on and keep this phone close.", "body-2", Ui.Regular).Margin(4)).Margin(16));
+                        if (!on) page.Add(Ui.Text("Watch setup guide", "sec-link center sign-link", Ui.Medium).Margin(12).OnTap(() => SetupGuide.Play(Root)));
+                        page.Add(Ui.Button(_saving ? "Saving..." : on ? "Start putting" : "Continue", Save).Margin(16));
                         page.schedule.Execute(() => { if (_step == Steps && _showBle && Green.Console.Online != on) Draw(); }).Every(1000);
                     }
                     break;
@@ -166,7 +190,7 @@ namespace PuttrApp
             _body.schedule.Execute(() => { if (_step == at) Next(); }).StartingIn(500);
         }
 
-        VisualElement Choice(string words, bool on, Action tap) => Ui.Box(on ? "glass grow onboard-choice choice-on" : "glass grow onboard-choice", Ui.Text(words, "feed-name center", Ui.Bold)).OnTap(tap);
+        VisualElement Choice(string words, bool on, Action tap) => Ui.Box(on ? "card onboard-choice onboard-choice-on" : "card onboard-choice", Ui.Text(words, "body center", Ui.Bold)).OnTap(tap);
 
         static TextField Field(string placeholder, string value)
         {

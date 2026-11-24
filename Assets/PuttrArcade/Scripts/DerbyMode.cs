@@ -27,11 +27,15 @@ namespace PuttrArcade
     public sealed class DerbyMode : StageMode
     {
         public override string Name => "Derby";
+        public override bool Branded => true;
         public override string VoicePrefix => "derby";
         public override int Putter => _turn; // whose difficulty applies to this putt
         public override string Blurb => "A horse race at the fairground.\nReach the hole and your horse moves.\nHole it and it gallops.";
         public override string Rule => "Reach the hole to move, hole it to gallop. First horse to 12 lengths wins.";
         public override GameAudio.Scene Sound => GameAudio.Scene.Stadium;
+        // puttr-app-2: a racecourse crowd of its own (the stadium's until it is recorded); the ending is the grandstand's roar.
+        public override string BedSlot => "derby_crowd_loop";
+        public override string EndSlot => "derby_home";
         public override string Icon => "Trophy";
         public override Color Accent => Make.Amber;
         public override string[] Tags => new[] { "First to 12", "New tee every putt" };
@@ -95,13 +99,14 @@ namespace PuttrArcade
         Mesh _upperLeg, _lowerLeg, _tailMesh;
 
         int _players = 1, _turn;
-        // Alone, a Player races three horses that run themselves: Puttr AI 1, 2 and 3. _field
-        // is how many horses are racing, Players and Puttr AI together.
+        // Every lane always has a horse (Matt, 2026-11-23): the lanes the Players leave are filled with horses that
+        // run themselves, Puttr 1, 2 and 3, and they run after every round of the Players' putts. _field is how
+        // many horses are racing, Players and Puttr's together.
         int _field = 1;
         bool _ai;
         readonly System.Random _dice = new System.Random();
 
-        string HorseName(int i) => i < _players ? Arcade.PlayerName(i) : "Puttr " + i;
+        string HorseName(int i) => i < _players ? Arcade.PlayerName(i) : "Puttr " + (i - _players + 1);
         int[] _pos, _putts;
         bool _bonus, _over;
 
@@ -260,12 +265,15 @@ namespace PuttrArcade
             // The stand: a wall with a lit top edge, and a bank of people going up and away.
             Shape(PrimitiveType.Cube, "Stand wall", Root, new Vector3(center, 18f, wallZ), new Vector3(wide, 36f, 6f), Make.Lit(new Color(0.03f, 0.1f, 0.06f), 0.35f));
             Shape(PrimitiveType.Cube, "Stand edge", Root, new Vector3(center, 37f, wallZ), new Vector3(wide, 2.5f, 7f), amber);
-            var logo = Resources.Load<Texture2D>("PuttrArcade/LogoHeader");
-            if (logo != null)
+            // Four wall boards (Brand.Panel): the host's, with Puttr's on the last. With no kit, all Puttr.
+            var marks = new Dictionary<Texture2D, Material>();
+            for (int i = -2, n = 0; i <= 2; i++)
             {
-                Material mark = Make.Glow(new Color(1.1f, 1.1f, 1.1f, 0.95f), false, logo);
-                for (int i = -2; i <= 2; i++)
-                    if (i != 0) Card("Wall logo", Root, new Vector3(center + i * 260f, 18f, wallZ - 3.5f), new Vector2(84f, 84f * logo.height / logo.width), mark);
+                if (i == 0) continue;
+                Texture2D logo = Brand.Panel(n++, 4);
+                if (logo == null) continue;
+                if (!marks.TryGetValue(logo, out Material mark)) marks[logo] = mark = Make.Glow(new Color(1.1f, 1.1f, 1.1f, 0.95f), false, logo);
+                Card("Wall logo", Root, new Vector3(center + i * 260f, 18f, wallZ - 3.5f), Brand.Size(logo, 84f), mark);
             }
             Material crowd = Make.Glow(Color.white, false, Crowd());
             crowd.SetTextureScale("_MainTex", new Vector2(5f, 1f));
@@ -384,13 +392,14 @@ namespace PuttrArcade
             _turn = 0;
             _bonus = false;
             _over = false;
-            _ai = _players == 1;
-            _field = _ai ? MaxHorses : _players;
+            _ai = _players < MaxHorses;
+            _field = MaxHorses;
             _pos = new int[_field];
             _putts = new int[_field];
             var names = new List<string>();
-            for (int i = 0; i < _field; i++) names.Add(Arcade != null && i < _players ? Arcade.PlayerName(i) : i < _players ? "Player " + (i + 1) : "Puttr " + i);
+            for (int i = 0; i < _field; i++) names.Add(Arcade != null && i < _players ? Arcade.PlayerName(i) : i < _players ? "Player " + (i + 1) : "Puttr " + (i - _players + 1));
             Arcade.Hud.BuildBoard(names, Lengths, "LENGTHS", false, "TRACK", 16f);
+            Arcade.Audio.Library("derby_bugle", 0.75f);   // puttr-app-2: the call to post (nothing until it is recorded)
             for (int i = 0; i < MaxHorses; i++)
             {
                 _horses[i].Root.gameObject.SetActive(i < _field);
@@ -445,14 +454,16 @@ namespace PuttrArcade
             if (lengths == 0) yield return Refuse(_horses[player]);
             else
             {
-                if (holed) Arcade.Audio.Bell();
+                if (holed && !GameAudio.Has("derby_home")) Arcade.Audio.Bell();   // puttr-app-2: the shared bell until the racecourse is recorded
                 yield return Gallop(player, from, to, holed);
             }
             _pos[player] = to;
             _putts[player]++;
 
             bool home = from < Lengths && to >= Lengths;
-            bool again = holed && Mathf.Abs(line) < CenterInches && to < Lengths && _field > 1;
+            // Putting again for a dead-center make is between Players only: alone, Puttr's horses run after every putt
+            // (a tester holing every one dead center never saw them move).
+            bool again = holed && Mathf.Abs(line) < CenterInches && to < Lengths && _players > 1;
             bool leads = _field > 1 && lengths > 0 && leader != player && Leader() == player;
             string lead = leads ? "   ·   " + Arcade.PlayerName(player) + " takes the lead" : "";
 
@@ -464,8 +475,10 @@ namespace PuttrArcade
                 result = holed ? "Holed" : "Home"; color = Make.Bright;
                 string who = _players > 1 ? Arcade.PlayerName(player) + " is home" : "Home in " + _putts[0] + (_putts[0] == 1 ? " putt" : " putts");
                 hud.Banner("PAST THE POST", firstHome ? who : who + " too", Make.Amber, 2.4f);
-                Arcade.Audio.Strike();
-                Arcade.Audio.Roar(true);
+                // puttr-app-2: the grandstand and the horse (the shared stings until they are recorded).
+                if (Arcade.Audio.TryLibrary("derby_home", 1f)) Arcade.Audio.Excite(1f);
+                else { Arcade.Audio.Strike(); Arcade.Audio.Roar(true); }
+                Arcade.Audio.Library("horse_neigh", 0.6f);
                 Arcade.Shake(0.5f);
                 Arcade.Celebrate(110, At(FinishX, 50f, LaneZ(player)));
             }
@@ -474,46 +487,47 @@ namespace PuttrArcade
                 result = "Holed"; color = Make.Bright;
                 bool center = Mathf.Abs(line) < CenterInches;
                 hud.Banner("GALLOP!  +3", again ? "Dead center: putt again" : (center ? "Dead center" : "Holed") + lead, Make.Amber, 2.2f);
-                if (center) Arcade.Audio.Strike(); else Arcade.Audio.Spare();
+                if (Arcade.Audio.TryLibrary("derby_home", center ? 0.85f : 0.65f)) Arcade.Audio.Excite(center ? 1f : 0.65f);   // puttr-app-2
+                else if (center) Arcade.Audio.Strike(); else Arcade.Audio.Spare();
                 Arcade.Celebrate(center ? 70 : 40, At(to * Unit - Nose, 60f, LaneZ(player)));
             }
             else if (lengths == 2)
             {
                 result = lip ? "Lipped out" : "Close"; color = Make.Amber;
                 hud.Banner("+2", (lip ? "Lipped out" : "Within two inches") + lead, Make.Bright, 2f);
-                Arcade.Audio.Coin();
-                Arcade.Audio.Roar(false);
+                if (Arcade.Audio.TryLibrary("derby_home", 0.45f, 1.05f)) Arcade.Audio.Excite(0.65f);   // puttr-app-2
+                else { Arcade.Audio.Coin(); Arcade.Audio.Roar(false); }
             }
             else if (lengths == 1)
             {
                 result = lip ? "Lipped out" : "Reached"; color = Color.white;
                 hud.Banner("+1", (lip ? "Lipped out" : "Reached the hole") + lead, Color.white, 2f);
-                Arcade.Audio.Coin();
+                if (GameAudio.Has("derby_home")) Arcade.Audio.Excite(0.35f); else Arcade.Audio.Coin();   // puttr-app-2: the hooves said it
             }
             else if (reached)
             {
                 result = "Missed"; color = Make.Red;
                 hud.Banner("MISSED", "On Hard only a holed putt or a lip-out moves your horse", Make.Red, 2f);
-                Arcade.Audio.Miss();
+                if (!Arcade.Audio.TryLibrary("derby_snort", 0.8f)) Arcade.Audio.Miss();   // puttr-app-2
             }
             else
             {
                 result = "Short"; color = Make.Red;
                 hud.Banner("LEFT SHORT", "Your horse stays where it is", Make.Red, 2f);
-                Arcade.Audio.Miss();
-                Arcade.Audio.Groan();
+                if (!Arcade.Audio.TryLibrary("derby_snort", 0.85f, 0.95f)) { Arcade.Audio.Miss(); Arcade.Audio.Groan(); }   // puttr-app-2
             }
             ShowPutt(putt, result, color);
 
             // Whose turn next. A round is played out before the race is called.
-            if (_ai) { } // decided below, once Puttr AI has run its round
-            else if (!again)
+            bool roundDone = false;
+            if (!again)
             {
                 _turn++;
                 if (_turn >= _players)
                 {
                     _turn = 0;
-                    if (AnyHome()) _over = true;
+                    roundDone = true;
+                    if (!_ai && AnyHome()) _over = true;   // with Puttr's horses in the field it is decided below, once they have run
                 }
             }
             _bonus = again;
@@ -525,7 +539,7 @@ namespace PuttrArcade
 
             // Against Puttr AI: its three horses each take their turn, and the round is played
             // out before the race is called, so it gets its chance to catch a Player who is home.
-            if (_ai && !again)
+            if (_ai && roundDone)
             {
                 yield return RunPuttrAi();
                 _over = AnyHome();
@@ -565,7 +579,7 @@ namespace PuttrArcade
                 if (home)
                 {
                     hud.Banner("PAST THE POST", HorseName(i) + (firstHome ? " is home" : " is home too"), ink, 1.8f);
-                    Arcade.Audio.Roar(false);
+                    if (Arcade.Audio.TryLibrary("derby_home", 0.55f)) Arcade.Audio.Excite(0.65f); else Arcade.Audio.Roar(false);   // puttr-app-2
                 }
                 else if (lengths > 0 && leader != i && Leader() == i) hud.Banner(HorseName(i).ToUpperInvariant(), "+" + lengths + "   ·   takes the lead", ink, 1.3f);
                 ShowBoard();
@@ -583,7 +597,7 @@ namespace PuttrArcade
             int best = 0, ties = 0;
             for (int i = 0; i < _field; i++) if (_pos[i] > _pos[best]) best = i;
             for (int i = 0; i < _field; i++) if (_pos[i] == _pos[best]) ties++;
-            headline = ties > 1 ? "A dead heat" : best == 0 ? "You win" : HorseName(best) + " wins";
+            headline = ties > 1 ? "A dead heat" : best == 0 && _players == 1 ? "You win" : HorseName(best) + " wins";
             var lines = new Hud.Line[_field];
             for (int i = 0; i < _field; i++)
                 lines[i] = new Hud.Line { Name = HorseName(i), Value = Mathf.Min(_pos[i], Lengths) + (_pos[i] == 1 ? " length" : " lengths"), Dot = Hud.PlayerColors[i % Hud.PlayerColors.Length], Lit = ties == 1 && i == best, Tag = ties == 1 && i == best ? "WINNER" : null };
@@ -678,7 +692,7 @@ namespace PuttrArcade
                 if (beat != beats)
                 {
                     beats = beat;
-                    Arcade.Audio.Thump(gallop ? 16f : 9f);
+                    if (!Arcade.Audio.TryLibrary("derby_hooves", gallop ? 0.55f : 0.35f, 1f + Random.Range(-0.08f, 0.08f))) Arcade.Audio.Thump(gallop ? 16f : 9f);   // puttr-app-2
                     Dust(new Vector3(at * Unit - Nose - 22f * HorseScale, 5f, LaneZ(player) - 5f), gallop ? 26f : 16f);
                 }
                 if (!shot && u > 0.5f) { shot = true; Arcade.Shot("action"); }

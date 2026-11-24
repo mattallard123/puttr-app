@@ -173,12 +173,12 @@ PlayerSettings:
     Android: co.puttr.android
     Standalone: co.puttr.app2
     iPhone: co.puttr.ios
-    tvOS: co.puttr.app2
+    tvOS: co.puttr.ios
   buildNumber:
     Standalone: 1
     VisionOS: 0
-    iPhone: 300
-    tvOS: 2
+    iPhone: 306
+    tvOS: 306
   overrideDefaultApplicationIdentifier: 1
   AndroidBundleVersionCode: 300
   AndroidMinSdkVersion: 26
@@ -293,7 +293,7 @@ PlayerSettings:
   m_AndroidBanners:
   - width: 320
     height: 180
-    banner: {fileID: 2800000, guid: 1f8aad26330a457abe3c173bc849f257, type: 3}
+    banner: {fileID: 2800000, guid: f405e0959e5bf4d42a4019870f5cdda5, type: 3}
   androidGamepadSupportLevel: 0
   AndroidMinifyRelease: 0
   AndroidMinifyDebug: 0
@@ -461,46 +461,46 @@ PlayerSettings:
   - m_BuildTarget: tvOS
     m_Icons:
     - m_Textures:
-      - {fileID: 2800000, guid: e5191854f95df4ee39d4018736f92211, type: 3}
-      - {fileID: 2800000, guid: c9f72188bb0db4385af239fb07498bcb, type: 3}
+      - {fileID: 2800000, guid: 1a968b76072e64d068aa6b0b9ff111f5, type: 3}
+      - {fileID: 2800000, guid: 402232b8f56794065b8fbfd6c22c3838, type: 3}
       m_Width: 1280
       m_Height: 768
       m_Kind: 0
       m_SubKind: 
     - m_Textures:
-      - {fileID: 2800000, guid: f7ff3bb817b3d4320ac399286f35d933, type: 3}
-      - {fileID: 2800000, guid: 7420c0e2b5c99479b89575d11f21cb77, type: 3}
+      - {fileID: 2800000, guid: 90d5885ad49ff410296cb43cc149c6cd, type: 3}
+      - {fileID: 2800000, guid: c9e88c09bfa93465fb204155d81b3e48, type: 3}
       m_Width: 800
       m_Height: 480
       m_Kind: 0
       m_SubKind: 
     - m_Textures:
-      - {fileID: 2800000, guid: 2c104ec9aea35450c94526d80b54bb32, type: 3}
-      - {fileID: 2800000, guid: d8e0b96b764244749bb7ef622ec54630, type: 3}
+      - {fileID: 2800000, guid: fc913b7748b0043c5ab8dc2f9049c0d4, type: 3}
+      - {fileID: 2800000, guid: e11aafe41104d4a638a20ae4c885833b, type: 3}
       m_Width: 400
       m_Height: 240
       m_Kind: 0
       m_SubKind: 
     - m_Textures:
-      - {fileID: 2800000, guid: e34aa336cb47942daac6b7103b99cc6c, type: 3}
+      - {fileID: 2800000, guid: 0424e72da31c14024b326f8475efd222, type: 3}
       m_Width: 4640
       m_Height: 1440
       m_Kind: 1
       m_SubKind: 
     - m_Textures:
-      - {fileID: 2800000, guid: 6e970ffbabc8542ee88e686839ea4ec4, type: 3}
+      - {fileID: 2800000, guid: cab4c4336b144485fa9b767371c892d0, type: 3}
       m_Width: 2320
       m_Height: 720
       m_Kind: 1
       m_SubKind: 
     - m_Textures:
-      - {fileID: 2800000, guid: 56da7376dc69d42ac9c28802a626d22e, type: 3}
+      - {fileID: 2800000, guid: 0953ab01551964f8a84478a434b2a82c, type: 3}
       m_Width: 3840
       m_Height: 1440
       m_Kind: 1
       m_SubKind: 
     - m_Textures:
-      - {fileID: 2800000, guid: 60c0460c796664341b94ff7b00856360, type: 3}
+      - {fileID: 2800000, guid: 5d283d490551b41f6bcb724a385cbf45, type: 3}
       m_Width: 1920
       m_Height: 720
       m_Kind: 1
@@ -807,19 +807,19 @@ PlayerSettings:
   webGLExceptionSupport: 1
   webGLNameFilesAsHashes: 0
   webGLShowDiagnostics: 0
-  webGLDataCaching: 1
+  webGLDataCaching: 0
   webGLDebugSymbols: 0
   webGLEmscriptenArgs: 
   webGLModulesDirectory: 
-  webGLTemplate: APPLICATION:Default
+  webGLTemplate: PROJECT:PuttrTV
   webGLAnalyzeBuildSize: 0
   webGLUseEmbeddedResources: 0
-  webGLCompressionFormat: 0
+  webGLCompressionFormat: 2
   webGLWasmArithmeticExceptions: 0
   webGLLinkerTarget: 1
   webGLThreadsSupport: 0
   webGLDecompressionFallback: 0
-  webGLInitialMemorySize: 32
+  webGLInitialMemorySize: 256
   webGLMaximumMemorySize: 2048
   webGLMemoryGrowthMode: 2
   webGLMemoryLinearGrowthStep: 16
@@ -829,7 +829,7 @@ PlayerSettings:
   webGLWebAssemblyTable: 0
   webGLWebAssemblyBigInt: 0
   webGLCloseOnQuit: 0
-  webWasm2023: 1
+  webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
   webProgressiveAssetLoading: 0
   scriptingDefineSymbols: {}

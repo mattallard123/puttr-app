@@ -26,6 +26,7 @@ namespace PuttrArcade
     public sealed class BeerPongMode : StageMode
     {
         public override string Name => "Beer Pong";
+        public override bool Branded => true;
         public override string Blurb => "Ten cups each.\nHole it and the ball\ndrops in the cup.";
         public override string Rule => "Two putts a turn. Each make sinks a cup. Clear all ten first.";
         public override string Icon => "Trophy";
@@ -45,7 +46,11 @@ namespace PuttrArcade
         public override bool HasPortrait => true;
         public override string Tee => null;
         public override int Putter => _p;
-        public override GameAudio.Scene Sound => GameAudio.Scene.Range; // outdoors: birds and a light wind
+        // puttr-app-2: no background sound (Matt, 2026-11-21). The winner's cheer plays at the win (End), so the arcade
+        // adds no game-over once it is recorded.
+        public override GameAudio.Scene Sound => GameAudio.Scene.Quiet;
+        public override string VoicePrefix => "english";   // the announcer who calls the makes (GameVoice.English)
+        public override string EndSlot => GameAudio.Has("beerpong_win") ? "" : "game_over";
         public override float ShadowDistance => 260f;
         public override int Score(int player) => player < 2 ? Count(player) : 0;
 
@@ -80,50 +85,28 @@ namespace PuttrArcade
         /// <summary>Degrees either side of a straight-in entry that still drop in the cup: ±90 with ten cups left, ±20 with one.</summary>
         public static float WindowFor(int cupsLeft) => Mathf.Lerp(20f, 90f, Mathf.Clamp01((cupsLeft - 1) / 9f));
         float Window => WindowFor(10 - Count(_p));
+        int _calledCup = -1;
 
-        Texture2D _gauge;
-        Color32[] _gaugePixels;
-        const int GaugeW = 320, GaugeH = 200;
+        /// <summary>puttr-app-2: whether this putt drops a cup, as Play decides it: holed, not in the back, and in through the
+        /// window. The announcer's make or miss follows it, not the putt alone (Matt, 2026-11-21).</summary>
+        public bool Cups(PuttResult putt)
+        {
+            if (!putt.Made) return false;
+            bool backDoor = putt.Launch.Reached && Mathf.Abs(putt.Launch.HeadingDeg) >= 80f || putt.HasEntry && Mathf.Abs(putt.OffCenter) >= 90f;
+            return !backDoor && !(putt.HasEntry && Mathf.Abs(putt.OffCenter) > Window);
+        }
+
 
         // The hole seen from above, the shooter's side at the bottom: the rim, the window lit green round the front,
         // and (after a putt) a dot where it went in, white for a cup and amber for a rim-out.
         void Gauge(float window, float? entry, bool made)
         {
+            // puttr-app-2: on the 3D cup, close in, with the ideal line, the window lit on the rim and where the putt went in (Matt, 2026-11-21).
             if (Arcade == null || Arcade.Hud == null) return;
-            if (_gauge == null) { _gauge = new Texture2D(GaugeW, GaugeH, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp }; _gaugePixels = new Color32[GaugeW * GaugeH]; }
-            float cx = GaugeW / 2f, cy = GaugeH / 2f + 14f, hole = 58f, rimOut = 64f, band = 82f;
-            var bg = new Color32(0, 0, 0, 0); var cup = new Color32(8, 9, 10, 255); var rim = new Color32(220, 222, 224, 255);
-            var lit = new Color32(122, 212, 70, 255); var off = new Color32(255, 255, 255, 26); var back = new Color32(255, 82, 82, 60);
-            for (int y = 0; y < GaugeH; y++)
-                for (int x = 0; x < GaugeW; x++)
-                {
-                    float dx = x + 0.5f - cx, dy = y + 0.5f - cy, r = Mathf.Sqrt(dx * dx + dy * dy);
-                    float a = Mathf.Atan2(dx, -dy) * Mathf.Rad2Deg;   // 0 straight in from the front (bottom), + to the right
-                    Color32 c = bg;
-                    if (r <= hole) c = cup;
-                    else if (r <= rimOut) c = rim;
-                    else if (r <= band) c = Mathf.Abs(a) <= window ? lit : Mathf.Abs(a) >= 90f ? back : off;
-                    _gaugePixels[y * GaugeW + x] = c;
-                }
-            // The straight-in line from the shooter, and the entry dot.
-            for (int y = 0; y < (int)(cy - band); y += 6) for (int k = 0; k < 3; k++) for (int w = -1; w <= 1; w++) Put((int)cx + w, y + k, new Color32(255, 255, 255, 90));
-            if (entry.HasValue)
-            {
-                float a = entry.Value * Mathf.Deg2Rad;
-                float ex = cx + Mathf.Sin(a) * (hole - 2f), ey = cy - Mathf.Cos(a) * (hole - 2f);
-                var dot = made ? new Color32(255, 255, 255, 255) : new Color32(255, 179, 0, 255);
-                for (int y = -9; y <= 9; y++) for (int x = -9; x <= 9; x++) if (x * x + y * y <= 81) Put((int)ex + x, (int)ey + y, dot);
-            }
-            _gauge.SetPixels32(_gaugePixels);
-            _gauge.Apply(false);
+            int c = Target;
+            int feet = c >= 0 ? _feet[c] : DealtFeetNow, tee = c >= 0 ? _tee[c] : DealtTee;
             string words = window >= 89.5f ? "Any make off the front drops in" : "Go in within " + Mathf.RoundToInt(window) + "\u00B0 of center";
-            Arcade.Hud.SetAimCard(_gauge, words, caption: "REQUIRED ENTRY");
-        }
-
-        void Put(int x, int y, Color32 c)
-        {
-            if (x < 0 || y < 0 || x >= GaugeW || y >= GaugeH) return;
-            _gaugePixels[y * GaugeW + x] = c;
+            Arcade.ShowEntryWindow(feet, tee, window, entry, made, words, "REQUIRED ENTRY");
         }
 
         // ── The set ─────────────────────────────────────────────────────────
@@ -148,11 +131,11 @@ namespace PuttrArcade
             foreach (float x in new[] { -HalfW + 0.3f, HalfW - 0.3f }) Stripe(new Vector3(x, 0, 0), new Vector3(0.5f, 0.12f, HalfLen * 2), white);
             foreach (float z in new[] { -HalfLen + 0.3f, HalfLen - 0.3f, 0f }) Stripe(new Vector3(0, 0, z), new Vector3(HalfW * 2, 0.12f, 0.5f), white);
             // The Puttr logo, green mark and white letters, once on each half and the right way up for whoever shoots from that end.
-            var logo = Resources.Load<Texture2D>("PuttrArcade/LogoHeader");
+            var logo = Brand.Logo;
             if (logo != null)
             {
                 Material mark = Make.Glow(new Color(1f, 1f, 1f, 0.95f), false, logo);
-                var size = new Vector2(15f, 15f * logo.height / logo.width);
+                Vector2 size = Brand.Size(logo, 15f);
                 Card("Logo", Root, new Vector3(0, TableY + 0.1f, -LogoZ), size, mark).transform.localRotation = Quaternion.Euler(90f, 0, 0);
                 Card("Logo", Root, new Vector3(0, TableY + 0.1f, LogoZ), size, mark).transform.localRotation = Quaternion.Euler(90f, 180f, 0);
             }
@@ -287,7 +270,8 @@ namespace PuttrArcade
 
         public override void Begin(int players)
         {
-            for (int i = 0; i < 10; i++) { _feet[i] = _dice.Next(3, 12); _tee[i] = _dice.Next(1, 4); }
+            _calledCup = -1;
+            for (int i = 0; i < 10; i++) { _feet[i] = Arcade.DealFeet(_dice); _tee[i] = _dice.Next(1, 4); }
             for (int p = 0; p < 2; p++) for (int i = 0; i < 10; i++) { _sunk[p][i] = false; _cups[p][i].gameObject.SetActive(true); _cups[p][i].localPosition = RackSpot(p, i); }
             _house = players <= 1;
             _p = _first = Mathf.Clamp(Arcade.EmbeddedFirst, 0, 1); _inTurn = 0; _winner = -1; _turnAllMade = true; _rebuttal = _overtime = _over = false;
@@ -327,6 +311,13 @@ namespace PuttrArcade
             DealtFeetNow = _feet[c];
             DealtTee = _tee[c];
             ShowTeeSign();
+            // puttr-app-2: a new cup to shoot at (or a new shooter) is called out: its distance and tee (Matt, 2026-11-21).
+            int said = _p * 100 + c;
+            if (said != _calledCup && Arcade != null)
+            {
+                _calledCup = said;
+                Arcade.Audio.Voice(VoicePrefix + "_distance_" + DealtFeetNow + "_feet", VoicePrefix + "_tee_" + DealtTeeWord[DealtTee - 1]);
+            }
             Gauge(Window, null, false);
         }
 
@@ -419,7 +410,7 @@ namespace PuttrArcade
                 // Off the rim, onto the table, away.
                 Arcade.Audio.Library("pingpong_bounce", 0.9f);
                 Vector3 off = aim + new Vector3((aim.x - target.localPosition.x) * 3f + (float)(_dice.NextDouble() - 0.5) * 4f, 0, facing * (backDoor ? 10f : 6f));
-                if (backDoor) yield return Spin(target, aim);
+                if (backDoor) { Arcade.Audio.Library("beerpong_rim_spin", 0.8f); yield return Spin(target, aim); }   // puttr-app-2: round the rim (silent until recorded)
                 off.y = TableY + BallR;
                 yield return Fly(aim, off, 0.35f, 4f);
                 Arcade.Audio.Library("pingpong_bounce", 0.6f);
@@ -456,7 +447,7 @@ namespace PuttrArcade
                 return;
             }
             hud.Banner(head, "", make ? Make.Bright : Make.Amber, 1f);
-            if (!make) Arcade.Audio.Miss();
+            if (!make && !Arcade.Audio.TryLibrary("beerpong_miss", 0.75f)) Arcade.Audio.Miss();   // puttr-app-2
         }
 
         void Switch() { _p = 1 - _p; _side = _p == 0 ? -1f : 1f; }
@@ -481,7 +472,7 @@ namespace PuttrArcade
             _over = true; _winner = winner;
             Arcade.Hud.SetAimCard(null, "");
             Arcade.Hud.Banner(Who(winner).ToUpperInvariant() + " WINS", why, Make.Bright, 3f);
-            Arcade.Audio.Library("rule_win");
+            Arcade.Audio.Library("beerpong_win", "rule_win");   // puttr-app-2: the party's cheer, the rule games' win until recorded
             Arcade.Celebrate(120, At(0, TableY + 10f, 0));
         }
 

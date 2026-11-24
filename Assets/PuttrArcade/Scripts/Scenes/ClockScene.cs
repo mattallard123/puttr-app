@@ -1,9 +1,10 @@
-// Around the Clock as a giant brass clock face set into the turf of an old study at night, the cup at its centre. The
-// near half of the face (nine o'clock round through six to three) is cut into the parts of the cup: the parts the
-// putter has collected glow gold, the rest are dark brass, and the clock's hand points at the part needed next. The
-// putt rolls in and drops through the part it entered by: a new part strikes and lights up, one already held
-// flickers, a miss rolls on by.
-// Units: inches x K round the cup (at the origin, on the face); the golfer is down -Z, twelve o'clock is up +Z.
+// Around the Clock, up close on the hole (Matt, 2026-11-23: the clock is the hole itself, since the game measures
+// where the ball enters it; drawn from Center Cut's viewpoint, see HoleView). The mat's real 4.25 inch cup is the
+// clock's face: a brass bezel on its lip, the hours and minutes round it. The near half of the rim (nine o'clock
+// round through six to three) is cut into the parts of the cup: the parts the putter has collected glow gold, the
+// rest are dark brass, and a gold arrow points in at the part needed next. The putt rolls in and drops through the
+// part it entered by: a new part strikes and lights up, one already held flickers, a miss rolls on by.
+// Units: inches x K round the cup (at the origin); the golfer is down -Z, twelve o'clock is up +Z.
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -13,104 +14,78 @@ namespace PuttrArcade
 {
     public sealed class ClockScene : RuleScene
     {
-        const float K = 7f, CupR = 2.125f * K, BallR = 0.84f * K, Face = 170f, Top = 10f, Reach = 250f;
-        const float WedgeIn = CupR + 4f, WedgeOut = 132f;
+        const float K = 5f, CupR = 2.125f * K, BallR = 0.84f * K, Reach = 250f;
+        const float WedgeIn = CupR + 0.3f * K, WedgeOut = CupR + 1.9f * K, HoursR = WedgeOut + 1.35f * K;
         static readonly string[] Hours = { "XII", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI" };
 
         readonly List<Renderer> _wedges = new List<Renderer>();
         readonly List<TextMesh> _labels = new List<TextMesh>();
         Transform _wedgeRoot, _hand, _pointer, _ball, _tee;
+        Material _nextGlow;
         LineRenderer _trail;
         Material _gold, _brass, _flash, _next;
         int _n, _need = -1;
         float _handDeg, _handTo, _teeX, _teeTo;
         bool[] _got = new bool[0];
 
-        static bool Portrait => Screen.height > Screen.width;
-        public override Vector3 CameraFrom => At(Portrait ? 20f : 0f, Portrait ? 330f : 260f, Portrait ? -420f : -360f);
-        public override Vector3 CameraLook => At(Portrait ? 10f : 0f, Portrait ? 40f : 20f, Portrait ? 60f : 30f);
-        public override float CameraFov => Portrait ? 58f : 44f;
+        public override Vector3 CameraFrom => At(HoleView.From(CupR));
+        public override Vector3 CameraLook => At(HoleView.Look(CupR));
+        public override float CameraFov => HoleView.Fov;
+        public override float CardLens => 54f;
+        public override float ShadowDistance => 500f;
 
         public override void Build()
         {
             _gold = Make.Emissive(new Color(1f, 0.78f, 0.3f), new Color(1.5f, 0.95f, 0.25f), 0.8f);
             _brass = Make.Lit(new Color(0.3f, 0.23f, 0.13f), 0.55f, 0.6f);
-            _next = Make.Lit(new Color(0.45f, 0.34f, 0.17f), 0.6f, 0.6f);
+            _next = _nextGlow = Make.Emissive(new Color(0.5f, 0.38f, 0.18f), new Color(0.5f, 0.32f, 0.08f), 0.6f);
             _flash = Make.Emissive(new Color(1f, 0.95f, 0.8f), new Color(5f, 4f, 2f), 0.8f);
-            Material face = Make.Lit(new Color(0.72f, 0.6f, 0.38f), 0.42f, 0.45f);
             Material rim = Make.Lit(new Color(0.85f, 0.62f, 0.25f), 0.75f, 0.85f);
-            Material ink = Make.Lit(new Color(0.12f, 0.08f, 0.04f), 0.4f);
+            Material mark = Make.Emissive(new Color(0.9f, 0.72f, 0.36f), new Color(0.5f, 0.36f, 0.12f), 0.6f);
 
-            // The study: wood panelled wall, a tall arched window with the moon, turf on the floor.
-            Material wood = Make.Lit(new Color(0.2f, 0.11f, 0.06f), 0.35f);
-            Material wood2 = Make.Lit(new Color(0.15f, 0.08f, 0.045f), 0.35f);
-            Shape(PrimitiveType.Cube, "Wall", Root, new Vector3(0, 300f, 520f), new Vector3(2400f, 800f, 6f), wood);
-            for (int i = -10; i <= 10; i++)
-                Shape(PrimitiveType.Cube, "Panel", Root, new Vector3(i * 110f, 70f, 516f), new Vector3(90f, 120f, 3f), wood2);
-            Shape(PrimitiveType.Cube, "Rail", Root, new Vector3(0, 140f, 515f), new Vector3(2400f, 8f, 6f), wood2);
-            Material night = Make.Emissive(Color.black, new Color(0.05f, 0.09f, 0.2f));
-            Material frame = Make.Lit(new Color(0.1f, 0.06f, 0.03f), 0.4f);
-            Shape(PrimitiveType.Cube, "Window", Root, new Vector3(0, 300f, 515f), new Vector3(160f, 220f, 1f), night);
-            GameObject top = Make.MeshObject("Window top", Root, Make.Disc(80f, 48), night);
-            top.transform.localPosition = new Vector3(0, 410f, 514.9f);
-            top.transform.localRotation = Quaternion.Euler(-90f, 0, 0);
-            Shape(PrimitiveType.Cube, "Mullion", Root, new Vector3(0, 340f, 514f), new Vector3(6f, 300f, 2f), frame);
-            Shape(PrimitiveType.Cube, "Transom", Root, new Vector3(0, 330f, 514f), new Vector3(160f, 6f, 2f), frame);
-            Shape(PrimitiveType.Cube, "Sill", Root, new Vector3(0, 188f, 510f), new Vector3(190f, 8f, 16f), frame);
-            GameObject moon = Make.MeshObject("Moon", Root, Make.Disc(18f, 32), Make.Emissive(Color.white, new Color(2f, 2f, 2.2f)));
-            moon.transform.localPosition = new Vector3(42f, 430f, 514f);
-            moon.transform.localRotation = Quaternion.Euler(-90f, 0, 0);
-            GameObject shaft = Shape(PrimitiveType.Cube, "Moonlight", Root, new Vector3(0, 150f, 330f), new Vector3(170f, 2f, 420f), Make.Glow(new Color(0.6f, 0.7f, 1f, 0.05f)));
-            shaft.transform.localRotation = Quaternion.Euler(-28f, 0, 0);
-            Shape(PrimitiveType.Cube, "Turf", Root, new Vector3(0, -1f, 100f), new Vector3(2400f, 2f, 1000f), Make.Lit(new Color(0.07f, 0.24f, 0.09f), 0.3f));
+            // The study's wood floor round the mat, the mat and its real hole.
+            HoleView.Floor(Root, CupR, -3.2f, Make.Lit(new Color(0.2f, 0.11f, 0.06f), 0.35f));
+            HoleView.Build(Root, CupR, new Color(0.05f, 0.16f, 0.08f));
+            Shape(PrimitiveType.Cube, "Skirting", Root, new Vector3(0, 3f, 7f * K + 7f), new Vector3(24f * K + 10f, 12f, 14f), Make.Lit(new Color(0.15f, 0.08f, 0.045f), 0.35f));
 
-            // The clock: a brass drum, its face, a polished rim, the hours, the hole in the middle.
-            var drum = new List<Vector2> { new Vector2(0.01f, 0f), new Vector2(Face + 8f, 0f), new Vector2(Face + 8f, 0f), new Vector2(Face + 8f, Top), new Vector2(Face + 8f, Top), new Vector2(0.01f, Top) };
-            Make.MeshObject("Drum", Root, Make.Lathe(drum, 96), rim);
-            GameObject f = Make.MeshObject("Face", Root, Make.Disc(Face - 6f, 96), face);
-            f.transform.localPosition = new Vector3(0, Top + 0.05f, 0);
-            var bezel = new List<Vector2> { new Vector2(Face + 8f, Top), new Vector2(Face + 4f, Top + 4f), new Vector2(Face - 2f, Top + 4f), new Vector2(Face - 6f, Top) };
-            Make.MeshObject("Bezel", Root, Make.Lathe(bezel, 96), rim);
+            // The clock is the hole: a brass bezel on the lip, another outside the parts, the minutes and the hours round it.
+            Hoop("Bezel", Root, new Vector3(0, 0.14f, 0), CupR, CupR + 0.22f * K, rim);
+            Hoop("Outer bezel", Root, new Vector3(0, 0.14f, 0), WedgeOut + 0.08f * K, WedgeOut + 0.26f * K, rim);
             for (int h = 0; h < 12; h++)
             {
                 float a = h * 30f * Mathf.Deg2Rad;
                 Vector3 dir = new Vector3(Mathf.Sin(a), 0, Mathf.Cos(a));
-                TextMesh t = Words(Root, Hours[h], dir * (Face - 22f) + Vector3.up * (Top + 0.3f), 9f, new Color(0.15f, 0.1f, 0.05f));
+                TextMesh t = Words(Root, Hours[h], dir * HoursR + Vector3.up * 0.2f, 0.62f * K, new Color(0.95f, 0.8f, 0.48f));
                 t.transform.localRotation = Quaternion.Euler(90f, 0, 0);
             }
             for (int m = 0; m < 60; m++)
             {
                 float a = m * 6f;
-                GameObject tick = Shape(PrimitiveType.Cube, "Tick", Root, Quaternion.Euler(0, a, 0) * new Vector3(0, Top + 0.2f, Face - 10f), new Vector3(m % 5 == 0 ? 2.4f : 1f, 0.3f, m % 5 == 0 ? 9f : 5f), ink);
+                bool hour = m % 5 == 0;
+                GameObject tick = Shape(PrimitiveType.Cube, "Tick", Root, Quaternion.Euler(0, a, 0) * new Vector3(0, 0.12f, WedgeOut + (hour ? 0.56f : 0.48f) * K), new Vector3((hour ? 0.14f : 0.06f) * K, 0.1f, (hour ? 0.42f : 0.26f) * K), mark);
                 tick.transform.localRotation = Quaternion.Euler(0, a, 0);
+                tick.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
             }
-            GameObject hole = Make.MeshObject("Hole", Root, Make.Disc(CupR, 48), Make.Lit(new Color(0.01f, 0.008f, 0.005f), 0.1f));
-            hole.transform.localPosition = new Vector3(0, Top + 0.4f, 0);
-            Hoop("Lip", Root, new Vector3(0, Top + 0.45f, 0), CupR, CupR + 2f, rim);
 
             _wedgeRoot = new GameObject("Parts").transform;
             _wedgeRoot.SetParent(Root, false);
-            _wedgeRoot.localPosition = new Vector3(0, Top + 0.2f, 0);
+            _wedgeRoot.localPosition = new Vector3(0, 0.1f, 0);
 
-            // The hand: a pointer from beside the cup out over the part needed next, and a gold arrow at the rim.
+            // The hand: a gold arrow outside the parts, pointing in at the part needed next.
             _hand = new GameObject("Hand").transform;
             _hand.SetParent(Root, false);
-            _hand.localPosition = new Vector3(0, Top + 2.5f, 0);
-            Material handMat = Make.Lit(new Color(0.08f, 0.06f, 0.04f), 0.7f, 0.8f);
-            Shape(PrimitiveType.Cube, "Shaft", _hand, new Vector3(0, 0, -(CupR + 4f + 50f)), new Vector3(4f, 1.6f, 100f), handMat);
-            GameObject tip = Shape(PrimitiveType.Cube, "Tip", _hand, new Vector3(0, 0, -(CupR + 104f)), new Vector3(11f, 1.6f, 11f), handMat);
-            tip.transform.localRotation = Quaternion.Euler(0, 45f, 0);
-            Shape(PrimitiveType.Cylinder, "Boss", _hand, new Vector3(0, 0, -(CupR + 4f)), new Vector3(8f, 1f, 8f), handMat);
+            _hand.localPosition = new Vector3(0, 0.3f, 0);
             _pointer = new GameObject("Pointer").transform;
             _pointer.SetParent(_hand, false);
             GameObject arrow = Make.MeshObject("Arrow", _pointer, Arrow(), Make.Emissive(new Color(1f, 0.75f, 0.2f), new Color(2.4f, 1.4f, 0.3f)));
-            arrow.transform.localPosition = new Vector3(0, 6f, -(Face + 18f));
+            arrow.transform.localPosition = new Vector3(0, 0f, -(WedgeOut + 0.72f * K));
+            arrow.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
 
-            _tee = Shape(PrimitiveType.Cube, "Tee", Root, new Vector3(0, 1f, -Reach + 20f), new Vector3(30f, 2f, 12f), Make.Lit(new Color(0.85f, 0.8f, 0.7f), 0.5f)).transform;
+            _tee = Shape(PrimitiveType.Cube, "Tee", Root, new Vector3(0, 0.4f, -Reach + 20f), new Vector3(30f, 0.8f, 12f), Make.Lit(new Color(0.85f, 0.8f, 0.7f), 0.5f)).transform;
             Make.Ball(out Texture2D bc, out Texture2D bn);
             _ball = Shape(PrimitiveType.Sphere, "Ball", Root, Vector3.zero, Vector3.one * BallR * 2f, Make.Lit(Color.white, 0.6f, 0f, bc, bn)).transform;
             _ball.gameObject.SetActive(false);
-            _trail = Stroke(Root, "Trail", new Color(1f, 0.85f, 0.5f, 0.6f), 2.6f);
+            _trail = Stroke(Root, "Trail", new Color(1f, 0.85f, 0.5f, 0.6f), 0.9f);
 
             Sun(Root, new Vector3(55f, 10f, 0f), new Color(1f, 0.85f, 0.65f), 0.75f);
             Lamp(Root, new Vector3(0, 450f, -150f), new Vector3(0, 0, 0), new Color(1f, 0.88f, 0.7f), 380000f, 45f, 900f);
@@ -121,14 +96,16 @@ namespace PuttrArcade
         static Mesh Arrow()
         {
             var mesh = new Mesh { name = "Arrow" };
-            mesh.SetVertices(new List<Vector3> { new Vector3(0, 0, 14f), new Vector3(10f, 0, -8f), new Vector3(-10f, 0, -8f) });
+            mesh.SetVertices(new List<Vector3> { new Vector3(0, 0, 0.42f * K), new Vector3(0.36f * K, 0, -0.3f * K), new Vector3(-0.36f * K, 0, -0.3f * K) });
             mesh.SetTriangles(new List<int> { 0, 1, 2 }, 0);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             return mesh;
         }
 
-        float Centre(int s) => -90f + (s + 0.5f) * 180f / Mathf.Max(1, _n);
+        /// <summary>The parts cover this many degrees either side of straight in: the front 150 of the cup.</summary>
+        public const float HalfArc = 75f;
+        float Centre(int s) => -HalfArc + (s + 0.5f) * 2f * HalfArc / Mathf.Max(1, _n);
 
         void Lay(int n)
         {
@@ -137,14 +114,14 @@ namespace PuttrArcade
             for (int i = _wedgeRoot.childCount - 1; i >= 0; i--) Object.Destroy(_wedgeRoot.GetChild(i).gameObject);
             _wedges.Clear();
             _labels.Clear();
-            float w = 180f / n, gap = n >= 9 ? 1.2f : 1.8f;
+            float w = 2f * HalfArc / n, gap = n >= 9 ? 1.2f : 1.8f;
             for (int s = 0; s < n; s++)
             {
-                float from = -90f + s * w + gap / 2f, to = -90f + (s + 1) * w - gap / 2f;
+                float from = -HalfArc + s * w + gap / 2f, to = -HalfArc + (s + 1) * w - gap / 2f;
                 GameObject wedge = Make.MeshObject("Part " + (s + 1), _wedgeRoot, Sector(WedgeIn, WedgeOut, from, to), _brass);
                 wedge.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
                 _wedges.Add(wedge.GetComponent<Renderer>());
-                TextMesh label = Words(_wedgeRoot, (s + 1).ToString(), Rim(Centre(s), WedgeOut - 18f) + Vector3.up * 0.4f, n >= 9 ? 9f : 12f, Color.white);
+                TextMesh label = Words(_wedgeRoot, (s + 1).ToString(), Rim(Centre(s), (WedgeIn + WedgeOut) / 2f) + Vector3.up * 0.12f, (n >= 9 ? 0.55f : 0.8f) * K, Color.white);
                 label.transform.localRotation = Quaternion.Euler(90f, 0, 0);
                 _labels.Add(label);
             }
@@ -171,7 +148,7 @@ namespace PuttrArcade
             _teeTo = TeeX(v.NextTee);
         }
 
-        static float TeeX(int tee) => tee == 1 ? -120f : tee == 3 ? 120f : 0f;
+        static float TeeX(int tee) => tee == 1 ? -8f * K : tee == 3 ? 8f * K : 0f;
 
         public override void Begin(ShotView start) { Set(start); _handDeg = _handTo; _teeX = _teeTo; }
         public override void Ready(ShotView v) { Set(v); }
@@ -181,21 +158,24 @@ namespace PuttrArcade
             _handDeg = Mathf.LerpAngle(_handDeg, _handTo, Time.deltaTime * 4f);
             // The hand points out from the centre toward the part: at 0 it points at the golfer (six o'clock).
             _hand.localRotation = Quaternion.Euler(0, -_handDeg, 0);
-            _pointer.localPosition = new Vector3(0, Mathf.Abs(Mathf.Sin(Time.time * 3f)) * 4f, -Mathf.Abs(Mathf.Sin(Time.time * 3f)) * 6f);
+            float beat = Mathf.Abs(Mathf.Sin(Time.time * 3f));
+            _pointer.localPosition = new Vector3(0, 0, -beat * 0.3f * K);
+            // The part needed next breathes, so the eye goes to it.
+            if (_nextGlow != null) _nextGlow.SetColor("_EmissionColor", new Color(0.5f, 0.32f, 0.08f) * (0.6f + 1.4f * beat));
             _teeX = Mathf.Lerp(_teeX, _teeTo, Time.deltaTime * 3f);
-            _tee.localPosition = new Vector3(_teeX, 1f, -Reach + 20f);
+            _tee.localPosition = new Vector3(_teeX, 0.4f, -Reach + 20f);
         }
 
         public override IEnumerator Play(ShotView v)
         {
             Vector3 start = new Vector3(TeeX(v.Tee), 0, -Reach);
-            bool inside = v.Made && v.HasEntry && Mathf.Abs(v.EntryDeg) <= 90f;
+            bool inside = v.Made && v.HasEntry && Mathf.Abs(v.EntryDeg) <= HalfArc;
             List<Vector3> pts;
             Vector3 rim = Vector3.zero;
             if (v.Made)
             {
                 float deg = v.HasEntry ? v.EntryDeg : 0f;
-                if (!inside) deg = v.HasEntry ? Mathf.Sign(v.EntryDeg) * Mathf.Max(120f, Mathf.Abs(v.EntryDeg)) : 180f;
+                if (!inside) deg = v.HasEntry ? Mathf.Sign(v.EntryDeg) * Mathf.Max(HalfArc + 8f, Mathf.Abs(v.EntryDeg)) : 180f;
                 rim = Rim(deg, CupR - BallR * 0.4f);
                 Vector3 outward = Rim(Mathf.Clamp(deg, -115f, 115f), 1f);
                 pts = Bezier(start, Vector3.Lerp(start, outward * 160f, 0.5f), outward * 110f, rim);
@@ -208,27 +188,25 @@ namespace PuttrArcade
                 pts = Track(v, K, Reach, start, new Vector3(endX, 0, endZ));
             }
             Lift(pts, BallR);
-            // Up onto the face: the ball rides at the face's height once it is over the clock.
-            for (int i = 0; i < pts.Count; i++) { float r = new Vector2(pts[i].x, pts[i].z).magnitude; pts[i] += Vector3.up * (r < Face + 8f ? Top : Mathf.Lerp(Top, 0f, (r - Face - 8f) / 30f)); }
             _ball.gameObject.SetActive(true);
             _ball.localPosition = pts[0];
             yield return Roll(_ball, pts, 1.6f, _trail, BallR);
 
             if (v.Made)
             {
-                Sound("cup_plop", 0.7f);
-                yield return Drop(_ball, rim + Vector3.up * Top, BallR);
+                Sound("clock_make", "cup_plop", 0.7f);   // puttr-app-2: the game's own sound, the shared one until recorded
+                yield return Drop(_ball, rim, BallR);
                 if (inside && _n > 0)
                 {
-                    int s = Mathf.Clamp(Mathf.FloorToInt((v.EntryDeg + 90f) / (180f / _n)), 0, _n - 1);
+                    int s = Mathf.Clamp(Mathf.FloorToInt((v.EntryDeg + HalfArc) / (2f * HalfArc / _n)), 0, _n - 1);
                     bool fresh = v.Points > 0;
                     Renderer w = _wedges[s];
-                    Vector3 at = At(Rim(Centre(s), (WedgeIn + WedgeOut) / 2f) + Vector3.up * (Top + 6f));
+                    Vector3 at = At(Rim(Centre(s), (WedgeIn + WedgeOut) / 2f) + Vector3.up * 2f);
                     if (fresh)
                     {
                         w.sharedMaterial = _flash;
                         Arcade.Sparks(at, 36);
-                        if (v.Title == "CLOCK DONE!") Arcade.Celebrate(40, At(0, 30f, 0));
+                        if (v.Title == "CLOCK DONE!") Arcade.Celebrate(40, At(0, 8f, 0));
                         yield return new WaitForSeconds(0.45f);
                         w.sharedMaterial = _gold;
                         _labels[s].color = new Color(0.35f, 0.2f, 0.02f);

@@ -63,6 +63,7 @@ namespace Puttr
 
         /// <summary>Is there a Bluetooth radio this build can use?</summary>
         public static bool Supported =>
+        // puttr-app-2: every build with a radio, Apple TV and Android TV included. The web (Samsung TV) build has none.
 #if UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX || UNITY_IOS || UNITY_TVOS || (UNITY_ANDROID && !UNITY_EDITOR)
             !_missing;
 #else
@@ -104,12 +105,27 @@ namespace Puttr
             catch (EntryPointNotFoundException) { _missing = true; }
         }
 
+        /// <summary>
+        /// Look again while nothing is in range. On Apple this restarts the scan and asks for a console the device
+        /// already holds (it does not advertise); Android's scan runs on, so this does nothing there.
+        /// </summary>
+        public void Rescan()
+        {
+            if (!_running || State != BluetoothState.Scanning) return;
+            try { PuttrBle_Start(); } catch (Exception) { }
+        }
+
+        /// <summary>True between Start and Stop.</summary>
+        public bool Running => _running;
+
+        /// <summary>Stops looking and drops the console (the native side cancels the connection).</summary>
         public void Stop()
         {
             if (!_running) return;
             _running = false;
             try { PuttrBle_Stop(); } catch (Exception) { }
             State = Supported ? BluetoothState.Off : BluetoothState.Unavailable;
+            ConnectedId = null; ConnectedName = null;
         }
 
         /// <summary>Connect to one of Devices by its Id.</summary>
@@ -254,8 +270,8 @@ namespace Puttr
             Array.Copy(bytes, buffer, n);
             return n;
         }
-#else
-        // On iOS and tvOS the plugin is compiled into the app itself.
+#elif ((UNITY_IOS || UNITY_TVOS) && !UNITY_EDITOR) || UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
+        // On iOS and tvOS the plugin is compiled into the app itself; on a Mac it is PuttrBle.bundle.
 #if (UNITY_IOS || UNITY_TVOS) && !UNITY_EDITOR
         const string Library = "__Internal";
 #else
@@ -267,6 +283,14 @@ namespace Puttr
         [DllImport(Library)] static extern void PuttrBle_Disconnect();
         [DllImport(Library)] static extern int PuttrBle_Poll(byte[] buffer, int capacity);
         [DllImport(Library)] static extern void PuttrBle_Write(string head, string text);
+#else
+        // puttr-app-2: the web build (Samsung TV) and anything else: no Bluetooth (Supported is false).
+        static void PuttrBle_Start() { }
+        static void PuttrBle_Stop() { }
+        static void PuttrBle_Connect(string identifier) { }
+        static void PuttrBle_Disconnect() { }
+        static int PuttrBle_Poll(byte[] buffer, int capacity) => 0;
+        static void PuttrBle_Write(string head, string text) { }
 #endif
     }
 }

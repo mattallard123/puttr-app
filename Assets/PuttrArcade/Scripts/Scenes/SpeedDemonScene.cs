@@ -23,6 +23,7 @@ namespace PuttrArcade
         float _needleNow, _needleTo, _flash;
 
         static bool Portrait => Screen.height > Screen.width;
+        public override float WideFrame => 0.74f;   // a lane down the middle: nothing of it is under the side cards
         public override Vector3 CameraFrom => At(_camAt);
         public override Vector3 CameraLook => At(_lookAt);
         public override float CameraFov => Portrait ? 60f : 46f;
@@ -168,7 +169,7 @@ namespace PuttrArcade
             _ball.gameObject.SetActive(true);
             // Fixed high behind the strip: the 11 ft start at the bottom, the cup a third up, the gantry above.
             _camTo = Portrait ? new Vector3(-2f, 80f, -215f) : new Vector3(-8f, 72f, -210f);
-            _lookTo = Portrait ? new Vector3(-8f, 20f, -20f) : new Vector3(-34f, 20f, -20f);
+            _lookTo = Portrait ? new Vector3(-8f, 36f, -20f)   /* upright: aimed higher, so the pace gauge sits under the score bug, not behind it */ : new Vector3(-34f, 20f, -20f);
             if (snap) { _camAt = _camTo; _lookAt = _lookTo; }
         }
 

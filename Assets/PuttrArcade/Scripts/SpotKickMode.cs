@@ -22,11 +22,15 @@ namespace PuttrArcade
     public sealed class SpotKickMode : StageMode
     {
         public override string Name => "Spot Kick";
+        public override bool Branded => true;
         public override string VoicePrefix => "spotkick";
         public override int Putter => Active; // whose difficulty applies to this putt
         public override string Blurb => "A penalty shootout.\nLine aims it, pace lifts it.\nThe keeper learns your habits.";
         public override int Score(int player) => _points[player];
         public override GameAudio.Scene Sound => GameAudio.Scene.Stadium;
+        // puttr-app-2: a football crowd of its own (the stadium's until it is recorded); the referee's whistle ends the shootout.
+        public override string BedSlot => "spotkick_stadium_loop";
+        public override string EndSlot => "spotkick_whistle";
         public override string Rule => "Hole it to hit the target. Miss the hole and you miss the goal.";
         public override string Icon => "SoccerBall";
         public override Color Accent => new Color(0.4f, 0.73f, 0.42f);
@@ -116,12 +120,14 @@ namespace PuttrArcade
 
             // Behind: lit boards, a bank of seats going up and away, and the floodlights.
             Shape(PrimitiveType.Cube, "Boards", Root, new Vector3(0, 19f, 640f), new Vector3(4200f, 38f, 4f), Make.Emissive(new Color(0.01f, 0.02f, 0.015f), new Color(0.02f, 0.09f, 0.04f), 0.6f));
-            var logo = Resources.Load<Texture2D>("PuttrArcade/LogoHeader");
-            if (logo != null)
+            // Seven boards: the host's logo, a partner's on every third, and Puttr's on the last (Brand.Panel). With no kit, all Puttr.
+            var marks = new Dictionary<Texture2D, Material>();
+            for (int i = 0; i < 7; i++)
             {
-                Material mark = Make.Glow(new Color(1.15f, 1.15f, 1.15f, 1f), false, logo); // the logo's own green mark and white letters
-                for (int i = -3; i <= 3; i++)
-                    Card("Board logo", Root, new Vector3(i * 330f, 19f, 637.5f), new Vector2(110f, 110f * logo.height / logo.width), mark);
+                Texture2D logo = Brand.Panel(i, 7);
+                if (logo == null) continue;
+                if (!marks.TryGetValue(logo, out Material mark)) marks[logo] = mark = Make.Glow(new Color(1.15f, 1.15f, 1.15f, 1f), false, logo); // the logo's own colours
+                Card("Board logo", Root, new Vector3((i - 3) * 330f, 19f, 637.5f), Brand.Size(logo, 110f), mark);
             }
             Material stand = Make.Glow(Color.white, false, Crowd());
             stand.SetTextureScale("_MainTex", new Vector2(3f, 2f));
@@ -216,9 +222,17 @@ namespace PuttrArcade
 
         // ── The game ────────────────────────────────────────────────────────
 
+        // puttr-app-2: the crowd's "ooh" at a miss: Spot Kick's own once recorded, the stadium's groan until then.
+        void MissGroan(float volume)
+        {
+            if (Arcade.Audio.TryLibrary("spotkick_miss_groan", volume)) Arcade.Audio.Excite(0.25f);
+            else Arcade.Audio.Groan();
+        }
+
         public override void Begin(int players)
         {
             _replayFrom = _replayAt = null;
+            if (Arcade != null) Arcade.Audio.Library("spotkick_whistle", 0.7f);   // puttr-app-2: the shootout starts (silent until recorded)
             _players = players;
             _kick = 0;
             _points = new int[players];
@@ -372,7 +386,7 @@ namespace PuttrArcade
                     points = 2; result = "Top corner"; color = Make.Bright;
                     hud.Banner("TOP BINS", "Counts double", Make.Bright, 2.2f);
                     Arcade.Audio.Net();
-                    Arcade.Audio.Strike();
+                    if (Arcade.Audio.TryLibrary("spotkick_goal", 1f)) Arcade.Audio.Excite(1f); else Arcade.Audio.Strike();   // puttr-app-2
                     Arcade.Shake(0.5f);
                     Arcade.Celebrate(110, At(0, 30f, GoalZ - 40f));
                     break;
@@ -380,38 +394,38 @@ namespace PuttrArcade
                     points = 1; result = "Goal"; color = Make.Bright;
                     hud.Banner("GOAL", Mathf.Abs(dive.x) > 20f && Mathf.Sign(dive.x) != Mathf.Sign(x) ? "Sent the keeper the wrong way" : "Past the keeper", Color.white, 2f);
                     Arcade.Audio.Net();
-                    Arcade.Audio.Spare();
+                    if (Arcade.Audio.TryLibrary("spotkick_goal", 0.8f)) Arcade.Audio.Excite(0.65f); else Arcade.Audio.Spare();   // puttr-app-2
                     Arcade.Celebrate(50, At(0, 30f, GoalZ - 40f));
                     break;
                 case Outcome.Saved:
                     result = "Saved"; color = Make.Amber;
                     hud.Banner("SAVED", scuffed ? "Short of the hole: it rolled to the keeper" : _history[player].Count > 1 ? "The keeper has seen that one before" : "The keeper guessed right", Make.Amber, 2f);
-                    Arcade.Audio.Thump(50f);
-                    Arcade.Audio.Groan();
+                    if (!Arcade.Audio.TryLibrary("spotkick_save", 0.9f)) Arcade.Audio.Thump(50f);   // puttr-app-2: its own glove and groan, the shared ones until recorded
+                    MissGroan(0.8f);
                     break;
                 case Outcome.Post:
                     result = "Off the post"; color = Make.Red;
                     hud.Banner("OFF THE POST", holed ? "An inch from perfect" : "Lipped out", Make.Red, 2f);
                     Arcade.Audio.Post();
-                    Arcade.Audio.Groan();
+                    MissGroan(0.9f);   // puttr-app-2
                     Arcade.Shake(0.4f);
                     break;
                 case Outcome.Bar:
                     result = "Off the bar"; color = Make.Red;
                     hud.Banner("OFF THE BAR", "A touch too firm", Make.Red, 2f);
                     Arcade.Audio.Post();
-                    Arcade.Audio.Groan();
+                    MissGroan(0.9f);   // puttr-app-2
                     Arcade.Shake(0.4f);
                     break;
                 case Outcome.Over:
                     result = "Over the bar"; color = Make.Red;
                     hud.Banner("OVER", "Too much pace", Make.Red, 2f);
-                    Arcade.Audio.Miss();
+                    MissGroan(0.75f);   // puttr-app-2
                     break;
                 default:
                     result = "Wide"; color = Make.Red;
                     hud.Banner("WIDE", x < 0 ? "Missed the hole left, so the kick went left" : "Missed the hole right, so the kick went right", Make.Red, 2f);
-                    Arcade.Audio.Miss();
+                    MissGroan(0.75f);   // puttr-app-2
                     break;
             }
             ShowPutt(putt, result, color);

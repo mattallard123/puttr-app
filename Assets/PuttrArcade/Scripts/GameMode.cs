@@ -18,6 +18,8 @@ namespace PuttrArcade
         public Arcade Arcade;
         /// <summary>Everything this game built. Active only while the game is being played.</summary>
         public Transform Root;
+        /// <summary>True for a game whose set carries the brand's logo (Brand.cs): the arcade builds it again when the brand changes.</summary>
+        public virtual bool Branded => false;
 
         /// <summary>For the home screen: "Lanes".</summary>
         public abstract string Name { get; }
@@ -112,6 +114,16 @@ namespace PuttrArcade
 
         /// <summary>What the place sounds like.</summary>
         public virtual GameAudio.Scene Sound => GameAudio.Scene.Table;
+        // puttr-app-2: the game's own sounds for the arcade to play (each falls back to the place's, or the arcade's, until
+        // its recordings are imported: GameAudio.Has). Null keeps the place's.
+        /// <summary>puttr-app-2: the game's own ambience in place of the place's bed (a *_loop slot).</summary>
+        public virtual string BedSlot => null;
+        /// <summary>puttr-app-2: the game's own swell over the bed, rising with the excitement (a *_loop slot).</summary>
+        public virtual string SwellSlot => null;
+        /// <summary>puttr-app-2: the game's own rolling sound in place of the golf ball's (a *_loop slot).</summary>
+        public virtual string RollSlot => null;
+        /// <summary>puttr-app-2: what plays as the game ends, in place of the arcade's game-over. Empty: the game played its own.</summary>
+        public virtual string EndSlot => "game_over";
 
         /// <summary>Lanes only: how far right of its line a holed ball comes out, inches.</summary>
         public virtual float HoledOffsetX => 0f;
@@ -172,16 +184,24 @@ namespace PuttrArcade
         // puttr-app-2: the part of the screen the game is drawn in (0 to 1, from the bottom left).
         // The app puts its own panel in the rest.
         public virtual Rect Viewport => new Rect(0f, 0f, 1f, 1f);
+        // puttr-app-2: the part of the screen the game frames itself in, when that is less than the part it is drawn in.
+        // A game with the app's panel beside it on a wide screen is drawn across the whole screen, its world running
+        // on behind the panel's cards, but composed in the part the panel leaves clear (Matt, 2026-11-23).
+        public virtual Rect Picture => Viewport;
 
         // puttr-app-2: what the putt being played was dealt, for saving it to the Player's account.
         public virtual int PuttFeet => DealtFeetNow;
         public virtual int PuttTee => DealtTee;
 
+        /// <summary>The feet a level deals from (a game with its own ranges says so here).</summary>
+        protected virtual void DealRange(int level, out int nearest, out int furthest) { nearest = DealtFeet[level, 0]; furthest = DealtFeet[level, 1]; }
+
         /// <summary>Pick the next distance and tee, put them up, and say them.</summary>
         public void DealTee(bool aloud = true)
         {
             int level = Arcade != null ? Mathf.Clamp(Arcade.Level, Arcade.Easy, Arcade.Hard) : Arcade.Easy;
-            DealtFeetNow = _teeDice.Next(DealtFeet[level, 0], DealtFeet[level, 1] + 1);
+            DealRange(level, out int nearest, out int furthest);
+            DealtFeetNow = _teeDice.Next(nearest, furthest + 1);
             DealtTee = _teeDice.Next(1, 4);
             ShowTeeSign();
             if (aloud && Arcade != null) Arcade.Audio.Voice(VoicePrefix + "_distance_" + DealtFeetNow + "_feet", VoicePrefix + "_tee_" + DealtTeeWord[DealtTee - 1]);

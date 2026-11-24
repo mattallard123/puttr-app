@@ -10,6 +10,17 @@ using UnityEngine.UIElements;
 
 namespace PuttrApp
 {
+    /// <summary>
+    /// A player's name with a verb that agrees with it. The first player's label is "You" until a name is
+    /// known, and "You wins" is wrong: Wording.Does("You", "wins", "win") is "You win", ("Sam", ...) "Sam wins".
+    /// </summary>
+    public static class Wording
+    {
+        public static string Does(string name, string verb, string youVerb) => name + " " + (name == "You" ? youVerb : verb);
+        /// <summary>"Sam's" or "Your".</summary>
+        public static string Owns(string name) => name == "You" ? "Your" : name + "'s";
+    }
+
     public static class RuleCatalogB
     {
         public static void Register()
@@ -24,23 +35,9 @@ namespace PuttrApp
             RuleCatalog.Add("BEERPONG", _ => new BeerPongGame());
         }
 
-        /// <summary>A 3 x 9 grid of every spot on the mat: pick a distance and a tee.</summary>
-        public static VisualElement SpotPicker(int feet, int tee, Action<int, int> pick)
-        {
-            VisualElement grid = Ui.Box("");
-            for (int t = 1; t <= 3; t++)
-            {
-                VisualElement row = Ui.Box("rule-pips");
-                row.Add(Ui.Text(PracticeSession.TeeName(t).Substring(0, 1), "rule-pip rule-pip-label", Ui.Bold));
-                for (int f = 3; f <= 11; f++)
-                {
-                    int ff = f, tt = t;
-                    row.Add(Ui.Text(f.ToString(), f == feet && t == tee ? "rule-pip rule-pip-on" : "rule-pip", Ui.Bold).OnTap(() => pick(ff, tt)));
-                }
-                grid.Add(row);
-            }
-            return grid;
-        }
+        /// <summary>Where to putt from, as The Lab picks it (Frame.SpotRow): the distance and the tee's way in one row,
+        /// tapping it opens the mat's 27 spots. The row shows the new spot itself, so callers need not redraw it.</summary>
+        public static VisualElement SpotPicker(int feet, int tee, Action<int, int> pick) => Frame.SpotRow(feet, tee, pick);
     }
 
     // ── Dead Center: hole one within a degree of the perfect line. Fewest putts wins ──
@@ -50,7 +47,7 @@ namespace PuttrApp
         const double Tolerance = 1.0;
         int _feet = 6, _tee = 2;
         bool _random, _won;
-        public override string Title => "Dead Center";
+        protected override string OwnTitle => "Dead Center";
         public override string GameType => "DEADCENTER";
         public override bool LowerIsBetter => true;
         public override string Words => "PUTTS";
@@ -64,15 +61,18 @@ namespace PuttrApp
         public override VisualElement Options()
         {
             VisualElement box = Ui.Box("");
-            box.Add(Form.Label("Spot"));
+            box.Add(Form.Label("Distance and tee"));
             VisualElement picker = Ui.Box("");
-            void Draw() { picker.Clear(); if (!_random) picker.Add(RuleCatalogB.SpotPicker(_feet, _tee, (f, t) => { _feet = f; _tee = t; Draw(); })); }
-            box.Add(Form.Pills(new[] { "Pick a spot", "Random putts" }, 0, i => { _random = i == 1; Draw(); }));
+            void Draw() { picker.Clear(); if (!_random) picker.Add(RuleCatalogB.SpotPicker(_feet, _tee, (f, t) => { _feet = f; _tee = t; })); }
+            box.Add(Form.Pills(new[] { "Pick a spot", "Random putts" }, _random ? 1 : 0, i => { _random = i == 1; Draw(); OptionsChanged?.Invoke(); }));
             box.Add(picker);
             Draw();
             return box;
         }
-        protected override void Deal() { if (_random) { Feet = Roll(3, 11); Tee = Roll(1, 3); } else { Feet = _feet; Tee = _tee; } }
+        // Difficulty is for Random putts, where the game deals the distance. A picked spot is the Player's own choice
+        // of distance, so the page shows no Easy / Medium / Hard beside the spot picker.
+        public override string[] DifficultyNotes => _random ? GameLevels.RandomNotes : null;
+        protected override void Deal() { if (_random) { Feet = RollFeet(); Tee = Roll(1, 3); } else { Feet = _feet; Tee = _tee; } }
         public override bool Over => _won;
         public override string Progress => "PUTT " + (Shots.Count + 1);
         protected override Shot Take(AppPutt.Verdict v)
@@ -95,7 +95,7 @@ namespace PuttrApp
     {
         static readonly int[,] Set = { { 4, 1 }, { 4, 3 }, { 5, 2 }, { 6, 1 }, { 6, 3 }, { 7, 2 }, { 8, 1 }, { 8, 3 }, { 9, 2 }, { 10, 1 }, { 10, 3 }, { 11, 2 } };
         List<int> _order;
-        public override string Title => "Assessment";
+        protected override string OwnTitle => "Assessment";
         public override string GameType => "ASSESSMENT";
         public override string Words => "MADE";
         public override string Icon => "ClipboardText";
@@ -131,7 +131,7 @@ namespace PuttrApp
         int _caller;
         bool _calling = true, _swish;
         public HorseGame() { Names = new List<string> { "You", "Player 2" }; }
-        public override string Title => "HORSE";
+        protected override string OwnTitle => "Horse";   // as the catalogue has it; the panel and the top bar upper-case it
         public override string GameType => "HORSE";
         public override int MinPlayers => 2;
         public override int MaxPlayers => 4;
@@ -144,12 +144,14 @@ namespace PuttrApp
             "Make it, and everyone else must match it or take a letter. Call a swish to make them hit the center.",
             "Spell H-O-R-S-E and you're out. Last one standing wins.",
         };
-        protected override void Begin() { _letters = new int[4]; _caller = First; _calling = true; Feet = 6; Tee = 2; Listen(); }
+        // The caller picks the spot, so the level sets which spots can be called.
+        public override string[] DifficultyNotes => new[] { "Shots are called from 3 to 6 ft.", "Shots are called from anywhere, 3 to 11 ft.", "Shots are called from 8 to 11 ft." };
+        protected override void Begin() { _letters = new int[4]; _caller = First; _calling = true; Feet = Math.Max(FeetFrom(), Math.Min(FeetTo(), 6)); Tee = 2; Listen(); }
         /// <summary>The caller picks the spot (a tap on the court in the scene): feet 3 to 11, tee 1 to 3.</summary>
         public void CallSpot(int feet, int tee)
         {
             if (!_calling || Over || P == Bot) return;
-            feet = Math.Max(3, Math.Min(11, feet)); tee = Math.Max(1, Math.Min(3, tee));
+            feet = Math.Max(FeetFrom(), Math.Min(FeetTo(), feet)); tee = Math.Max(1, Math.Min(3, tee));
             if (feet == Feet && tee == Tee) return;
             Feet = feet; Tee = tee;
             Changed?.Invoke();
@@ -158,7 +160,7 @@ namespace PuttrApp
         public override void BotPrepare(System.Random dice)
         {
             if (!_calling) return;
-            Feet = dice.Next(3, 12); Tee = dice.Next(1, 4);
+            Feet = dice.Next(FeetFrom(), FeetTo() + 1); Tee = dice.Next(1, 4);
             Changed?.Invoke();
         }
         protected override void Deal() { }
@@ -177,24 +179,23 @@ namespace PuttrApp
             {
                 if (make) { _calling = false; P = NextIn(P); return Call(0, true, "SHOT SET", Names[_caller] + " made it. " + Names[P] + " must match."); }
                 _caller = NextIn(_caller); P = _caller; _swish = false;
-                return Call(0, false, why, Names[_caller] + " calls the next shot.");
+                return Call(0, false, why, Wording.Does(Names[_caller], "calls", "call") + " the next shot.");
             }
             string sub;
             if (!make)
             {
                 _letters[P]++;
                 Score[P] = _letters[P];
-                sub = Names[P] + " takes " + "HORSE".Substring(_letters[P] - 1, 1) + (Out(P) ? " and is out." : ".");
+                sub = Wording.Does(Names[P], "takes", "take") + " " + "HORSE".Substring(_letters[P] - 1, 1) + (Out(P) ? (Names[P] == "You" ? " and are out." : " and is out.") : ".");
             }
             else sub = Names[P] + " matched it.";
             int nextP = NextIn(P);
-            if (nextP == _caller || Out(_caller) && nextP == NextIn(_caller)) { _calling = true; _swish = false; _caller = Out(_caller) ? NextIn(_caller) : _caller; P = _caller; sub += " " + Names[P] + " calls the next shot."; }
+            if (nextP == _caller || Out(_caller) && nextP == NextIn(_caller)) { _calling = true; _swish = false; _caller = Out(_caller) ? NextIn(_caller) : _caller; P = _caller; sub += " " + Wording.Does(Names[P], "calls", "call") + " the next shot."; }
             else P = nextP;
             return Call(make ? 0 : 1, make, make ? "MATCHED" : "LETTER", sub);
         }
         public override string ScoreText(int p) => _letters[p] == 0 ? "–" : "HORSE".Substring(0, Math.Min(5, _letters[p]));
         public override int Winner { get { var left = Enumerable.Range(0, Players).Where(p => !Out(p)).ToList(); return left.Count == 1 ? left[0] : -1; } }
-        public override string SoundFor(Shot s) => Over ? "rule_win" : s.Title == "LETTER" ? "horse_neigh" : s.Good ? "rule_make" : "rule_miss";
         public override VisualElement Board()
         {
             if (Over) return null;
@@ -203,7 +204,7 @@ namespace PuttrApp
                 // The spot is picked on the court (HorseScene shows it): the panel keeps only the swish choice.
                 return Card("THE CALL", Form.Pills(new[] { "Any make", "Call swish" }, _swish ? 1 : 0, i => { _swish = i == 1; Changed?.Invoke(); }).Margin(8));
             }
-            return Card("THE SHOT", Ui.Text(Feet + " ft   ·   " + PracticeSession.TeeName(Tee) + " tee" + (_swish ? "   ·   swish (center 30°)" : ""), "feed-name", Ui.Bold));
+            return Card("THE SHOT", Ui.Text(Feet + " ft   ·   " + PracticeSession.TeeName(Tee) + " tee" + (_swish ? "   ·   swish (center 30°)" : ""), "g-name", Ui.Bold));
         }
     }
 
@@ -217,7 +218,8 @@ namespace PuttrApp
         int[] _left = new int[4], _putts = new int[4];
         int _inTurn, _shared = 6, _sharedTee = 2, _done = -1;
         readonly List<string> _recent = new List<string>();
-        public override string Title => "01";
+        // "Oh-One", as the catalogue names it: the in-game header upper-cases the title, and "01" read as a number.
+        protected override string OwnTitle => "Oh-One";
         public override string GameType => "OHONE";
         public override int MaxPlayers => 4;
         public override bool LowerIsBetter => true;
@@ -233,9 +235,17 @@ namespace PuttrApp
         {
             VisualElement box = Ui.Box("");
             box.Add(Form.Label("Start from"));
-            box.Add(Form.Pills(Starts.Select(s => s.ToString()).ToArray(), Array.IndexOf(Starts, _start), i => _start = Starts[i]));
+            Label board = Ui.Text("Only games from 301 are posted to the leaderboard.", "muted wrap", Ui.Regular);
+            board.style.color = Ui.Amber;
+            board.style.display = DisplayStyle.None;
+            box.Add(Form.Pills(Starts.Select(s => s.ToString()).ToArray(), Array.IndexOf(Starts, _start), i => { _start = Starts[i]; board.style.display = PostsBoard ? DisplayStyle.None : DisplayStyle.Flex; }));
+            box.Add(board);
             return box;
         }
+        // The start score is this game's difficulty: 101 is over in a handful of putts, 501 takes many. The app kept a
+        // board for each start; this build has one board a game, so only 301 (the default) posts to it.
+        public override string DifficultyWord => "Start " + _start;
+        public override bool PostsBoard => _start == 301;
         protected override void Begin() { for (int i = 0; i < 4; i++) { _left[i] = _start; _putts[i] = 0; } _inTurn = 0; _done = -1; NewShared(); }
         static bool IsDouble(int n) => n >= MinDouble && n <= 22 && n % 2 == 0;
         static bool Impossible(int n) => n > 0 && n <= Checkout && (n < 6 || n == 7);
@@ -304,9 +314,32 @@ namespace PuttrApp
         public override string ScoreText(int p) => _left[p].ToString();
         public override int Saved => _putts[0];
         public override int Winner => _done;
-        public override string Outcome() => _done < 0 ? "Not finished" : Players == 1 ? "Finished in " + _putts[0] + " putts" : Names[_done] + " wins in " + _putts[_done];
-        public override VisualElement Board() => Card("REMAINING", Ui.Text(_left[P].ToString(), "rule-big", Ui.Bold),
-            Ui.Text(_left[P] <= Checkout && IsDouble(_left[P]) ? "Center cut from " + (_left[P] / 2) + " ft to finish" : _left[P] <= Checkout ? "Set up a double" : _putts[P] + " putts taken", "muted center", Ui.Regular));
+        public override string Outcome() => _done < 0 ? "Not finished" : Players == 1 ? "Finished in " + _putts[0] + " putts" : Wording.Does(Names[_done], "wins", "win") + " in " + _putts[_done];
+        // puttr-app-2 (Matt, 2026-11-21): the panel is a hopper of golf balls for each Player, one ball a point left, that
+        // empties as they score; the putt's score shows big over the picture (Splash), not in the panel.
+        public override bool ShowsRead => false;
+        Hopper[] _hoppers;
+        int _hopperStart;
+        public override VisualElement Board()
+        {
+            if (_hoppers == null || _hoppers.Length != Players || _hopperStart != _start)
+            {
+                _hopperStart = _start;
+                _hoppers = new Hopper[Players];
+                for (int i = 0; i < Players; i++) _hoppers[i] = new Hopper(Names[i], RulePanel.PlayerColour(i), _start);
+            }
+            VisualElement row = Ui.Box("hoppers");
+            for (int i = 0; i < Players; i++) { _hoppers[i].Set(_left[i], i == P && !Over); row.Add(_hoppers[i]); }
+            string note = Over ? Outcome() : _left[P] <= Checkout && IsDouble(_left[P]) ? "Center cut from " + (_left[P] / 2) + " ft to finish" : _left[P] <= Checkout ? "Set up a double" : Names[P] + "   ·   putt " + (_inTurn + 1) + " of 3";
+            return Card(Players > 1 ? "BALLS LEFT" : "BALLS LEFT   ·   " + _putts[0] + " PUTTS", row, Ui.Text(note, "muted center", Ui.Regular).Margin(8));
+        }
+        public override bool Splash(Shot s, out string big, out string small)
+        {
+            big = s.Good && s.Points > 0 ? "-" + ((int)s.Points) : s.Title;
+            string label = s.Title.Split(' ')[0];
+            small = s.Good && s.Points > 0 ? (s.Title == "OH ONE!" ? "OH ONE!" : label + "   ·   " + s.Sub).ToUpperInvariant() : (s.Sub ?? "").ToUpperInvariant();
+            return true;
+        }
     }
 
     // ── Reducer: a make scores its distance, through a window you choose ──
@@ -315,7 +348,7 @@ namespace PuttrApp
     {
         static readonly int[] Windows = { 120, 90, 60, 30 };
         int _window = 120;
-        public override string Title => "Reducer";
+        protected override string OwnTitle => "Reducer";
         public override string GameType => "REDUCER";
         public override int MaxPlayers => 4;
         public override string Words => "FEET";
@@ -333,6 +366,8 @@ namespace PuttrApp
             box.Add(Form.Pills(Windows.Select(w => w + "°").ToArray(), 0, i => _window = Windows[i]));
             return box;
         }
+        // The window is this game's difficulty (a narrower one can only score less, so every window shares the board).
+        public override string DifficultyWord => _window + "° window";
         protected override List<TournamentMath.Dealt> MakeList() => Enumerable.Range(0, 9).Select(_ => new TournamentMath.Dealt { Feet = Dice.Next(3, 12), Tee = Dice.Next(1, 4) }).ToList();
         protected override Shot Take(AppPutt.Verdict v)
         {
@@ -354,7 +389,7 @@ namespace PuttrApp
         bool? _first; double _firstOff;
         readonly List<int> _results = new List<int>();
         public MatchPlayGame() { Names = new List<string> { "You", "Player 2" }; }
-        public override string Title => "Match Play";
+        protected override string OwnTitle => "Match Play";
         public override string GameType => "MATCH";
         public override int MinPlayers => 2;
         public override int MaxPlayers => 2;
@@ -378,10 +413,11 @@ namespace PuttrApp
             if (Players < 2) Names.Add("Player 2");
             Score = new double[2];
             _holes.Clear();
-            for (int i = 0; i < 9; i++) _holes.Add(new TournamentMath.Dealt { Feet = Roll(3, 11), Tee = Roll(1, 3) });
+            for (int i = 0; i < 9; i++) _holes.Add(new TournamentMath.Dealt { Feet = RollFeet(), Tee = Roll(1, 3) });
             _hole = 0; _mc = 0; _sudden = false; _over = false; _first = null; _results.Clear();
         }
         protected override void Deal() { TournamentMath.Dealt d = _holes[_hole % 9]; Feet = d.Feet; Tee = d.Tee; }
+        public override string[] DifficultyNotes => new[] { "Every hole from 3 to 6 ft.", "Holes from 3 to 11 ft.", "Every hole from 8 to 11 ft." };
         public override bool Over => _over;
         public override string Progress => _sudden ? "SUDDEN DEATH" : "HOLE " + (_hole + 1) + " OF 9";
         protected override Shot Take(AppPutt.Verdict v)
@@ -399,8 +435,12 @@ namespace PuttrApp
             if (_sudden ? _mc != 0 : Math.Abs(_mc) > left || left == 0 && _mc != 0) _over = true;
             else if (!_sudden && left == 0) { _sudden = true; _hole = 0; }
             Score[0] = Math.Max(0, _mc); Score[1] = Math.Max(0, -_mc);
-            string head = won == 1 ? Names[0].ToUpperInvariant() + " WINS THE HOLE" : won == -1 ? Names[1].ToUpperInvariant() + " WINS THE HOLE" : "HALVED";
-            return Call(won, won != 0, head, _over ? Result() : status);
+            // The hole in a mark, as a match card has it: +1 the first Player's, -1 the other's, E halved ("MATT WINS THE
+            // HOLE" ran over the distance and tee: Matt, 2026-11-23). Who leads is in the line under it.
+            string head = won == 0 ? "E" : won > 0 ? "+1" : "-1";
+            Shot shot = Call(won, won != 0, head, _over ? Result() : status);
+            shot.Holed = make;   // the commentary cheers a make and groans at a miss, whoever the hole went to (Matt, 2026-11-23)
+            return shot;
         }
         protected override void Next() => P = P == 0 ? 1 : 0;
         string Status()
@@ -413,13 +453,11 @@ namespace PuttrApp
         string Result()
         {
             string lead = Names[_mc > 0 ? 0 : 1];
-            if (_sudden) return lead + " wins on extra holes";
+            if (_sudden) return Wording.Does(lead, "wins", "win") + " on extra holes";
             int left = 9 - _hole;
-            return left > 0 ? lead + " wins " + Math.Abs(_mc) + " & " + left : lead + " wins " + Math.Abs(_mc) + " up";
+            return Wording.Does(lead, "wins", "win") + " " + Math.Abs(_mc) + (left > 0 ? " & " + left : " up");
         }
         public override int Winner => _mc > 0 ? 0 : _mc < 0 ? 1 : -1;
-        public override string SoundFor(Shot s) => Over ? "golf_clap" : s.Points != 0 && s.Player == 1 ? "golf_clap" : s.Good ? "rule_make" : "rule_miss";
-        public override string Bed => "seaside_loop";
         public override int Saved => _mc > 0 ? 1 : 0;
         public override string ScoreText(int p) => _mc == 0 ? "AS" : (p == 0) == (_mc > 0) ? Math.Abs(_mc) + " UP" : "–";
         public override string Outcome() => _over ? Result() : Status();
@@ -430,7 +468,7 @@ namespace PuttrApp
 
     public sealed partial class HighStrikerGame : ListGame
     {
-        public override string Title => "High Striker";
+        protected override string OwnTitle => "High Striker";
         public override string GameType => "HIGHSTRIKER";
         public override int MaxPlayers => 4;
         public override string Icon => "Bell";
@@ -440,7 +478,9 @@ namespace PuttrApp
             "Hit it as close to the front of the cup as you can without reaching it. The closer, the higher the bell.",
             "Reach the hole and it scores nothing. 100 a putt is perfect.",
         };
-        protected override List<TournamentMath.Dealt> MakeList() => Enumerable.Range(3, 9).Select(f => new TournamentMath.Dealt { Feet = f, Tee = 2 }).ToList();
+        // Shortest first, as the app plays it: 3 to 11 ft on Medium, the nine from 3 to 6 ft on Easy, from 8 to 11 ft on Hard.
+        public override string[] DifficultyNotes => GameLevels.NineNotes;
+        protected override List<TournamentMath.Dealt> MakeList() => Scoring.NineFeet(Difficulty).Select(f => new TournamentMath.Dealt { Feet = f, Tee = 2 }).ToList();
         protected override Shot Take(AppPutt.Verdict v)
         {
             if (Raw == null || Raw.Path == null || Raw.Path.Count == 0 || Raw.Hole.Diameter <= 0) return Call(0, false, "NO READ");
@@ -455,8 +495,6 @@ namespace PuttrApp
         }
         public override string ScoreText(int p) => Math.Round(Score[p]).ToString();
         public override int Saved => (int)Math.Round(Score[0]);
-        public override string SoundFor(Shot s) => s.Points > 80 ? "bell_ding" : s.Points > 0 ? "rule_make" : "rule_miss";
-        public override string Bed => "carnival_loop";
     }
 
     // ── Beer Pong: two players, ten cups each, two putts a turn ──
@@ -469,7 +507,7 @@ namespace PuttrApp
         bool _ballsBack, _rebuttal = true, _master, _inRebuttal, _overtime, _over, _turnAllMade = true;
         int _winner = -1;
         public BeerPongGame() { Names = new List<string> { "You", "Player 2" }; }
-        public override string Title => "Beer Pong";
+        protected override string OwnTitle => "Beer Pong";
         public override string GameType => "BEERPONG";
         public override int MinPlayers => 2;
         public override int MaxPlayers => 2;
@@ -486,8 +524,8 @@ namespace PuttrApp
             VisualElement box = Ui.Box("");
             box.Add(Form.Label("Rules"));
             box.Add(Form.Pills(new[] { "Rebuttal on", "Rebuttal off" }, 0, i => _rebuttal = i == 0));
-            box.Add(Form.Pills(new[] { "Balls back off", "Balls back on" }, 0, i => _ballsBack = i == 1).Margin(6));
-            box.Add(Form.Pills(new[] { "Normal", "Pong Master" }, 0, i => _master = i == 1).Margin(6));
+            box.Add(Form.Pills(new[] { "Balls back off", "Balls back on" }, 0, i => _ballsBack = i == 1).Margin(8));
+            box.Add(Form.Pills(new[] { "Normal", "Pong Master" }, 0, i => _master = i == 1).Margin(8));
             return box;
         }
         protected override void Begin()
@@ -515,14 +553,14 @@ namespace PuttrApp
             if (make) { _sunk[P][cup] = true; Score[P] = Count(P); _pick = -1; }
             if (_inRebuttal)
             {
-                if (!make) { _over = true; _winner = 1 - P; return Call(0, false, head, "Rebuttal over. " + Names[_winner] + " wins."); }
+                if (!make) { _over = true; _winner = 1 - P; return Call(0, false, head, "Rebuttal over. " + Wording.Does(Names[_winner], "wins", "win") + "."); }
                 if (Count(P) == 10) { Overtime(); return Call(1, true, "OVERTIME", "Rebuttal cleared it. Three cups each."); }
                 return Call(1, true, head, "Keep shooting.");
             }
             if (Count(P) == 10)
             {
-                if (_rebuttal && P == _first) { _inRebuttal = true; P = 1 - P; _inTurn = 0; return Call(1, true, "TABLE CLEARED", Names[P] + " gets a rebuttal."); }
-                _over = true; _winner = P; return Call(1, true, "TABLE CLEARED", Names[P] + " wins.");
+                if (_rebuttal && P == _first) { _inRebuttal = true; P = 1 - P; _inTurn = 0; return Call(1, true, "TABLE CLEARED", Wording.Does(Names[P], "gets", "get") + " a rebuttal."); }
+                _over = true; _winner = P; return Call(1, true, "TABLE CLEARED", Wording.Does(Names[P], "wins", "win") + ".");
             }
             _turnAllMade &= make;
             _inTurn++;
@@ -531,7 +569,7 @@ namespace PuttrApp
                 bool back = _ballsBack && _turnAllMade;
                 _inTurn = 0; _turnAllMade = true;
                 if (!back) P = 1 - P;
-                return Call(make ? 1 : 0, make, back ? "BALLS BACK" : head, back ? "Two for two: shoot again." : Names[P] + "'s turn.");
+                return Call(make ? 1 : 0, make, back ? "BALLS BACK" : head, back ? "Two for two: shoot again." : Wording.Owns(Names[P]) + " turn.");
             }
             return Call(make ? 1 : 0, make, head, "");
         }
@@ -544,7 +582,6 @@ namespace PuttrApp
         }
         public override int Winner => _winner;
         public override string ScoreText(int p) => Count(p) + "/10";
-        public override string SoundFor(Shot s) => Over ? "rule_win" : s.Title == "CUP!" || s.Title == "BALLS BACK" || s.Good ? "cup_plop" : "pingpong_bounce";
         public override VisualElement Board()
         {
             if (_over) return null;

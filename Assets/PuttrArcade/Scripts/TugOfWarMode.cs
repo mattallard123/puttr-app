@@ -28,6 +28,10 @@ namespace PuttrArcade
         public override string ScoreWord(int n) => n == 1 ? "round" : "rounds";
         public override string ScoreUnit => "rounds";
         public override GameAudio.Scene Sound => GameAudio.Scene.Stadium;
+        // puttr-app-2: a field day of its own (the stadium's crowd until it is recorded). The air horn plays as the last round
+        // is won, so the arcade adds no game-over once it is recorded.
+        public override string BedSlot => "tugofwar_field_loop";
+        public override string EndSlot => GameAudio.Has("tugofwar_win") ? "" : "game_over";
         public override string Rule => "Every putt pulls the flag your way. Pull it 5 steps to win the round.";
         public override string Icon => "UsersThree";
         public override Color Accent => Blue;
@@ -362,17 +366,18 @@ namespace PuttrArcade
             {
                 hud.Banner("SLIPPED", "Left short: the flag goes 1 step to " + TeamName(other), Make.Red, 2f);
                 ShowPutt(putt, "Short", Make.Red);
-                Arcade.Audio.Miss();
-                Arcade.Audio.Groan();
+                // The tugofwar_heave and tugofwar_slip recordings are not played: they crackle (Matt, 2026-11-23).
+                Arcade.Audio.Miss(); Arcade.Audio.Groan();
             }
             else
             {
                 string sub = holed ? "Holed it: 3 steps to " + TeamName(team) : lip ? "Lipped out: 2 steps to " + TeamName(team) : "Reached the hole: 1 step to " + TeamName(team);
                 hud.Banner("HEAVE!  " + steps + (steps == 1 ? " STEP" : " STEPS"), sub, color, 2f);
                 ShowPutt(putt, holed ? "Holed" : lip ? "Lipped out" : "Reached", Make.Bright);
+                // puttr-app-2: the rope and the team's shout (the shared thud and stings until they are recorded).
                 Arcade.Audio.Thump(24f + steps * 12f);
-                if (holed) { Arcade.Audio.Strike(); Arcade.Audio.Roar(true); Arcade.Shake(0.4f); }
-                else if (lip) { Arcade.Audio.Spare(); Arcade.Audio.Roar(false); }
+                if (holed) { if (Arcade.Audio.TryLibrary("tugofwar_big_pull", 1f)) Arcade.Audio.Excite(1f); else { Arcade.Audio.Strike(); Arcade.Audio.Roar(true); } Arcade.Shake(0.4f); }
+                else if (lip) { if (Arcade.Audio.TryLibrary("tugofwar_big_pull", 0.75f, 1.05f)) Arcade.Audio.Excite(0.65f); else { Arcade.Audio.Spare(); Arcade.Audio.Roar(false); } }
             }
 
             yield return Pull(gains, from, _flag);
@@ -439,8 +444,8 @@ namespace PuttrArcade
             hud.SetTotal(winner, _rounds[winner]);
             hud.SetTurn(-1, -1);
             string won = TeamName(winner) + (_members[winner].Length == 2 ? " win" : " wins");
-            Arcade.Audio.Bell();
-            Arcade.Audio.Roar(true);
+            if (Arcade.Audio.TryLibrary("tugofwar_win", 1f)) Arcade.Audio.Excite(1f);   // puttr-app-2: the air horn, the shared bell and roar until recorded
+            else { Arcade.Audio.Bell(); Arcade.Audio.Roar(true); }
 
             // The losers are hauled to the edge of the pit, let go, and go in face first.
             bool landed = false;
@@ -454,7 +459,7 @@ namespace PuttrArcade
                 if (!landed && t > 0.7f)
                 {
                     landed = true;
-                    Arcade.Audio.Land();
+                    if (!Arcade.Audio.TryLibrary("tugofwar_mud_splat", 1f)) Arcade.Audio.Land();   // puttr-app-2: into the mud, Send It's landing until recorded
                     Arcade.Shake(0.6f);
                     for (int j = 0; j < _count[loser]; j++) Arcade.StartCoroutine(Splash(new Vector3(Side(loser) * MudSpot(j) - Side(loser) * 20f, 1f, 0f)));
                     Arcade.Celebrate(match ? 120 : 70, At(_shown * StepX + Side(winner) * (Front + Gap * 0.5f), 70f, -20f));

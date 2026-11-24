@@ -218,7 +218,7 @@ namespace PuttrArcade
             float[] from = { _cols[0].Shown, _cols[1].Shown, _cols[2].Shown };
             bool hit = false;
             Arcade.StartCoroutine(Drain(from));
-            yield return Swing(_putter, s, () => { hit = true; Sound("golf_iron", 0.5f, 1.4f); });
+            yield return Swing(_putter, s, () => { hit = true; Sound("putter_strike", "golf_iron", 0.5f, 1.4f); });   // puttr-app-2: the putter on the ball, shared by every sensor replay (the old sound until it is recorded)
             if (hit) Arcade.StartCoroutine(RollBall(_ball, v.Made ? 70f : 60f, v.MissSide == "LEFT" ? -6f : v.MissSide == "RIGHT" ? 6f : 0f, 1.6f));
 
             // The pulse from the face to each column, filling it.
@@ -239,7 +239,7 @@ namespace PuttrArcade
                 Arcade.StartCoroutine(Fill(c, q[i], 0.55f));
                 Labels(v, i, 0f);
                 c.Score.text = "";
-                Sound("click", 0.35f, 1.2f + i * 0.15f);
+                Sound("pure_fill", "click", 0.35f, 1.2f + i * 0.15f);   // puttr-app-2: the game's own sound, the shared one until recorded
             }
             yield return new WaitForSeconds(0.55f);
             for (int i = 0; i < 3; i++) Labels(v, i, q[i]);
@@ -254,12 +254,12 @@ namespace PuttrArcade
             if (v.Flag("strike"))
             {
                 _spin = 260f;
-                Sound("bell_ding", 0.8f, 1.1f);
-                Sound("riser", 0.4f, 1.3f);
+                Sound("pure_perfect", "bell_ding", 0.8f, 1.1f);   // puttr-app-2: the singing bowl, the shared bell and riser until recorded
+                if (!Has("pure_perfect")) Sound("riser", 0.4f, 1.3f);
                 Arcade.Sparks(At(CrystalAt), 50);
                 Arcade.Celebrate(18, At(CrystalAt));
             }
-            else Sound("lab_beep", 0.35f, 0.6f + purity / 120f);
+            else if (!Has("pure_miss")) Sound("lab_beep", 0.35f, 0.6f + purity / 120f);   // puttr-app-2: the game's own make or miss (SoundFor) says it once recorded
             Ring(v);
             int n = Ints(v, "purities").Length;
             if (n > 0 && n <= _ringT.Count) Arcade.StartCoroutine(Pop(_ringT[n - 1]));

@@ -6,6 +6,10 @@
 //   came in off the line from its tee: d * (1 - |off line| / 90).
 //   Either way a putt that drops in the back of the hole scores nothing.
 //
+// A League Night game is the week's own game (LeagueRound in LeagueNight.cs): when this build has it as a
+// rule game, that game deals and scores the putts (CompetitionRound.Rules) and the round here only keeps the
+// tally and makes the API calls.
+//
 // The numbers are apart from the screen and the API so they can be tested (RoundSession); the
 // calls that enter a round in a tournament or the league are in CompetitionRound.
 using System;
@@ -115,9 +119,25 @@ namespace PuttrApp
 
         public bool BackDoor { get; private set; }
 
+        /// <summary>
+        /// A putt a rule game dealt and scored itself (a League Night game played as the week's own game): kept here
+        /// so the round's total, its saved state and its putt count follow the game. A game that deals as it goes has
+        /// no list up front, so the putt is added to the list as it is played.
+        /// </summary>
+        public double Record(AppPutt.Verdict v, double score, int feet, int tee)
+        {
+            if (Index >= Putts.Count) Putts.Add(new TournamentMath.Dealt { Feet = feet, Tee = tee });
+            if (v != null) { Last = PracticePutt.From(v, feet, tee); Seen.Add(v); }
+            BackDoor = false;
+            LastScore = score;
+            Scores.Add(score);
+            return score;
+        }
+
         public static string Points(double score) => score.ToString(score % 1 == 0 ? "0" : "0.##", CultureInfo.InvariantCulture);
 
-        /// <summary>One putt at each distance from 3 to 11 feet, shuffled, from a random tee: a League Night game when the week sets none.</summary>
+        /// <summary>One putt at each distance from 3 to 11 feet, shuffled, from a random tee: what a League Night game
+        /// plays when the week's game row sets no putts of its own (LeagueGame.js createRandomPutts).</summary>
         public static List<TournamentMath.Dealt> Shuffled(System.Random dice)
         {
             var putts = new List<TournamentMath.Dealt>();
@@ -140,12 +160,11 @@ namespace PuttrApp
 
     /// <summary>
     /// Entering a round with the API. Three ways a round is played:
-    ///   Entered: opened as the tournament round or league game it is; the score goes on the board.
-    ///   Rehearsal: the same putts, saved and recorded as an ordinary practice game, entered nowhere.
+    ///   Entered: opened as the tournament round or league game it is; the score goes on the board. This is what a
+    ///   round with a real Puttr is, as in the Puttr app (Matt, 2026-11-18).
+    ///   Rehearsal: the same putts, saved and recorded as an ordinary practice game, entered nowhere. Only for testers
+    ///   and staff who turn on "Rehearsal mode" in Settings, Developer (CompetitionRound.Rehearse, off by default).
     ///   Local: no real Puttr (test putts): nothing is sent at all.
-    /// Entered needs the switch on the Profile tab (CompetitionRound.Enter), which is off until
-    /// the scoring here has been checked putt for putt against the current app: a tournament
-    /// round can be played once, and both boards are live.
     /// </summary>
     public sealed class CompetitionRound
     {
@@ -159,12 +178,43 @@ namespace PuttrApp
         /// <summary>Instead of the final screen: who started the round reads the putts (the coach's calibration, a speed drill).</summary>
         public Action<CompetitionRound> OnDone;
 
-        const string EnterPref = "app2.enter";
-        public static bool Enter
+        // A new key: the old "app2.enter" defaulted to off, and a phone that never touched it must not stay a rehearsal.
+        const string RehearsePref = "app2.rehearse";
+        /// <summary>Settings, Developer, "Rehearsal mode" (testers and staff): tournament and League Night rounds are played
+        /// as practice and entered nowhere. Off by default, so a round is entered, as in the Puttr app.</summary>
+        public static bool Rehearse
         {
-            get => PlayerPrefs.GetInt(EnterPref, 0) == 1;
-            set { PlayerPrefs.SetInt(EnterPref, value ? 1 : 0); PlayerPrefs.Save(); }
+            get => PlayerPrefs.GetInt(RehearsePref, 0) == 1;
+            set { PlayerPrefs.SetInt(RehearsePref, value ? 1 : 0); PlayerPrefs.Save(); }
         }
+        /// <summary>Competition rounds are entered: true unless Rehearsal mode is on.</summary>
+        public static bool Enter => !Rehearse;
+
+        /// <summary>The way a competition round is played with a real Puttr (the rest, apart from the device, for the tests).</summary>
+        public static Mode ModeFor(Kind what, bool realPutts, bool rehearse)
+        {
+            if (!realPutts) return Mode.Local;
+            if (what == Kind.Tournament || what == Kind.League) return rehearse ? Mode.Rehearsal : Mode.Entered;
+            return Mode.Entered;
+        }
+
+        /// <summary>
+        /// The made flag a round's putt is saved with (user_putts.made), as the app's screen for that round writes it:
+        /// a quest level the level's own verdict (QuestGame.js gameLogic(makeMiss), so a Precision make outside its window
+        /// is a miss), the coach's session and calibration a make the camera is sure of (coachLogic.js buildPutt:
+        /// getMakeProbability > 1), and every other round the camera's count above 0 (GameActions.savePutt's made > 0).
+        /// </summary>
+        public static bool MadeFlag(Kind what, bool unlinked, AppPutt.Verdict v, double score)
+        {
+            if (v == null) return score > 0;
+            if (what == Kind.Quest) return score > 0;
+            if (what == Kind.Coach || unlinked) return v.Made;
+            return v.SavedMade;
+        }
+
+        /// <summary>The coach's calibration: putts saved to user_putts with no game (gameId and userGameId 0), no game row
+        /// opened or closed (CoachSession.js, mode 'calibration').</summary>
+        public bool Unlinked;
 
         public readonly Kind What;
         public readonly RoundSession Session;
@@ -192,6 +242,21 @@ namespace PuttrApp
         public double GhostTotal(int upTo) { double t = 0; if (Ghost != null) for (int i = 0; i < Math.Min(upTo, Ghost.Count); i++) t += Ghost[i]; return t; }
         public object VersusResult;         // {status, winnerId, challengerScore, challengedScore}
 
+        // A round played by a rule game
+        /// <summary>
+        /// The rule game that plays this round, or null for a putt list on the ramp. A League Night week whose game
+        /// this build has as a rule game (Center Cut) is played by that game, in its own scene with its own scoring;
+        /// the round is still opened, saved, filmed and entered here, so the once-a-day rule, rehearsal and the
+        /// Rehearsal mode switch are the same either way.
+        /// </summary>
+        public RuleGame Rules;
+        /// <summary>The catalog row of the game being played (its title, and what GameBridge.PlayRule is given).</summary>
+        public object Game;
+
+        /// <summary>The round's score: the rule game's own total for the Player when one plays it, else the putts added up.
+        /// To two places, as the app rounds a league score (league/utils/format.js roundScore) and the API stores it.</summary>
+        public double Score => Rules != null && Rules.Score != null && Rules.Score.Length > 0 ? Math.Round(Rules.Score[0], 2) : Session.Total;
+
         string _gameId;
 
         public CompetitionRound(Kind what, RoundSession session, string gameId)
@@ -207,8 +272,10 @@ namespace PuttrApp
             if (!Green.RealPutts) { How = Mode.Local; done(null); yield break; }
             // A quest level and a lesson drill open nothing: their putts go to their own routes, or nowhere.
             if (What == Kind.Quest || What == Kind.Drill) { How = Mode.Entered; done(null); yield break; }
-            // Only competition scores wait for the switch: a coach session or a drill is the Player's own practice.
-            How = What == Kind.Coach || What == Kind.Practice || What == Kind.Game ? Mode.Entered : Enter ? Mode.Entered : Mode.Rehearsal;
+            // Only competition rounds can be rehearsed (a tester's switch): a coach session or a drill is the Player's own practice.
+            How = ModeFor(What, true, Rehearse);
+            Analytics.Playing(What == Kind.Game ? J.Str(Round, "gameType").ToUpperInvariant() : null, Session != null ? Session.Title : null, What.ToString().ToLowerInvariant());
+            if (Unlinked) { _gameId = "0"; UserGameId = "0"; done(null); yield break; }
             object row = null;
             string failed = null;
             if (What == Kind.Practice && string.IsNullOrEmpty(_gameId))
@@ -219,24 +286,33 @@ namespace PuttrApp
             if (What == Kind.Coach)
             {
                 // The coach's own session row: {userGameId, gameId}.
+                // When it cannot be had (offline), the app plays on with 0 and 0: the putts are saved unlinked and
+                // /coach/session-complete makes the row then and claims them (coach.js sessionComplete's fallback).
                 object started = null;
-                yield return Api.Post("/coach/session-start", new Dictionary<string, object>(), data => started = data, why => failed = why);
-                _gameId = J.Str(started, "gameId");
-                row = new Dictionary<string, object> { { "id", J.Str(started, "userGameId") } };
+                yield return Api.Post("/coach/session-start", new Dictionary<string, object>(), data => started = data, null);
+                _gameId = J.Str(started, "gameId", "0");
+                string id = J.Str(started, "userGameId");
+                UserGameId = id.Length > 0 ? id : "0";
+                if (_gameId.Length == 0) _gameId = "0";
+                Perf.Note("round: coach session opened, game " + UserGameId);
+                done(null);
+                yield break;
             }
             else if (How == Mode.Entered && What == Kind.Tournament)
             {
-                var body = new Dictionary<string, object> { { "gameId", _gameId }, { "tournamentId", J.Str(Tournament, "id") }, { "tournamentGameId", J.Str(Round, "id") }, { "players", 1 }, { "puttData", Session.DealtJson() } };
-                yield return Api.Post("/tournaments/game/new/", body, data => row = data, why => failed = why);
+                // puttData: the round's own, as TournamentGame.js sends round.puttData (stored on the row as it came).
+                var body = new Dictionary<string, object> { { "gameId", _gameId }, { "tournamentId", J.Str(Tournament, "id") }, { "tournamentGameId", J.Str(Round, "id") }, { "players", 1 }, { "puttData", RoundPuttData(Round, Session) } };
+                yield return Api.Post("/tournaments/game/new/", body, data => row = data, why => failed = why, live: Live);
             }
             else
             {
                 var body = new Dictionary<string, object>
                 {
-                    { "userId", Auth.Uid }, { "gameId", _gameId }, { "clubId", "PUTTR" }, { "locationId", 0 }, { "laneId", 0 },
-                    { "tournamentId", 0 }, { "players", 1 }, { "puttData", Session.DealtJson() },
+                    { "userId", Auth.Uid }, { "gameId", _gameId }, { "clubId", HostMode.ClubId }, { "locationId", 0 }, { "laneId", 0 },
+                    // A ghost game is a game for two (the app's totalPlayers with the ghost seated).
+                    { "tournamentId", 0 }, { "players", Ghost != null ? 2 : 1 }, { "puttData", Session.DealtJson() },
                 };
-                yield return Api.Post("/game/new/", body, data => row = data, why => failed = why, auth: false);
+                yield return Api.Post("/game/new/", body, data => row = data, why => failed = why, auth: false, live: Live);
             }
             UserGameId = J.Str(row, "id");
             if (failed != null || UserGameId.Length == 0)
@@ -248,15 +324,42 @@ namespace PuttrApp
             // A tournament round is one row for good: finished cannot be replayed, and one in progress is picked up where it stopped.
             if (How == Mode.Entered && What == Kind.Tournament)
             {
-                if (J.Int(row, "status") == 2) { Problem = "You have already played this round."; done(Problem); yield break; }
                 object putts = J.Get(row, "playerPutts");
                 if (putts is string text) putts = J.Parse(text);
                 List<object> mine = J.List(putts).Count > 0 ? J.List(J.List(putts)[0]) : new List<object>();
+                // The API hands back the round's finished row when it was played already. The app then re-sends its
+                // score (TournamentGame.js finishRestoredGame): the round's score can have been lost on the way, which
+                // would leave the Player stuck on this round. Then it shows the round as played.
+                if (J.Int(row, "status") == 2 || (Session.Putts.Count > 0 && J.Int(row, "puttCounter") >= Session.Putts.Count))
+                {
+                    double was = 0;
+                    foreach (object v in mine) was += PuttrJson.Number(v, 0);
+                    yield return Api.Post("/tournaments/game/end/", new Dictionary<string, object> { { "tournamentId", J.Str(Tournament, "id") }, { "round", RoundNumber }, { "score", Math.Round(was, 2) } },
+                        null, why => Perf.Note("round: restored tournament score not re-sent (" + why + ")"), live: Live);
+                    Finished = true;
+                    Problem = "You have already played this round.";
+                    done(Problem);
+                    yield break;
+                }
                 int played = Mathf.Min(J.Int(row, "puttCounter"), Mathf.Min(mine.Count, Session.Putts.Count));
                 for (int i = 0; i < played; i++) Session.Scores.Add(PuttrJson.Number(mine[i], 0));
             }
             Perf.Note("round: " + What + " opened as " + How + ", game " + UserGameId + (Session.Index > 0 ? ", resumed at putt " + (Session.Index + 1) : ""));
             done(null);
+        }
+
+        /// <summary>A tournament round or League Night game the Player entered: written to production even under
+        /// -app2HoldPlay, which holds other play records (Api.Held).</summary>
+        public bool Live => How == Mode.Entered && (What == Kind.Tournament || What == Kind.League);
+
+        /// <summary>What a tournament round's game row is opened with: the round's own puttData as it came (a string, or
+        /// the parsed list written back), else the putts dealt.</summary>
+        public static string RoundPuttData(object round, RoundSession session)
+        {
+            object raw = J.Get(round, "puttData");
+            if (raw is string text && text.Length > 0) return text;
+            if (raw is List<object> list && list.Count > 0) return J.Write(list);
+            return session.DealtJson();
         }
 
         /// <summary>Saves a putt just scored, and where the round stands (so it can be picked up again).</summary>
@@ -273,18 +376,51 @@ namespace PuttrApp
                 return;
             }
             if (UserGameId == null) return;
+            // The coach's session and calibration save the putt and nothing else (CoachSession.js handlePutt): the
+            // session's row is closed by /coach/session-complete, and calibration has none.
+            bool own = What == Kind.Coach || Unlinked;
             App.Run(Api.Post("/game/savePutt/", new Dictionary<string, object>
             {
                 { "userId", Auth.Uid }, { "gameId", _gameId }, { "userGameId", UserGameId }, { "distance", dealt.Feet }, { "tee", dealt.Tee },
                 { "made", made ? 1 : 0 }, { "ballPath", RoundSaver.PathJson(putt.Path) }, { "holeBounds", RoundSaver.HoleJson(putt.Hole) },
-            }, null, why => Perf.Note("round: putt not saved (" + why + ")"), auth: false));
-            App.Run(Api.Post("/game/save/", new Dictionary<string, object> { { "gameState", StateJson() } }, null, why => Perf.Note("round: state not saved (" + why + ")"), auth: false));
+            }, null, why => Perf.Note("round: putt not saved (" + why + ")"), auth: false, live: Live));
+            if (own) return;
+            App.Run(Api.Post("/game/save/", new Dictionary<string, object> { { "gameState", StateJson() } }, null, why => Perf.Note("round: state not saved (" + why + ")"), auth: false, live: Live));
+        }
+
+        /// <summary>A putt the round's rule game just called (GameBridge.OnPutt): kept on the tally and saved as any round's putt is.</summary>
+        public void RulePutt(Shot called, PuttResult putt)
+        {
+            if (called == null || called.Player != 0) return;   // only the signed-in Player's putts are the round's
+            Session.Record(called.V, called.Points, called.Feet, called.Tee);
+            Putt(putt, new TournamentMath.Dealt { Feet = called.Feet, Tee = called.Tee }, called.V != null && called.V.SavedMade);
+        }
+
+        /// <summary>Left before it finished: the game is marked abandoned, as the app does. A tournament round is not: it
+        /// stays open to be picked up again.</summary>
+        public void Abandon()
+        {
+            // The coach's row is left as the app leaves it (CoachSession.js sends nothing on leaving; the row opens as
+            // status 1 anyway), and calibration has no row.
+            if (Finished || UserGameId == null || (How == Mode.Entered && What == Kind.Tournament) || What == Kind.Coach || Unlinked || How == Mode.Local) return;
+            App.Run(Api.Post("/game/abandon", new Dictionary<string, object> { { "gameId", UserGameId } }, null, null, auth: false, live: Live));
+        }
+
+        /// <summary>
+        /// A tester played a test putt (TestPutts.cs) in a round that was opened to be saved: from here it is a test
+        /// round. The game row it opened is marked abandoned, and nothing more is sent: no putt, no score, no session.
+        /// </summary>
+        public void MarkTest()
+        {
+            if (How == Mode.Local || Finished) return;
+            Abandon();
+            How = Mode.Local;
         }
 
         /// <summary>The user_games columns the API rewrites after every putt.</summary>
         public string StateJson() => J.Write(new Dictionary<string, object>
         {
-            { "id", UserGameId }, { "score", Session.Total }, { "currentPlayer", 0 }, { "puttCounter", Session.Index },
+            { "id", UserGameId }, { "score", Score }, { "currentPlayer", 0 }, { "puttCounter", Session.Index },
             { "playerPutts", new List<object> { new List<double>(Session.Scores), new List<object>(), new List<object>(), new List<object>() } },
         });
 
@@ -293,7 +429,7 @@ namespace PuttrApp
         {
             if (Finished) { done?.Invoke(); yield break; }
             Finished = true;
-            double score = Session.Total;
+            double score = Score;
             // QuestGame.endGame: the highest star whose putts-made threshold was met.
             if (What == Kind.Quest)
             {
@@ -304,7 +440,7 @@ namespace PuttrApp
                 done?.Invoke();
                 yield break;
             }
-            if (What == Kind.Drill) { done?.Invoke(); yield break; }
+            if (What == Kind.Drill || Unlinked) { done?.Invoke(); yield break; }
             if (How == Mode.Local || UserGameId == null) { done?.Invoke(); yield break; }
             if (How == Mode.Entered && What == Kind.League)
             {
@@ -313,27 +449,31 @@ namespace PuttrApp
                     { "userId", Auth.Uid }, { "team", Team }, { "score", score }, { "gameId", int.TryParse(_gameId, out int id) ? id : 0 },
                     { "seasonId", SeasonId }, { "weekNumber", WeekNumber }, { "userGameId", int.TryParse(UserGameId, out int ug) ? ug : 0 },
                 };
-                yield return Api.Post("/league/score/submit", body, data => Submitted = data, why => Problem = why);
+                // The API answers a refusal with 400 and {error}: "already_played_today" is the once-a-day rule.
+                yield return Api.Post("/league/score/submit", body, data => Submitted = data, why => Problem = FailureCode(why), live: Live);
                 Perf.Note("round: league score " + score + (Problem == null ? " submitted" : " NOT submitted (" + Problem + ")"));
             }
             if (How == Mode.Entered && What == Kind.Tournament)
             {
                 var body = new Dictionary<string, object> { { "tournamentId", J.Str(Tournament, "id") }, { "round", RoundNumber }, { "score", score } };
-                yield return Api.Post("/tournaments/game/end/", body, data => Submitted = data, why => Problem = why);
+                yield return Api.Post("/tournaments/game/end/", body, data => Submitted = data, why => Problem = why, live: Live);
                 Perf.Note("round: tournament score " + score + (Problem == null ? " submitted" : " NOT submitted (" + Problem + ")"));
             }
             if (What == Kind.Coach)
             {
-                int made = Session.Made, putts = Session.Putts.Count;
-                var body = new Dictionary<string, object> { { "makePct", putts > 0 ? Math.Round(100.0 * made / putts) : 0 }, { "made", made }, { "userGameId", int.TryParse(UserGameId, out int ug) ? ug : 0 } };
+                // The session's own row is closed here, with the makes as its score (coach.js sessionComplete): no
+                // /game/over after it, which would overwrite that score and run the game-over updates a second time.
+                var body = CoachBody(Session, UserGameId);
                 yield return Api.Post("/coach/session-complete", body, data => Submitted = data, why => Problem = why);
+                done?.Invoke();
+                yield break;
             }
             bool over = false;
             // Against a ghost the game closes as a two-player game: the ghost is player 0 (no account).
             if (Ghost != null)
                 App.Run(Api.Post("/game/multiplayer/over", new Dictionary<string, object> { { "gameId", UserGameId }, { "scoreArray", new List<object> { score, GhostTotal(Ghost.Count) } }, { "playerArray", new List<object> { Auth.Uid, 0 } } }, _ => over = true, _ => over = true, auth: false));
             else
-            App.Run(Api.Post("/game/over/", new Dictionary<string, object> { { "gameId", UserGameId }, { "score", score } }, _ => over = true, _ => over = true, auth: false));
+            App.Run(Api.Post("/game/over/", new Dictionary<string, object> { { "gameId", UserGameId }, { "score", score } }, _ => over = true, _ => over = true, auth: false, live: Live));
             // A Versus turn: the API scores it from the game just closed, so it goes once that game is over.
             if (!string.IsNullOrEmpty(VersusId))
             {
@@ -341,7 +481,29 @@ namespace PuttrApp
                 while (!over && Time.realtimeSinceStartup < until) yield return null;
                 yield return Api.Post("/versus/" + VersusId + "/complete", new Dictionary<string, object> { { "userGameId", int.TryParse(UserGameId, out int ug) ? ug : 0 } }, data => VersusResult = data, why => Problem = why);
             }
+            // A catalog game played as itself (Standard, Center Cut, Streak; alone, against a ghost or as a Versus turn)
+            // goes on the game's board, as Standard.js, CenterCut.js and Streak.js post it after the game is over.
+            if (What == Kind.Game && RoundSaver.Boarded(J.Str(Round, "gameType")))
+                App.Run(Api.Post("/club/leaderboard/add", RoundSaver.BoardBody(_gameId, UserGameId, score, RoundSaver.BoardDistanceFor(J.Str(Round, "gameType"), 0, false, 0)),
+                    null, why => Perf.Note("round: board not posted (" + why + ")")));
             done?.Invoke();
+        }
+
+        /// <summary>The body of /coach/session-complete: {makePct, made, userGameId}. made counts the putts the camera is sure
+        /// went in (coachLogic.js buildPutt, getMakeProbability > 1), out of the putts played.</summary>
+        public static Dictionary<string, object> CoachBody(RoundSession session, string userGameId)
+        {
+            int made = 0;
+            foreach (AppPutt.Verdict v in session.Seen) if (v != null && v.Made) made++;
+            int putts = session.Seen.Count;
+            return new Dictionary<string, object> { { "makePct", putts > 0 ? Math.Round(100.0 * made / putts, MidpointRounding.AwayFromZero) : 0 }, { "made", made }, { "userGameId", int.TryParse(userGameId, out int ug) ? ug : 0 } };
+        }
+
+        /// <summary>The API's own error code for the last refusal ({error: "already_played_today"}), else the transport's ("http_400").</summary>
+        static string FailureCode(string why)
+        {
+            string code = J.Str(Api.LastFailure, "error");
+            return code.Length > 0 ? code : why;
         }
 
         int NextStar()
@@ -355,6 +517,8 @@ namespace PuttrApp
         public string Outcome()
         {
             if (How == Mode.Local) return "Test putts: nothing was saved or entered.";
+            // Under -app2HoldPlay the card says the round was held instead of claiming a save.
+            string held = GameBridge.HeldNote(this); if (held != null) return held;
             if (What == Kind.Quest) return Stars == 0 ? "No stars this time. Make " + NextStar() + " to earn one." : Stars + (Stars == 1 ? " star" : " stars") + " earned.";
             if (What == Kind.Drill) return "Drill complete.";
             if (What == Kind.Game && !string.IsNullOrEmpty(VersusId))
@@ -367,8 +531,8 @@ namespace PuttrApp
             if (What == Kind.Game) return "Saved to your stats.";
             if (What == Kind.Coach) return Problem == null && J.Get(Submitted, "currentStreak") != null ? "Session saved. Day " + J.Int(Submitted, "currentStreak") + " of your practice streak." : "Session saved to your stats.";
             if (What == Kind.Practice) return "Saved to your stats.";
-            if (How == Mode.Rehearsal) return "Rehearsal: saved as practice, not entered. Turn on \"Enter competition scores\" on your Profile to play for real.";
-            if (Problem == "http_409" || Problem == "already_played_today") return "You have already played today. Come back tomorrow.";
+            if (How == Mode.Rehearsal) return "Rehearsal: saved as practice, not entered. Turn off Rehearsal mode in Settings to play for real.";
+            if (Problem == "already_played_today") return "You have already played today. Come back tomorrow.";
             if (Problem != null) return "Your score could not be entered. Check your connection: it is saved on your round.";
             if (What == Kind.League)
             {
@@ -376,6 +540,23 @@ namespace PuttrApp
                 return (J.Flag(Submitted, "isNewBest") ? "New personal best" : "Score posted") + rank + (J.Flag(Submitted, "inTopFive") ? "   ·   in the top 5" : "");
             }
             return "Round " + RoundNumber + " entered.";
+        }
+    }
+
+    // Center Cut played as a League Night game. (The game itself is in RuleGamesD.cs.)
+    public sealed partial class CenterCutGame
+    {
+        /// <summary>
+        /// The putts to play in place of nine dealt at random: a League Night game plays the putts its round was
+        /// opened with (the week's game row's own puttData when it has any), so what is saved with the game and what
+        /// is played are the same list.
+        /// </summary>
+        public List<TournamentMath.Dealt> Fixed;
+
+        protected override void Begin()
+        {
+            base.Begin();
+            if (Fixed != null && Fixed.Count > 0) List = new List<TournamentMath.Dealt>(Fixed);
         }
     }
 }
