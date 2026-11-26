@@ -398,8 +398,9 @@ namespace PuttrApp
 
         // ── Today's session ──────────────────────────────────────────────────
 
-        /// <summary>How the session's scene is framed: a phone's tall hero, a tablet's tall pane, or a wide band (a phone on its side).</summary>
-        public enum Frame { Phone, Pane, Band }
+        /// <summary>How the session's scene is framed: a phone's tall hero, a tablet's tall pane, a wide band (a phone on its side),
+        /// or a bordered window of its own with nothing over it (Home's session card): the mat from above, lying across it.</summary>
+        public enum Frame { Phone, Pane, Band, Window }
 
         /// <summary>The mat and box; with a session, its spots glow (a count beside each), and a ball rolls the focus putt into the hole.</summary>
         // The camera distance at which the whole mat, the Puttr logo at the Player's end to the top of the box, sits in
@@ -433,6 +434,22 @@ namespace PuttrApp
             return best;
         }
 
+        // A window: seen from above and close, the mat's width taking most of the window's height (Matt, 2026-11-24).
+        // The mat is then longer than the window is wide, so the view glides along it: slide is how far each way.
+        static float WindowFit(Live3D.Stage s, out float slide, out float turn)
+        {
+            float w = s.View.contentRect.width, h = s.View.contentRect.height;
+            float tall = Mathf.Tan(s.Camera.fieldOfView * 0.5f * Mathf.Deg2Rad);   // half the picture's height, a unit away
+            float wide = w <= 0f || h <= 0f ? 3f : w / h;
+            // 31 in top to bottom: the 24 in mat and a little floor. A long window (a tablet) would show the whole mat
+            // and the box, small: there it comes closer, to about 100 in of the mat, the printed numbers big enough
+            // to read (Matt, 2026-11-24), but never so close that the Left and Right tee spots are cut off.
+            float d = Mathf.Max(11f, Mathf.Min(15.5f, 50f / wide)) / tall;
+            slide = Mathf.Max(0f, 80f - d * tall * wide);
+            turn = Mathf.Min(0.3f, 0.9f / wide);   // a long window turns less, or the mat's ends leave by its top and bottom
+            return d;
+        }
+
         public static Action<Live3D.Stage> Today(List<TournamentMath.Dealt> putts, Frame frame)
         {
             return s =>
@@ -441,14 +458,18 @@ namespace PuttrApp
                 // The scene sits above the session's words (to their right on a wide band).
                 // Phone and tablet pane: far enough back and high enough that the whole mat, the Puttr logo at the
                 // Player's end included, sits above the session's words.
-                s.ShiftY = frame == Frame.Band ? 0.04f : frame == Frame.Pane ? 0.3f : 0.32f;
+                s.ShiftY = frame == Frame.Window ? 0f : frame == Frame.Band ? 0.04f : frame == Frame.Pane ? 0.3f : 0.32f;
                 s.ShiftX = frame == Frame.Band ? 0.24f : 0f;
-                s.PinLimit = frame == Frame.Band ? 1f : 0.5f;
+                s.PinLimit = frame == Frame.Band || frame == Frame.Window ? 1f : 0.5f;
                 Color ringBase = ring.GetColor("_Color");
                 // The distances are printed on the mat and the mark is on the box: no labels for them.
 
-                Transform focusRing = null, ball = null;
-                Vector3 from = Vector3.zero;
+                // The green circles mark the spots; one ball putts from each in turn (Matt, 2026-11-25: no balls
+                // waiting on the spots, and not the same putt over and over).
+                Transform ball = null;
+                var spots = new List<(Vector3 from, Transform ring, MeshRenderer draw)>();
+                Material glow = s.Glow(new Color(Spark.r, Spark.g, Spark.b, 0.9f));
+                Material focus = s.Glow(new Color(0.75f, 1f, 0.55f, 1f));
                 if (putts != null && putts.Count > 0)
                 {
                     var counts = new Dictionary<(int, int), int>();
@@ -459,41 +480,68 @@ namespace PuttrApp
                         if (!counts.ContainsKey(key)) { counts[key] = 0; order.Add(key); }
                         counts[key]++;
                     }
-                    Material glow = s.Glow(new Color(Spark.r, Spark.g, Spark.b, 0.9f));
                     Material fill = s.Glow(new Color(Spark.r, Spark.g, Spark.b, 0.16f));
-                    Material focus = s.Glow(new Color(0.75f, 1f, 0.55f, 1f));
-                    for (int i = 0; i < order.Count; i++)
+                    foreach ((int feet, int tee) in order)
                     {
-                        (int feet, int tee) = order[i];
                         Vector3 at = Spot(feet, tee, 0.03f);
-                        bool first = i == 0;
                         // Lit round the printed tee circle, which still shows inside.
-                        GameObject r = s.Mesh("Spot", Make.Ring(1.9f, first ? 2.7f : 2.4f), first ? focus : glow);
+                        GameObject r = s.Mesh("Spot", Make.Ring(1.9f, 2.4f), glow);
                         r.transform.localPosition = at;
                         s.Mesh("Spot fill", Make.Disc(1.9f), fill).transform.localPosition = at + Vector3.up * 0.01f;
-                        if (first) focusRing = r.transform;
-                        s.Pin(Ui.Text("×" + counts[(feet, tee)], "imp-pin-count", Ui.Bold), at + new Vector3(tee == 3 ? -5.4f : 5.4f, 0, 0));
+                        spots.Add((Spot(feet, tee, LaneSpec.BallRadius), r.transform, r.GetComponent<MeshRenderer>()));
+                        s.Pin(Ui.Text("×" + counts[(feet, tee)], "imp-pin-count", Ui.Bold), frame == Frame.Window ? at + new Vector3(0, 0, -5.5f) : at + new Vector3(tee == 3 ? -5.4f : 5.4f, 0, 0));   // in a window (seen from above): on the mat, beside its spot
                     }
-                    from = Spot(putts[0].Feet, putts[0].Tee, LaneSpec.BallRadius);
                     ball = s.Primitive(PrimitiveType.Sphere, "Ball", s.Lit(new Color(0.95f, 0.95f, 0.93f), 0.65f)).transform;
                     ball.localScale = Vector3.one * LaneSpec.BallRadius * 2f;
-                    ball.localPosition = from;
+                    ball.localPosition = spots[0].from;
                 }
 
-                const float Roll = 2.1f, Drop = 0.3f, Rest = 1.5f, Cycle = Roll + Drop + Rest;
-                float bend = from.x * 0.45f + (from.x == 0f ? 1.5f : 0f);
+                // Each putt: the ball is dropped on its spot (a small bounce as it lands), sits there until a second has
+                // gone, then is putted (Matt, 2026-11-26: it used to start already rolling, bursting out of nowhere).
+                const float Place = 1f, Land = 0.55f, Roll = 2.1f, Drop = 0.3f, Rest = 0.9f, Cycle = Place + Roll + Drop + Rest;
+                int lit = -1;
                 s.Tick = dt =>
                 {
                     float t = s.Time;
                     // A slow orbit round the middle of the mat, the box at the top of the picture.
-                    // A slow orbit round the middle of the mat, the box at the top of the picture.
                     float yaw = (frame == Frame.Band ? 0.9f : 0.24f) + 0.2f * Mathf.Sin(t * 0.13f) + s.View.Yaw;
-                    if (frame == Frame.Band) s.Orbit(new Vector3(0, 0, -62f), yaw, 0.6f, 150f);
+                    // A window: straight down on the mat, lying across it, the view gliding slowly from end to end and
+                    // turning a little each way (Matt, 2026-11-24).
+                    if (frame == Frame.Window)
+                    {
+                        float far = WindowFit(s, out float slide, out float turn);
+                        s.Orbit(new Vector3(0, 0, -67f + slide * Mathf.Sin(t * 0.16f)), Mathf.PI * 0.5f + turn * Mathf.Sin(t * 0.22f) + s.View.Yaw, 1.5f, far);
+                    }
+                    else if (frame == Frame.Band) s.Orbit(new Vector3(0, 0, -62f), yaw, 0.6f, 150f);
                     else s.Orbit(new Vector3(0, 0, -64f), yaw, 0.52f, Fit(s, yaw));
-                    if (ball == null) return false;
+                    // A window's camera never rests, so it is always drawn smoothly: at the app's resting rate it looked fixed.
+                    if (ball == null) return frame == Frame.Window;
+                    // Each putt comes from the next spot of the session; its circle is the bright one.
+                    int now = (int)(t / Cycle) % spots.Count;
+                    if (now != lit)
+                    {
+                        if (lit >= 0) { spots[lit].draw.sharedMaterial = glow; spots[lit].ring.localScale = Vector3.one; }
+                        spots[now].draw.sharedMaterial = focus;
+                        lit = now;
+                    }
+                    Vector3 from = spots[now].from;
+                    float bend = from.x * 0.45f + (from.x == 0f ? 1.5f : 0f);
                     float c = t % Cycle;
-                    bool rolling = c < Roll + Drop;
-                    if (c < Roll)
+                    bool rolling = c < Place + Roll + Drop;
+                    ball.localScale = Vector3.one * LaneSpec.BallRadius * 2f;
+                    if (c < Place)
+                    {
+                        // Dropped from 6 in up: it falls, bounces twice, each lower than the last, and is still by Land.
+                        float k = Mathf.Clamp01(c / Land);
+                        float up = 6f * Mathf.Abs(Mathf.Cos(k * Mathf.PI * 2.5f)) * (1f - k) * (1f - k);
+                        ball.localPosition = from + Vector3.up * up;
+                        ball.localScale *= Mathf.Clamp01(c / 0.1f);   // it is there in a tenth of a second, not all at once
+                        ball.gameObject.SetActive(true);
+                        c = -1f;
+                    }
+                    else c -= Place;
+                    if (c < 0f) { }
+                    else if (c < Roll)
                     {
                         float u = 1f - (1f - c / Roll) * (1f - c / Roll);   // slowing as it goes
                         float x = Mathf.Lerp(from.x, 0f, u) + Mathf.Sin(u * Mathf.PI) * bend;
@@ -508,12 +556,12 @@ namespace PuttrApp
                         ball.localPosition = new Vector3(0, SurfY(0f), 0) + LaneSpec.SurfaceNormal(0f) * (LaneSpec.BallRadius - k * 3f);
                     }
                     else ball.gameObject.SetActive(false);
-                    // The hole's ring flashes as it drops; the focus spot breathes.
-                    float flash = c > Roll && c < Roll + 1.1f ? 1f - (c - Roll) / 1.1f : 0f;
+                    // The hole's ring flashes as it drops; the spot being putted from breathes.
+                    float flash = c > Roll && c < Roll + 0.9f ? 1f - (c - Roll) / 0.9f : 0f;
                     ring.SetColor("_Color", Color.Lerp(ringBase, new Color(0.8f, 1f, 0.6f, 0.9f), flash));
-                    if (focusRing != null) focusRing.localScale = Vector3.one * (1f + 0.08f * Mathf.Sin(t * 3f));
+                    spots[now].ring.localScale = Vector3.one * (1.1f + 0.08f * Mathf.Sin(t * 3f));
                     // Smooth for the first two putts it rolls; after that it keeps going at the app's resting rate.
-                    return rolling && s.Age < Cycle * 2f;
+                    return frame == Frame.Window || (rolling && s.Age < Cycle * 2f);
                 };
             };
         }

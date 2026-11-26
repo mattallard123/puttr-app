@@ -101,6 +101,8 @@ namespace PuttrArcade
         /// <summary>puttr-app-2: Puttr was added as the other Player on the game page, for a game that is also played alone
         /// (Dead Weight): the one Player passed plays Puttr, not a round of their own.</summary>
         public static bool EmbeddedPuttr;
+        /// <summary>Set by the app for store captures (-app2Connected): the made-up Puttr counts as connected, so no "Looking for your Puttr" chip.</summary>
+        public static bool EmbeddedConnected;
         /// <summary>puttr-app-2: which Player putts first (the game page's choice). Games that take turns read it.</summary>
         public static int EmbeddedFirst;
         public static string[] EmbeddedNames;
@@ -2013,7 +2015,7 @@ namespace PuttrArcade
             string more = home && Hud.Kind == Hud.Device.Desktop ? "      ·      S for settings" : "";
             if (_phase == Phase.Settings) Hud.SetStatus(null, Make.Bright);
             // The demo (store captures, -puttrDemo) plays with made-up putts: no console to look for.
-            else if (demo) Hud.SetStatus(null, Make.Bright);
+            else if (demo || EmbeddedConnected) Hud.SetStatus(null, Make.Bright);
             else if (_console.Online)
             {
                 if (!_console.HoleCalibrated) Hud.SetStatus("Clear the hole and restart your Puttr", Make.Red);

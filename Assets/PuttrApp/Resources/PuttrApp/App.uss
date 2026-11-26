@@ -296,7 +296,7 @@
 .split { height: 8px; overflow: hidden; margin-top: 8px; }
 .split-a { height: 8px; }
 .split-b { height: 8px; }
-.entry-arc { height: 190px; }
+.entry-arc { height: 214px; }
 .entry-value { color: rgb(255, 255, 255); font-size: 11px; }
 
 /* The shared game frame */
@@ -667,10 +667,7 @@
 .intro-chip { flex-direction: row; align-items: center; padding: 4px 8px; margin: 0 4px; border-radius: 4px; border-width: 1px; border-color: rgb(38, 42, 46); background-color: rgba(0, 0, 0, 0); }
 .intro-chip > Label { margin-left: 4px; }
 .intro-btn { width: 100%; max-width: 420px; margin-top: 12px; }
-/* Sign in with Apple / Google: the providers' own white button, square ends, their wording. It never goes green. */
-.btn-white { background-color: rgb(255, 255, 255); }
-.btn.btn-white:hover { background-color: rgb(255, 255, 255); }
-.btn.btn-white:active { background-color: rgb(196, 201, 205); }
+/* Sign in with Apple / Google: the slanted button in white (--fill is with the other buttons, at the end), black words, the provider's mark. */
 .btn-white .btn-text { color: rgb(0, 0, 0); }
 .email-sheet { max-width: 480px; }
 /* A text link in a sheet or under a button (Show password, Forgot password?, Skip for now): 44 tall to tap. */
@@ -817,6 +814,9 @@
 .gcard-name-big { font-size: 22px; letter-spacing: 0.5px; }
 .gcard-line { font-size: 11px; color: rgb(196, 201, 205); margin-top: 1px; text-shadow: 0 1px 0 rgb(0, 0, 0); }
 .gcard-first { margin-left: 16px; }
+/* Game cards in a grid (the Versus game picker): as many across as fit. */
+.vs-grid { flex-direction: row; flex-wrap: wrap; margin: 0 -5px; }
+.vs-grid > .gcard { flex-grow: 1; flex-basis: 160px; max-width: 260px; margin: 0 5px 10px 5px; }
 /* GameCards.Raised: a card that stands off the page, as a key does. .gcard-3d is the footprint (8 px taller than the
    face): a black shadow along the very bottom, then the lip (.gcard-lip, the card's own thickness, a slate lighter
    than the page so it shows on black), then the face on top. Pressed, the face sinks onto the lip. Nothing here has a
@@ -897,7 +897,8 @@
 /* The game page over its backdrop (the game's set, GameBridge.ShowBackdrop): the set shows round solid panels.
    Every word is on a solid ground (the column, the foot, the side panel), never on the scene itself. */
 .game-see { background-color: rgba(9, 11, 13, 0.25); }
-.game-see .game-column { background-color: rgb(10, 12, 13); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 12px 16px 16px 16px; margin-top: 12px; }
+/* The setup card is let through a little, so the game's 3D shows behind it: phone, tablet and TV alike (Matt, 2026-11-26). */
+.game-see .game-column { background-color: rgba(10, 12, 13, 0.72); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 12px 16px 16px 16px; margin-top: 12px; }
 .game-see .game-foot { background-color: rgb(10, 12, 13); border-top-color: rgb(38, 42, 46); }
 .game-see .game-side { background-color: rgb(10, 12, 13); }
 /* Spinner (PuttrSpinner): centred in its box; the cover sits over a screen that has nothing in it yet. */
@@ -915,12 +916,12 @@
 .tracks-camopt { border-radius: 4px; padding: 8px 10px; margin-top: 2px; }
 .tracks-camopt-on { background-color: rgba(45, 140, 60, 0.92); }
 .tracks-entry { position: absolute; left: 10px; top: 104px; border-radius: 4px; background-color: rgba(8, 10, 12, 0.82); padding: 6px 8px 8px 8px; align-items: center; }
-.tracks-entry-mat { width: 112px; height: 112px; margin-top: 4px; border-radius: 4px; overflow: hidden; background-color: rgba(10, 12, 13, 0.95); border-width: 1px; border-color: rgb(38, 42, 46); }
+.tracks-entry-mat { width: 160px; height: 100px; margin-top: 4px; border-radius: 4px; overflow: hidden; background-color: rgba(10, 12, 13, 0.95); border-width: 1px; border-color: rgb(38, 42, 46); }
 .tracks-entry-view { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
-.tracks-entry-k { position: absolute; left: 0; right: 0; top: 3px; font-size: 11px; letter-spacing: 0.5px; color: rgb(139, 147, 153); -unity-text-align: middle-center; }
-.tracks-entry-v { position: absolute; left: 0; right: 0; bottom: 3px; font-size: 11px; letter-spacing: 0.6px; color: rgb(122, 212, 70); -unity-text-align: middle-center; }
+.tracks-entry-k { margin-top: 6px; font-size: 11px; letter-spacing: 0.5px; color: rgb(139, 147, 153); -unity-text-align: middle-center; }
+.tracks-entry-v { margin-top: 2px; font-size: 11px; letter-spacing: 0.6px; color: rgb(122, 212, 70); -unity-text-align: middle-center; }
 .tracks-entry-miss { color: rgb(255, 82, 82); }
-.tracks-wide .tracks-entry-mat { width: 168px; height: 168px; }
+.tracks-wide .tracks-entry-mat { width: 256px; height: 160px; }
 .tracks-wide .tracks-entry-k { font-size: 11px; }
 .tracks-wide .tracks-entry-v { font-size: 11px; }
 .tracks-sc { margin-top: 8px; border-radius: 4px; background-color: rgba(8, 10, 12, 0.86); padding: 6px; }
@@ -1037,7 +1038,7 @@
 .tracks-short .tracks-shot-club { font-size: 20px; }
 .tracks-short .tracks-shot-say { font-size: 13px; margin-top: 3px; }
 .tracks-short .tracks-entry { top: 58px; }
-.tracks-short .tracks-entry-mat { width: 96px; height: 96px; }
+.tracks-short .tracks-entry-mat { width: 138px; height: 86px; }
 /* The shot card (the app's ShotResultCard) mid-screen, and the hole-done card over the scorecard. */
 .tracks-center { position: absolute; left: 0; top: 0; right: 0; bottom: 0; align-items: center; justify-content: center; }
 .tracks-result { align-items: center; border-radius: 4px; background-color: rgb(10, 12, 13); border-width: 1px; border-color: rgb(45, 140, 60); padding: 8px 12px; }
@@ -1170,6 +1171,10 @@
 .tracks-ccard { padding: 0; overflow: hidden; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; }
 .tracks-ccard:active { background-color: rgb(34, 38, 42); }
 .tracks-ccard-body { padding: 12px 16px 16px 16px; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+/* Home's Track of the week on a tablet: the course as a square on the left, its words and buttons in a column beside it. */
+.tracks-ccard.totw-side { flex-direction: row; }
+.totw-side > .tracks-art { width: 280px; height: 280px; flex-shrink: 0; }
+.totw-side > .tracks-ccard-body { flex-grow: 1; flex-basis: 0; min-width: 0; justify-content: center; padding: 16px 24px; border-top-width: 0; border-left-width: 1px; border-left-color: rgb(38, 42, 46); }
 .tracks-art { height: 180px; background-color: rgb(0, 0, 0); overflow: hidden; }
 .tracks-art-pic { position: absolute; left: 0; top: 0; right: 0; bottom: 0; opacity: 0; transition-property: opacity; transition-duration: 0.45s; }
 .tracks-art-pic.tracks-art-on { opacity: 1; }
@@ -1189,18 +1194,26 @@
 .tracks-loading.tracks-loading-off { opacity: 0; }
 .tracks-loading-still { position: absolute; left: 0; top: 0; right: 0; bottom: 0; opacity: 0.55; }
 .tracks-loading-box { align-items: center; padding: 22px 30px; border-radius: 4px; background-color: rgba(9, 11, 13, 0.72); }
-.tracks-loading-t { font-size: 15px; color: rgb(255, 255, 255); margin-top: 16px; -unity-text-align: middle-center; }
+.tracks-loading-t { font-size: 15px; color: rgb(255, 255, 255); margin-top: 24px; -unity-text-align: middle-center; }
 .tracks-loading-s { font-size: 13px; color: rgb(196, 201, 205); margin-top: 4px; -unity-text-align: middle-center; white-space: normal; max-width: 260px; }
 .tracks-fly { position: absolute; left: 0; top: 0; right: 0; bottom: 0; opacity: 0; transition-property: opacity; transition-duration: 1.2s; }
 .tracks-fly.tracks-fly-on { opacity: 1; }
 .tracks-fly-dim { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(9, 11, 13, 0.3); }
 .tracks-setup-page { flex-grow: 1; flex-shrink: 1; min-height: 0; }
+/* The setup on a wide screen on its side: the fly-over (a square) and the course on the left, the settings on the right (Matt, 2026-11-26). */
+.tracks-setup-one { flex-grow: 1; flex-shrink: 1; min-height: 0; }
+.tracks-setup-cols { flex-direction: row; flex-grow: 1; flex-shrink: 1; min-height: 0; width: 100%; max-width: 1180px; align-self: center; }
+.tracks-setup-left { flex-grow: 0; flex-shrink: 0; width: 46%; max-width: 520px; padding: 0 16px 16px 16px; }
+.tracks-setup-right { flex-grow: 1; flex-shrink: 1; flex-basis: 0; min-height: 0; }
+.tracks-setup-right .tracks-setup-form { margin-top: 0; }
+.tracks-setup-right .tracks-players { margin-top: 0; }
 .tracks-fly-top { position: absolute; left: 0; right: 0; top: 0; height: 150px; }
 .tracks-panel { width: 100%; max-width: 560px; align-self: center; margin-top: 12px; padding: 14px 16px 16px 16px; border-radius: 4px; background-color: rgba(9, 11, 13, 0.8); border-width: 1px; border-color: rgba(255, 255, 255, 0.08); }
 .tracks-panel-head { align-items: center; margin-left: -4px; margin-bottom: 2px; }
 .tracks-panel-head .back { width: 44px; }
 .tracks-help { width: 36px; height: 36px; border-radius: 4px; align-items: center; justify-content: center; background-color: rgba(255, 255, 255, 0.1); }
-.tracks-teebar { flex-shrink: 0; padding: 12px 16px 16px 16px; background-color: rgb(10, 12, 13); border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+/* No rule over it or between the columns: everything on the setup is in cards (Matt, 2026-11-26). */
+.tracks-teebar { flex-shrink: 0; padding: 12px 16px 16px 16px; background-color: rgb(10, 12, 13); }
 .tracks-teebar .btn { max-width: 560px; align-self: center; width: 100%; margin-top: 0; }
 .tracks-scroll-end { height: 104px; }
 /* Poster captions sit on the solid bar under the picture (Compete.Poster), never over it. */
@@ -1264,7 +1277,11 @@
 /* ── TV (Tv.cs): ten feet away, driven by the remote ── */
 .tv .tv-focus { transition-property: scale, border-color; transition-duration: 0.12s; }
 .tv .tv-focus:focus { border-width: 3px; border-color: rgb(255, 255, 255); scale: 1.04 1.04; }
-.tv .play-tab.tv-focus:focus { scale: 1 1; border-width: 0 0 3px 0; border-bottom-color: rgb(122, 212, 70); }
+/* A focused tab is a lit plate, so it never reads as the tab that is merely showing (an underline). */
+/* A tab with the remote's focus: the white underline alone, no grey plate behind it (Matt, 2026-11-26). */
+.tv .play-tab.tv-focus:focus { scale: 1.06 1.06; border-width: 0 0 3px 0; border-bottom-color: rgb(255, 255, 255); background-color: rgba(0, 0, 0, 0); }
+/* The slanted button draws its own focus edge along the slant (Ui.Slant). */
+.tv .slant.tv-focus:focus { border-width: 0; scale: 1.05 1.05; }
 .tv .play-tab.tv-focus:focus .play-tab-t { color: rgb(255, 255, 255); }
 .tv .scope.tv-focus:focus { scale: 1.08 1.08; }
 /* A raised game card takes its focus ring on the face, so the ring follows the card's rounded edge, not the shadow. */
@@ -1279,6 +1296,7 @@
 .tv .hscroll.play-tabs { margin: 0; }
 .tv .hscroll.play-tabs .unity-scroll-view__content-container { padding: 0; }
 /* A text field for the remote (Tv.TextEntry): looks like .field, takes the focus ring, OK opens the TV's keyboard. */
+.tv-putt-hint { font-size: 13px; margin-top: 10px; }
 .tv-entry { background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; padding: 12px 14px; min-height: 50px; justify-content: center; }
 .tv-entry-t { font-size: 16px; color: rgb(255, 255, 255); }
 .tv-entry-empty { color: rgb(139, 147, 153); }
@@ -1287,7 +1305,9 @@
 .tv .back-chevron { width: 52px; height: 52px; flex-shrink: 0; margin-right: 24px; padding: 0 3px 6px 0; border-radius: 4px; border-width: 3px; border-color: rgba(255, 255, 255, 0); background-color: rgb(34, 38, 42); color: rgb(255, 255, 255); -unity-text-align: middle-center; }
 .tv .back-chevron.tv-focus:focus { background-color: rgb(48, 53, 58); border-color: rgb(255, 255, 255); scale: 1.08 1.08; }
 .tv-bar { align-items: center; padding: 6px 28px 0 28px; border-bottom-width: 1px; border-bottom-color: rgb(38, 42, 46); }
-.tv-bar .play-tabs { border-bottom-width: 0; padding-left: 20px; }
+/* The tabs take the room between the logo and the right side, however few there are, so the Puttr's status and the
+   profile are always against the right edge (.hscroll would keep the row to its own width). */
+.tv-bar .play-tabs { border-bottom-width: 0; padding-left: 20px; flex-grow: 1; flex-shrink: 1; flex-basis: 0; min-width: 0; }
 .tv-logo { width: 120px; height: 28px; flex-shrink: 0; }
 .tv-pill { margin-right: 14px; }
 .tv-account-btn { align-items: center; padding: 4px 12px 4px 4px; border-radius: 4px; background-color: rgb(34, 38, 42); }
@@ -1318,7 +1338,7 @@
 .sk-lines { margin-left: 16px; justify-content: center; }
 .sk-num { align-items: center; }
 .sk-num .sk-bar { align-self: center; }
-.sk-art { background-color: rgb(34, 38, 42); }
+.sk-art { background-color: rgb(34, 38, 42); overflow: hidden; }
 .sk-cover { position: absolute; left: 0; top: 56px; right: 0; bottom: 0; overflow: hidden; }
 
 /* League Night: the week's button stays at the bottom, the boards scroll behind it */
@@ -1344,7 +1364,7 @@
 }
 
 /* Tracks: search + Add a track, community cards, the add sheet, the board */
-.tracks-search { align-items: center; }
+.tracks-search { align-items: center; margin-top: 12px; }
 .tracks-search > .field { margin: 0; flex-grow: 1; }
 .btn.tracks-add-btn { min-height: 50px; padding-left: 16px; padding-right: 16px; margin-top: 0; margin-left: 8px; flex-shrink: 0; }
 .tracks-by { align-items: center; margin-bottom: 8px; }
@@ -1550,13 +1570,11 @@
 .gl-legend { position: absolute; width: 340px; padding: 16px; border-radius: 4px; background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); }
 .gl-legend > .gl-head { margin-top: 0; }
 .gl-legend > .gl-card { margin-top: 12px; padding: 0; background-color: rgba(0, 0, 0, 0); border-width: 0; }
-/* Play tab: a sentence on what each way to play is. Game over: rate this game. */
-.play-intro { margin-top: 10px; margin-bottom: 4px; }
+/* Game over: rate this game. */
 .fb-game { margin-top: 16px; }
 .fb-game-stars { margin-top: 12px; }
 .fb-game .fb-star { width: 44px; height: 44px; margin: 0 2px; }
 .modal > .fb-game { margin-top: 6px; padding: 0; }
-.play-intro-in { width: 100%; max-width: 998px; align-self: center; }
 /* Settings: the "Need help?" bar stays at the bottom; the settings scroll behind it. */
 .set-help { flex-shrink: 0; padding-top: 12px; background-color: rgb(10, 12, 13); border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
 .set-help .set-help-card { align-items: center; padding: 12px 16px; }
@@ -1608,6 +1626,35 @@
 .fchip-t { font-size: 11px; letter-spacing: 1.2px; color: rgb(255, 255, 255); }
 .fchip-on { background-color: rgb(255, 255, 255); border-color: rgb(255, 255, 255); }
 .fchip-on .fchip-t { color: rgb(0, 0, 0); }
+/* XP and levels (Xp.cs; the guidelines' Rank badge, XP panel, Level card, Levels sheet, Level up). The badge's fill
+   and ink, the ring and the card's left edge are the rank's colour, set in code from the guidelines' rank table. */
+.xp-badge { font-size: 11px; height: 18px; min-width: 22px; padding: 0 5px; margin: 0 0 0 6px; border-radius: 4px; -unity-text-align: middle-center; flex-shrink: 0; }
+.xp-badge-big { font-size: 15px; height: 26px; min-width: 34px; padding: 0 6px; }
+.xp-named { align-items: center; }
+.xp-named > Label { flex-shrink: 1; }
+.xp-named > .xp-badge { flex-shrink: 0; }
+.xp-bar { flex-direction: row; height: 4px; background-color: rgb(34, 38, 42); margin-top: 12px; overflow: hidden; }
+.xp-bar-had { height: 4px; background-color: rgb(45, 140, 60); }
+.xp-bar-new { height: 4px; background-color: rgb(255, 255, 255); }
+.xp-card { border-left-width: 4px; }
+.xp-card-head { align-items: flex-end; }
+.xp-card-rank { margin-left: 8px; margin-bottom: 3px; }
+.xp-card-right { flex-grow: 1; -unity-text-align: middle-right; }
+.xp-card-foot { margin-top: 8px; justify-content: space-between; }
+.xp-panel { padding: 16px; }
+.xp-panel-head { align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.xp-panel-row { justify-content: space-between; margin-top: 8px; }
+.xp-panel-label { color: rgb(196, 201, 205); flex-shrink: 1; }
+.xp-panel-value { color: rgb(255, 255, 255); margin-left: 12px; }
+.xp-rank-row > .xp-badge { margin-left: 0; margin-right: 12px; }
+.xp-you { color: rgb(255, 255, 255); }
+.xp-up { justify-content: space-between; }
+.xp-up-middle { flex-grow: 1; justify-content: center; padding-left: 16px; padding-right: 16px; }
+.xp-up-number { font-size: 96px; -unity-text-align: middle-center; margin: 8px 0 0 0; padding: 0; }
+.xp-up-rank { font-size: 44px; -unity-text-align: middle-center; margin: 12px 0 0 0; padding: 0; }
+.xp-up-next { margin-top: 8px; }
+.xp-up-me { flex-direction: row; align-items: center; margin-top: 24px; }
+.xp-up-actions { padding-bottom: 24px; }
 /* The slanted button: Ui.Button draws the shape in --fill, so the box itself is clear. Keep these last. */
 .btn { --fill: rgb(45, 140, 60); min-height: 52px; }
 .btn:hover { --fill: rgb(52, 158, 68); }
@@ -1615,6 +1662,9 @@
 .btn-ghost { --fill: rgb(34, 38, 42); min-height: 44px; }
 .btn-ghost:hover { --fill: rgb(48, 53, 58); }
 .btn-ghost:active { --fill: rgb(21, 24, 27); }
+.btn-white { --fill: rgb(255, 255, 255); min-height: 44px; }
+.btn-white:hover { --fill: rgb(255, 255, 255); }
+.btn-white:active { --fill: rgb(196, 201, 205); }
 .btn-red { --fill: rgb(140, 34, 34); min-height: 44px; }
 .btn-red:hover { --fill: rgb(160, 40, 40); }
 .btn-red:active { --fill: rgb(112, 28, 28); }
@@ -1637,3 +1687,42 @@
 .gtile-tags { font-size: 11px; letter-spacing: 1.2px; color: rgb(139, 147, 153); margin: 0; padding: 0; flex-grow: 1; flex-basis: 0; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gtile.gcard-pressed { background-color: rgb(34, 38, 42); }
 .tv .gtile.tv-focus:focus { border-width: 3px; border-color: rgb(255, 255, 255); }
+
+/* The game over page (GameOver.cs): one column on a phone; on a wide screen the result and actions on the left and the
+   putts scrolling in their own column on the right, so nothing runs off the page. */
+.go { flex-grow: 1; }
+.go-one { flex-grow: 1; }
+.go-cols { flex-direction: row; flex-grow: 1; flex-shrink: 1; min-height: 0; width: 100%; max-width: 1180px; align-self: center; }
+.go-left { flex-grow: 0; flex-shrink: 0; width: 46%; max-width: 520px; }
+.go-side { flex-grow: 1; flex-shrink: 1; flex-basis: 0; min-height: 0; border-left-width: 1px; border-left-color: rgb(38, 42, 46); }
+.go-side > .sec { margin-top: 8px; }
+.go-right { flex-grow: 1; flex-shrink: 1; min-height: 0; }
+.go-pad { padding: 0 16px 16px 16px; }
+.go-pad-last { padding-bottom: 32px; }
+/* Two columns: the score and the game's numbers stay put over the putts, which scroll beneath (Matt, 2026-11-26). */
+.go-top { flex-shrink: 0; padding-bottom: 8px; }
+.go-pad .sec { padding-left: 0; padding-right: 0; }
+.go-result { align-items: stretch; }
+.go-center { -unity-text-align: middle-center; }
+.go-score { -unity-text-align: middle-center; margin-top: 8px; }
+.go-outcome { -unity-text-align: middle-center; margin-top: 8px; }
+.go-title { -unity-text-align: middle-center; margin-top: 8px; }
+.go-gap { margin-top: 16px; }
+.go-block { background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; }
+.go-row { flex-direction: row; align-items: center; min-height: 44px; padding: 8px 16px; border-top-width: 1px; border-top-color: rgb(38, 42, 46); }
+.go-row-first { border-top-width: 0; }
+.go-grow { flex-grow: 1; flex-basis: 0; flex-shrink: 1; }
+.go-n { font-size: 13px; width: 28px; color: rgb(139, 147, 153); margin: 0; padding: 0; flex-shrink: 0; }
+.go-swatch { width: 8px; height: 24px; border-radius: 2px; margin-right: 12px; flex-shrink: 0; }
+.go-call { -unity-text-align: middle-right; margin: 0; padding: 0; }
+.go-right-words { align-items: flex-end; flex-shrink: 0; margin-left: 8px; }
+.go-bestrow { flex-direction: row; align-items: center; justify-content: center; margin-top: 12px; }
+.go-best { margin-left: 8px; }
+.go-actions { margin-top: 8px; }
+.go-actions > .btn.go-btn { margin-top: 12px; }
+.go-actions > .go-analysis { margin-top: 16px; padding-top: 0; padding-bottom: 0; }
+.go .feedback-card, .go .fb-card { margin-top: 16px; }
+/* Home's greeting: one line on a phone (15, an ellipsis for a very long name), 20 where there is room (Matt, 2026-11-24). */
+/* The greeting wraps to a second line beside the avatar and rank (it used to be cut short with an ellipsis). */
+.title-20.home-greet { font-size: 15px; white-space: normal; }
+.tablet .title-20.home-greet { font-size: 20px; }

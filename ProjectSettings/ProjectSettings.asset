@@ -177,10 +177,10 @@ PlayerSettings:
   buildNumber:
     Standalone: 1
     VisionOS: 0
-    iPhone: 306
-    tvOS: 306
+    iPhone: 311
+    tvOS: 311
   overrideDefaultApplicationIdentifier: 1
-  AndroidBundleVersionCode: 300
+  AndroidBundleVersionCode: 303
   AndroidMinSdkVersion: 26
   AndroidTargetSdkVersion: 0
   AndroidPreferredInstallLocation: 1
@@ -571,7 +571,7 @@ PlayerSettings:
   enableInternalProfiler: 0
   logObjCUncaughtExceptions: 1
   enableCrashReportAPI: 0
-  cameraUsageDescription: PUTTR needs access to your camera for game recordings.
+  cameraUsageDescription: Puttr films your putting for 3D sessions, recorded rounds and live matches, and takes your profile photo.
   locationUsageDescription: 
   microphoneUsageDescription: 
   bluetoothUsageDescription: Puttr connects to your Puttr over Bluetooth to receive your putts.

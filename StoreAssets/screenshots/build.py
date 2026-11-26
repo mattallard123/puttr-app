@@ -3,13 +3,16 @@
 
 device: appletv (3840x2160, frames from simulator takes: "take" + "t" seconds),
         iphone  (1290x2796, stills: "img" png in the stills dir, the app screen in a panel),
-        ipad    (2064x2752, as iphone).
-Every screenshot is RGB with no alpha, at the exact App Store size."""
+        ipad    (2064x2752, as iphone),
+        duo     (1398x2034, iPhone Duo outer display, as iphone with the tablet layout),
+        playphone  (1080x1920, Google Play phone, 9:16, the iphone layout and stills),
+        playtablet (1440x2560, Google Play tablet, 9:16, the ipad layout and stills).
+Every screenshot is RGB with no alpha, at the exact store size."""
 import sys, json, subprocess, pathlib, tempfile
 from PIL import Image
 shots, src, dev, out = sys.argv[1], pathlib.Path(sys.argv[2]), sys.argv[3], pathlib.Path(sys.argv[4])
 here = pathlib.Path(__file__).resolve().parent
-size = {'appletv': (1920, 1080, 2), 'iphone': (860, 1864, 1.5), 'ipad': (1032, 1376, 2)}[dev]
+size = {'appletv': (1920, 1080, 2), 'iphone': (860, 1864, 1.5), 'ipad': (1032, 1376, 2), 'duo': (699, 1017, 2), 'playphone': (720, 1280, 1.5), 'playtablet': (720, 1280, 2)}[dev]
 W, H, scale = size
 tmp = pathlib.Path(tempfile.mkdtemp())
 for s in json.load(open(shots)):
@@ -18,7 +21,7 @@ for s in json.load(open(shots)):
         subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', str(s['t']), '-i', str(src / f"{s['take']}.mov"), '-frames:v', '1', str(img)], check=True)
     else:
         img = (src / s['img']).resolve()
-    cls = s.get('c', {'appletv': 'tv', 'iphone': 'phone', 'ipad': 'tablet'}[dev])
+    cls = s.get('c', {'appletv': 'tv', 'iphone': 'phone', 'ipad': 'tablet', 'duo': 'tablet', 'playphone': 'phone', 'playtablet': 'tablet'}[dev])
     args = [f'img={img}', f"h={s['h']}", f"k={s.get('k', '')}", f"s={s.get('s', '')}", f"a={s.get('a', '#7ad446')}", f'c={cls}']
     for key in ('pos', 'hs', 'ar', 'pt'):
         if s.get(key): args.append(f'{key}={s[key]}')

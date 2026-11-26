@@ -1,0 +1,62 @@
+[
+ {
+  "name": "01-ultimate",
+  "img": "improve.png",
+  "k": "Puttr",
+  "h": "The ultimate <em>putting experience</em>"
+ },
+ {
+  "name": "02-coach",
+  "img": "coachchat.png",
+  "k": "AI Coach",
+  "h": "A putting coach <em>in your pocket</em>"
+ },
+ {
+  "name": "03-stats",
+  "img": "stats.png",
+  "k": "Putting Quality Score",
+  "h": "Watch your putting <em>improve</em>"
+ },
+ {
+  "name": "04-analysis",
+  "img": "analysis.png",
+  "k": "Full Analysis",
+  "h": "Every putt <em>measured</em>"
+ },
+ {
+  "name": "05-review",
+  "img": "review.png",
+  "k": "3D Stroke Review",
+  "h": "See why, <em>not just what</em>"
+ },
+ {
+  "name": "06-coaches",
+  "img": "coaches.png",
+  "k": "Lessons",
+  "h": "Book a <em>real Coach</em>"
+ },
+ {
+  "name": "07-games",
+  "img": "play.png",
+  "k": "1 to 4 Players",
+  "h": "40+ games <em>on your mat</em>"
+ },
+ {
+  "name": "08-controller",
+  "img": "majorleague.png",
+  "k": "Major League",
+  "h": "Your putter is the <em>controller</em>"
+ },
+ {
+  "name": "09-tracks",
+  "img": "tracks.png",
+  "k": "Tracks",
+  "h": "Play the world's <em>great courses</em>"
+ },
+ {
+  "name": "10-league",
+  "img": "league.png",
+  "k": "League Night",
+  "h": "Compete <em>every week</em>"
+ }
+]

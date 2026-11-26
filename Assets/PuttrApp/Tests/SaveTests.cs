@@ -87,6 +87,11 @@ namespace PuttrApp.Tests
             Assert.IsTrue(RoundSaver.IsTestPutt(true, true, false, false), "the arcade's demo");
             Assert.IsFalse(RoundSaver.IsTestPutt(false, true, true, true), "-app2SaveTestPutts lets the keyboard through");
             Assert.IsTrue(RoundSaver.IsTestPutt(true, true, true, false), "the demo is never saved, flag or not");
+            // Green.SavesTest(flag, tester's switch, competition)
+            Assert.IsTrue(Green.SavesTest(false, true, false), "the tester's switch saves a test putt in a game");
+            Assert.IsFalse(Green.SavesTest(false, true, true), "never in a tournament round, a League game or a live match");
+            Assert.IsTrue(Green.SavesTest(true, false, true), "the launch flag saves anywhere");
+            Assert.IsFalse(Green.SavesTest(false, false, false), "off by default");
         }
 
         [Test]

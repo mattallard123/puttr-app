@@ -104,6 +104,9 @@ namespace PuttrApp
         readonly VisualElement _chips;
         readonly App _app;
 
+        /// <summary>The 30-second setup video, played in the app over this page (as the session viewer's Setup guide button), not in a browser.</summary>
+        public void Guide() => SetupGuide.Play(Root, "https://storage.googleapis.com/images.puttr.co/howto/Session_Setup_Real_Footage.mp4");
+
         public LabIntroScreen(App app)
         {
             _app = app;
@@ -120,7 +123,7 @@ namespace PuttrApp
                 Ui.Text("Filming your stroke from down the line and face on lets me see the cause: your eyes, stance, and posture.", "body-2 lab-intro-body", Ui.Medium),
                 Ui.Box("card lab-how", howIcon,
                     Ui.Box("lab-how-words", Ui.Text("How to set up", "body", Ui.Bold), Ui.Text("Watch the 30-second guide to position your phone for both angles.", "body-2 lab-line", Ui.Medium)), howGo)
-                    .OnTap(() => Application.OpenURL("https://storage.googleapis.com/images.puttr.co/howto/Session_Setup_Final.mp4"))));
+                    .OnTap(Guide)));
             scroll.Add(Ui.Section("Distance"));
             scroll.Add(Ui.Box("pad",
                 Ui.Text("Pick your distance. Re-checks compare best at the same distance. Straight, center tee.", "body-2", Ui.Medium),
@@ -143,8 +146,10 @@ namespace PuttrApp
         void Start()
         {
             if (J.Flag(_app.Profile, "isKid")) { _app.Toast("Video is off for Kid profiles."); return; }
-            // CoachGame startGame: no Puttr, no session (the connect sheet instead). Test putts count as a Puttr.
-            if (PuttStrip.SaysOffline(_app.Profile)) { ConnectSheet.Open(_app, Root); return; }
+            // No Puttr, no session: the same gate every game start has (ConnectGate). It was its own check, which let a
+            // tester straight through with nothing connected (Matt, 2026-11-26); a tester now sees the card too, and
+            // passes once they pick test putts on it.
+            if (!ConnectGate.Clear(_app)) return;
             _app.Pop();
             _app.Push(new LabCaptureScreen(_app, _feet));
         }
@@ -395,6 +400,9 @@ namespace PuttrApp
                 { "sessionId", _session }, { "ballPath", RoundSaver.PathJson(putt.Path) }, { "sensorData", null }, { "holeBounds", RoundSaver.HoleJson(putt.Hole) },
                 { "distance", _feet }, { "tee", 2 }, { "speed", LabMath.LegacySpeed(bp, hb) }, { "rollout", v.Rollout },
                 { "entry", J.Write(LabMath.EntryJson(bp, hb, v.Made)) }, { "strokeOffsetMs", null },
+                // When the putt arrived, by this phone's clock: the API places the putt on the video by it, where it
+                // used the moment the request reached it (late by the request's own travel).
+                { "puttAtMs", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
             }, null, w => Perf.Note("lab: putt not saved (" + w + ")")));
             Perf.Note("lab: putt " + _putts.Count + " at " + Mathf.RoundToInt(offset) + " ms");
 
@@ -496,6 +504,29 @@ namespace PuttrApp
         }
     }
 
+    /// <summary>
+    /// A session just filmed that the cloud is still taking in. GET /lab/sessions lists a session only once its video
+    /// is processed, so for its first minutes Improve was shown the one before it ("Recorded 2 days ago": Matt,
+    /// 2026-11-26). Improve reads this: it says a session is processing and asks again until it is listed.
+    /// </summary>
+    public static class LabPending
+    {
+        public static string Id { get; private set; }
+        static float _at;
+        const float GiveUp = 20 * 60f;
+
+        public static void Filmed(string session) { Id = session; _at = Time.realtimeSinceStartup; }
+        public static void Clear() => Id = null;
+
+        /// <summary>True while that session is not in the list yet. Once it is, or after twenty minutes, it is forgotten.</summary>
+        public static bool Waiting(List<object> sessions)
+        {
+            if (Id == null) return false;
+            if (Time.realtimeSinceStartup - _at > GiveUp || (sessions != null && sessions.Exists(s => J.Str(s, "id") == Id))) { Id = null; return false; }
+            return true;
+        }
+    }
+
     /// <summary>After filming: the cloud's progress, until the 3D session can be opened.</summary>
     public sealed class LabProcessingScreen : AppScreen
     {
@@ -531,6 +562,7 @@ namespace PuttrApp
                 _note.text = "The camera filmed your putts, but this session was held on this device, so there is nothing to process.";
                 return;
             }
+            LabPending.Filmed(session);
             Root.schedule.Execute(Poll).Every(2000);
             Poll();
         }

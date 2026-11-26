@@ -121,17 +121,6 @@ namespace PuttrApp.Tests
         }
 
         [Test]
-        public void EveryPlayCategoryButTracksHasItsSentence()
-        {
-            foreach (string tab in new[] { "Local", "Online", "Quests", "Tournaments", "League" })
-            {
-                Assert.IsTrue(PlayScreen.Intros.ContainsKey(tab), tab);
-                Assert.That(PlayScreen.Intros[tab].Length, Is.InRange(40, 140), tab);
-            }
-            Assert.IsFalse(PlayScreen.Intros.ContainsKey("Tracks"), "Tracks says its own on its page");
-        }
-
-        [Test]
         public void NoGameStartsWithoutAPuttrUnlessThereAreTestPutts()
         {
             Assert.IsTrue(ConnectGate.Blocks(true, false), "no Puttr, no test putts: blocked");

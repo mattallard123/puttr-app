@@ -25,7 +25,7 @@ namespace PuttrArcade
         public override bool Branded => true;
         public override string VoicePrefix => "puttball";
         public override int Putter => Active; // whose level applies to this putt
-        public override string Blurb => "Real skee-ball.\nThe bullseye is the hole.\nThe back corners are worth 100.";
+        public override string Blurb => "An alley roller.\nThe bullseye is the hole.\nThe back corners are worth 100.";
         public override bool OwnLevels => true;
         protected override void DealRange(int level, out int nearest, out int furthest) { nearest = 3 + level * 3; furthest = 5 + level * 3; }
         public override string Icon => "Joystick";
@@ -63,9 +63,10 @@ namespace PuttrArcade
             : Upright ? At(0f, 48f, 86f) : At(0f, 42f, 88f);
         Vector3 Vec(Vector3 v) => At(v.x, v.y, v.z);
         public override float CameraFov => _view == View.Rings ? (Upright ? 40f : 42f) : Upright ? 54f : 40f;
-        public override Vector3 CardFrom => At(-14f, 72f, 30f);
-        public override Vector3 CardLook => At(0f, 46f, 118f);
-        public override float CardFov => 40f;
+        // The card: from the Player's end, a little left, with the lane, the lit board and the whole marquee in frame.
+        public override Vector3 CardFrom => At(-12f, 84f, -14f);
+        public override Vector3 CardLook => At(0f, 50f, 110f);
+        public override float CardFov => 44f;
         public override float ShadowDistance => 600f;
 
         // The ideal-putt card's pace bar: the makes that stay in the 40, from died in up to too firm.
@@ -78,6 +79,12 @@ namespace PuttrArcade
             min = 0f; max = Mathf.Sqrt(2f * d * 72f);
             return true;
         }
+
+        // The look (Matt, 2026-11-24): a neon alley, as the arcades run them now. Gloss blue cabinets, a dark board with
+        // every ring and cup lit from inside, a grey lane with a green tube down each edge, lit panels on the decks
+        // between the lanes, neon round the side glass. The app has no bloom, so each light has its own soft spill.
+        static readonly Color Blue = Make.Hex(0x0B2F8F), Cyan = Make.Hex(0x08B8E0), Neon = Make.Hex(0x10E040);
+        const float DeckW = 3.4f;   // the deck outside each rail: two machines' decks meet between their lanes
 
         const int Balls = 9;
         // Inches. The lane runs from z 0 (the Player's end) to LaneEnd; the hop lifts the ball onto the board.
@@ -124,18 +131,21 @@ namespace PuttrArcade
             _ball.gameObject.SetActive(false);
 
             // An arcade: dim overall, cool fill from above, a warm key on the Player's machine, coloured light off the row.
-            Sun(Root, new Vector3(55f, -25f, 0f), new Color(0.78f, 0.82f, 1f), 0.55f);
-            Light key = World.NewLight(Root, "Cabinet light", LightType.Spot, new Color(1f, 0.93f, 0.84f), 70000f);
+            Sun(Root, new Vector3(55f, -25f, 0f), new Color(0.62f, 0.72f, 1f), 0.32f);
+            Light key = World.NewLight(Root, "Cabinet light", LightType.Spot, new Color(0.8f, 0.88f, 1f), 26000f);
             key.transform.position = At(-24f, 160f, 30f);
             key.transform.rotation = Quaternion.LookRotation(At(0f, 40f, 96f) - key.transform.position);
             key.spotAngle = 56f;
             key.innerSpotAngle = 30f;
             key.range = 420f;
             key.shadows = LightShadows.Soft;
-            Light board = World.NewLight(Root, "Board light", LightType.Point, new Color(1f, 0.95f, 0.88f), 6000f);
+            Light board = World.NewLight(Root, "Board light", LightType.Point, new Color(0.55f, 0.92f, 1f), 1800f);
             board.transform.position = At(0f, 78f, 108f);
             board.range = 90f;
-            Color[] neon = { Make.Bright, Color.white, Make.Green };
+            Light lane = World.NewLight(Root, "Lane light", LightType.Point, Neon, 220f);
+            lane.transform.position = At(0f, LaneY + 16f, 52f);
+            lane.range = 80f;
+            Color[] neon = { Neon, Cyan, Blue * 2f };
             for (int i = 0; i < 3; i++)
             {
                 Light wash = World.NewLight(Root, "Arcade wash", LightType.Point, neon[i], 9000f);
@@ -145,7 +155,7 @@ namespace PuttrArcade
         }
 
         static Material _ballMat;
-        static Material BallMaterial() => _ballMat != null ? _ballMat : _ballMat = Make.Lit(Color.white, 0.62f);
+        static Material BallMaterial() => _ballMat != null ? _ballMat : _ballMat = Make.Lit(Make.Hex(0x3FA9F5), 0.78f);
 
         void BuildRoom()
         {
@@ -156,7 +166,7 @@ namespace PuttrArcade
             Material wall = Make.Lit(Make.Hex(0x15181B), 0.3f);
             Make.Box("Wall", _set, new Vector3(0, 110f, 200f), new Vector3(700f, 220f, 2f), wall, null, false);
             Make.Box("Skirting", _set, new Vector3(0, 3f, 198.6f), new Vector3(700f, 6f, 1f), Make.Lit(Make.Hex(0x0A0C0D), 0.6f), null, false);
-            Color[] tube = { Make.Bright, Color.white };
+            Color[] tube = { Neon, Cyan };
             for (int k = 0; k < 2; k++)
             {
                 float y = 150f + k * 9f;
@@ -210,9 +220,10 @@ namespace PuttrArcade
             Transform m = _machine;
             Material wood = GreyWood();
             Material dark = Make.Lit(new Color(0.03f, 0.03f, 0.035f), 0.6f, 0.2f);
-            Material felt = Make.Lit(new Color(0.05f, 0.05f, 0.055f), 0.15f);
-            Material stripe = Make.Emissive(Color.white, new Color(0.35f, 0.35f, 0.35f));
-            Material pin = Make.Emissive(Make.Bright, Make.Bright * 0.6f);
+            Material felt = Make.Lit(Make.Hex(0x565A62), 0.22f);
+            Material tube = Make.Emissive(Neon * 0.35f, Neon * 1.1f);
+            Material panel = Make.Emissive(Neon * 0.35f, Neon * 0.9f, 0.8f);
+            Material spill = Make.Glow(new Color(Neon.r, Neon.g, Neon.b, 0.06f), true, Make.SoftDot());
             Material chrome = Make.Lit(new Color(0.75f, 0.75f, 0.78f), 0.85f, 0.9f);
             Material metal = Make.Lit(new Color(0.12f, 0.12f, 0.13f), 0.7f, 0.8f);
 
@@ -220,7 +231,7 @@ namespace PuttrArcade
             Make.Box("Body", m, new Vector3(0, 18f, LaneEnd * 0.5f), new Vector3(LaneHalf * 2 + RailW * 2, 22f, LaneEnd), wood, null, false);
             Make.Box("Plinth front", m, new Vector3(0, 3.5f, 4f), new Vector3(LaneHalf * 2 + RailW * 2, 7f, 8f), dark, null, false);
             Make.Box("Plinth back", m, new Vector3(0, 3.5f, LaneEnd + 10f), new Vector3(LaneHalf * 2 + RailW * 2, 7f, 26f), dark, null, false);
-            GameObject glow = Card("Underglow", m, new Vector3(0, 0.08f, LaneEnd * 0.5f), new Vector2(60f, LaneEnd + 30f), Make.Glow(new Color(Make.Bright.r, Make.Bright.g, Make.Bright.b, 0.5f), true, Make.SoftDot()));
+            GameObject glow = Card("Underglow", m, new Vector3(0, 0.08f, LaneEnd * 0.5f), new Vector2(60f, LaneEnd + 30f), Make.Glow(new Color(Cyan.r, Cyan.g, Cyan.b, 0.45f), true, Make.SoftDot()));
             glow.transform.localRotation = Quaternion.Euler(90f, 0, 0);
 
             // The front: a coin door with two lit slots, and the ticket mouth beside it.
@@ -234,15 +245,24 @@ namespace PuttrArcade
             Make.Box("Ticket slot", m, new Vector3(7f, 14f, -0.85f), new Vector3(4f, 0.5f, 0.2f), Make.Lit(Color.black, 0f), null, false);
             Words(m, "TICKETS", new Vector3(7f, 17.2f, -0.9f), 0.55f, Make.Hex(0xFFD24A));
 
-            // The lane: black felt, a thin white line down each side.
+            // The lane: grey, a green tube down each edge with its light on the lane beside it.
             Make.Box("Lane", m, new Vector3(0, LaneY - 0.5f, LaneEnd * 0.5f), new Vector3(LaneHalf * 2, 1f, LaneEnd), felt, null, false);
             for (int s = -1; s <= 1; s += 2)
             {
-                Make.Box("Lane line", m, new Vector3(s * (LaneHalf - 2.5f), LaneY + 0.02f, LaneEnd * 0.55f), new Vector3(0.18f, 0.02f, LaneEnd * 0.5f), stripe, null, false);
+                Make.Box("Lane tube", m, new Vector3(s * (LaneHalf - 0.35f), LaneY + 0.3f, LaneEnd * 0.5f + 3f), new Vector3(0.6f, 0.6f, LaneEnd - 12f), tube, null, false);
+                GameObject wash = Card("Tube spill", m, new Vector3(s * (LaneHalf - 2.4f), LaneY + 0.04f, LaneEnd * 0.5f + 3f), new Vector2(7f, LaneEnd - 8f), spill);
+                wash.transform.localRotation = Quaternion.Euler(90f, 0, 0);
                 // Rails: charcoal wood, two bright green pinstripes, a black cap and a chrome post at the Player's end.
                 Make.Box("Rail", m, new Vector3(s * (LaneHalf + RailW * 0.5f), LaneY + 1.5f, LaneEnd * 0.5f), new Vector3(RailW, 6f, LaneEnd), wood, null, false);
-                for (int k = 0; k < 2; k++)
-                    Make.Box("Pinstripe", m, new Vector3(s * (LaneHalf + 0.7f + k * 0.9f), LaneY + 4.52f, LaneEnd * 0.5f + 4f), new Vector3(0.22f, 0.04f, LaneEnd - 14f), pin, null, false);
+                // The deck outside the rail, level with its top: one long lit panel up the far half, two small ones
+                // before it, and the dark eye of the ball sensor near the Player.
+                float deckX = s * (LaneHalf + RailW + DeckW * 0.5f), topX = s * (LaneHalf + (RailW + DeckW) * 0.5f), top = LaneY + 4.5f;
+                Make.Box("Deck", m, new Vector3(deckX, LaneY + 1.5f, LaneEnd * 0.5f), new Vector3(DeckW, 6f, LaneEnd), wood, null, false);
+                Make.Box("Deck skirt", m, new Vector3(deckX, 18f, LaneEnd * 0.5f), new Vector3(DeckW, 22f, LaneEnd), wood, null, false);
+                Make.Box("Deck panel", m, new Vector3(topX, top + 0.03f, 68f), new Vector3(3f, 0.06f, 26f), panel, null, false);
+                Make.Box("Deck panel", m, new Vector3(topX, top + 0.03f, 46f), new Vector3(3f, 0.06f, 3.4f), panel, null, false);
+                Make.Box("Deck panel", m, new Vector3(topX, top + 0.03f, 41f), new Vector3(3f, 0.06f, 3.4f), panel, null, false);
+                Make.Box("Deck eye", m, new Vector3(topX, top + 0.03f, 16f), new Vector3(2.6f, 0.06f, 4.4f), dark, null, false);
                 Make.Box("Rail cap", m, new Vector3(s * (LaneHalf + RailW * 0.5f), LaneY + 1.6f, 2.5f), new Vector3(RailW + 0.4f, 6.4f, 5f), dark, null, false);
                 Make.Box("Corner post", m, new Vector3(s * (LaneHalf + RailW * 0.5f), LaneY * 0.5f, 2.5f), new Vector3(RailW + 0.6f, LaneY, 5f), chrome, null, false);
             }
@@ -257,15 +277,22 @@ namespace PuttrArcade
             Transform m = _machine;
             Material wood = GreyWood();
             Material dark = Make.Lit(new Color(0.025f, 0.025f, 0.03f), 0.45f);
-            Material green = Make.Lit(Make.Green, 0.3f);   // the board is the green: the one big branded surface
-            Material ringMat = Make.Lit(Color.white, 0.6f);
+            Material green = Make.Lit(Make.Hex(0x060B1E), 0.82f, 0.25f);   // the board: dark and glossy, so the lit rings carry it
+            Material ringMat = Make.Emissive(Cyan * 0.3f, Cyan * 0.8f);
             Material hole = Make.Lit(Color.black, 0f);
 
             // The back: tall curved sides, the tilted board between them, a clear guard over each side.
             float backZ = BoardZ + BoardLen * Mathf.Cos(Tilt * Mathf.Deg2Rad);
             for (int s = -1; s <= 1; s += 2)
                 Make.MeshObject("Side", m, SidePanel(s * (BoardHalf + 0.8f), 1.6f, LaneEnd - 14f, backZ + 3f, LaneY - 8f, LaneY + 4.5f, 104f), wood);
-            Material guard = Make.Transparent(new Color(0.8f, 0.88f, 0.95f, 0.08f), 0.95f);
+            Material guard = Make.Transparent(new Color(0.55f, 0.8f, 1f, 0.1f), 0.95f);
+            // Neon round the glass and along the top of each side.
+            Material cyanTube = Make.Emissive(Cyan * 0.35f, Cyan * 1.1f), greenTube = Make.Emissive(Neon * 0.35f, Neon * 1.1f);
+            for (int s = -1; s <= 1; s += 2)
+            {
+                NeonCurve(m, s * (BoardHalf - 0.1f), LaneEnd - 6f, backZ, LaneY + 4.3f, 96.3f, cyanTube);
+                NeonCurve(m, s * (BoardHalf + 0.8f), LaneEnd - 14f, backZ + 3f, LaneY + 4.9f, 104.4f, greenTube);
+            }
             for (int s = -1; s <= 1; s += 2)
             {
                 GameObject pane = Make.MeshObject("Guard", m, SidePanel(s * (BoardHalf + 0.6f), 0.3f, LaneEnd - 6f, backZ, LaneY + 4f, LaneY + 18f, 96f), guard);
@@ -279,6 +306,11 @@ namespace PuttrArcade
             // The apron between the hop and the board.
             Make.Box("Apron", m, new Vector3(0, LaneY + 1.4f, (LaneEnd + BoardZ) * 0.5f), new Vector3(BoardHalf * 2, 1f, BoardZ - LaneEnd + 1f), dark, null, false);
 
+            // The light the rings throw on the board.
+            float widest = 0f;
+            foreach (PuttBallPhysics.Ring ring in PuttBallPhysics.Rings) widest = Mathf.Max(widest, ring.R);
+            GameObject pool = Card("Ring light", _board, new Vector3(0f, 0.06f, PuttBallPhysics.RingZ), Vector2.one * widest * 3f, Make.Glow(new Color(Cyan.r, Cyan.g, Cyan.b, 0.1f), true, Make.SoftDot()));
+            pool.transform.localRotation = Quaternion.Euler(90f, 0, 0);
             for (int i = 0; i < PuttBallPhysics.Rings.Length; i++)
             {
                 PuttBallPhysics.Ring r = PuttBallPhysics.Rings[i];
@@ -294,7 +326,7 @@ namespace PuttrArcade
                 GameObject rail = Shape(PrimitiveType.Cube, "Guide", _board, new Vector3(mid.x, PuttBallPhysics.GuideWall * 0.5f, mid.y), new Vector3(PuttBallPhysics.WallThick, PuttBallPhysics.GuideWall, run.magnitude), ringMat);
                 rail.transform.localRotation = Quaternion.Euler(0f, Mathf.Atan2(run.x, run.y) * Mathf.Rad2Deg, 0f);
             }
-            Material cupMat = Make.Lit(Color.white, 0.55f);
+            Material cupMat = Make.Emissive(Make.Hex(0x4FB6C4), Cyan * 0.55f);
             Color ink = Make.Hex(0x0A0C0D);
             foreach (PuttBallPhysics.Pocket p in PuttBallPhysics.Pockets)
             {
@@ -321,7 +353,7 @@ namespace PuttrArcade
             Transform m = _machine;
             Material dark = Make.Lit(new Color(0.02f, 0.02f, 0.024f), 0.22f);
             Material wood = GreyWood();
-            Material green = Make.Lit(Make.Green, 0.3f);
+            Material green = Make.Lit(Make.Hex(0x04060C), 0.2f);   // the marquee: a black light panel
             float backZ = BoardZ + BoardLen * Mathf.Cos(Tilt * Mathf.Deg2Rad);
             float topY = BoardY + BoardLen * Mathf.Sin(Tilt * Mathf.Deg2Rad);
             float w = BoardHalf * 2;
@@ -336,8 +368,8 @@ namespace PuttrArcade
             Words(m, "PUTT-BALL", new Vector3(0, topY + 11.6f, backZ - 0.9f), 3.6f, Color.white);
             Words(m, "ROLL  ·  CLIMB  ·  SCORE", new Vector3(0, topY + 5.6f, backZ - 0.9f), 0.95f, new Color(1f, 1f, 1f, 0.8f));
             // Chaser bulbs round the marquee.
-            _bulbOn = Make.Emissive(Make.Bright, Make.Bright * 2.4f);
-            _bulbOff = Make.Emissive(Make.Green * 0.4f, Make.Green * 0.12f);
+            _bulbOn = Make.Emissive(Cyan * 0.4f, Cyan * 1.1f);
+            _bulbOff = Make.Emissive(Blue * 0.6f, Blue * 0.3f);
             float x0 = -w * 0.5f + 1.2f, x1 = w * 0.5f - 1.2f, y0 = topY + 2f, y1 = topY + 26f;
             var spots = new List<Vector3>();
             for (int i = 0; i <= 12; i++) spots.Add(new Vector3(Mathf.Lerp(x0, x1, i / 12f), y1, backZ - 1f));
@@ -353,7 +385,7 @@ namespace PuttrArcade
             // The score display: a crowned board on top, white score under a bright green name.
             Make.Box("Display", m, new Vector3(0, topY + 37f, backZ + 0.4f), new Vector3(w + 3f, 18f, 3f), dark, null, false);
             Card("Display face", m, new Vector3(0, topY + 37f, backZ - 1.15f), new Vector2(w - 2f, 15f), Make.Glow(new Color(0.04f, 0.047f, 0.05f, 1f), false));
-            _whoWords = Words(m, "PLAYER 1", new Vector3(0, topY + 41.5f, backZ - 1.3f), 1.3f, Make.Bright);
+            _whoWords = Words(m, "PLAYER 1", new Vector3(0, topY + 41.5f, backZ - 1.3f), 1.3f, Neon);
             _scoreWords = Words(m, "0", new Vector3(0, topY + 34.5f, backZ - 1.3f), 5f, Color.white);
         }
 
@@ -363,7 +395,7 @@ namespace PuttrArcade
             Transform m = _machine;
             Material dark = Make.Lit(new Color(0.03f, 0.03f, 0.035f), 0.6f, 0.2f);
             Make.Box("Return", m, new Vector3(0, LaneY - 5f, -2.5f), new Vector3(LaneHalf * 2, 8f, 5f), dark, null, false);
-            Card("Return light", m, new Vector3(0, LaneY - 5f, -5.1f), new Vector2(LaneHalf * 2 - 2f, 6f), Make.Glow(new Color(Make.Bright.r, Make.Bright.g, Make.Bright.b, 0.3f), true));
+            Card("Return light", m, new Vector3(0, LaneY - 5f, -5.1f), new Vector2(LaneHalf * 2 - 2f, 6f), Make.Glow(new Color(Cyan.r, Cyan.g, Cyan.b, 0.3f), true));
             for (int i = 0; i < Balls; i++)
             {
                 GameObject b = Shape(PrimitiveType.Sphere, "Waiting ball", m, new Vector3(-9f + i * 2.25f, LaneY - 5.6f, -3.4f), Vector3.one * 2.2f, BallMaterial());
@@ -388,12 +420,34 @@ namespace PuttrArcade
                     else if (t.text == "0") t.text = (rng.Next(9, 46) * 10).ToString();
                 }
                 var bulbs = new List<Renderer>();
+                bool lime = Mathf.Abs(Mathf.RoundToInt(n)) % 2 == 1;   // every other machine is lit green, as a real row is never all one colour
                 foreach (Renderer r in twin.GetComponentsInChildren<Renderer>(true))
+                {
                     if (r.gameObject.name == "Bulb") bulbs.Add(r);
+                    else if (lime && (r.gameObject.name == "Ring" || r.gameObject.name == "Guide")) r.sharedMaterial = _limeRing ?? (_limeRing = Make.Emissive(Neon * 0.3f, Neon * 0.8f));
+                    else if (lime && r.gameObject.name == "Cylinder") r.sharedMaterial = _limeCup ?? (_limeCup = Make.Emissive(Make.Hex(0x58C472), Neon * 0.55f));
+                    else if (lime && r.gameObject.name == "Ring light") r.sharedMaterial = _limePool ?? (_limePool = Make.Glow(new Color(Neon.r, Neon.g, Neon.b, 0.1f), true, Make.SoftDot()));
+                }
                 _rowBulbs.Add(bulbs.ToArray());
                 // Nobody playing these: no balls waiting.
                 foreach (Transform c in twin.GetComponentsInChildren<Transform>(true))
                     if (c.name == "Waiting ball") c.gameObject.SetActive(rng.Next(2) == 0);
+            }
+        }
+
+        Material _limeRing, _limeCup, _limePool;
+
+        // A neon tube along a side's swept top edge (SidePanel's curve): short straight lengths, end to end.
+        static void NeonCurve(Transform parent, float x, float z0, float z1, float low, float high, Material tube)
+        {
+            const int N = 24;
+            Vector3 P(int i) { float k = i / (float)N; return new Vector3(x, low + (high - low) * k * k, Mathf.Lerp(z0, z1, k)); }
+            for (int i = 0; i < N; i++)
+            {
+                Vector3 a = P(i), b = P(i + 1);
+                GameObject piece = Shape(PrimitiveType.Cube, "Neon", parent, (a + b) * 0.5f, new Vector3(0.55f, 0.55f, (b - a).magnitude + 0.1f), tube);
+                piece.transform.localRotation = Quaternion.LookRotation(b - a);
+                piece.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
             }
         }
 
@@ -418,21 +472,8 @@ namespace PuttrArcade
         static Material GreyWood()
         {
             if (_grey != null) return _grey;
-            var tex = new Texture2D(64, 256, TextureFormat.RGBA32, true) { wrapMode = TextureWrapMode.Repeat, name = "Grey grain" };
-            var rng = new System.Random(5);
-            var cols = new float[64];
-            for (int x = 0; x < 64; x++) cols[x] = 0.78f + (float)rng.NextDouble() * 0.22f - (rng.NextDouble() < 0.12 ? 0.25f : 0f);
-            var px = new Color[64 * 256];
-            for (int y = 0; y < 256; y++)
-                for (int x = 0; x < 64; x++)
-                {
-                    float g = cols[x] * (0.94f + 0.06f * Mathf.Sin(y * 0.07f + x * 0.9f)) + ((float)rng.NextDouble() - 0.5f) * 0.05f;
-                    px[y * 64 + x] = new Color(g, g, g * 1.02f, 1f);
-                }
-            tex.SetPixels(px);
-            tex.Apply(true);
-            _grey = Make.Lit(Make.Hex(0x2A2F34), 0.45f, 0f, tex);
-            _grey.SetTextureScale("_BaseMap", new Vector2(2f, 1f));
+            // Gloss blue, as the neon alleys are (it was brushed charcoal wood until 2026-11-24).
+            _grey = Make.Lit(Blue, 0.9f, 0.35f);
             return _grey;
         }
 

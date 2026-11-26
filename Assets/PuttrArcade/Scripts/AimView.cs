@@ -25,6 +25,8 @@ namespace PuttrArcade
         readonly Material _bandPaint;
 
         public Texture Texture => _texture;
+        /// <summary>The card's own camera (AimStage gives it the arcade's dark room to draw in).</summary>
+        public Camera Camera => _camera;
 
         public AimView(Transform parent)
         {
@@ -217,6 +219,14 @@ namespace PuttrArcade
 
         public void Hide() => _root.gameObject.SetActive(false);
 
+        /// <summary>The picture is given back (an AimStage that is closed: the arcade's own lives as long as the app).</summary>
+        public void Release()
+        {
+            // (On the way out of the app the camera may already be gone.)
+            if (_camera != null) _camera.targetTexture = null;
+            if (_texture != null) { _texture.Release(); Object.Destroy(_texture); }
+        }
+
         // ── An entry window (Beer Pong): the arc of the rim a make must come in through ──
         LineRenderer _arcOn, _arcOff;
         Transform _entry;
@@ -252,7 +262,8 @@ namespace PuttrArcade
         /// <summary>The ideal putt straight into the cup from the dealt tee, close in on the cup, with the rim lit green
         /// where a make counts (windowDeg either side of straight in, 0 the front, + to the right) and, after a putt,
         /// a dot where it went in: white for a make that counted, amber for one that did not.</summary>
-        public void ShowWindow(int feet, int tee, float windowDeg, float? entryDeg, bool made)
+        /// <summary>centreDeg: where on the rim the window is centred (Tracks turns it with the tee's own entry).</summary>
+        public void ShowWindow(int feet, int tee, float windowDeg, float? entryDeg, bool made, float centreDeg = 0f)
         {
             Show(feet, tee, 0f, 0f);
             Close(0f, 1.2f);   // room for the lit rim round the cup
@@ -269,8 +280,16 @@ namespace PuttrArcade
             }
             float r = LaneSpec.HoleRadius + 0.55f, w = Mathf.Clamp(windowDeg, 1f, 180f);
             _arcOn.gameObject.SetActive(true); _arcOff.gameObject.SetActive(true);
-            ArcPoints(_arcOn, -w, w, r);
-            ArcPoints(_arcOff, w, 360f - w, r);
+            ArcPoints(_arcOn, centreDeg - w, centreDeg + w, r);
+            ArcPoints(_arcOff, centreDeg + w, centreDeg + 360f - w, r);
+            Entry(entryDeg, made);
+        }
+
+        /// <summary>The dot where the putt went in, set (or taken away) on the window already shown, leaving a replay
+        /// that is running or drawn as it is.</summary>
+        public void Entry(float? entryDeg, bool made)
+        {
+            if (_entry == null) return;
             if (entryDeg.HasValue)
             {
                 float a = entryDeg.Value * Mathf.Deg2Rad, er = LaneSpec.HoleRadius - 0.5f;

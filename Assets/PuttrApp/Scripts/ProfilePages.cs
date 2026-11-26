@@ -268,8 +268,10 @@ namespace PuttrApp
     {
         readonly App _app;
         readonly ScrollView _scroll;
+        readonly VisualElement _body;
         object _row;
         bool _busy;
+        VisualElement _join, _leave;
 
         public ChallengeScreen(App app, object row)
         {
@@ -277,6 +279,11 @@ namespace PuttrApp
             _row = row;
             _scroll = Ui.Scroll();
             Root = _scroll;
+            // The header is added once: the app pins a page's back header above its scroll, so clearing the scroll
+            // and adding another on a redraw (after joining) left two.
+            _scroll.Add(Ui.Header("Challenge", _app.Pop));
+            _body = new VisualElement();
+            _scroll.Add(_body);
             Draw(false);
         }
 
@@ -285,14 +292,14 @@ namespace PuttrApp
             object challenge = J.Get(_row, "challenge");
             List<object> levels = J.List(J.Get(_row, "challengeLevels"));
             string id = J.Str(challenge, "id"), type = J.Str(challenge, "cType"), unit = ChallengeMath.Unit(type);
-            bool joined = J.Get(challenge, "userJoined") != null;
+            bool joined = Cards.IsJoined(challenge);
             double score = J.Get(_row, "userResults") != null ? J.Num(_row, "userResults") : J.Num(challenge, "currentScore");
             int percent = ChallengeMath.Percent(score, levels, out int reached, out double goal);
+            _join = _leave = null;
             int people = J.Int(challenge, "participants");
             ProfileScreen.Look(type, out string icon, out _);
 
-            _scroll.Clear();
-            _scroll.Add(Ui.Header("Challenge", _app.Pop));
+            _body.Clear();
             // A flat crest: the glyph on a surface square, in the tier's colour once one is earned (white until then).
             VisualElement medal = Ui.Box("medal medal-big", Ui.Icon(Cards.Stroke(icon), 36, reached >= 0 ? ChallengeMath.Tier(J.Str(levels[reached], "title")) : Color.white));
             DateTime? start = ProfileMath.Date(challenge, "startDate"), end = ProfileMath.Date(challenge, "endDate");
@@ -301,7 +308,7 @@ namespace PuttrApp
                 Ui.Text(J.Str(challenge, "subTitle"), "body-2 center", Ui.Regular),
                 Ui.Caps(ProfileMath.TimeLeft(end, DateTime.UtcNow) + (people > 0 ? "   ·   " + ProfileMath.Number(people) + " joined" : ""), "caps challenge-when"));
             if (start != null && end != null) hero.Add(Ui.Text(ProfileMath.Day(start.Value) + " – " + ProfileMath.Day(end.Value), "body-2 center", Ui.Regular).Margin(4));
-            _scroll.Add(Ui.Box("pad", hero));
+            _body.Add(Ui.Box("pad", hero));
 
             if (joined)
             {
@@ -314,13 +321,13 @@ namespace PuttrApp
                 card.Add(bar);
                 string next = reached < levels.Count - 1 && levels.Count > 0 ? ProfileMath.Number(Math.Max(0, goal - score)) + " more to " + J.Str(levels[reached + 1], "title") : "Every tier earned";
                 card.Add(Ui.Box("row challenge-line", Ui.Text(next, "set-sub grow", Ui.Medium), Ui.Text(percent + "%", "set-sub", Ui.Bold)));
-                _scroll.Add(Ui.Box("pad", card).Margin(12));
+                _body.Add(Ui.Box("pad", card).Margin(12));
             }
-            else _scroll.Add(Ui.Box("pad", Ui.Button("Join challenge", () => Change("join", id))));
+            else _body.Add(Ui.Box("pad", _join = Ui.Button("Join challenge", () => Change("join", id))));
 
             if (levels.Count > 0)
             {
-                _scroll.Add(Ui.Section("Challenge tiers"));
+                _body.Add(Ui.Section("Challenge tiers"));
                 VisualElement tiers = Ui.Box("glass set-card");
                 int tierAt = 0;
                 foreach (object level in levels)
@@ -331,25 +338,44 @@ namespace PuttrApp
                     tiers.Add(Ui.Box(++tierAt == levels.Count ? "set-row set-row-last" : "set-row", dot, Ui.Box("grow", Ui.Text(title, "set-title", Ui.Bold), Ui.Text(ProfileMath.Number(J.Num(level, "number")) + " " + unit, "set-sub", Ui.Regular)),
                         joined && score > J.Num(level, "number") ? Ui.Text("Earned", "chip chip-green", Ui.Bold) : null));
                 }
-                _scroll.Add(Ui.Box("pad", tiers));
+                _body.Add(Ui.Box("pad", tiers));
             }
-            if (joined && !justJoined) _scroll.Add(Ui.Box("pad", Ui.Button("Leave challenge", () => Change("leave", id), "btn btn-ghost")));
+            if (joined && !justJoined) _body.Add(Ui.Box("pad", _leave = Ui.Button("Leave challenge", () => Change("leave", id), "btn btn-ghost")));
             var foot = new VisualElement();
             foot.style.height = 28;
-            _scroll.Add(foot);
+            _body.Add(foot);
         }
 
         void Change(string what, string id)
         {
             if (_busy) return;
             _busy = true;
+            Waiting(what == "join" ? _join : _leave, what == "join" ? "Joining..." : "Leaving...");
             App.Run(Api.Get("/challenges/" + what + "/" + id, _ =>
             {
-                _busy = false;
-                if (what == "leave") { _app.Pop(); _app.Toast("You have left the challenge."); return; }
+                Cards.MarkJoined(id, what == "join");
+                _app.ChallengesChanged();
+                if (what == "leave") { _busy = false; _app.Pop(); _app.Toast("You have left the challenge."); return; }
                 // The Player's score so far is worked out by the API: ask it to, then read the challenge again.
+                // The button keeps waiting until the page is drawn again as joined.
                 App.Run(Api.Get("/challenges/update", __ => Reload(id), __ => Reload(id)));
-            }, why => { _busy = false; _app.Toast(why == "offline" ? "No connection. Try again." : "That did not work. Try again in a moment."); }));
+            }, why => { _busy = false; Draw(false); _app.Toast(why == "offline" ? "No connection. Try again." : "That did not work. Try again in a moment."); }));
+        }
+
+        // A pressed button while its call is out: dimmed, saying what it is doing, with the app's one spinner turning.
+        // (A second press is already ignored by _busy; this is what tells the Player the first one was taken.)
+        static void Waiting(VisualElement button, string words)
+        {
+            if (button == null) return;
+            button.AddToClassList("btn-off");
+            Label label = button.Q<Label>();
+            if (label != null) label.text = words.ToUpperInvariant();
+            VisualElement spin = Spinner.Small();
+            // Only the marker that turns the middle spinner on: out of the layout, so the button keeps its size.
+            spin.style.position = Position.Absolute;
+            spin.style.height = 1;
+            spin.style.paddingTop = spin.style.paddingBottom = spin.style.paddingLeft = spin.style.paddingRight = 0;
+            button.Add(spin);
         }
 
         void Reload(string id)
@@ -357,10 +383,9 @@ namespace PuttrApp
             App.Run(Api.Get("/challenges/userChallenges", data =>
             {
                 foreach (object row in J.List(data)) if (J.Str(J.Get(row, "challenge"), "id") == id) _row = row;
-                // If the list has not caught up, show it as joined anyway: the join itself succeeded.
-                if (J.Get(J.Get(_row, "challenge"), "userJoined") == null && J.Get(_row, "challenge") is Dictionary<string, object> challenge) challenge["userJoined"] = "now";
+                _busy = false;
                 Draw(true);
-            }, _ => Draw(false)));
+            }, _ => { _busy = false; Draw(true); }));
         }
     }
 }

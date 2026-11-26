@@ -64,15 +64,23 @@ namespace PuttrApp
         /// The main button (classes "btn": brand green, slanted ends, caps) or the secondary one ("btn btn-ghost").
         /// At most one main button on a screen (docs/design-guidelines.md).
         /// </summary>
-        public static VisualElement Button(string text, Action onClick, string classes = "btn")
+        public static VisualElement Button(string text, Action onClick, string classes = "btn", string icon = null)
         {
-            // The white button is the Apple / Google sign-in shape: it keeps its square ends and its own wording.
-            bool plain = (" " + classes + " ").Contains(" btn-white ");
-            bool slant = !plain && (" " + classes + " ").Contains(" btn ");
+            // "btn-white" is the Apple / Google sign-in button: the same slanted shape in white, black words, the
+            // provider's mark before them (icon).
+            bool slant = (" " + classes + " ").Contains(" btn ");
+            bool white = (" " + classes + " ").Contains(" btn-white ");
             VisualElement button = slant ? new Slant() : new VisualElement();
             AddClasses(button, classes);
             if (slant) button.AddToClassList("slant");
-            button.Add(Text(slant ? (text ?? "").ToUpperInvariant() : text, "btn-text", Bold));
+            Label label = Text(slant ? (text ?? "").ToUpperInvariant() : text, "btn-text", Bold);
+            if (icon != null)
+            {
+                Image mark = Icon(icon, 20, white ? Color.black : Color.white);
+                mark.style.marginRight = 8;
+                button.Add(Box("row", mark, label));
+            }
+            else button.Add(label);
             button.AddManipulator(new Clickable(() => { Perf.Wake(); onClick?.Invoke(); }));
             Tv.Tappable(button, onClick);
             return button;
@@ -144,6 +152,7 @@ namespace PuttrApp
                 {
                     if (texture == null) return;
                     avatar.style.backgroundImage = new StyleBackground(texture);
+                    avatar.style.backgroundColor = Surface2;   // the letter's green would show at the rounded corners behind the photo
                     initial.style.display = DisplayStyle.None;
                     Perf.Wake(0.3f);
                 });
@@ -217,7 +226,27 @@ namespace PuttrApp
         {
             // A chevron alone (Matt, 2026-11-16: no "Back" word); a label only where a screen asks for one.
             Label back = Text(backLabel == null ? "\u2039" : "\u2039  " + backLabel, backLabel == null ? "back back-chevron" : "back", Medium).OnTap(onBack);
-            return Box("top", back, Text(title, "top-title", Bold), Box("back-balance"));
+            VisualElement top = Box("top", back, Text(title, "top-title", Bold), Box("back-balance"));
+            // A screen that draws itself again by clearing its scroll and adding a new header (after joining a
+            // challenge, picking a league team) would show two, since the first was pinned above the scroll
+            // (App.PinHeader): the new one takes the pinned one's place instead.
+            top.RegisterCallback<AttachToPanelEvent>(_ =>
+            {
+                VisualElement page = top.parent?.GetFirstAncestorOfType<ScrollView>()?.parent;
+                if (page == null || !page.ClassListContains("pinned-page") || top.parent.ClassListContains("pinned-top")) return;
+                VisualElement bar = page.Q(className: "pinned-top");
+                if (bar == null) return;
+                top.style.display = DisplayStyle.None;   // not seen as a second header for the frame before it moves
+                top.schedule.Execute(() =>
+                {
+                    top.RemoveFromHierarchy();
+                    top.AddToClassList("page-column");
+                    top.style.display = DisplayStyle.Flex;
+                    bar.Clear();
+                    bar.Add(top);
+                });
+            });
+            return top;
         }
 
         public static VisualElement Progress(float share)
@@ -248,7 +277,15 @@ namespace PuttrApp
         {
             generateVisualContent += Draw;
             RegisterCallback<CustomStyleResolvedEvent>(e => { _has = e.customStyle.TryGetValue(FillProperty, out _fill); MarkDirtyRepaint(); });
+            // A TV: the remote's focus is a white edge that follows the slant (a square border would show only at its corners).
+            if (Tv.On)
+            {
+                RegisterCallback<FocusInEvent>(_ => { _focused = true; MarkDirtyRepaint(); });
+                RegisterCallback<FocusOutEvent>(_ => { _focused = false; MarkDirtyRepaint(); });
+            }
         }
+
+        bool _focused;
 
         void Draw(MeshGenerationContext context)
         {
@@ -261,6 +298,12 @@ namespace PuttrApp
             p.MoveTo(new Vector2(k, 0)); p.LineTo(new Vector2(w, 0)); p.LineTo(new Vector2(w - k, h)); p.LineTo(new Vector2(0, h));
             p.ClosePath();
             p.Fill();
+            if (!_focused) return;
+            p.strokeColor = Color.white; p.lineWidth = 3f; p.lineJoin = LineJoin.Miter;
+            p.BeginPath();
+            p.MoveTo(new Vector2(k + 1.5f, 1.5f)); p.LineTo(new Vector2(w - 2f, 1.5f)); p.LineTo(new Vector2(w - k - 1.5f, h - 1.5f)); p.LineTo(new Vector2(2f, h - 1.5f));
+            p.ClosePath();
+            p.Stroke();
         }
     }
 

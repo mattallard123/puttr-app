@@ -91,7 +91,7 @@ namespace PuttrApp
         string _step = "welcome", _persona = "maya";
         bool _introPlayed;
         Dictionary<string, object> _reveal;
-        int _goal = 10, _hour = 18, _minute = 30;
+        int _goal = 20, _hour = 18, _minute = 30;
         bool _deeper;
 
         public CoachFirstRunScreen(App app, Action done)

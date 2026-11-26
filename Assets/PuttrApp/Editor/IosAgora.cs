@@ -29,8 +29,8 @@ namespace PuttrApp.EditorTools
             string plistPath = Path.Combine(path, "Info.plist");
             var plist = new PlistDocument();
             plist.ReadFromFile(plistPath);
-            plist.root.SetString("NSCameraUsageDescription", "PUTTR needs access to your camera for game recordings.");
-            plist.root.SetString("NSMicrophoneUsageDescription", "Allow Puttr to access your microphone for game recordings");
+            plist.root.SetString("NSCameraUsageDescription", "Puttr films your putting for 3D sessions, recorded rounds and live matches, and takes your profile photo.");
+            plist.root.SetString("NSMicrophoneUsageDescription", "Puttr uses the microphone so your opponent hears you in a live match, and to record a Coach's voice in a lesson.");
             plist.WriteToFile(plistPath);
             UnityEngine.Debug.Log("Puttr 2 iOS: Agora " + Version + " added as a Swift package");
         }

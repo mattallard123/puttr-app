@@ -1,0 +1,655 @@
+<title>Puttr First-Run Tour</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:ital,wght@0,500;0,700;1,700;1,800&display=swap">
+<style>
+/* Layout: one reading column for the research and the verdicts; each approach is a full-width band holding four phones in the order a new Player meets them. Single dark look by choice: the app is dark only. */
+:root{
+  color-scheme:dark;
+  --bg:#0a0c0d; --panel:#15181b; --panel2:#22262a; --line:#262a2e; --fg:#ffffff; --soft:#c4c9cd; --mut:#8b9399;
+  --brand:#2d8c3c; --bright:#7ad446; --amber:#ffb300; --red:#ff5252; --gold:#ffd24a;
+  --display:"Montserrat","Avenir Next","Segoe UI",sans-serif;
+  --body:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+body{background:var(--bg);color:var(--fg);font:15px/1.6 var(--body)}
+.wrap{max-width:1320px;margin:0 auto;padding-block:44px 88px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.col{max-width:720px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-weight:800;font-style:italic;text-transform:uppercase;font-size:clamp(34px,6vw,56px);line-height:.96}
+h2{font-weight:800;font-style:italic;text-transform:uppercase;font-size:clamp(24px,3.4vw,34px);line-height:1}
+h3{font-weight:700;font-size:16px}
+.kick{font:700 11px/1 var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--bright);margin-bottom:14px}
+.kick::before{content:"/";font-style:italic;margin-right:8px}
+p{margin:12px 0 0;color:var(--soft)}
+.lede{font-size:18px;line-height:1.5;color:var(--fg);margin-top:18px}
+ul{margin:10px 0 0;padding-left:18px;color:var(--soft)}
+li{margin:6px 0}
+b,strong{color:var(--fg);font-weight:600}
+a{color:var(--bright)}
+a:focus-visible{outline:2px solid var(--bright);outline-offset:2px}
+section{margin-top:72px}
+.band{border-top:1px solid var(--line);padding-top:36px}
+.tag{display:inline-block;font:700 11px/1 var(--display);letter-spacing:.16em;text-transform:uppercase;color:#fff;background:var(--brand);padding:7px 12px;margin-bottom:16px;clip-path:polygon(7px 0,100% 0,calc(100% - 7px) 100%,0 100%)}
+
+/* research */
+.finds{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-top:26px}
+.find{background:var(--panel);padding:18px;min-width:0}
+.find .n{font:italic 800 30px/1 var(--display);font-variant-numeric:tabular-nums}
+.find .n small{font:700 10.5px/1.3 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--mut);display:block;margin-top:8px;font-style:normal}
+.find p{font-size:13.5px;line-height:1.5;margin-top:12px}
+.find .so{font-size:13.5px;color:var(--fg);border-top:1px solid var(--line);padding-top:10px;margin-top:12px}
+.find .src{font-size:12px;margin-top:10px;color:var(--mut)}
+.note{font-size:13px;color:var(--mut);margin-top:14px;max-width:720px}
+
+/* where it sits */
+.flow{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.flow div{flex:1 1 150px;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:12px 14px}
+.flow small{display:block;font:700 10px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-bottom:7px}
+.flow b{font:700 14px/1.25 var(--display)}
+.flow span{display:block;font-size:12.5px;color:var(--mut);margin-top:4px;line-height:1.4}
+.flow .new{border-color:var(--bright)}
+.flow .new small{color:var(--bright)}
+
+/* approach text */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:8px 44px;max-width:1040px;margin-top:8px}
+.two h3{margin-top:22px}
+.phones{display:flex;flex-wrap:wrap;gap:30px 20px;margin-top:34px}
+figure{margin:0;flex:0 0 auto;width:304px}
+figcaption{margin-top:12px;font-size:13px;line-height:1.45;color:var(--soft)}
+figcaption b{display:block;font:700 10.5px/1 var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+
+/* compare */
+.tw{overflow-x:auto;margin-top:22px;border:1px solid var(--line);border-radius:4px}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:13.5px}
+th,td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--line);color:var(--soft)}
+th{font:700 10.5px/1.2 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--mut);background:var(--panel)}
+tr:last-child td{border-bottom:0}
+td:first-child{color:var(--mut);white-space:nowrap}
+.pick{background:var(--panel);border:1px solid var(--bright);border-radius:4px;padding:22px 24px;margin-top:24px;max-width:860px}
+.pick ol{margin:12px 0 0;padding-left:20px;color:var(--soft)}
+.pick li{margin:8px 0}
+
+/* ---------- phone mockups: the Broadcast system at about 3/4 scale ---------- */
+.ph{position:relative;box-sizing:content-box;width:290px;height:640px;border-radius:36px;border:7px solid #000;outline:1px solid #2b3034;overflow:hidden;background:var(--bg);color:#fff;font-family:var(--display);font-weight:500;font-size:11.5px;line-height:1.3}
+.ph *{box-sizing:border-box}
+.ph svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.scr{position:absolute;inset:0 0 56px 0;overflow:hidden;padding:12px 13px 0;display:flex;flex-direction:column;gap:10px}
+.scr.full{bottom:0;padding-bottom:14px}
+.hd{display:flex;align-items:center;gap:7px;height:32px;flex:none}
+.hd .t{font:italic 800 20px/1 var(--display);text-transform:uppercase;margin-right:auto}
+.hd .ico{width:32px;height:32px;display:grid;place-items:center;background:var(--panel);border-radius:3px}
+.hd .logo{display:flex;align-items:center;gap:6px;font:700 13px/1 var(--display);letter-spacing:.12em;margin-right:auto}
+.hd .logo i{width:14px;height:14px;border-radius:50%;border:2px solid var(--bright)}
+.hd .logo span{color:var(--mut);font-weight:500;letter-spacing:.2em;font-size:10px;border-left:1px solid var(--line);padding-left:8px;margin-left:2px}
+.eb{font-weight:700;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--bright)}
+.lab{font-weight:700;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.ti{font:italic 800 21px/1 var(--display);text-transform:uppercase}
+.ti.s{font-size:15px}
+.num{font:italic 800 32px/1 var(--display);font-variant-numeric:tabular-nums}
+.bd{font-size:11px;line-height:1.45;color:var(--soft)}
+.bd2{font-size:10px;line-height:1.4;color:var(--mut)}
+.sec{display:flex;justify-content:space-between;align-items:baseline;flex:none}
+.sec b{font-weight:700;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase}
+.sec b::before{content:"/";color:var(--bright);font-style:italic;font-weight:800;margin-right:6px}
+.sec span{font-size:10px;color:var(--mut)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:3px;flex:none}
+.pad{padding:12px;display:flex;flex-direction:column;gap:9px}
+.btn{display:flex;align-items:center;justify-content:center;height:40px;width:100%;font:italic 800 12.5px/1 var(--display);text-transform:uppercase;color:#fff;background:var(--brand);flex:none;clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%)}
+.btn.b2{background:var(--panel2);height:34px;font-size:11px}
+.lnk{font-size:10px;color:var(--mut);text-align:center}
+.av{display:grid;place-items:center;width:30px;height:30px;flex:none;font-weight:700;font-size:13px;color:#fff;background:var(--brand);border-radius:3px}
+.rows{background:var(--panel);border:1px solid var(--line);border-radius:3px;flex:none}
+.row{display:flex;align-items:center;gap:10px;padding:8px 11px;min-height:38px}
+.row+.row{border-top:1px solid var(--line)}
+.row .g{flex:1;min-width:0}
+.row b{display:block;font-weight:700;font-size:11px;color:#fff}
+.row small{display:block;font-size:9.5px;color:var(--mut);margin-top:1px}
+.row .hn{font:italic 800 15px/1 var(--display);width:16px;text-align:center;font-variant-numeric:tabular-nums}
+.row .ok{color:var(--bright)}
+.row .ch{color:var(--mut)}
+.row svg{width:15px;height:15px}
+.row.dn b,.row.dn .hn{color:var(--mut)}
+.strip{display:grid;background:var(--panel);border:1px solid var(--line);border-radius:3px;flex:none;text-align:center}
+.strip div{padding:10px 4px}
+.strip div+div{border-left:1px solid var(--line)}
+.strip b{display:block;font:italic 800 18px/1 var(--display);color:#fff}
+.strip small{display:block;font-weight:700;font-size:7.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-top:5px}
+.prog{display:flex;gap:3px;flex:none}
+.prog i{flex:1;height:4px;background:var(--panel2)}
+.prog i.on{background:var(--brand)}
+.tabs{display:flex;gap:16px;flex:none;border-bottom:1px solid var(--line);font:italic 800 12px/1 var(--display);text-transform:uppercase;color:var(--mut);white-space:nowrap;overflow:hidden}
+.tabs b{padding:5px 0 9px;font-weight:800}
+.tabs b.on{color:#fff;box-shadow:inset 0 -2px 0 var(--bright)}
+.nav{position:absolute;left:0;right:0;bottom:0;height:56px;display:grid;grid-template-columns:repeat(4,1fr);align-items:center;text-align:center;font-weight:700;font-size:8.5px;color:var(--mut);background:#000;border-top:1px solid var(--line)}
+.nav div{display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:center}
+.nav .on{color:var(--bright);box-shadow:inset 0 2px 0 var(--bright)}
+.hl{outline:2px solid var(--bright);outline-offset:3px}
+
+/* 3D stand-ins: a window with a border, never text on it */
+.win{position:relative;overflow:hidden;border-bottom:1px solid var(--line);perspective:300px;perspective-origin:50% 12%;background:#0d1210;flex:none}
+.win .floor{position:absolute;left:-70%;width:240%;bottom:0;height:200%;transform-origin:50% 100%;transform:rotateX(68deg);background-image:linear-gradient(#1c2320 1px,transparent 1px),linear-gradient(90deg,#1c2320 1px,transparent 1px);background-size:30px 30px}
+.win .mat{position:absolute;left:34%;width:32%;bottom:-2%;height:215%;transform-origin:50% 100%;transform:rotateX(68deg);background:repeating-linear-gradient(#2f7f3e 0 24px,#2a7238 24px 48px)}
+.win .hole{position:absolute;left:50%;top:10%;width:22%;aspect-ratio:1;margin-left:-11%;border-radius:50%;background:#050605}
+.win .ball{position:absolute;left:50%;width:9px;height:9px;margin-left:-4px;border-radius:50%;background:#fff}
+.win.course{perspective:none;background:#16321f}
+.win.course::before{content:"";position:absolute;left:-10%;right:-10%;bottom:-40%;height:95%;border-radius:50%;background:#2a7238}
+.win.course::after{content:"";position:absolute;left:58%;bottom:26%;width:2px;height:26px;background:#fff;box-shadow:5px -9px 0 3px var(--red)}
+.world{position:relative;flex:1 1 auto;min-height:0;margin:0 -13px;overflow:hidden;perspective:340px;perspective-origin:50% 10%;background:#070908}
+.world .mat{position:absolute;left:30%;width:40%;bottom:-4%;height:230%;transform-origin:50% 100%;transform:rotateX(66deg);background:repeating-linear-gradient(#2f7f3e 0 30px,#2a7238 30px 60px)}
+.world .hole{position:absolute;left:50%;top:8%;width:20%;aspect-ratio:1;margin-left:-10%;border-radius:50%;background:#030403}
+.world .big{position:absolute;left:0;right:0;bottom:12px;text-align:center}
+.tee{display:flex;align-items:center;justify-content:center;gap:6px;flex:none;font:italic 800 16px/1 var(--display)}
+.tee i{width:11px;height:11px;border-radius:50%;border:2px solid var(--mut)}
+.tee i.on{background:var(--bright);border-color:var(--bright)}
+.tee small{font:700 8.5px/1 var(--display);font-style:normal;color:var(--mut);margin-left:-2px}
+.read{display:grid;grid-template-columns:repeat(3,1fr);background:var(--panel);border:1px solid var(--line);border-radius:3px;flex:none}
+.read div{padding:8px 10px}
+.read div+div{border-left:1px solid var(--line)}
+.read b{display:block;font-weight:700;font-size:11px;margin-top:4px}
+
+/* the tour's own pieces */
+.l3{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:16px 12px 11px;flex:none;margin-top:8px}
+.l3 .tg{position:absolute;left:10px;top:-9px;font:700 8px/1 var(--display);letter-spacing:.16em;text-transform:uppercase;color:#fff;background:var(--brand);padding:5px 10px;clip-path:polygon(5px 0,100% 0,calc(100% - 5px) 100%,0 100%)}
+.l3 p{margin:0;font-size:11px;line-height:1.45;color:#fff;font-weight:500}
+.l3 .ft{display:flex;justify-content:space-between;align-items:center;margin-top:9px;font-size:9.5px;color:var(--mut)}
+.l3 .go{font:italic 800 10.5px/1 var(--display);text-transform:uppercase;color:#fff;background:var(--panel2);padding:8px 14px;clip-path:polygon(5px 0,100% 0,calc(100% - 5px) 100%,0 100%)}
+.l3.dock{position:absolute;left:13px;right:13px;bottom:66px;margin:0}
+.l3.coach{display:flex;gap:10px;padding-top:12px}
+.l3.coach .tg{left:50px}
+.l3.coach .g{flex:1;min-width:0;padding-top:4px}
+.run{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;flex:none}
+.run div{font-weight:700;font-size:7.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);border-top:3px solid var(--panel2);padding-top:5px}
+.run .dn{border-color:var(--brand)}
+.run .on{border-color:var(--bright);color:#fff}
+.holes{display:grid;grid-template-columns:repeat(9,1fr);gap:4px}
+.holes i{font:italic 800 10px/22px var(--display);text-align:center;background:var(--panel2);color:var(--mut);border-radius:2px}
+.holes i.on{background:var(--brand);color:#fff}
+.crest{width:96px;height:96px;display:grid;place-items:center;background:var(--panel);border:1px solid var(--line);border-radius:3px;color:var(--gold);align-self:center;flex:none}
+.crest svg{width:48px;height:48px}
+.ctr{text-align:center}
+.gold{color:var(--gold)}
+/* XP: the panel from the XP plan, at phone scale. Brand green is what the Player had, white is what was just added. */
+.xp{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:11px 12px;display:flex;flex-direction:column;gap:7px;flex:none}
+.xp .top{display:flex;justify-content:space-between;align-items:baseline}
+.xp .top b{font:italic 800 24px/1 var(--display);font-variant-numeric:tabular-nums;color:#fff}
+.xp .ln{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:var(--soft)}
+.xp .ln b{font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.xp .ft{display:flex;justify-content:space-between;font-size:9.5px;color:var(--mut)}
+.bar{display:flex;height:5px;background:var(--panel2);flex:none}
+.bar i{background:var(--brand)}
+.bar u{background:#fff}
+.lv{height:32px;padding:0 9px;background:var(--panel);border-radius:3px;display:flex;flex-direction:column;justify-content:center;gap:5px;font-weight:700;font-size:8.5px;line-height:1;letter-spacing:.14em;text-transform:uppercase;flex:none}
+.lv .bar{width:54px;height:3px}
+.row .xv{font:italic 800 11px/1 var(--display);color:var(--mut);white-space:nowrap;font-variant-numeric:tabular-nums}
+.frame{width:30px;height:30px;flex:none;border:2px solid var(--gold);border-radius:3px;display:grid;place-items:center;color:var(--gold)}
+.awards{min-width:0}
+.awards td:nth-child(2){font:italic 800 15px/1.2 var(--display);color:#fff;white-space:nowrap}
+@media (prefers-reduced-motion:no-preference){.l3.dock{animation:up .5s ease-out both}}
+@keyframes up{from{transform:translateY(14px)}to{transform:none}}
+</style>
+
+<div class="wrap">
+
+<header class="col">
+  <div class="kick">Puttr 2 · first-run tour</div>
+  <h1>Three ways to show a new Player around</h1>
+  <p class="lede">Onboarding collects a name, a hand and a goal, then connects the Puttr. After that a new Player is dropped on Home with four tabs and six ways to play, and as of today no sentence explaining any of them. This page is the research on how the best apps handle that moment, and three directions for Puttr, each drawn in the Broadcast system.</p>
+  <p><b>Round two, 25 November:</b> all three are redrawn with XP and levels in them, following the XP plan. The changes are summarised under "What XP changes" below.</p>
+</header>
+
+<section class="col">
+  <div class="kick">Research</div>
+  <h2>What the best apps do</h2>
+  <p>The pattern across the strongest examples is the same: nobody tours the interface any more. They get the new user to do the product's one core action, teach the rest at the moment it is needed, and pay the user for getting there.</p>
+</section>
+
+<div class="finds">
+  <div class="find">
+    <div class="n">94% vs 91%<small>Skippers vs readers, task success</small></div>
+    <p>Nielsen Norman Group tested upfront tutorial decks with 70 people on four apps. People who skipped the tutorial did as well as people who read it, and rated the apps easier to use.</p>
+    <p class="so">For Puttr: no swipe-through deck, and no four-stop tab tour before the first putt.</p>
+    <p class="src"><a href="https://www.nngroup.com/articles/mobile-tutorials/">NN/g, mobile tutorials</a></p>
+  </div>
+  <div class="find">
+    <div class="n">72% → 16%<small>Tour completion, 3 steps vs 7</small></div>
+    <p>Chameleon's benchmark of in-app tours shows completion holding through three or four steps and collapsing by seven. Produktly's 2026 medians agree: 73% for one or two steps, 38% for three to five.</p>
+    <p class="so">For Puttr: any sequence is three beats at most. Everything else waits.</p>
+    <p class="src"><a href="https://userpilot.com/blog/acting-on-product-analytics/">Userpilot citing Chameleon</a> · <a href="https://produktly.com/research/saas-onboarding-benchmarks-2026">Produktly</a></p>
+  </div>
+  <div class="find">
+    <div class="n">Do it first<small>Duolingo, Strava</small></div>
+    <p>Duolingo puts a real lesson ahead of sign-up and reported about a 20% lift in daily users from delaying the ask. Strava's first session ignores clubs, feed and challenges and points at one thing: record an activity.</p>
+    <p class="so">For Puttr: the tour is a putt, then a game. The interface is learned on the way.</p>
+    <p class="src"><a href="https://taplytics.com/blog/duolingo-ab-test-onboarding">Taplytics on Duolingo</a> · <a href="https://uxcam.com/blog/10-apps-with-great-user-onboarding/">UXCam</a></p>
+  </div>
+  <div class="find">
+    <div class="n">A real rep<small>Tonal, Zwift, EA Sports PGA Tour</small></div>
+    <p>Hardware and sports titles teach with the equipment in hand. Tonal runs a demo, then a short calibration set. Zwift's first ride earns XP and unlocks gear. EA's Coaching Academy teaches the basics as challenges that pay XP.</p>
+    <p class="so">For Puttr: the first session is on the mat, and finishing it earns something visible.</p>
+    <p class="src"><a href="https://www.tonal.com/blog/tonal-quick-start-guide/">Tonal</a> · <a href="https://www.zwift.com/next-steps">Zwift</a> · <a href="https://help.ea.com/en/articles/ea-sports-pga-tour/ea-sports-pga-tour/how-to-play/">EA</a></p>
+  </div>
+  <div class="find">
+    <div class="n">Pull, not push<small>Help when the user is there</small></div>
+    <p>NN/g separates tips pushed at launch from tips pulled in by what the user is doing, and recommends the second. Game studios say the same: contextual tips, features revealed gradually, not all at once.</p>
+    <p class="so">For Puttr: a section explains itself the first time it is opened, once, and never again.</p>
+    <p class="src"><a href="https://www.nngroup.com/articles/onboarding-tutorials/">NN/g, tutorials in apps</a> · <a href="https://unity.com/how-to/10-first-time-user-experience-tips-games">Unity FTUE tips</a></p>
+  </div>
+  <div class="find">
+    <div class="n">Show progress<small>Checklists that feel like a game</small></div>
+    <p>Getting-started checklists work when they show momentum and fail when they read as chores. Sports games frame the same list as a path with a visible end and a reward.</p>
+    <p class="so">For Puttr: a checklist has to look like golf, not like setup.</p>
+    <p class="src"><a href="https://www.appcues.com/blog/user-onboarding-guide">Appcues</a> · <a href="https://gameanalytics.com/blog/tips-for-a-great-first-time-user-experience-ftue-in-f2p-games">GameAnalytics</a></p>
+  </div>
+</div>
+<p class="note">Source quality: the NN/g study is the only controlled test here. The completion and uplift numbers come from tool vendors and second-hand write-ups, so read them as direction, not as targets. I found nothing usable on Whoop or Oura.</p>
+
+<section class="col">
+  <div class="kick">Where it sits</div>
+  <h2>After onboarding, before habit</h2>
+  <p>Two first-run flows already exist and stay as they are. The tour is the gap between them. Two numbers from the September review of the legacy app say what it has to fix: <b>31%</b> of new sign-ups had not played within seven days, and <b>45%</b> of monthly Players played on exactly one day.</p>
+</section>
+<div class="flow">
+  <div><small>Exists</small><b>Onboarding</b><span>Name, hand, goal, handicap, connect your Puttr.</span></div>
+  <div class="new"><small>New</small><b>The tour</b><span>What the app is and where things are.</span></div>
+  <div><small>Exists</small><b>Coach first run</b><span>On Improve: pick a Coach, five putts, the reveal, a daily goal.</span></div>
+  <div><small>Goal</small><b>Day two</b><span>A reason to open the app tomorrow.</span></div>
+</div>
+
+<section class="col">
+  <div class="kick">Round two · with XP</div>
+  <h2>What XP changes</h2>
+  <p>The XP plan gives the tour what it lacked: a reward that already has a bar, a place on the final page and a level-up screen. So the three directions now share one system, and the Front Nine no longer needs a prize of its own.</p>
+  <ul>
+    <li><b>Opening Round</b> ends on the XP panel, with the bar 400 short of Level 2.</li>
+    <li><b>The Front Nine</b> pays once for each hole. Signing the card pays 300 and a card frame. The crest is gone.</li>
+    <li><b>First Look</b> pays nothing. Its strip on the first game over explains the XP panel.</li>
+  </ul>
+  <h3 style="margin-top:28px">New one-time awards</h3>
+  <div class="tw"><table class="awards">
+    <thead><tr><th>For</th><th>XP</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Opening Round finished</td><td>300</td><td>Once. Skipping the round pays nothing</td></tr>
+      <tr><td>Each Front Nine hole</td><td>100</td><td>Once a hole, on top of whatever the game itself pays</td></tr>
+      <tr><td>Card signed</td><td>300</td><td>Once, with the Front Nine card frame</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Agreed by Matt on 25 November. These three rows are not yet in the XP plan's own table, and they sit outside any daily cap.</p>
+  <h3 style="margin-top:28px">How fast that is</h3>
+  <ul>
+    <li><b>After the Opening Round: 600 XP.</b> The game pays about 100, the round 300, and holes 1 and 2 of the card 200.</li>
+    <li><b>Level 2 on day two.</b> Two more holes and a game or two cover the last 400.</li>
+    <li><b>A signed card is about Level 3.</b> The one-time awards add up to 1,500; five or six games in the week add the rest.</li>
+    <li><b>The flat 1,000 a level is untouched.</b> The early pace comes from one-time awards only.</li>
+  </ul>
+</section>
+
+<!-- ===================== A ===================== -->
+<section class="band">
+  <span class="tag">Approach A</span>
+  <h2>Opening Round</h2>
+  <div class="two">
+    <div>
+      <p class="lede" style="font-size:16px">A three-minute guided round straight after onboarding. One putt, one game, then Home. The Coach talks the Player through it like a broadcast rundown.</p>
+      <ul>
+        <li><b>Three beats</b>, shown as a rundown strip under the header: First putt, First game, Your plan.</li>
+        <li><b>The Coach's voice</b> carries it. The persona voices and lower-third are already in the app's language; the strip shows the same words for anyone with sound off.</li>
+        <li><b>Nothing is fake.</b> The putt is Free Putt, the game is On Fire, the last stop is the real Home. Scores count.</li>
+        <li><b>It ends on XP.</b> The first game's final page shows what it paid. The round's own 300 leaves the bar 400 short of Level 2, on purpose.</li>
+        <li><b>No Puttr connected:</b> the same round plays itself as a demo (the auto-putt the test builds already use), ending on Connect.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Why it could win</h3>
+      <p>It is the Duolingo and Tonal pattern: the Player has made a putt, read it, and finished a game before seeing a menu. It attacks the 31% who never play.</p>
+      <h3>What it costs</h3>
+      <p>It teaches the core loop, not the breadth. Tracks, Quests, Tournaments, League and Online are not covered. It also holds a new Player in a script for three minutes, so Skip has to be honest and always there.</p>
+    </div>
+  </div>
+
+  <div class="phones">
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="logo"><i></i>PUTTR</div></div>
+        <div style="flex:1"></div>
+        <div class="eb">Opening round · 3 minutes</div>
+        <div class="ti">One putt.<br>One game.<br>Your plan.</div>
+        <div class="bd">Maya walks you through your first round on the mat.</div>
+        <div class="rows">
+          <div class="row"><span class="hn">1</span><div class="g"><b>First putt</b><small>Free Putt, 6 ft</small></div></div>
+          <div class="row"><span class="hn">2</span><div class="g"><b>First game</b><small>On Fire, until you miss</small></div></div>
+          <div class="row"><span class="hn">3</span><div class="g"><b>Your plan</b><small>Today's session on Home</small></div></div>
+        </div>
+        <div class="btn">Tee off</div>
+        <div class="lnk">Skip and look around</div>
+      </div></div>
+      <figcaption><b>1 · Kickoff</b>One page, one main button. The rundown is the whole promise: three things, three minutes.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="logo"><i></i>PUTTR<span>FREE PUTT</span></div><div class="ico"><svg viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></svg></div></div>
+        <div class="run"><div class="on">1 First putt</div><div>2 First game</div><div>3 Your plan</div></div>
+        <div class="world"><div class="mat"></div><div class="hole"></div><div class="big"><div class="num" style="color:var(--bright)">MADE</div></div></div>
+        <div class="tee"><i></i><i class="on"></i><i></i>&nbsp;6 <small>FT</small></div>
+        <div class="read hl"><div><span class="lab">Pace</span><b>12 in past</b></div><div><span class="lab">Line</span><b>0.2 in right</b></div><div><span class="lab">Result</span><b style="color:var(--bright)">Made</b></div></div>
+        <div class="l3 coach"><span class="tg">Maya</span><div class="av">M</div><div class="g"><p>That row is your putt read. Pace is how far past the hole it would have rolled. Line is where it crossed.</p><div class="ft"><span>Skip tour</span><span class="go">Next</span></div></div></div>
+      </div></div>
+      <figcaption><b>2 · First putt</b>The Player putts first. The Coach explains the read only once there is a real one on screen.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="logo"><i></i>PUTTR<span>ON FIRE</span></div><div class="ico"><svg viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></svg></div></div>
+        <div class="run"><div class="dn">1 First putt</div><div class="on">2 First game</div><div>3 Your plan</div></div>
+        <div class="world"><div class="mat"></div><div class="hole"></div><div class="big"><div class="lab">In a row</div><div class="num" style="font-size:44px">2</div></div></div>
+        <div class="tee"><i></i><i></i><i class="on"></i>&nbsp;8 <small>FT</small></div>
+        <div class="read"><div><span class="lab">Pace</span><b>9 in past</b></div><div><span class="lab">Line</span><b>Center</b></div><div><span class="lab">Result</span><b style="color:var(--bright)">+8 ft</b></div></div>
+        <div class="l3 coach"><span class="tg">Maya</span><div class="av">M</div><div class="g"><p>The dots are your tee. Green is where to putt from. Keep making them. One miss ends the game.</p><div class="ft"><span>Skip tour</span><span></span></div></div></div>
+      </div></div>
+      <figcaption><b>3 · First game</b>A real game of On Fire. One line from the Coach, then she stays quiet until it ends on the normal game over page.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="logo"><i></i>PUTTR<span>ON FIRE</span></div></div>
+        <div class="run"><div class="dn">1 First putt</div><div class="on">2 First game</div><div>3 Your plan</div></div>
+        <div><div class="eb">Game over</div><div class="num" style="font-size:44px;margin-top:6px">38 <span class="lab">feet</span></div></div>
+        <div class="xp hl">
+          <div class="top"><span class="eb">XP earned</span><b>+600</b></div>
+          <div class="ln"><span>Finished the game</span><b>50</b></div>
+          <div class="ln"><span>6 makes</span><b>30</b></div>
+          <div class="ln"><span>2 center cuts</span><b>20</b></div>
+          <div class="ln"><span>Opening Round</span><b>300</b></div>
+          <div class="ln"><span>Front Nine · holes 1 and 2</span><b>200</b></div>
+          <div class="bar"><u style="width:60%"></u></div>
+          <div class="ft"><span>Level 1 · Rookie</span><span>400 to Level 2</span></div>
+        </div>
+        <div style="flex:1"></div>
+        <div class="l3 coach"><span class="tg">Maya</span><div class="av">M</div><div class="g"><p>That's XP. Every game pays it, and 1,000 is a level. Your level is effort. Your PQS is skill.</p><div class="ft"><span>Skip tour</span><span class="go">Next</span></div></div></div>
+      </div></div>
+      <figcaption><b>4 · First XP</b>The normal game over page, with the XP panel outlined. The list is the only place the awards are explained. Play again and the rest of the page are below.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr">
+        <div class="hd"><div class="logo"><i></i>PUTTR</div><div class="lv">Level 1<div class="bar"><i style="width:60%"></i></div></div><div class="ico"><svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7M10 20h4"/></svg></div></div>
+        <div class="run"><div class="dn">1 First putt</div><div class="dn">2 First game</div><div class="on">3 Your plan</div></div>
+        <div class="card hl">
+          <div class="win" style="height:66px"><div class="floor"></div><div class="mat"></div><div class="hole"></div><div class="ball" style="bottom:22%"></div></div>
+          <div class="pad"><div class="eb">Today's session</div><div class="ti">Lock in 6 ft straight</div><div class="btn">Start session</div></div>
+        </div>
+        <div class="sec"><b>The Front Nine</b><span>Scorecard</span></div>
+        <div class="card"><div class="pad">
+          <div class="holes"><i class="on">1</i><i class="on">2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i><i>9</i></div>
+        </div></div>
+        <div class="l3 coach"><span class="tg">Maya</span><div class="av">M</div><div class="g"><p>You're 400 XP from Level 2. Today's session is hole 4 on your card. Start there.</p><div class="ft"><span></span><span class="go">Done</span></div></div></div>
+      </div><div class="nav" data-on="home"></div></div>
+      <figcaption><b>5 · Your plan</b>The round ends on the real Home, with the level in the header and two holes already on the card. The Coach names the gap and the next step, then leaves.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ===================== B ===================== -->
+<section class="band">
+  <span class="tag">Approach B</span>
+  <h2>The Front Nine</h2>
+  <div class="two">
+    <div>
+      <p class="lede" style="font-size:16px">A scorecard of nine firsts, played over the first week. Each hole is one part of Puttr and pays 100 XP once. Sign the card for 300 more and a card frame.</p>
+      <ul>
+        <li><b>One card on Home</b> under today's session, with the nine holes and the next one named. It leaves Home when the card is signed.</li>
+        <li><b>Self-paced.</b> Holes can be played in any order, on any day. Each one deep-links to the real feature.</li>
+        <li><b>The hole is a row in the XP panel</b> on game over, and the next hole is one list row under the buttons. No extra strip.</li>
+        <li><b>Kid profiles</b> get a nine without Online: "Play a four Player game" takes that hole.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Why it could win</h3>
+      <p>It is the only one of the three that covers the whole app and the only one built for day two through day seven, which is where the 45% who play once are lost. A scorecard is native to golf, so the checklist does not read as setup.</p>
+      <h3>What it costs</h3>
+      <p>It explains nothing in the first minute; a Player who never opens the card learns nothing from it. It adds a second progress display to Home for a week, where the XP plan allows only the level chip and the daily putts. The build is smaller than in round one: the award-once logic, the bar and the payoff all come with XP, which leaves the nine triggers and the card.</p>
+    </div>
+  </div>
+
+  <div class="phones">
+    <figure>
+      <div class="ph"><div class="scr">
+        <div class="hd"><div class="logo"><i></i>PUTTR</div><div class="lv">Level 1<div class="bar"><i style="width:60%"></i></div></div><div class="ico"><svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7M10 20h4"/></svg></div></div>
+        <div class="card">
+          <div class="win" style="height:78px"><div class="floor"></div><div class="mat"></div><div class="hole"></div><div class="ball" style="bottom:22%"></div></div>
+          <div class="pad"><div class="eb">Today's session</div><div class="ti">Lock in 6 ft straight</div><div class="btn">Start session</div></div>
+        </div>
+        <div class="sec"><b>The Front Nine</b><span>Scorecard</span></div>
+        <div class="card hl"><div class="pad">
+          <div class="holes"><i class="on">1</i><i class="on">2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i><i>9</i></div>
+          <div class="row" style="padding:0;min-height:0"><div class="g"><b>Hole 3 · Film your stroke</b><small>Six putts on camera, then see it in 3D</small></div><span class="xv">+100 XP</span></div>
+        </div></div>
+        <div class="sec"><b>Jump back in</b><span>See all</span></div>
+      </div><div class="nav" data-on="home"></div></div>
+      <figcaption><b>1 · On Home</b>The card sits under today's session and never takes the main button. Nine squares, the next hole and what it pays. The level itself stays in the header chip.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="ico"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div><div class="t" style="margin-left:4px">The Front Nine</div></div>
+        <div class="rows">
+          <div class="row dn"><span class="hn">1</span><div class="g"><b>Make your first putt</b></div><svg class="ok" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div>
+          <div class="row dn"><span class="hn">2</span><div class="g"><b>Play a game</b></div><svg class="ok" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div>
+          <div class="row"><span class="hn">3</span><div class="g"><b>Film your stroke</b><small>Improve · 3D stroke session</small></div><span class="xv">+100</span></div>
+          <div class="row"><span class="hn">4</span><div class="g"><b>Finish today's session</b><small>Home</small></div><span class="xv">+100</span></div>
+          <div class="row"><span class="hn">5</span><div class="g"><b>Play a Track</b><small>Play · Tracks</small></div><span class="xv">+100</span></div>
+          <div class="row"><span class="hn">6</span><div class="g"><b>Beat a Quests stage</b><small>Play · Quests</small></div><span class="xv">+100</span></div>
+          <div class="row"><span class="hn">7</span><div class="g"><b>Play another Player</b><small>Play · Online</small></div><span class="xv">+100</span></div>
+          <div class="row"><span class="hn">8</span><div class="g"><b>Enter the Tournament</b><small>Play · Tournaments</small></div><span class="xv">+100</span></div>
+          <div class="row"><span class="hn">9</span><div class="g"><b>Read your analysis</b><small>Improve</small></div><span class="xv">+100</span></div>
+        </div>
+        <div class="bd2">Sign the card for 300 XP and the Front Nine card frame.</div>
+        <div style="flex:1"></div>
+        <div class="btn">Play hole 3</div>
+      </div></div>
+      <figcaption><b>2 · The scorecard</b>Nine rows in one block, each naming where it lives and what it pays. This list is the map of the app.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="logo"><i></i>PUTTR<span>ON FIRE</span></div></div>
+        <div><div class="eb">Game over · online</div><div class="ti" style="margin-top:6px">You won</div><div class="bd2" style="margin-top:4px">57 feet to 41</div></div>
+        <div class="xp">
+          <div class="top"><span class="eb">XP earned</span><b>+255</b></div>
+          <div class="ln"><span>Finished the game</span><b>50</b></div>
+          <div class="ln"><span>Won</span><b>30</b></div>
+          <div class="ln"><span>9 makes</span><b>45</b></div>
+          <div class="ln"><span>3 center cuts</span><b>30</b></div>
+          <div class="ln hl"><span>Front Nine · hole 7</span><b>100</b></div>
+          <div class="bar"><i style="width:31%"></i><u style="width:25.5%"></u></div>
+          <div class="ft"><span>Level 2 · Rookie</span><span>435 to Level 3</span></div>
+        </div>
+        <div class="btn">Play again</div>
+        <div class="btn b2">Review game</div>
+        <div class="btn b2">Exit</div>
+        <div class="rows"><div class="row"><div class="g"><small>Next on your card</small><b>Hole 8 · Enter the Tournament</b></div><svg class="ch" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div></div>
+      </div></div>
+      <figcaption><b>3 · Hole played</b>The hole is one more row in the XP panel, so nothing is said twice. Green on the bar is what the Player had, white is what this game added. The next hole is a list row under the buttons.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="logo"><i></i>PUTTR</div></div>
+        <div style="flex:1"></div>
+        <div class="eb ctr gold">Card signed</div>
+        <div class="ti ctr">The Front Nine</div>
+        <div class="strip" style="grid-template-columns:repeat(3,1fr)"><div><b>9</b><small>Holes</small></div><div><b>6</b><small>Days</small></div><div><b>143</b><small>Putts</small></div></div>
+        <div class="xp">
+          <div class="top"><span class="eb">XP earned</span><b>+300</b></div>
+          <div class="bar"><i style="width:15%"></i><u style="width:30%"></u></div>
+          <div class="ft"><span>Level 3 · Rookie</span><span>550 to Level 4</span></div>
+        </div>
+        <div class="rows"><div class="row"><div class="frame"><svg viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M7 3v18M7 4l11 4-11 4"/></svg></div><div class="g"><b>Front Nine card frame</b><small>On your Player card now</small></div></div></div>
+        <div class="bd ctr">You have now played every part of Puttr.</div>
+        <div style="flex:1"></div>
+        <div class="btn">Back to Home</div>
+      </div></div>
+      <figcaption><b>4 · Card signed</b>300 XP and a frame for the Player card, in place of the crest. If the 300 carries the Player over a level, the normal level-up screen follows. The card then leaves Home for good.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ===================== C ===================== -->
+<section class="band">
+  <span class="tag">Approach C</span>
+  <h2>First Look</h2>
+  <div class="two">
+    <div>
+      <p class="lede" style="font-size:16px">No tour at all. The first time a Player opens a tab or a way to play, a broadcast lower-third slides up with one sentence about it. Once per place, then gone.</p>
+      <ul>
+        <li><b>Eleven places:</b> the four tabs, the five Play sections besides Local, the first putt read and the first game over, where the strip explains the XP panel.</li>
+        <li><b>It pays no XP.</b> Level is effort, and reading a caption is not.</li>
+        <li><b>The app stays live</b> under it. No dimming, no blocked taps. Using the screen dismisses it as well as Got it.</li>
+        <li><b>One at a time.</b> Never two on a screen, never over a putt in flight, never queued.</li>
+        <li><b>Settings</b> has "Show first looks again", next to the Puttr Caddie for anything else.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Why it could win</h3>
+      <p>It is the pull pattern NN/g recommends, and it is the direct replacement for the sentences removed today: the same words, shown once and not forever. Smallest build: one component and a seen-list per profile. It works with or without a Puttr.</p>
+      <h3>What it costs</h3>
+      <p>It never gets anyone to the mat. A Player who stays on Home sees one strip and nothing else. It is the quietest of the three, which also makes it the easiest to ignore.</p>
+    </div>
+  </div>
+
+  <div class="phones">
+    <figure>
+      <div class="ph"><div class="scr">
+        <div class="hd"><div class="t">Play</div><div class="ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg></div></div>
+        <div class="tabs"><b>Local</b><b>Online</b><b class="on">Tracks</b><b>Quests</b><b>Tourna</b></div>
+        <div class="card"><div class="win course" style="height:92px"></div><div class="pad" style="gap:4px"><div class="ti s">Harbour Links</div><div class="lab">18 holes · par 72 · not played</div></div></div>
+        <div class="card"><div class="win course" style="height:92px"></div><div class="pad" style="gap:4px"><div class="ti s">Pine Barrens</div><div class="lab">9 holes · par 36 · not played</div></div></div>
+        <div class="l3 dock"><span class="tg">First look · Tracks</span><p>Real courses on your mat. The length of your putt picks the club. Line and pace send the shot.</p><div class="ft"><span></span><span class="go">Got it</span></div></div>
+      </div><div class="nav" data-on="play"></div></div>
+      <figcaption><b>1 · A Play section</b>The first visit to Tracks. The strip sits above the tab bar and the page scrolls under it.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr">
+        <div class="hd"><div class="t">Improve</div><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></div></div>
+        <div class="card">
+          <div class="win" style="height:120px"><div class="floor"></div><div class="mat"></div><div class="hole"></div></div>
+          <div class="pad"><div class="eb">3D stroke session</div><div class="ti">See your stroke</div><div class="hl"><div class="btn">Record session</div></div></div>
+        </div>
+        <div class="sec"><b>Putting quality score</b><span>?</span></div>
+        <div class="l3 dock"><span class="tg">First look · Improve</span><p>Film six putts and see your stroke in 3D. Everything else on this tab is built from the putts you make.</p><div class="ft"><span></span><span class="go">Got it</span></div></div>
+      </div><div class="nav" data-on="improve"></div></div>
+      <figcaption><b>2 · A tab</b>Where a strip is about one control, that control gets a 2 px bright outline. No dim, no cut-out.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="logo"><i></i>PUTTR<span>CENTER CUT</span></div><div class="ico"><svg viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></svg></div></div>
+        <div class="world"><div class="mat"></div><div class="hole"></div><div class="big"><div class="num" style="color:var(--amber)">SHORT</div></div></div>
+        <div class="tee"><i class="on"></i><i></i><i></i>&nbsp;8 <small>FT</small></div>
+        <div class="read hl"><div><span class="lab">Pace</span><b>5 in short</b></div><div><span class="lab">Line</span><b>0.3 in right</b></div><div><span class="lab">Result</span><b style="color:var(--amber)">Short</b></div></div>
+        <div class="l3"><span class="tg">First look · Putt read</span><p>Every putt is read three ways. Pace is how far past the hole it would roll. Line is where it crossed.</p><div class="ft"><span></span><span class="go">Got it</span></div></div>
+      </div></div>
+      <figcaption><b>3 · In a game</b>Shown after the first putt has stopped, in whichever game that is. The next putt dismisses it.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="logo"><i></i>PUTTR<span>CENTER CUT</span></div></div>
+        <div><div class="eb">Game over</div><div class="num" style="font-size:44px;margin-top:6px">6 <span class="lab">of 10</span></div></div>
+        <div class="xp hl">
+          <div class="top"><span class="eb">XP earned</span><b>+110</b></div>
+          <div class="ln"><span>Finished the game</span><b>50</b></div>
+          <div class="ln"><span>6 makes</span><b>30</b></div>
+          <div class="ln"><span>3 center cuts</span><b>30</b></div>
+          <div class="bar"><u style="width:11%"></u></div>
+          <div class="ft"><span>Level 1 · Rookie</span><span>890 to Level 2</span></div>
+        </div>
+        <div class="l3" style="margin-top:14px"><span class="tg">First look · XP</span><p>Every game pays XP, and 1,000 is a level. Levels unlock new looks. They never make a putt easier.</p><div class="ft"><span></span><span class="go">Got it</span></div></div>
+        <div style="flex:1"></div>
+        <div class="btn">Play again</div>
+        <div class="btn b2">Review game</div>
+        <div class="btn b2">Exit</div>
+      </div></div>
+      <figcaption><b>4 · First game over</b>For a Player who skipped the Opening Round, this is where XP is explained, once. With the round in place, the Coach has already said it and this strip is marked seen.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="ico"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div><div class="t" style="margin-left:4px">Settings</div></div>
+        <div class="sec"><b>Help</b></div>
+        <div class="rows">
+          <div class="row"><div class="g"><b>Ask the Puttr Caddie</b><small>Games, hardware, anything about Puttr</small></div><svg class="ch" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+          <div class="row hl"><div class="g"><b>Show first looks again</b><small>4 of 11 seen</small></div><svg class="ch" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+          <div class="row"><div class="g"><b>Setup guide</b><small>Placing the mat and the camera</small></div><svg class="ch" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+        </div>
+        <div class="sec"><b>Puttr</b></div>
+        <div class="rows">
+          <div class="row"><div class="g"><b>Connect your Puttr</b><small>Connected over Bluetooth</small></div><svg class="ch" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+          <div class="row"><div class="g"><b>Vertex sensor</b><small>Not paired</small></div><svg class="ch" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+        </div>
+      </div></div>
+      <figcaption><b>5 · Getting them back</b>One row resets the list. A second profile on the same phone gets its own first looks.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ===================== compare ===================== -->
+<section>
+  <div class="col">
+    <div class="kick">Side by side</div>
+    <h2>How they differ</h2>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th></th><th>A · Opening Round</th><th>B · The Front Nine</th><th>C · First Look</th></tr></thead>
+    <tbody>
+      <tr><td>Pattern</td><td>Guided first session</td><td>Checklist with a reward</td><td>Contextual tips</td></tr>
+      <tr><td>When</td><td>First three minutes</td><td>First week</td><td>Whenever each place is first opened</td></tr>
+      <tr><td>Gets a putt made</td><td>Yes, in the first minute</td><td>Hole 1, if they open the card</td><td>No</td></tr>
+      <tr><td>Covers the app</td><td>Core loop only</td><td>All of it</td><td>All of it, if they wander</td></tr>
+      <tr><td>Brings them back</td><td>A little: the bar stops 400 short of Level 2</td><td>Yes</td><td>No</td></tr>
+      <tr><td>XP it pays</td><td>300 once, plus the game's own</td><td>100 a hole, 300 for signing</td><td>None</td></tr>
+      <tr><td>Without a Puttr</td><td>Plays as a demo that pays no XP</td><td>Stuck on hole 1</td><td>Works fully</td></tr>
+      <tr><td>Interrupts</td><td>Most: a script, with Skip</td><td>Least: a card on Home</td><td>A little, eleven times</td></tr>
+      <tr><td>Build (my estimate)</td><td>Medium: a scripted round, voice lines per Coach</td><td>Medium once XP exists: nine triggers and a card</td><td>Smallest: one component, a seen-list</td></tr>
+      <tr><td>How we would judge it</td><td>Share of new Players who finish a game on day one</td><td>Share who play on a second day in week one</td><td>Share who open each Play section in week one</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="pick">
+    <div class="kick">My recommendation</div>
+    <h3>They stack. Start with A and C together, and ship B with XP.</h3>
+    <ol>
+      <li><b>Opening Round</b> is the tour. It is the only one that puts a ball in the hole in the first minute, and that is what every strong example in the research does.</li>
+      <li><b>First Look</b> covers what the round skips. It is cheap, and it is where the six sentences removed today belong. With both, the Opening Round's last beat can drop its line about Play and Improve.</li>
+      <li><b>The Front Nine</b> is the first week of XP. In round one it was a separate feature for later; with XP it reuses the bar, the panel and the award logic, so it should ship in the same release as levels.</li>
+      <li><b>If the Opening Round ships before XP,</b> it ends as round one drew it (straight to Home) and gains the XP page when levels land.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="col">
+  <div class="kick">To decide</div>
+  <h2>Questions for the next round</h2>
+  <ul>
+    <li><b>Voice.</b> Does the Coach speak in the Opening Round, or is it text only? Voice means new lines recorded for each persona.</li>
+    <li><b>Order with the Coach first run.</b> The Opening Round uses a Coach before the Player has picked one on Improve. Either the pick moves forward into onboarding, or the round is hosted by a neutral Puttr voice.</li>
+    <li><b>No Puttr yet.</b> The XP plan says test putts earn nothing, so a demo round cannot move the bar and would end on Connect. Is it still worth building, or does the round wait for the first connect?</li>
+    <li><b>The nine.</b> The XP numbers are agreed. Are these the right nine holes?</li>
+    <li><b>The colour of new XP.</b> The XP plan draws added XP in amber. Broadcast keeps amber for time running out and streaks, so it is drawn white here. One of the two needs to change.</li>
+    <li><b>Home.</b> The XP plan allows the level chip and the daily putts on Home and nothing else. Is the Front Nine card acceptable there for one week?</li>
+    <li><b>Existing Players.</b> With backfill they start well up the ladder (the plan's example is level 37). My proposal: First Looks only, no round and no card.</li>
+    <li><b>TV.</b> A TV only has the Play tab and a remote. First Look ports cleanly; the other two need their own design.</li>
+  </ul>
+</section>
+
+</div>
+
+<script>
+// The tab bar, drawn once for every phone that has one.
+(function(){
+  var tabs=[["home","Home","M4 11l8-7 8 7v9h-5v-6H9v6H4z"],["play","Play","M6 8h12a4 4 0 0 1 0 8H6a4 4 0 0 1 0-8zM8 11v2M7 12h2M16 12h.01"],["improve","Improve","M4 17l5-5 4 3 7-8M4 21h16"],["profile","Profile","M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0"]];
+  document.querySelectorAll(".nav").forEach(function(n){
+    n.innerHTML=tabs.map(function(t){return '<div class="'+(n.dataset.on===t[0]?"on":"")+'"><svg viewBox="0 0 24 24"><path d="'+t[2]+'"/></svg>'+t[1]+'</div>'}).join("");
+  });
+})();
+</script>

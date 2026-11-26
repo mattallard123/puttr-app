@@ -45,7 +45,7 @@
   "end": {
    "c": "end",
    "h": "The ultimate <em>putting experience</em>",
-   "sub": "AI coaching · Stats · 40+ games",
+   "sub": "AI coaching \u00b7 Stats \u00b7 40+ games",
    "size": 9.5,
    "portrait_scale": 1.45
   },
@@ -206,13 +206,13 @@
   },
   {
    "take": "majorleague",
-   "at": 16.6,
+   "at": 26.6,
    "beats": 2,
    "push": 1.1
   },
   {
    "take": "majorleague",
-   "at": 17.0,
+   "at": 27.4,
    "beats": 7,
    "text": "end",
    "flash": true,

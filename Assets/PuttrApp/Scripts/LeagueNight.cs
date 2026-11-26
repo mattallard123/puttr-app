@@ -971,7 +971,7 @@ namespace PuttrApp
             foreach (string line in rules.HowTo) how.Add(Ui.Text(line, "body", Ui.Medium).Margin(how.childCount == 0 ? 0 : 8));
             how.Add(Ui.Text("One League game a day. Your best of the week counts for your team.", "body-2", Ui.Medium).Margin(12));
             // A tester with Rehearsal mode on plays it as practice: better known before it is played than after.
-            if (Green.RealPutts && CompetitionRound.Rehearse)
+            if (Green.RealFor(true) && CompetitionRound.Rehearse)
                 how.Add(Ui.Text("Rehearsal mode is on in Settings, so this game is saved as practice and not entered.", "body-2", Ui.Medium).Margin(8));
             ScrollView scroll = Ui.Scroll();
             scroll.Add(Ui.Header("", app.Pop));
@@ -993,39 +993,26 @@ namespace PuttrApp
             RuleGame g = round.Rules;
             int made = 0;
             foreach (Shot s in g.Shots) if (s.V != null && s.V.Made) made++;
-            ScrollView scroll = Ui.Scroll();
-            scroll.Add(Ui.Header("", app.Pop));
-            VisualElement top = Ui.Box("pad",
-                Ui.Caps("Final   ·   " + round.Session.Title + "   ·   " + round.Session.Detail, "caps caps-green center"),
-                Ui.Num(g.ScoreText(0), "num-44 center").Margin(8),
-                Ui.Text(g.Title + "   ·   " + made + " of " + g.Shots.Count + " holed", "body-2 center", Ui.Medium).Margin(4),
-                Ui.Text(round.Outcome(), "body-2 center", Ui.Medium).Margin(8));
-            // The putts: rows in one bordered block.
-            VisualElement list = Ui.Box("lg-board");
+            bool saved = round.How != CompetitionRound.Mode.Local;
+            var spec = new GameOverSpec
+            {
+                Eyebrow = "Final   ·   " + round.Session.Title + "   ·   " + round.Session.Detail,
+                Score = g.ScoreText(0),
+                ScoreCaption = g.Title + "   ·   " + made + " of " + g.Shots.Count + " holed",
+                Outcome = round.Outcome(),
+                ReviewId = saved ? round.UserGameId : null,
+                RateAs = "League Night",
+                Putts = new List<GameOverPutt>(),
+                PqsPutts = saved ? new List<AnalysisMath.Putt>() : null,
+            };
             int n = 0;
             foreach (Shot s in g.Shots)
             {
                 n++;
-                Label call = Ui.Text(g.FinalCall(s), "body lg-putt-call", Ui.Bold);
-                call.style.color = s.Good ? Ui.Bright : Ui.Faint;
-                VisualElement right = call;
-                string points = g.FinalPoints(s);
-                if (!string.IsNullOrEmpty(points))
-                {
-                    Label earned = Ui.Text(points, "body-2", Ui.Medium);
-                    earned.style.unityTextAlign = TextAnchor.MiddleRight;
-                    right = Ui.Box("", call, earned);
-                    right.style.alignItems = Align.FlexEnd;
-                }
-                list.Add(Ui.Box(n == 1 ? "lg-row lg-putt-row lg-first" : "lg-row lg-putt-row", Ui.Num(n.ToString(), "lg-player-rank"),
-                    Ui.Box("grow", Ui.Text(s.Feet + " ft   ·   " + PracticeSession.TeeName(s.Tee) + " tee", "body", Ui.Medium)), right));
+                spec.Putts.Add(new GameOverPutt { Number = n.ToString(), From = GameOver.From(s.Feet, s.Tee), Call = g.FinalCall(s), Points = g.FinalPoints(s), Good = s.Good });
+                if (saved && s.V != null) spec.PqsPutts.Add(GameOver.PqsPutt(s.Feet, s.Tee, s.V));
             }
-            scroll.Add(top);
-            if (n > 0) { scroll.Add(Ui.Section("Putts")); scroll.Add(Ui.Box("pad", list)); }
-            VisualElement rateGame = Feedback.GameCard(app, "League Night");
-            if (rateGame != null) scroll.Add(Ui.Box("pad", rateGame));
-            scroll.Add(Ui.Box("pad", Ui.Button("Exit", app.ExitToTab)));
-            Root = scroll;
+            Root = GameOver.Build(app, spec);
             if (League.Sheet != null) Root.styleSheets.Add(League.Sheet);
         }
     }

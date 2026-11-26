@@ -1,7 +1,8 @@
 // Puttr (co.puttr.ios): uploads the store screenshots and app previews in out/ to App Store Connect with the API.
 //
 //   node StoreAssets/upload.js list        what each version already has
-//   node StoreAssets/upload.js upload IOS|TV_OS     replace that platform's screenshots and previews (iPhone 6.9", iPad 13" / Apple TV)
+//   node StoreAssets/upload.js upload IOS|TV_OS     replace that platform's screenshots and previews (iPhone 6.9", iPad 13", iPhone Duo / Apple TV)
+//   node StoreAssets/upload.js upload IOS APP_IPHONE_DUO   replace just that one screenshot set (no previews)
 //   node StoreAssets/upload.js listing IOS|TV_OS    listing.md -> that version's description, keywords, promo, URLs, what's new
 //   node StoreAssets/upload.js creative    iOS 27 product page header + search results images (creative/build.py)
 //
@@ -18,7 +19,7 @@ const ISSUER = process.env.ASC_ISSUER_ID || '046b6041-467f-4b0a-9593-fa8d5ded775
 const LOCALE = 'en-US';
 const OUT = path.join(__dirname, 'out');
 const PLATFORMS = {
-  IOS: { shots: [['APP_IPHONE_67', 'screenshots/iphone-6.9'], ['APP_IPAD_PRO_3GEN_129', 'screenshots/ipad-13']], previews: [['IPHONE_67', 'previews/iphone-preview-886x1920.mp4']] },
+  IOS: { shots: [['APP_IPHONE_67', 'screenshots/iphone-6.9'], ['APP_IPAD_PRO_3GEN_129', 'screenshots/ipad-13'], ['APP_IPHONE_DUO', 'screenshots/iphone-duo']], previews: [['IPHONE_67', 'previews/iphone-preview-886x1920.mp4']] },
   TV_OS: { shots: [['APP_APPLE_TV', 'screenshots/appletv']], previews: [['APPLE_TV', 'previews/appletv-preview-1920x1080.mp4']] },
 };
 
@@ -166,7 +167,8 @@ else if (require.main === module && process.argv[2] === 'creative') writeCreativ
 else
 if (require.main === module) (async () => {
   const cmd = process.argv[2] || 'list';
-  const only = process.argv.slice(3); // e.g. "upload TV_OS": just that platform
+  const args = process.argv.slice(3); // e.g. "upload TV_OS": just that platform; "upload IOS APP_IPHONE_DUO": just that set
+  const only = args.filter((a) => PLATFORMS[a]), types = args.filter((a) => !PLATFORMS[a]);
   for (const [platform, p] of Object.entries(PLATFORMS)) {
     if (only.length && !only.includes(platform)) continue;
     const { version, loc } = await versionLocalization(platform);
@@ -179,6 +181,7 @@ if (require.main === module) (async () => {
 
     const ids = [];
     for (const [type, dir] of p.shots) {
+      if (types.length && !types.includes(type)) continue;
       const shots = await ensureSet(loc, 'shot', type);
       for (const old of shots.items) await api('DELETE', `/v1/appScreenshots/${old.id}`);
       const files = fs.readdirSync(path.join(OUT, dir)).filter((f) => f.endsWith('.png')).sort();
@@ -187,6 +190,7 @@ if (require.main === module) (async () => {
       await api('PATCH', `/v1/appScreenshotSets/${shots.set.id}/relationships/appScreenshots`, { data: mine.map((id) => ({ type: 'appScreenshots', id })) });
     }
     for (const [type, file] of p.previews) {
+      if (types.length && !types.includes(type)) continue;
       const prev = await ensureSet(loc, 'preview', type);
       for (const old of prev.items) await api('DELETE', `/v1/appPreviews/${old.id}`);
       ids.push(['preview', await uploadFile('preview', prev.set.id, path.join(OUT, file), 'video/mp4')]);

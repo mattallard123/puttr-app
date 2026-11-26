@@ -31,3 +31,20 @@
 
 # Store screenshots and previews made by StoreAssets/screenshots/build.py and preview/build.py
 /StoreAssets/out/
+
+# Screenshots taken to check a change (a walk of the screens, a layout check): evidence for one session, not source.
+# docs/event-venue-modes/check stays: build-plan.md shows those.
+/docs/xp-levels/walk/
+/docs/design-guidelines/check/
+/docs/quests-reimagined/check/
+
+# Unity's crash and editor leftovers, and macOS' own
+*.stackdump
+mono_crash.*
+/MemoryCaptures/
+/Recordings/
+*.orig
+.idea/
+
+# The Soundly helper's own log
+/Tools/soundly/*.log

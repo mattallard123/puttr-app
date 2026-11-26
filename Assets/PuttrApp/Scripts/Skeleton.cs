@@ -1,4 +1,5 @@
-// Placeholders while a screen's data loads: flat grey shapes (surface-2, no pulse, no sheen) where its cards will be, so the page has its real
+// Placeholders while a screen's data loads: flat grey shapes (surface-2) where its cards will be, with one soft band of
+// surface-3 crossing the whole page left to right to say it is loading (docs/design-guidelines.md, Motion), so the page has its real
 // shape from the first frame (and scrolls) instead of an empty screen and a spinner. Skeleton.Hold puts one in a
 // section's slot; it goes as soon as the section draws anything else (or after 15 seconds, so an empty result never
 // leaves a placeholder behind). Skeleton.Page is a whole page of them, for App.Swap's guard on screens with nothing yet.
@@ -15,7 +16,7 @@ namespace PuttrApp
             VisualElement b = Ui.Box("sk-bar");
             b.style.width = Length.Percent(share * 100f);
             b.style.height = height;
-            return b;
+            return Shimmer(b);
         }
 
         public static VisualElement Circle(float size)
@@ -25,7 +26,7 @@ namespace PuttrApp
             // An avatar is a rounded square (radius 4, the class's own); only a dot of 14 or less stays round.
             if (size <= 14f) c.style.borderTopLeftRadius = c.style.borderTopRightRadius = c.style.borderBottomLeftRadius = c.style.borderBottomRightRadius = size / 2f;
             c.style.flexShrink = 0;
-            return c;
+            return Shimmer(c);
         }
 
         /// <summary>A card-shaped placeholder: a title bar and a few lines, about this tall.</summary>
@@ -88,15 +89,61 @@ namespace PuttrApp
         }
 
         /// <summary>
-        /// The placeholder for a picture that is still on its way (a course still being painted): the host is a flat
-        /// surface-2 block until it comes. No band of light sweeps it (docs/design-guidelines.md: no sheen, no
-        /// shimmer). Call the returned stop when the picture is in; calling it twice does no harm.
+        /// The placeholder for a picture that is still on its way (a course still being painted): the host is a
+        /// surface-2 block with the loading band crossing it until it comes. Call the returned stop when the picture
+        /// is in; calling it twice does no harm.
         /// </summary>
         public static System.Action Sheen(VisualElement host)
         {
             host.AddToClassList("sk-art");
-            void Stop() { host.RemoveFromClassList("sk-art"); }
+            VisualElement band = Band(host);
+            void Stop() { host.RemoveFromClassList("sk-art"); band.RemoveFromHierarchy(); }
             return Stop;
+        }
+
+        // The loading band: surface-2 to surface-3 and back, 160 wide, crossing the screen in 1.1 s and resting 0.5 s.
+        // Every placeholder shows its own slice of the one band (placed by where the placeholder is on the screen), so
+        // a page of them reads as a single sweep and not as each bar blinking on its own.
+        const float BandWide = 160f, Cross = 1.1f, Rest = 0.5f;
+        static Texture2D _band;
+
+        /// <summary>Gives a placeholder block (surface-2, clipped to its own shape) the loading band.</summary>
+        public static VisualElement Shimmer(VisualElement block)
+        {
+            block.style.overflow = Overflow.Hidden;
+            Band(block);
+            return block;
+        }
+
+        static VisualElement Band(VisualElement block)
+        {
+            if (_band == null)
+            {
+                _band = new Texture2D(64, 1, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, hideFlags = HideFlags.HideAndDontSave };
+                for (int x = 0; x < 64; x++)
+                {
+                    float k = 1f - Mathf.Abs(x - 31.5f) / 31.5f;
+                    _band.SetPixel(x, 0, Color.Lerp(Ui.Surface2, Ui.Surface3, Mathf.SmoothStep(0f, 1f, k)));
+                }
+                _band.Apply();
+            }
+            var band = new VisualElement { pickingMode = PickingMode.Ignore };
+            band.style.position = Position.Absolute;
+            band.style.left = 0; band.style.top = 0; band.style.bottom = 0; band.style.width = BandWide;
+            band.style.backgroundImage = new StyleBackground(_band);
+            band.style.backgroundSize = new StyleBackgroundSize(new BackgroundSize(Length.Percent(100f), Length.Percent(100f)));
+            band.style.translate = new Translate(-BandWide * 2f, 0f);
+            block.Add(band);
+            band.schedule.Execute(() =>
+            {
+                if (band.panel == null) return;
+                float screen = band.panel.visualTree.worldBound.width;
+                float t = Time.realtimeSinceStartup % (Cross + Rest) / Cross;
+                float x = t >= 1f ? -BandWide * 2f : Mathf.Lerp(-BandWide, screen, t) - block.worldBound.x;
+                band.style.translate = new Translate(x, 0f);
+                Perf.Wake(0.2f);
+            }).Every(16);
+            return band;
         }
     }
 }

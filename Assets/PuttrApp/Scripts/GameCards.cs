@@ -31,9 +31,12 @@ namespace PuttrApp
             // A Player's own game (GET /creator/games/, marked by MarkCustom) is putted on the Puttr, as Practice is:
             // it shows the Puttr, whatever its type (Matt: not the neon target).
             if (Custom(game)) type = "FREEPUTT";
-            if (type == "STREAK" || type == "PRACTICE" || type == "") type = "STANDARD";
+            // A putt-list game with no scene of its own (a tournament round such as Watch It Drop, the Puttr standard and
+            // streak games, any type without a card) is putted on the Puttr too: it shows the Puttr, never the generic
+            // neon target (Matt, 2026-11-24). A recent game row is not marked custom, so the type decides.
+            if (type == "STREAK" || type == "PRACTICE" || type == "STANDARD" || type == "") type = "FREEPUTT";
             if (Known.TryGetValue(type, out Texture2D t)) return t;
-            t = Resources.Load<Texture2D>("PuttrApp/Cards/" + type) ?? Resources.Load<Texture2D>("PuttrApp/Cards/STANDARD");
+            t = Resources.Load<Texture2D>("PuttrApp/Cards/" + type) ?? Resources.Load<Texture2D>("PuttrApp/Cards/FREEPUTT");
             Known[type] = t;
             return t;
         }

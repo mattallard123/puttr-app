@@ -264,6 +264,7 @@ namespace PuttrApp
         }
 
         // A spot's number: red under half the Tour's rate, amber up to it, bright green at Tour level and above.
-        static Color Heat(int weighted) => weighted >= 100 ? Ui.Bright : weighted >= 50 ? Ui.Amber : Ui.Red;
+        /// <summary>A spot's colour: Tour level or better, half of it or better, under that.</summary>
+        public static Color Heat(int weighted) => weighted >= 100 ? Ui.Bright : weighted >= 50 ? Ui.Amber : Ui.Red;
     }
 }

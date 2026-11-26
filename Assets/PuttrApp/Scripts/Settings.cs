@@ -104,6 +104,8 @@ namespace PuttrApp
         readonly App _app;
         readonly VisualElement _green, _tools, _developer;
         Label _power, _enter;
+        VisualElement _programs;
+        bool _lessons;
 
         public SettingsScreen(App app)
         {
@@ -184,12 +186,19 @@ namespace PuttrApp
                 _tools.Add(Ui.Section("Host"));
                 _tools.Add(Rows.Card(Host.SettingsRows(_app)));
             }
+            _programs = new VisualElement();
+            _tools.Add(_programs);
             Programs();
+            // "My lessons" only once there is one (a booking, active or past): a new Player has nothing behind the row.
+            // As it was last time at once, then as it is now.
+            if (!Kid.IsKid(_app.Profile) && !Kid.Managed(_app.Profile))
+                App.Run(Api.Kept("/lesson/bookings", d => { bool has = J.List(d).Count > 0; if (has != _lessons) { _lessons = has; Programs(); } }));
         }
 
         // Coaching and Junior (SettingsScreen's rows): become a coach, Pro, the Academy; Junior for non-members.
         void Programs()
         {
+            _programs.Clear();
             if (Kid.Managed(_app.Profile)) return;
             object p = _app.Profile;
             var rows = new List<VisualElement>();
@@ -201,10 +210,10 @@ namespace PuttrApp
                 rows.Add(Rows.Row("Medal", "Coach application", () => _app.Push(new CoachApplicationStatusScreen(_app))));
             }
             if (!J.Flag(p, "isMember")) rows.Add(Rows.Row("Trophy", "Junior Membership", () => _app.Push(new JuniorLandingScreen(_app))));
-            if (!Kid.IsKid(p)) rows.Add(Rows.Row("FilmReel", "My lessons", () => _app.Push(new MyLessonsScreen(_app))));
+            if (_lessons && !Kid.IsKid(p)) rows.Add(Rows.Row("FilmReel", "My lessons", () => _app.Push(new MyLessonsScreen(_app))));
             if (rows.Count == 0) return;
-            _tools.Add(Ui.Section("Coaching"));
-            _tools.Add(Rows.Card(rows.ToArray()));
+            _programs.Add(Ui.Section("Coaching"));
+            _programs.Add(Rows.Card(rows.ToArray()));
         }
 
         // The Phase 0 gate switches that used to sit at the bottom of Profile. For testers and Puttr staff
@@ -661,6 +670,8 @@ namespace PuttrApp
 
         public NotificationPrefsScreen(App app)
         {
+            // A Player who said "Not now" in the onboarding guide is asked here, where they came to turn pushes on.
+            if (Push.Later) Push.Register(app, true);
             _app = app;
             _list = new VisualElement();
             ScrollView scroll = Ui.Scroll();

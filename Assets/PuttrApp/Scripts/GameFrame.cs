@@ -334,7 +334,7 @@ namespace PuttrApp
         }
     }
 
-    /// <summary>After a round: the result, stat lines, the change to PQS, and what next.</summary>
+    /// <summary>After a round: the result, stat lines, the change to PQS, and what next (the shared game over page).</summary>
     public sealed class FinalScreen : AppScreen
     {
         public FinalScreen(App app, CompetitionRound round, string title, Action again)
@@ -350,53 +350,37 @@ namespace PuttrApp
                 if (v.Rollout != null) rollouts.Add(v.Rollout.Value);
             }
             double? pace = AppPutt.Median(rollouts);
-            VisualElement stats = Ui.Box("glass");
-            void Stat(string label, string value)
+            var stats = new List<(string, string)> { (made + " of " + s.Seen.Count, "Putts made") };
+            if (lines > 0) stats.Add(((lineSum / lines).ToString("0.0", CultureInfo.InvariantCulture) + "°", "Average line miss"));
+            if (pace != null) stats.Add((AppPutt.FmtRollout(pace), "Typical pace"));
+            stats.Add((best.ToString(), "Best run"));
+            stats.Add((centre.ToString(), "Center cuts"));
+
+            // A round played on test putts is saved nowhere: no game to review, and it never counts for PQS.
+            bool saved = round.How != CompetitionRound.Mode.Local;
+            var spec = new GameOverSpec
             {
-                stats.Add(Ui.Box("board-row", Ui.Text(label, "read-label grow", Ui.Bold), Ui.Text(value, "g-score", Ui.Bold)));
+                Eyebrow = "Final   ·   " + title,
+                Score = RoundSession.Points(s.Total),
+                ScoreCaption = "of " + s.Possible + " possible",
+                Outcome = round.Outcome(),
+                Stats = stats,
+                ReviewId = saved ? round.UserGameId : null,
+                RateAs = title,
+                Again = again,
+                Putts = new List<GameOverPutt>(),
+                PqsPutts = saved ? new List<AnalysisMath.Putt>() : null,
+            };
+            // A catalogue game played as itself has a best of its own; a tournament or coach round does not.
+            if (round.What == CompetitionRound.Kind.Game && round.Round != null) { spec.GameId = J.Str(round.Round, "id"); spec.ScoreValue = s.Total; }
+            for (int i = 0; i < s.Seen.Count && i < s.Putts.Count; i++)
+            {
+                AppPutt.Verdict v = s.Seen[i];
+                double points = i < s.Scores.Count ? s.Scores[i] : 0;
+                spec.Putts.Add(new GameOverPutt { Number = (i + 1).ToString(), From = GameOver.From(s.Putts[i].Feet, s.Putts[i].Tee), Call = GameOver.CallOf(v), Points = points > 0 ? "+" + RoundSession.Points(points) : null, Good = points > 0 });
+                if (saved) spec.PqsPutts.Add(GameOver.PqsPutt(s.Putts[i].Feet, s.Putts[i].Tee, v));
             }
-            Stat("PUTTS MADE", made + " of " + s.Seen.Count);
-            if (lines > 0) Stat("AVERAGE LINE MISS", (lineSum / lines).ToString("0.0", CultureInfo.InvariantCulture) + "°");
-            if (pace != null) Stat("TYPICAL PACE", AppPutt.FmtRollout(pace));
-            Stat("BEST RUN", best.ToString());
-            Stat("CENTER CUTS", centre.ToString());
-
-            var rating = new VisualElement();
-            ScrollView scroll = Ui.Scroll();
-            scroll.Add(Ui.Header("", app.ExitToTab));
-            VisualElement buttons = Ui.Box("pad");
-            if (again != null) buttons.Add(Ui.Button("Play again", () => { app.Pop(); again(); }));
-            buttons.Add(Ui.Button("Exit", app.ExitToTab, again != null ? "btn btn-ghost" : "btn"));
-            scroll.Add(Ui.Box("pad",
-                Ui.Text("FINAL   ·   " + title.ToUpperInvariant(), "kick center", Ui.Bold),
-                Ui.Num(RoundSession.Points(s.Total), "num-44 center"),
-                Ui.Text("of " + s.Possible + " possible", "sub center", Ui.Regular),
-                Ui.Text(round.Outcome(), "sub center", Ui.Regular).Margin(8),
-                stats.Margin(16), rating.Margin(12)));
-            // Rate this game: five stars, and a box to say why when it is under five (Feedback.GameCard).
-            VisualElement rateGame = Feedback.GameCard(app, title);
-            if (rateGame != null) scroll.Add(Ui.Box("pad", rateGame));
-            scroll.Add(buttons);
-            Root = scroll;
-
-            // What the round did to PQS: the last 30 days with and without it. A round played on test putts never counts.
-            if (round.How == CompetitionRound.Mode.Local) return;
-            Frame.LoadPqs((before, putts) =>
-            {
-                var after = new List<AnalysisMath.Putt>(putts);
-                for (int i = 0; i < s.Seen.Count; i++)
-                {
-                    AppPutt.Verdict v = s.Seen[i];
-                    after.Add(new AnalysisMath.Putt { Feet = s.Putts[i].Feet, Tee = s.Putts[i].Tee, Made = v.Made, HasEntry = v.Made && v.HasEntry, OffLine = (float)v.OffLine, At = DateTime.UtcNow });
-                }
-                // The API may already hold this round's putts: if so, "before" includes them and the change reads 0, which is honest.
-                int now = after.Count >= 5 ? AnalysisMath.Pqs(after, out _, out _) : -1;
-                if (now < 0) return;
-                int change = before >= 0 ? now - before : 0;
-                Label delta = Ui.Text(before < 0 ? "Your first PQS" : (change > 0 ? "▲ " : change < 0 ? "▼ " : "") + (change == 0 ? "No change" : Math.Abs(change) + " from this game"), "sub", Ui.Medium);
-                delta.style.color = change > 0 ? Ui.Bright : change < 0 ? Ui.Red : Ui.Faint;
-                rating.Add(Ui.Box("glass row", Ui.Box("card-rating", Ui.Num(now.ToString(), "num-44 center"), Ui.Text("PQS", "kick center", Ui.Bold)), Ui.Box("grow next-words", Ui.Text("LAST 30 DAYS", "kick", Ui.Bold), delta)));
-            });
+            Root = GameOver.Build(app, spec);
         }
     }
 }

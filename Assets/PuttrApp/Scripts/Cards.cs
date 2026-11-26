@@ -68,7 +68,25 @@ namespace PuttrApp
             return stroke != icon && Resources.Load<Texture2D>("PuttrArcade/Icons/Icon" + stroke) == null ? icon : stroke;
         }
 
-        static int Joined(object row) => J.Get(J.Get(row, "challenge"), "userJoined") != null ? 1 : 0;
+        static int Joined(object row) => IsJoined(J.Get(row, "challenge")) ? 1 : 0;
+
+        // What the Player just did here, by challenge id. The lists are read from a copy of the database that can be
+        // a moment behind, and Home shows its last answer first: without this a challenge joined a second ago came
+        // back as "Join". Dropped as soon as a list agrees.
+        static readonly Dictionary<string, bool> Changed = new Dictionary<string, bool>();
+
+        /// <summary>The Player joined or left this challenge just now: every card says so at once.</summary>
+        public static void MarkJoined(string id, bool joined) { if (!string.IsNullOrEmpty(id)) Changed[id] = joined; }
+
+        /// <summary>Whether the Player is in this challenge (a {challenge} object from any of the lists).</summary>
+        public static bool IsJoined(object challenge)
+        {
+            bool listed = J.Get(challenge, "userJoined") != null;
+            string id = J.Str(challenge, "id");
+            if (string.IsNullOrEmpty(id) || !Changed.TryGetValue(id, out bool now)) return listed;
+            if (now == listed) Changed.Remove(id);
+            return now;
+        }
     }
 
     /// <summary>What the Player competes in, on Home: League Night and tournaments. Filled in by Compete.Fill.</summary>

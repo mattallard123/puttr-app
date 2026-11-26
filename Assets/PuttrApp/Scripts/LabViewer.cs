@@ -676,7 +676,7 @@ namespace PuttrApp
             Label title = Ui.Caps(cap.Title);
             title.style.color = Ui.Amber;
             title.style.whiteSpace = WhiteSpace.Normal;
-            VisualElement guide = Ui.Secondary("Setup guide", () => SetupGuide.Play(Root, "https://storage.googleapis.com/images.puttr.co/howto/Session_Setup_Final.mp4"));
+            VisualElement guide = Ui.Secondary("Setup guide", () => SetupGuide.Play(Root, "https://storage.googleapis.com/images.puttr.co/howto/Session_Setup_Real_Footage.mp4"));
             VisualElement again = Ui.Button("Record again", () => Club.Require(_app, "3D sessions", () => _app.Push(new LabIntroScreen(_app))), "btn btn-ghost lab-banner-next");
             _banner.Add(Ui.Box("card lab-banner", title, Ui.Text(cap.Detail, "body-2 lab-banner-text", Ui.Medium), Ui.Box("lab-banner-btns", guide, again)));
         }
@@ -812,8 +812,12 @@ namespace PuttrApp
             _body.Add(Ui.Box("pad", LabUi.BodyOverview(_data.Body, _data.Lefty, false)));
         }
 
+        // Off for now (Matt, 2026-11-24): the model is not accurate enough to show. Set to true to bring it back.
+        const bool ShowStrokeModel = false;
+
         void DrawModel()
         {
+            if (!ShowStrokeModel) return;
             if (_stroke != null || _data.Blaze == null || _modelTried) return;
             _modelTried = true; // reading the frames is costly: once per screen
             var model = new StrokeModel(_app, _data.Blaze, _data.Pose, _data.Lefty, _data.Putts != null ? _data.Putts.Count : 0);

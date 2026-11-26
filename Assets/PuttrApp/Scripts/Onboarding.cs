@@ -66,7 +66,7 @@ namespace PuttrApp
 
     public sealed class OnboardingScreen : AppScreen
     {
-        const int Steps = 6;
+        const int Steps = 7, PushStep = 6;
         static readonly (string id, string words, string icon)[] Goals = { ("GRINDER", "Improve my putting", "Target"), ("GAME NIGHTER", "Play with friends & family", "UsersThree"), ("E-SPORTER", "Compete online", "Trophy") };
 
         readonly App _app;
@@ -96,13 +96,29 @@ namespace PuttrApp
             Draw();
         }
 
-        void Next() { _step = Mathf.Min(Steps, _step + 1); Draw(); }
+        void Next()
+        {
+            _step = Mathf.Min(Steps, _step + 1);
+            // Nothing to ask (an older Android, a TV, a Mac): no page, the phone is registered as it always was.
+            if (_step == PushStep && !PushPage) { Push.Register(_app, true); _step++; }
+            Draw();
+        }
+
+        // The notifications page is shown when turning them on would put the system's question up (and in screen checks).
+        static bool PushPage => Push.Asks || Fixtures.On;
+
+        void Back()
+        {
+            _step--;
+            if (_step == PushStep && !PushPage) _step--;
+            Draw();
+        }
 
         void Draw()
         {
             _body.Clear();
             VisualElement top = Ui.Box("row onboard-top");
-            if (_step >= 1 && _step <= 5) top.Add(Ui.Text("‹", "back back-chevron", Ui.Medium).OnTap(() => { _step--; Draw(); }));
+            if (_step >= 1 && _step <= PushStep) top.Add(Ui.Text("‹", "back back-chevron", Ui.Medium).OnTap(Back));
             if (_step > 0) top.Add(Ui.Box("grow", Ui.Progress(_step / (float)Steps)).Margin(0));
             _body.Add(Ui.Box("pad", top));
             VisualElement page = Ui.Box("pad onboard");
@@ -161,6 +177,13 @@ namespace PuttrApp
                     cont.SetEnabled(!string.IsNullOrEmpty(_handicap));
                     page.Add(cont.Margin(16));
                     break;
+                case PushStep:
+                    // Asked for here, with the reason, and the system's question only after the Player's own tap.
+                    page.Add(Ui.Box("center-box", Ui.Icon("BellSimple", 64, Ui.Bright), Ui.Title("Don't miss a thing", "title center").Margin(16),
+                        Ui.Text("Streak reminders, League Night results\nand messages from your coach", "sub center", Ui.Regular).Margin(8)));
+                    page.Add(Ui.Button("Turn on notifications", () => { Push.Register(_app, true); Next(); }).Margin(24));
+                    page.Add(Ui.Text("Not now", "sec-link center sign-link", Ui.Medium).Margin(12).OnTap(() => { Push.Later = true; Next(); }));
+                    break;
                 default:
                     page.Add(Ui.Box("center-box", Ui.Icon("Medal", 64, Ui.Bright), Ui.Title("You're all set!", "title center").Margin(16), Ui.Text("Ready to start putting?", "sub center", Ui.Regular).Margin(8)));
                     if (!_showBle)
@@ -170,16 +193,21 @@ namespace PuttrApp
                     }
                     else
                     {
-                        bool on = Green.Console.Online;
-                        page.Add(Ui.Box("card", Ui.Text(on ? "Connected to " + Green.Link : "Looking for your Puttr...", "body", Ui.Bold),
-                            Ui.Text(on ? "You're ready to putt." : "Turn your Puttr on and keep this phone close.", "body-2", Ui.Regular).Margin(4)).Margin(16));
-                        if (!on) page.Add(Ui.Text("Watch setup guide", "sec-link center sign-link", Ui.Medium).Margin(12).OnTap(() => SetupGuide.Play(Root)));
+                        // The console starts here for a new Player (HomeScreen.StartConsole), so this tap is what
+                        // brings the Bluetooth question up. Refused: said so, with the way to Settings.
+                        bool on = Green.Console.Online, refused = Refused;
+                        page.Add(Ui.Box("card", Ui.Text(on ? "Connected to " + Green.Link : refused ? "Bluetooth is not allowed" : "Looking for your Puttr...", "body", Ui.Bold),
+                            Ui.Text(on ? "You're ready to putt." : refused ? "Puttr uses Bluetooth to receive your putts. Allow it in Settings." : "Turn your Puttr on and keep this phone close.", "body-2", Ui.Regular).Margin(4)).Margin(16));
+                        if (refused) page.Add(Ui.Button("Open Settings", Dialog.OpenAppSettings, "btn btn-ghost").Margin(12));
+                        else if (!on) page.Add(Ui.Text("Watch setup guide", "sec-link center sign-link", Ui.Medium).Margin(12).OnTap(() => SetupGuide.Play(Root)));
                         page.Add(Ui.Button(_saving ? "Saving..." : on ? "Start putting" : "Continue", Save).Margin(16));
-                        page.schedule.Execute(() => { if (_step == Steps && _showBle && Green.Console.Online != on) Draw(); }).Every(1000);
+                        page.schedule.Execute(() => { if (_step == Steps && _showBle && (Green.Console.Online != on || Refused != refused)) Draw(); }).Every(1000);
                     }
                     break;
             }
         }
+
+        static bool Refused { get { PuttrConsole c = Green.Console; return !c.Online && c.useBluetooth && c.Bluetooth.State == BluetoothState.NotAllowed; } }
 
         // Tapping a hand or a goal picks it and moves on half a second later, as the app.
         void Pick(ref string field, string value)

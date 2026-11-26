@@ -287,7 +287,11 @@ namespace PuttrApp
                 return Ui.Box("",
                     Ui.Text("Worlds 2 to 8 are for Puttr Club members.", "sub wrap gl-locked-why", Ui.Medium),
                     Ui.Button("Join Puttr Club", () => Club.Require(app, "Greenlands", redraw)));
-            return Ui.Button(GreenProgress.For(s) > 0 ? "Replay " + s.Code : "Play " + s.Code, () => Greenlands.Play(app, s));
+            VisualElement play = Ui.Button(GreenProgress.For(s) > 0 ? "Replay " + s.Code : "Play " + s.Code, () => Greenlands.Play(app, s));
+            // A TV: the Player is at the green, so a putt is the Play button (TvPutt).
+            if (!Tv.On) return play;
+            TvPutt.Does(play, () => () => Greenlands.Play(app, s));
+            return Ui.Box("", play, TvPutt.Hint("Or hit a putt to play"));
         }
     }
 
@@ -414,7 +418,7 @@ namespace PuttrApp
                 else if (s.Kind == StageKind.Gate) node.AddToClassList("gl-node-square");
                 else if (s.Kind == StageKind.Boss) node.AddToClassList("gl-node-boss");
                 else if (s.Kind == StageKind.Bonus) node.AddToClassList("gl-node-secret");
-                if (s == picked) node.AddToClassList("gl-node-picked");
+                if (s == picked) { node.AddToClassList("gl-node-picked"); node.AddToClassList("tv-path-entry"); }
                 if (!open && s.Kind != StageKind.Bonus) node.Add(Ui.Box("gl-lock"));
                 VisualElement extra = null;
                 if (done) extra = Ui.Box("gl-pill", new StarRow(GreenProgress.For(s), 11f));
@@ -424,9 +428,20 @@ namespace PuttrApp
                 _xs.Add(s.At.x);
                 spot.style.top = Length.Percent(s.At.y / H * 100f);
                 GreenStage tapped = s;
-                node.OnTap(() => pick(tapped));
+                // A TV: OK on the stage already picked plays it (the first OK picks it, the second goes).
+                node.OnTap(() => { if (Tv.On && tapped == picked && open && App.I != null) Greenlands.Play(App.I, tapped); else pick(tapped); });
                 Add(spot);
                 _spots.Add((spot, node, label, extra));
+            }
+            // A TV's remote follows the trail: right is the next stage, left the one before, and the secret green
+            // is up (or down) from the stage its route leaves from.
+            if (Tv.On)
+            {
+                var trail = new List<VisualElement>();
+                foreach (GreenStage s in world.Path) { int at = world.Stages.IndexOf(s); if (at >= 0) trail.Add(_spots[at].node); }
+                Tv.Path(trail);
+                int key = world.Stages.IndexOf(world.SecretKey), secret = world.Stages.IndexOf(world.Secret);
+                if (key >= 0 && secret >= 0 && key != secret && !world.Path.Contains(world.Secret)) Tv.Branch(_spots[key].node, _spots[secret].node, world.Secret.At.y < world.SecretKey.At.y);
             }
             // The way on to the next world, shut until this one's boss is beaten. The last world has none.
             Vector2 boss = world.Boss.At;
@@ -542,17 +557,14 @@ namespace PuttrApp
         {
             GreenStage s = game.Stage;
             GreenWorld world = Greenlands.WorldOf(s);
-            ScrollView scroll = Ui.Scroll();
-            scroll.Add(Ui.Header("", () => ToMap(app, s.World)));
-            VisualElement top = Ui.Box("pad gl-result");
             bool boss = s.Kind == StageKind.Boss;
+            // The stage's own block under its name: the stars and what it opened, or how the bag ran out.
+            VisualElement own = Ui.Box("gl-result");
             if (game.Won)
             {
-                top.Add(Ui.Text(((boss ? "BOSS BEATEN" : "STAGE CLEAR") + "   ·   " + s.Code).ToUpperInvariant(), "kick center", Ui.Bold));
-                top.Add(Ui.Title(s.Name, "title center gl-result-name"));
-                top.Add(Ui.Box("gl-result-stars", new StarRow(game.Stars, 54f)));
-                top.Add(Ui.Text(s.Kind == StageKind.Bonus ? (game.Stars == 3 ? "Top of the stick" : game.Stars == 2 ? "Halfway up" : "On the stick")
-                    : game.Misses == 0 ? "No ball lost" : game.Misses == 1 ? "One ball lost" : game.Misses + " balls lost", "sub center", Ui.Medium));
+                own.Add(Ui.Box("gl-result-stars", new StarRow(game.Stars, 54f)));
+                own.Add(Ui.Text(s.Kind == StageKind.Bonus ? (game.Stars == 3 ? "Top of the stick" : game.Stars == 2 ? "Halfway up" : "On the stick")
+                    : game.Misses == 0 ? "No ball lost" : game.Misses == 1 ? "One ball lost" : game.Misses + " balls lost", "body-2 center", Ui.Medium));
 
                 VisualElement list = Ui.Box("card gl-result-list");
                 if (markers > 0) list.Add(Row("MARKERS", "+" + markers, "Center cuts"));
@@ -565,29 +577,38 @@ namespace PuttrApp
                     GreenWorld next = Greenlands.World(s.World + 1);
                     list.Add(Row("WORLD " + next.Num, next.Name, Club.Member(app.Profile) ? "Open: " + next.Tests.ToLowerInvariant() : "For Puttr Club members"));
                 }
-                if (list.childCount > 0) { list[list.childCount - 1].style.borderBottomWidth = 0; top.Add(list.Margin(16)); }
+                if (list.childCount > 0) { list[list.childCount - 1].style.borderBottomWidth = 0; own.Add(list.Margin(16)); }
             }
-            else
-            {
-                top.Add(Ui.Text("OUT OF BALLS   ·   " + s.Code, "kick center gl-lost", Ui.Bold));
-                top.Add(Ui.Title(s.Name, "title center gl-result-name"));
-                top.Add(Ui.Text(boss ? s.Name + " wins this one. " + game.Makes + " of " + s.Goal + " hits." : s.InARow ? "The run needs " + s.Goal + " in a row." : "Made " + game.Makes + " of " + s.Goal + ".", "sub center", Ui.Medium).Margin(6));
-            }
-            if (!real) top.Add(Ui.Text("Test putts: this is kept until you close the app, and saved nowhere.", "body-2 center", Ui.Medium).Margin(12));
-            // One column, not the width of a tablet.
-            VisualElement column = Ui.Box("gl-result-col", top);
-            scroll.Add(column);
-            VisualElement rateGame = Feedback.GameCard(app, "Greenlands " + s.Code + " " + s.Name);
-            if (rateGame != null) column.Add(Ui.Box("pad", rateGame));
+            else own.Add(Ui.Text(boss ? s.Name + " wins this one. " + game.Makes + " of " + s.Goal + " hits." : s.InARow ? "The run needs " + s.Goal + " in a row." : "Made " + game.Makes + " of " + s.Goal + ".", "body-2 center", Ui.Medium));
 
-            VisualElement buttons = Ui.Box("pad");
+            // The shared game over page: the stage's name, its block, then what next, the rating and the putts.
             GreenStage after = game.Won ? NextAfter(s) : null;
-            if (after != null) buttons.Add(Ui.Button("Play " + after.Code + " " + after.Name, () => Again(app, after)));
-            buttons.Add(Ui.Button(game.Won ? "Replay" : "Try again", () => Again(app, s), after != null ? "btn btn-ghost" : "btn"));
-            buttons.Add(Ui.Button("Map", () => ToMap(app, game.Won && boss && s.World < Greenlands.WorldCount ? s.World + 1 : s.World), "btn btn-ghost"));
-            column.Add(buttons);
-            scroll.Add(FreePuttScreen.Space(28));
-            Root = scroll;
+            var actions = new List<(string, Action, bool)>();
+            if (after != null) actions.Add(("Play " + after.Code + " " + after.Name, () => Again(app, after), true));
+            actions.Add((game.Won ? "Replay" : "Try again", () => Again(app, s), after == null));
+            actions.Add(("Map", () => ToMap(app, game.Won && boss && s.World < Greenlands.WorldCount ? s.World + 1 : s.World), false));
+            var spec = new GameOverSpec
+            {
+                Eyebrow = (game.Won ? (boss ? "Boss beaten" : "Stage clear") : "Out of balls") + "   ·   " + s.Code,
+                Outcome = s.Name,
+                Extra = own,
+                RateAs = "Greenlands " + s.Code + " " + s.Name,
+                XpUnpaid = real && game.Won,   // the stars were just sent: the XP panel asks what they paid
+                Actions = actions,
+                Exit = () => ToMap(app, s.World),
+                Note = real || Fixtures.Connected ? null : "Test putts: this is kept until you close the app, and saved nowhere.",
+                ActionsHint = Tv.On ? "Or hit a putt to " + (after != null ? "play " + after.Code : game.Won ? "replay" : "try again") : null,
+                Putts = new List<GameOverPutt>(),
+            };
+            int n = 0;
+            foreach (Shot shot in game.Shots)
+            {
+                n++;
+                spec.Putts.Add(new GameOverPutt { Number = n.ToString(), From = GameOver.From(shot.Feet, shot.Tee), Call = game.FinalCall(shot), Points = game.FinalPoints(shot), Good = shot.Good });
+            }
+            Root = GameOver.Build(app, spec);
+            // A TV: a putt goes on, to the next stage after a clear, to this one again after an empty bag.
+            if (Tv.On) TvPutt.Does(Root, () => actions[0].Item2);
         }
 
         /// <summary>The stage after this one, if it is open now: the next on the path, or the first of the next world

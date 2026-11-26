@@ -1001,17 +1001,23 @@ namespace PuttrApp
             Material white = Lamp(new Color(0.93f, 0.93f, 0.9f), new Color(0.42f, 0.42f, 0.4f), 0.45f);
             SetMesh("Liner top", PuttrArcade.Make.Ring(r - 0.12f, r + 0.002f, 128), white, new Vector3(0f, -1f, 0f));
             SetMesh("Liner", PuttrArcade.Make.Cup(r - 0.1f, -CupSim.Floor - 1f, false, 128), white, new Vector3(0f, -1f, 0f));
-            SetMesh("Cup floor", PuttrArcade.Make.Disc(r - 0.1f, 128), Lamp(new Color(0.42f, 0.42f, 0.42f), new Color(0.2f, 0.2f, 0.2f), 0.3f), new Vector3(0f, CupSim.Floor, 0f));
-            // The floor of the cup is the Puttr icon (it is drawn from one): its center circle on the center of the hole, its
-            // top toward the far side of the cup, the whole mark inside the liner (Matt, 2026-11-23).
+            // The floor of the cup is the Puttr icon, made the way a real cup's floor is (Matt, 2026-11-25): a moulded
+            // plate with the mark sunk into it as openings (its center circle the ferrule's socket on the center of
+            // the hole, the four petals the drain holes, the ring and stem a channel). The camera ends straight over
+            // the cup, where depth alone shows nothing (Matt: "still looks flat"), so the floor is both really sunk,
+            // with sloped sides, and shaded as a low sun from the far left would shade it: the side of each opening
+            // that faces the light is bright, the other side dark, and the near-left of each opening's floor lies in
+            // the shadow of its own edge. The mark's top is toward the far side of the cup, all of it inside the liner.
             Texture2D icon = Resources.Load<Texture2D>("PuttrArcade/LogoMark");
-            if (icon != null)
+            if (icon == null) SetMesh("Cup floor", PuttrArcade.Make.Disc(r - 0.1f, 128), Lamp(new Color(0.42f, 0.42f, 0.42f), new Color(0.2f, 0.2f, 0.2f), 0.3f), new Vector3(0f, CupSim.Floor, 0f));
+            else
             {
-                Material mark = PuttrArcade.Make.Glow(Color.white, false, icon);
-                _made.Add(mark);
-                GameObject floorMark = PuttrArcade.Make.MeshObject("Puttr icon", _set, CupIcon(icon, r - 0.1f), mark);
-                floorMark.transform.localPosition = new Vector3(0f, CupSim.Floor + 0.012f, 0f);
-                floorMark.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+                Mesh floor = CupFloor(icon, r - 0.1f, 0.6f, out Texture2D shade);
+                // Drawn as painted, unlit: the picture carries all of its light and shade (with the cup's lamp and a
+                // glow of its own the openings washed out to the plate's grey).
+                Material plate = PuttrArcade.Make.Glow(Color.white, false, shade);
+                _made.Add(plate);
+                SetMesh("Cup floor", floor, plate, new Vector3(0f, CupSim.Floor, 0f));
             }
             // The lamp: a point light 0.6 in under the green (so it never touches the turf, which faces away from it), reaching
             // 10 in, without shadows so the ball does not put the floor beside it in the dark. Brightness falls with the square
@@ -1065,20 +1071,181 @@ namespace PuttrApp
             _set.gameObject.SetActive(false);
         }
 
-        // A flat quad of the icon with the center of its center circle at the origin. In the 437 x 479 art that circle is at
-        // (218, 263), and the top of the mark's stem, 263 px from it, is the furthest it reaches.
-        Mesh CupIcon(Texture2D icon, float radius)
+        // The cup's floor from the icon: one surface, the plate at y = 0 and the mark sunk `depth` under it with sloped
+        // sides, and the picture that shades it (see where it is used). The center of the mark's center circle is at
+        // the origin: in the 437 x 479 art that circle is at (218, 263), and the top of the mark's stem, 263 px from
+        // it, is the furthest it reaches. The art is not readable, so it is drawn to a small texture and read back.
+        Mesh CupFloor(Texture2D icon, float radius, float depth, out Texture2D shade)
         {
+            const int N = 512, G = 320;
+            RenderTexture rt = RenderTexture.GetTemporary(N, N, 0, RenderTextureFormat.ARGB32);
+            RenderTexture before = RenderTexture.active;
+            Graphics.Blit(icon, rt);
+            RenderTexture.active = rt;
+            var copy = new Texture2D(N, N, TextureFormat.RGBA32, false);
+            copy.ReadPixels(new Rect(0, 0, N, N), 0, 0);
+            Color32[] px = copy.GetPixels32();
+            RenderTexture.active = before;
+            RenderTexture.ReleaseTemporary(rt);
+            Destroy(copy);
+
             float k = radius * 0.96f / (263f / 479f * icon.height);
-            float left = -218f / 437f * icon.width * k, right = left + icon.width * k;
-            float top = 263f / 479f * icon.height * k, bottom = top - icon.height * k;
-            var mesh = new Mesh { name = "Puttr icon" };
-            mesh.vertices = new[] { new Vector3(left, 0f, bottom), new Vector3(left, 0f, top), new Vector3(right, 0f, top), new Vector3(right, 0f, bottom) };
-            mesh.normals = new[] { Vector3.up, Vector3.up, Vector3.up, Vector3.up };
-            mesh.uv = new[] { new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(1f, 0f) };
-            mesh.triangles = new[] { 0, 1, 2, 0, 2, 3 };
+            float left = -218f / 437f * icon.width * k, wide = icon.width * k;
+            float high = icon.height * k, bottom = 263f / 479f * high - high;
+            float half = radius * 1.03f, step = 2f * half / N;
+
+            // The mark, and how far inside it each point is (a two-pass distance, in points of the map).
+            var inside = new bool[N * N];
+            for (int j = 0; j < N; j++)
+                for (int i = 0; i < N; i++)
+                {
+                    float x = -half + (i + 0.5f) * step, z = -half + (j + 0.5f) * step;
+                    float u = (x - left) / wide, v = (z - bottom) / high;
+                    inside[j * N + i] = u >= 0f && u < 1f && v >= 0f && v < 1f && px[Mathf.Min(N - 1, (int)(v * N)) * N + Mathf.Min(N - 1, (int)(u * N))].a > 127;
+                }
+            var far = new float[N * N];
+            const float Diag = 1.41421356f;
+            for (int n = 0; n < far.Length; n++) far[n] = inside[n] ? 1e6f : 0f;
+            for (int j = 1; j < N - 1; j++)
+                for (int i = 1; i < N - 1; i++)
+                {
+                    int n = j * N + i;
+                    if (far[n] == 0f) continue;
+                    far[n] = Mathf.Min(far[n], Mathf.Min(Mathf.Min(far[n - 1] + 1f, far[n - N] + 1f), Mathf.Min(far[n - N - 1] + Diag, far[n - N + 1] + Diag)));
+                }
+            for (int j = N - 2; j > 0; j--)
+                for (int i = N - 2; i > 0; i--)
+                {
+                    int n = j * N + i;
+                    if (far[n] == 0f) continue;
+                    far[n] = Mathf.Min(far[n], Mathf.Min(Mathf.Min(far[n + 1] + 1f, far[n + N] + 1f), Mathf.Min(far[n + N + 1] + Diag, far[n + N - 1] + Diag)));
+                }
+
+            // The distance is smoothed inside the mark first: left as measured, its ridges (down the middle of every
+            // shape, and the eight-sided steps of the measuring) showed as crease lines in the bowls.
+            var smooth = new float[N * N];
+            for (int pass = 0; pass < 6; pass++)
+            {
+                for (int j = 0; j < N; j++)
+                    for (int i = 0; i < N; i++)
+                    {
+                        int n = j * N + i;
+                        if (far[n] == 0f) { smooth[n] = 0f; continue; }
+                        float sum = 0f;
+                        for (int dj = -1; dj <= 1; dj++)
+                            for (int di = -1; di <= 1; di++)
+                                sum += far[Mathf.Clamp(j + dj, 0, N - 1) * N + Mathf.Clamp(i + di, 0, N - 1)];
+                        smooth[n] = sum / 9f;
+                    }
+                (far, smooth) = (smooth, far);
+            }
+
+            // The floor's height at each point, in inches. An opening goes down steeply at its edge and rounds into its
+            // bottom over `round` (a quarter circle in section, as a moulded cup's holes are: Matt, 2026-11-25, "the
+            // bottoms should be slightly rounded"), so a narrow channel is a trough and a wide opening a shallow bowl.
+            // Where the plate meets the liner it curves up into the wall, as the one-piece cup does.
+            const float round = 0.32f, fillet = 0.28f;
+            var h = new float[N * N];
+            for (int j = 0; j < N; j++)
+                for (int i = 0; i < N; i++)
+                {
+                    int n = j * N + i;
+                    float t = Mathf.Clamp01(far[n] * step / round);
+                    float y = -depth * Mathf.Sqrt(1f - (1f - t) * (1f - t));
+                    float x = -half + (i + 0.5f) * step, z = -half + (j + 0.5f) * step;
+                    float into = Mathf.Sqrt(x * x + z * z) - (radius - fillet);
+                    if (into > 0f) y += fillet - Mathf.Sqrt(Mathf.Max(0f, fillet * fillet - Mathf.Min(into, fillet) * Mathf.Min(into, fillet)));
+                    h[n] = y;
+                }
+            // Smoothed a little, so the grid's steps do not show in the light.
+            var tmp = new float[N * N];
+            for (int pass = 0; pass < 5; pass++)
+            {
+                for (int j = 0; j < N; j++)
+                    for (int i = 0; i < N; i++)
+                    {
+                        float sum = 0f;
+                        for (int dj = -1; dj <= 1; dj++)
+                            for (int di = -1; di <= 1; di++)
+                                sum += h[Mathf.Clamp(j + dj, 0, N - 1) * N + Mathf.Clamp(i + di, 0, N - 1)];
+                        tmp[j * N + i] = sum / 9f;
+                    }
+                (h, tmp) = (tmp, h);
+            }
+            float[] ground = h;
+            float At(int i, int j) => ground[Mathf.Clamp(j, 0, N - 1) * N + Mathf.Clamp(i, 0, N - 1)];
+
+            // The picture: the floor as a sun from the far left, 50 degrees up, lights it, seen from straight above.
+            // Each point takes the light its own slope faces, loses it where the floor between it and the sun stands in
+            // the way, darkens with depth, and glints where a rounded edge turns the sun up at the camera.
+            float lx = -0.6f, lz = 0.8f;
+            const float Rise = 1.19f;   // tan 50
+            var sun = new Vector3(lx, Rise, lz).normalized;
+            Vector3 mid = (sun + Vector3.up).normalized;
+            var plastic = new Color(0.8f, 0.8f, 0.77f);
+            var deepest = new Color(0.36f, 0.4f, 0.36f);
+            var cols = new Color32[N * N];
+            for (int j = 0; j < N; j++)
+                for (int i = 0; i < N; i++)
+                {
+                    float here = At(i, j);
+                    var normal = new Vector3(At(i - 1, j) - At(i + 1, j), 2f * step, At(i, j - 1) - At(i, j + 1)).normalized;
+                    float shadow = 0f;
+                    for (int q = 1; q <= 20; q++)
+                    {
+                        float over = At(i + Mathf.RoundToInt(lx * q * 2f), j + Mathf.RoundToInt(lz * q * 2f)) - (here + q * 2f * step * Rise);
+                        shadow = Mathf.Max(shadow, Mathf.Clamp01(over / 0.04f));
+                    }
+                    float down = Mathf.Clamp01(-here / depth);
+                    Color c = Color.Lerp(plastic, deepest, Mathf.Pow(down, 0.8f));
+                    float light = 0.36f + 0.86f * Mathf.Max(0f, Vector3.Dot(normal, sun)) * (1f - 0.75f * shadow);
+                    c *= light * (1f - 0.3f * down);
+                    float glint = Mathf.Pow(Mathf.Max(0f, Vector3.Dot(normal, mid)), 60f) * 0.22f * (1f - shadow);
+                    c += new Color(glint, glint, glint);
+                    c.a = 1f;
+                    cols[j * N + i] = c;
+                }
+            shade = new Texture2D(N, N, TextureFormat.RGBA32, true) { name = "Cup floor", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Trilinear, anisoLevel = 4 };
+            shade.SetPixels32(cols);
+            shade.Apply(true, true);
+            _made.Add(shade);
+
+            // The surface: a fine grid at the same heights.
+            float cell = 2f * half / G;
+            float Depth(float x, float z)
+            {
+                float fi = (x + half) / step - 0.5f, fj = (z + half) / step - 0.5f;
+                int i0 = Mathf.FloorToInt(fi), j0 = Mathf.FloorToInt(fj);
+                float a = fi - i0, b = fj - j0;
+                return Mathf.Lerp(Mathf.Lerp(At(i0, j0), At(i0 + 1, j0), a), Mathf.Lerp(At(i0, j0 + 1), At(i0 + 1, j0 + 1), a), b);
+            }
+            var verts = new Vector3[(G + 1) * (G + 1)];
+            var normals = new Vector3[verts.Length];
+            var uvs = new Vector2[verts.Length];
+            for (int j = 0; j <= G; j++)
+                for (int i = 0; i <= G; i++)
+                {
+                    float x = -half + i * cell, z = -half + j * cell;
+                    int n = j * (G + 1) + i;
+                    verts[n] = new Vector3(x, Depth(x, z), z);
+                    normals[n] = new Vector3(Depth(x - cell, z) - Depth(x + cell, z), 2f * cell, Depth(x, z - cell) - Depth(x, z + cell)).normalized;
+                    uvs[n] = new Vector2(i / (float)G, j / (float)G);
+                }
+            var tris = new List<int>(G * G * 6);
+            float reach = radius + cell * 1.5f;
+            for (int j = 0; j < G; j++)
+                for (int i = 0; i < G; i++)
+                {
+                    float x = -half + (i + 0.5f) * cell, z = -half + (j + 0.5f) * cell;
+                    if (x * x + z * z > reach * reach) continue;   // outside the liner
+                    int n = j * (G + 1) + i;
+                    tris.Add(n); tris.Add(n + G + 1); tris.Add(n + G + 2);
+                    tris.Add(n); tris.Add(n + G + 2); tris.Add(n + 1);
+                }
+            var mesh = new Mesh { name = "Cup floor", indexFormat = IndexFormat.UInt32 };
+            mesh.vertices = verts; mesh.normals = normals; mesh.uv = uvs;
+            mesh.SetTriangles(tris, 0);
             mesh.RecalculateBounds();
-            _made.Add(mesh);
             return mesh;
         }
 

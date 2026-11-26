@@ -69,8 +69,9 @@ namespace PuttrApp
         /// <summary>Putt j's setup faults, worst first; null when the window has no usable frames.</summary>
         public static Result Analyze(object blaze, int putt, bool lefty)
         {
-            double start = 3 + 5 * putt + 2, end = 3 + 5 * putt + 5;
-            List<Frame> all = Read(blaze).FindAll(f => f.T >= start && f.T <= end && f.J.ContainsKey("left_wrist") && f.J.ContainsKey("right_wrist"));
+            double slot = 3 + 5 * putt, start = slot + 2, end = slot + 5;
+            List<Frame> whole = Read(blaze).FindAll(f => f.T >= slot && f.T <= end && f.J.ContainsKey("left_wrist") && f.J.ContainsKey("right_wrist"));
+            List<Frame> all = whole.FindAll(f => f.T >= start);
             if (all.Count < 6) return null;
             double z = 0, x = 0;
             foreach (Frame f in all)
@@ -102,6 +103,40 @@ namespace PuttrApp
             for (int i = 1; i < smooth.Length; i++) if (smooth[i] < smooth[back]) back = i;
             int setup = 0;
             for (int i = 1; i < back; i++) if (smooth[i] >= smooth[i - 1] && (i + 1 >= smooth.Length || smooth[i] >= smooth[i + 1])) setup = i;
+            // The stroke was over before the window began. The window is the last 3 s before the putt's result, and a
+            // slow putt or a miss is reported later than that: what is left in it is the follow through and the hands
+            // coming back, so the "setup" found was the follow through (Matt, 2026-11-26: the coach froze on it). The
+            // sign of it: the follow through's peak comes before the lowest point taken for the backstroke. The whole
+            // 5 s clip is read then: the backstroke is the lowest point before that peak, the setup the last high before it.
+            int peak = 0;
+            for (int i = 1; i < smooth.Length; i++) if (smooth[i] > smooth[peak]) peak = i;
+            if (peak < back && whole.Count > all.Count)
+            {
+                var wide = new List<Frame>(); var wideSignal = new List<double>();
+                foreach (Frame f in whole)
+                {
+                    P lw = f.J["left_wrist"], rw = f.J["right_wrist"];
+                    if (lw.Vis < 0.6 && rw.Vis < 0.6) continue;
+                    wide.Add(f);
+                    wideSignal.Add(dtl ? (lefty ? lw.Z : rw.Z) : (lefty ? -1 : 1) * (lw.X + rw.X) / 2);
+                }
+                var wideSmooth = new double[wideSignal.Count];
+                for (int i = 0; i < wideSignal.Count; i++)
+                {
+                    int a = Math.Max(0, i - w / 2), b = Math.Min(wideSignal.Count - 1, i + w / 2);
+                    double s = 0; for (int k = a; k <= b; k++) s += wideSignal[k];
+                    wideSmooth[i] = s / (b - a + 1);
+                }
+                int until = wide.IndexOf(used[peak]);
+                if (until > 2)
+                {
+                    int wideBack = 0;
+                    for (int i = 1; i < until; i++) if (wideSmooth[i] < wideSmooth[wideBack]) wideBack = i;
+                    int wideSetup = 0;
+                    for (int i = 1; i < wideBack; i++) if (wideSmooth[i] >= wideSmooth[i - 1] && wideSmooth[i] >= wideSmooth[i + 1]) wideSetup = i;
+                    used = wide; setup = wideSetup;
+                }
+            }
             Dictionary<string, P> body = used[setup].J;
             var result = new Result { DownTheLine = dtl, SetupTime = used[setup].T };
             P Get(string k) => body.TryGetValue(k, out P p) ? p : null;

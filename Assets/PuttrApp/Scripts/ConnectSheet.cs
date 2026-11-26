@@ -127,7 +127,18 @@ namespace PuttrApp
         {
             into.AddToClassList("connect-tester");
             into.Add(Ui.Text("TESTER", "caps caps-green", Ui.Bold));
-            into.Add(Ui.Text("Test putts: with no Puttr, putt from a keyboard (Space, or 1 to 6). They are never saved.", "body-2", Ui.Regular).Margin(4));
+            into.Add(Ui.Text("Test putts: with no Puttr, putt from a keyboard (Space, or 1 to 6).", "body-2", Ui.Regular).Margin(4));
+            Label saved = Ui.Text("", "body-2", Ui.Regular);
+            saved.Margin(4);
+            void Saved() => saved.text = Green.SaveTestPutts
+                ? "On: test putts go to your account as real putts, in games, Tracks, quests and practice. Not in tournaments, League or live matches, and not on club boards."
+                : "Off: test putts are played, never saved.";
+            if (!Fixtures.On)
+            {
+                into.Add(Rows.Row("Flask", "Save test putts", null, Rows.Switch(Green.SaveTestSwitch, on => { Green.SaveTestSwitch = on; Saved(); })));
+                into.Add(saved);
+                Saved();
+            }
             VisualElement body = new VisualElement();
             into.Add(Rows.Row("WifiHigh", "Connect over Wi-Fi", null, Rows.Switch(Green.WifiOnly, on => { Green.WifiOnly = on; Draw(); refresh(); })));
             into.Add(body);
@@ -185,6 +196,9 @@ namespace PuttrApp
     public static class ConnectGate
     {
         static bool _open, _warned, _usingTestPutts;
+        /// <summary>-app2TestPutts: test putts are on from the start, as if a tester had tapped "Use test putts" (a
+        /// scripted walk cannot tap it and then start the game again). Still testers only: Clear checks the profile.</summary>
+        public static void UseTestPutts() => _usingTestPutts = true;
 
         /// <summary>The rule itself, apart from the device (for the tests). A tester sees the card too, and passes once
         /// they have picked test putts on it.</summary>

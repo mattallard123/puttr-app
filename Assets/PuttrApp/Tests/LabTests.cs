@@ -24,6 +24,48 @@ namespace PuttrApp.Tests
             Assert.IsTrue(Api.IsHeld(true, "POST", "/video/agora/startRecording"), "and so is a round's recorder");
         }
 
+        // A face-on pose file for putt 0 (its clip is 3 to 8 s of the replay, its window the last 3 s): the hands hold
+        // at address, dip for the backstroke at backAt, peak for the follow through 0.5 s later, then come back.
+        static object Stroke(double backAt)
+        {
+            var frames = new Dictionary<string, object>();
+            for (int i = 0; i <= 100; i++)
+            {
+                double t = 3 + i * 0.05, x = 0.5;
+                if (t > backAt - 0.4 && t <= backAt) x = 0.5 - 0.2 * (t - (backAt - 0.4)) / 0.4;
+                else if (t > backAt && t <= backAt + 0.5) x = 0.3 + 0.5 * (t - backAt) / 0.5;
+                else if (t > backAt + 0.5 && t <= backAt + 0.9) x = 0.8 - 0.3 * (t - (backAt + 0.5)) / 0.4;
+                else if (t > backAt + 0.9) x = 0.5 - 0.02 * (t - (backAt + 0.9));   // the hands drift down after it
+                object At(double px, double py) => new Dictionary<string, object> { { "x", px }, { "y", py }, { "z", 0.0 }, { "visibility", 1.0 } };
+                frames["f" + i] = new Dictionary<string, object>
+                {
+                    { "timestamp", t },
+                    { "landmarks", new Dictionary<string, object>
+                        {
+                            { "left_wrist", At(x + 0.02, 0.6) }, { "right_wrist", At(x - 0.02, 0.6) }, { "left_hip", At(0.56, 0.55) }, { "right_hip", At(0.44, 0.55) },
+                            { "left_shoulder", At(0.58, 0.3) }, { "right_shoulder", At(0.42, 0.3) }, { "left_eye", At(0.52, 0.15) }, { "right_eye", At(0.48, 0.15) },
+                            { "left_foot_index", At(0.6, 0.95) }, { "right_foot_index", At(0.4, 0.95) }, { "left_ankle", At(0.59, 0.9) }, { "right_ankle", At(0.41, 0.9) },
+                            { "left_knee", At(0.58, 0.75) }, { "right_knee", At(0.42, 0.75) }, { "nose", At(0.5, 0.17) },
+                        } },
+                };
+            }
+            return frames;
+        }
+
+        [Test]
+        public void TheSetupFrameIsFoundWhenTheStrokeIsOverBeforeTheWindow()
+        {
+            // A stroke inside the window: the setup is the address before the backstroke, as it always was.
+            BodyFaults.Result inside = BodyFaults.Analyze(Stroke(6.4), 0, false);
+            Assert.IsNotNull(inside);
+            Assert.That(inside.SetupTime, Is.InRange(5.0, 6.1), "a stroke in the window");
+            // A slow putt or a miss: the result came late, so the stroke was over before the window began and only the
+            // follow through is in it. The setup is still the address before the backstroke, not the follow through.
+            BodyFaults.Result late = BodyFaults.Analyze(Stroke(4.7), 0, false);
+            Assert.IsNotNull(late);
+            Assert.That(late.SetupTime, Is.LessThan(4.5), "a stroke before the window");
+        }
+
         static object Session(string capture) => new Dictionary<string, object> { { "captureCheck", capture } };
 
         [Test]

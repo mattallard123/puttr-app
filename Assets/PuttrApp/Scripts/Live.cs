@@ -593,16 +593,31 @@ namespace PuttrApp
 
         public string Banner => Winner == 0 ? "Final" : Me == 0 ? Names[Winner - 1] + " won" : Winner == Me ? "You won" : "You lost";
 
-        /// <summary>The whole final screen but its buttons, which differ (in the game: Done leaves it; from the list: the page's own back).</summary>
-        public VisualElement View()
+        /// <summary>The match on the shared game over page: who won, both scores, then putt by putt as the second column.</summary>
+        public GameOverSpec Spec(Action exit)
         {
+            VisualElement view = View(false, out VisualElement table);
+            return new GameOverSpec { Eyebrow = "Final   ·   Live game", Outcome = Banner, Extra = view, Detail = table, DetailTitle = table != null ? "Putt by putt" : null, Exit = exit, RateAs = "Live game" };
+        }
+
+        /// <summary>The whole final screen but its buttons.</summary>
+        public VisualElement View() => View(true, out _);
+
+        /// <param name="whole">With the banner on top and the putt table under it; false for the shared game over page, which
+        /// shows the banner itself and the table (handed back) as its own column.</param>
+        VisualElement View(bool whole, out VisualElement puttTable)
+        {
+            puttTable = null;
             VisualElement root = new VisualElement();
             StyleSheet sheet = Resources.Load<StyleSheet>("PuttrApp/Live");
             if (sheet != null) root.styleSheets.Add(sheet);
 
-            Label banner = Ui.Title(Banner, "title center");
-            if (Winner != 0 && Me != 0) banner.style.color = Winner == Me ? Ui.Bright : Ui.Red;
-            root.Add(banner);
+            if (whole)
+            {
+                Label banner = Ui.Title(Banner, "title center");
+                if (Winner != 0 && Me != 0) banner.style.color = Winner == Me ? Ui.Bright : Ui.Red;
+                root.Add(banner);
+            }
 
             VisualElement Side(int p)
             {
@@ -630,7 +645,8 @@ namespace PuttrApp
                 if (i >= Dealt.Count) middle.Insert(0, Ui.Text("SUDDEN DEATH", "live-extra", Ui.Bold));
                 table.Add(Ui.Box(i == 0 ? "live-row live-row-first" : "live-row", Mark(1, i), middle, Mark(2, i)));
             }
-            root.Add(table);
+            if (whole) root.Add(table);
+            else { if (sheet != null) table.styleSheets.Add(sheet); puttTable = table; }
             return root;
         }
 
@@ -653,8 +669,7 @@ namespace PuttrApp
     {
         public LiveResultScreen(App app, object game)
         {
-            Root = Page.Make(app, "Live game", out VisualElement body);
-            body.Add(Ui.Box("pad", LiveResult.From(game, Auth.Uid).View(), Ui.Button("Done", app.ExitToTab)));
+            Root = GameOver.Build(app, LiveResult.From(game, Auth.Uid).Spec(app.Pop));
         }
     }
 
@@ -751,17 +766,10 @@ namespace PuttrApp
                 _content.style.flexShrink = 1;
                 Place();
             }
-            var scroll = new ScrollView(ScrollViewMode.Vertical)
-            {
-                horizontalScrollerVisibility = ScrollerVisibility.Hidden,
-                verticalScrollerVisibility = ScrollerVisibility.Hidden,
-                touchScrollBehavior = ScrollView.TouchScrollBehavior.Elastic,
-            };
-            scroll.style.flexGrow = 1;
-            scroll.style.flexShrink = 1;
-            scroll.Add(_match.Result().View());
-            scroll.Add(Ui.Button("Done", _leave));
-            _content.Add(scroll);
+            // The same game over page as every game, over the whole screen; Exit leaves the match.
+            VisualElement page = GameOver.Build(App.I, _match.Result().Spec(_leave));
+            page.style.flexGrow = 1;
+            _content.Add(page);
         }
     }
 

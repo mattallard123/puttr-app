@@ -66,6 +66,11 @@ namespace PuttrApp
             UnityEngine.Object.DontDestroyOnLoad(_go);
             _p = _go.AddComponent<VideoPlayer>();
             Texture = new RenderTexture(540, 960, 0);
+            // Black until the first frame: a new texture is whatever the phone left there (it showed as grey behind the loader).
+            RenderTexture was = RenderTexture.active;
+            RenderTexture.active = Texture;
+            GL.Clear(true, true, Color.black);
+            RenderTexture.active = was;
             _p.playOnAwake = false;
             _p.renderMode = VideoRenderMode.RenderTexture;
             _p.targetTexture = Texture;
@@ -573,7 +578,8 @@ namespace PuttrApp
             }).Every(16);
 
             string url = LabReplay.Url(session);
-            if (url.Length > 0) { _video = new SessionVideo(url); _picture.image = _video.Texture; }
+            // The picture stays out of sight while loading: the loader is on black.
+            if (url.Length > 0) { _video = new SessionVideo(url); _picture.image = _video.Texture; _frame.style.visibility = Visibility.Hidden; }
             App.Run(Load(++_run));
         }
 
@@ -658,13 +664,22 @@ namespace PuttrApp
             if (lines != null && lines.Count == _moments.Count && lines.All(l => l is string s && s.Trim().Length > 0))
                 for (int i = 0; i < _moments.Count; i++) _moments[i].Line = ((string)lines[i]).Trim();
             // Fetch every line but the first ahead (the first is spoken at once).
-            CoachVoice.Warm(_moments.Skip(1).Select(m => m.Line));
+            CoachVoice.Warm(_moments.Skip(1).Select(m => m.Line), true);
+            // The first line is fetched here, behind the loader, and the review does not open until it is on the phone
+            // (or eight seconds have gone): the coach then speaks as the words appear, where the first line used to be
+            // fetched only once it was on screen (Matt, 2026-11-26).
+            bool firstIn = _moments.Count == 0;
+            if (!firstIn) App.Run(CoachVoice.Clip(_coach.VoiceId, _moments[0].Line, false, _ => firstIn = true));
 
             if (_video != null) yield return _video.WaitReady(15);
+            if (my != _run) yield break;
+            float firstBy = Now + 8f;
+            while (!firstIn && Now < firstBy && my == _run) yield return null;
             if (my != _run) yield break;
             if (_video != null && !_video.Ready) { Perf.Note("review: video not ready, going on without it"); _video.Dispose(); _video = null; _picture.image = null; }
 
             _loading.style.display = DisplayStyle.None;
+            _frame.style.visibility = Visibility.Visible;
             _stage = Stage.Play;
             _index = 0;
             DrawTop();
@@ -846,10 +861,12 @@ namespace PuttrApp
             // 2. The coach says it over the still. With the voice off, or a line that never arrives, the tip stays up
             // for a reading time so the walkthrough never stalls or flashes past.
             float began = Now;
-            if (CoachVoice.On) { CoachVoice.Say(m.Line); while (CoachVoice.Speaking && my == _run) yield return null; }
+            // The review is always spoken, whatever the voice setting (CoachedReview.js: voiceOn is only "is there a voice").
+            CoachVoice.Say(m.Line, true);
+            while (CoachVoice.Speaking && my == _run) yield return null;
             if (my != _run) yield break;
             float reading = Mathf.Max(3.8f, m.Line.Length * 0.055f);
-            if (!CoachVoice.On || Now - began < m.Line.Length * 0.03f)
+            if (Now - began < m.Line.Length * 0.03f)
                 while (Now - began < reading && my == _run) yield return null;
             if (my != _run) yield break;
 

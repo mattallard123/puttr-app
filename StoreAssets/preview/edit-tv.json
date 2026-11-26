@@ -38,7 +38,7 @@
   "end": {
    "c": "end",
    "h": "The ultimate <em>putting experience</em>",
-   "sub": "AI coaching · Stats · 40+ games",
+   "sub": "AI coaching \u00b7 Stats \u00b7 40+ games",
    "size": 9.5
   },
   "measured": {
@@ -96,7 +96,7 @@
   },
   {
    "take": "puttstar",
-   "at": 20.0,
+   "at": 29.0,
    "beats": 1,
    "flash": true
   },
@@ -164,7 +164,7 @@
   },
   {
    "take": "lanes",
-   "at": 33.8,
+   "at": 40.0,
    "beats": 2,
    "text": "players",
    "dim": 0.1,

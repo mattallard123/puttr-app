@@ -302,10 +302,12 @@ namespace PuttrApp
             if (recorded) yield return Api.Post("/video/agora/stopRecording", new Dictionary<string, object> { { "channelName", channel }, { "uid", uid } }, null, null, auth: false, live: live);
         }
 
-        // A 3D session keeps filming 2.5 s after the last putt (LabVideoCapture's tail), then the lab's recorder is stopped.
+        // A 3D session keeps filming 5 s after the last putt, then the lab's recorder is stopped. It was 2.5 s
+        // (LabVideoCapture's tail): the replay's clip for a putt runs a second past it, and the recorder in the cloud is
+        // a moment behind the phone, so the last putt's clip could run off the end of the film (Matt, 2026-11-26).
         IEnumerator CloseLab(int run, string channel, int uid, string session)
         {
-            yield return new WaitForSecondsRealtime(2.5f);
+            yield return new WaitForSecondsRealtime(5f);
             if (run == _run) PuttrCapture_Stop();
             yield return Api.Post("/lab/recording/stop", new Dictionary<string, object> { { "sessionId", session }, { "channelName", channel }, { "uid", uid } }, null, null);
             _labSession = null;
@@ -314,8 +316,23 @@ namespace PuttrApp
         /// <summary>Where the Player sees themselves, as shares of the screen from the top left.</summary>
         public void Place(Rect share) => PuttrCapture_Place(share.x, share.y, share.width, share.height);
 
+        int _cameraDown;
+        bool _cameraLost;
+        State _beforeLost;
+
+        // Said only if the camera has not come back within a few seconds, and taken back when it does.
+        IEnumerator CameraLost(int stamp, int run)
+        {
+            yield return new WaitForSecondsRealtime(3f);
+            if (stamp != _cameraDown || run != _run || Now == State.Off || Now == State.Failed) yield break;
+            _beforeLost = Now;
+            _cameraLost = true;
+            Set(State.Failed, "Camera unavailable. Close any other app using the camera, then leave and re-open this round.");
+        }
+
         void Set(State state, string problem)
         {
+            if (state != State.Failed) _cameraLost = false;
             Now = state;
             Problem = problem;
             if (problem != null) Perf.Note("capture: " + problem);
@@ -343,8 +360,20 @@ namespace PuttrApp
                     break;
                 case "video":
                     // 1 capturing, 2 encoding: frames are flowing even if the first-frame call was missed. 3 failed.
-                    if (parts.Length >= 2 && (parts[1] == "1" || parts[1] == "2")) _published = true;
-                    if (parts.Length >= 2 && parts[1] == "3" && Now != State.Off) Set(State.Failed, "Camera unavailable. Close any other app using the camera, then leave and re-open this round.");
+                    if (parts.Length >= 2 && (parts[1] == "1" || parts[1] == "2"))
+                    {
+                        _published = true;
+                        // The camera is back. A failure is often a moment's interruption (a system alert, the sound
+                        // session changing as a call is spoken): it used to stay up as "Camera unavailable", with the
+                        // picture plainly there and the round taking no putts (Matt, 2026-11-26, League Night).
+                        _cameraDown++;
+                        if (_cameraLost && Now == State.Failed && !Refused) { _cameraLost = false; Perf.Note("capture: the camera came back"); Set(_beforeLost, null); }
+                    }
+                    if (parts.Length >= 2 && parts[1] == "3" && Now != State.Off && Now != State.Failed)
+                    {
+                        Perf.Note("capture: camera failed, reason " + (parts.Length > 2 ? parts[2] : "?"));
+                        StartCoroutine(CameraLost(++_cameraDown, _run));
+                    }
                     break;
                 case "remote": RemoteUid = parts.Length > 1 && int.TryParse(parts[1], out int ru) ? ru : 0; break;
                 case "error": Perf.Note("capture: agora error " + (parts.Length > 1 ? parts[1] : "?")); break;

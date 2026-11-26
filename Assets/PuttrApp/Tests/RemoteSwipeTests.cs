@@ -120,6 +120,44 @@ namespace PuttrApp.Tests
             Assert.IsFalse(swipe.Busy(1.6f));
         }
 
+        // A short quick swipe lifts before the step point: still one step, on the lift.
+        [Test]
+        public void AFlickIsOneStep()
+        {
+            Assert.AreEqual("right", Steps(Frames(new Vector2(0.1f, 0f), new Vector2(0.25f, 0.02f), new Vector2(0.38f, 0.03f), Vector2.zero, Vector2.zero, Vector2.zero)));
+            // Too small to mean anything.
+            Assert.AreEqual("", Steps(Frames(new Vector2(0.05f, 0f), new Vector2(0.15f, 0f), new Vector2(0.2f, 0f), Vector2.zero, Vector2.zero)));
+            // A thumb that drifts that far slowly is resting, not flicking.
+            var slow = new List<Vector2>();
+            for (int i = 1; i <= 40; i++) slow.Add(new Vector2(0.4f * i / 40f, 0f));
+            slow.AddRange(Rest(20));
+            Assert.AreEqual("", Steps(Frames(slow.ToArray())));
+            // A full swipe is still one step: its lift adds no flick.
+            Assert.AreEqual("down", Steps(Swipe(0f, new Vector2(0f, -1f))));
+        }
+
+        // A click on the ring's edge, held: one step, then more after half a second. The thumb has not travelled.
+        [Test]
+        public void AHeldRingClickRepeats()
+        {
+            var sb = new StringBuilder();
+            for (int i = 0; i < 60; i++) { if (i > 0) sb.Append(';'); sb.Append(RemoteSwipe.Frame(i / 60f, Vector2.zero, new Vector2(1f, 0f))); }
+            for (int i = 60; i < 90; i++) sb.Append(';').Append(RemoteSwipe.Frame(i / 60f, Vector2.zero, Vector2.zero));
+            List<string> steps = RemoteSwipe.Replay(sb.ToString());
+            Assert.Greater(steps.Count, 2);
+            Assert.Less(steps.Count, 7);
+            foreach (string step in steps) Assert.AreEqual("right", step);
+            // A short click is one step.
+            Assert.AreEqual("right", Steps(RemoteSwipe.Frame(0f, Vector2.zero, new Vector2(1f, 0f)) + ";" + RemoteSwipe.Frame(0.05f, Vector2.zero, new Vector2(1f, 0f)) + ";" + RemoteSwipe.Frame(0.1f, Vector2.zero, Vector2.zero) + ";" + RemoteSwipe.Frame(0.6f, Vector2.zero, Vector2.zero)));
+        }
+
+        // A thumb left where its swipe ended is not a held click: nothing repeats, however long it rests there.
+        [Test]
+        public void AThumbRestingAfterASwipeDoesNotRepeat()
+        {
+            Assert.AreEqual("down", Steps(Swipe(0f, new Vector2(0f, -1f), hold: 120)));
+        }
+
         // Swipes recorded from a real remote ("[remote]" lines of a traced build): the step each should give, then its frames.
         static readonly (string want, string frames)[] Recorded = { };
 

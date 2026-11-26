@@ -39,7 +39,7 @@ namespace PuttrApp.EditorTools
             PlistElementDict puttr = types.AddDict();
             puttr.SetString("CFBundleURLName", "co.puttr.ios");
             puttr.CreateArray("CFBundleURLSchemes").AddString("puttr");
-            plist.root.SetString("NSPhotoLibraryUsageDescription", "Allow Puttr to access photos");
+            plist.root.SetString("NSPhotoLibraryUsageDescription", "Puttr lets you choose a picture from your library as your profile photo.");
             plist.WriteToFile(plistPath);
             UnityEngine.Debug.Log("Puttr 2 iOS: Sign in with Apple, push, universal links and puttr:// added");
         }

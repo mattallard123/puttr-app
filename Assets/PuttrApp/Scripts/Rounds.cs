@@ -259,6 +259,9 @@ namespace PuttrApp
 
         string _gameId;
 
+        /// <summary>A round that goes on a board others play for: a tournament round or a League game.</summary>
+        public bool Competition => What == Kind.Tournament || What == Kind.League;
+
         public CompetitionRound(Kind what, RoundSession session, string gameId)
         {
             What = what;
@@ -269,7 +272,8 @@ namespace PuttrApp
         /// <summary>Opens the round. done(null) to play; otherwise a sentence saying why not.</summary>
         public IEnumerator Open(Action<string> done)
         {
-            if (!Green.RealPutts) { How = Mode.Local; done(null); yield break; }
+            // A tester's saved test putts (Green.SaveTestSwitch) stop short of a tournament round and a League game.
+            if (!Green.RealFor(Competition)) { How = Mode.Local; done(null); yield break; }
             // A quest level and a lesson drill open nothing: their putts go to their own routes, or nowhere.
             if (What == Kind.Quest || What == Kind.Drill) { How = Mode.Entered; done(null); yield break; }
             // Only competition rounds can be rehearsed (a tester's switch): a coach session or a drill is the Player's own practice.

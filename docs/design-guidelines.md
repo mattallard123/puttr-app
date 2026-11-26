@@ -12,7 +12,7 @@ The interface is a sports broadcast graphic: flat, solid, sharp-cornered, with h
 
 1. No interface element has depth. No raised bottom edges, drop shadows, glows, gloss, sheen, scan lines, gradients or text shadows.
 2. A 3D picture, live or baked, always sits in a rectangular **window** with a 1 px border.
-3. Text never sits on a 3D picture. A window's title, tags and numbers go on a solid bar under it.
+3. Text never sits on a 3D picture. A window's title, tags and numbers go on a solid bar under it. One exception (Matt, 2026-11-25): on a tablet, Home's session card lays its title over the bottom left corner of its window.
 4. In-game screens are the exception: the world is full screen and the HUD sits over it. They follow the game layout rules (tee top left, ideal putt top right, game centred), not these.
 5. No photographs and no hand-drawn illustration in the tabs. A picture is either a 3D window or a flat icon.
 6. Card art (`Resources/PuttrApp/Cards`) is shot clean: no score, gauge or other in-game HUD in frame, subject centred, nothing important in the outer 8%.
@@ -37,6 +37,20 @@ Solid colours only (the project is linear colour, so see-through colours blend t
 | `amber` | rgb(255, 179, 0) | Time running out, streaks |
 | `red` | rgb(255, 82, 82) | Live, destructive actions, errors |
 | `gold` | rgb(255, 210, 74) | A new personal best, trophies |
+
+**Rank colours** (Matt, 2026-11-25): a Player's XP rank has one colour, and it is status, so it is the one place the palette grows. They are used only on the rank badge, the ring round an avatar, the left edge of the level card and the rank's name on the rank-up page. Never on a button, a bar, a chart or a section header.
+
+| Rank | From level | Value | Text on it |
+| --- | --- | --- | --- |
+| Rookie | 1 | rgb(139, 147, 153) (`text-2`) | black |
+| Dance Floor | 5 | rgb(45, 140, 60) (`brand`) | white |
+| Weekender | 10 | rgb(0, 168, 150) | black |
+| Scratch | 20 | rgb(86, 135, 255) | white |
+| Club Champ | 50 | rgb(160, 110, 255) | white |
+| State Am | 100 | rgb(232, 90, 170) | black |
+| Tour | 150 | rgb(255, 122, 58) | black |
+| Major | 250 | rgb(255, 255, 255) | black |
+| Legend | 500 | rgb(255, 210, 74) (`gold`) | black |
 
 Text on brand green is white. Colour carries meaning only. Amber, red and gold are never decoration. There are two greens and no others: brand for fills, bright for small text and icons.
 
@@ -68,7 +82,7 @@ Each kind of content has one component, used on every tab. If a new feature need
 
 **Main button.** Brand green, 52 high, full width, white Title-style label, slanted ends (10 px parallelogram). **At most one per screen.** A screen with no single main action has none.
 
-**Secondary button.** `surface-2`, 44 high, white Title-style label, same slanted shape. Destructive is the same button in `red`.
+**Secondary button.** `surface-2`, 44 high, white Title-style label, same slanted shape. Destructive is the same button in `red`. Continue with Apple / Google is the same button in white with black words and the provider's mark before them (`Ui.Button(text, onTap, "btn btn-white", icon)`).
 
 **Icon button.** 44 x 44, `surface`, radius 4, one 24 px stroke icon.
 
@@ -102,20 +116,33 @@ Each kind of content has one component, used on every tab. If a new feature need
 
 **Icons.** One stroke set, 2 px stroke, 24 px box. No filled colour tiles behind icons.
 
+**Game over.** Every game ends on one page, `GameOver.Build(app, spec)` (GameOver.cs): the eyebrow, the score (or who won, with the standings), the personal best in gold when it was set, the game's own block and numbers, PQS, then Play again (the one main button), Review game and Exit, then a "See your analysis" list row when the game counted towards the Player's own putting, then the rating, then the putts. A phone scrolls it as one column. A wide screen never scrolls the page: the result, actions and rating are the left column and the putts scroll in their own column on the right. No game ends in a modal or on a page of its own design.
+
+**Rank badge.** `Xp.Badge(level)` (Xp.cs): a small rectangle in the rank's colour, radius 4, with the level on it in Numeral style (11; 15 on the big one). It follows a Player's name wherever the name is shown: Profile, another Player's profile, boards, the matchup, the feed. Where the avatar is shown too, `Xp.Ring(avatar, level)` puts a 2 px ring of the same colour round it. A badge never changes an order or a pairing.
+
+**XP panel.** `Xp.Panel` on the game over page, after PQS and before the buttons: a `surface` block with "XP earned" as a bright green eyebrow and the total as a 28 numeral, one row for each award the game paid, the 4 px progress bar (brand green for what the Player had, white for what was just added), and under it the level and rank on the left and the XP to the next level on the right. Shown only to a signed-in Player for a saved game; never in host mode, for guests or for test putts. A tap opens the Levels sheet.
+
+**Level card.** On Profile under the name, under a `/ LEVEL` section header whose link is "?": a card with a 4 px left edge in the rank's colour, the level as a 28 numeral with the rank's name, the XP in the level on the right, the 4 px bar, then the XP to the next level and the levels to the next rank. Home shows XP in one place only (Matt, 2026-11-25): the profile switch beside the greeting has a 2 px ring in the rank's colour round its avatar, and the rank's name in muted Label text under "Switch". A press there always opens the profile switch, never the Levels sheet. The card and the "?" open the Levels sheet.
+
+**Levels sheet.** `LevelsScreen`: the one page that explains XP. The Player's level card, then `/ THE RANKS` as one block of nine rows (big badge, name, levels and XP to reach, a check on ranks passed, "You" on the current one), then `/ HOW TO EARN XP` as rows with the value on the right in Numeral style, grouped Every game, Every day and Once each, read from the API. Status only: a rank carries no perk.
+
+**Level up.** `LevelUpScreen`, a pushed page after game over when a game carries the Player over: "LEVEL UP" eyebrow, the level as the page's one oversize numeral (the only place a numeral is larger than 44), the rank's name, the levels to the next rank, and the Player's own row with ring and badge. At a new rank the rank's name leads, in its colour. Continue is the main button; See the levels is the secondary.
+
 **Tab bar.** Flat black, 1 px `line` on top. Active tab: bright green icon and label with a 2 px bright green bar above it.
 
 ## Motion and sound
 
-Press: the control switches to its pressed colour for about 100 ms. No bounce, no scale. Page push 240 ms. No pulsing or shimmering decoration. Every press of a main button has its sound.
+Press: the control switches to its pressed colour for about 100 ms. No bounce, no scale. Page push 240 ms. No pulsing or shimmering decoration. The one exception is loading (Matt, 2026-11-24): placeholder blocks (`Skeleton.cs`) carry a single soft `surface-3` band that crosses the whole page left to right about every 1.6 s, because there it means "loading" and is not decoration. Every press of a main button has its sound.
 
 ## Content rules
 
 - Never show the same information twice on one screen.
-- Home owns Today's session, as the session card.
-- **Improve leads with 3D stroke sessions**: filming a session is the thing we most want Players doing, so it is the first block and holds the tab's one main button. PQS and the rest follow.
+- Home owns Today's session, as the session card. The card shows the session in 3D in a window (Matt, 2026-11-24): the mat, a green circle on every spot it is putted from with the count beside each (×3), and one ball that putts from each spot in turn (Matt, 2026-11-25: no balls waiting on the spots). The counts are the scene's own labels; the card's words stay outside the window.
+- Once today's session is done, Home's card has no main button: Practice again and See your analysis are both secondary.
+- **Improve leads with 3D stroke sessions**: filming a session is the thing we most want Players doing, so it is the first block and holds the tab's one main button, Record session, which is always there: a Player can film one every day (Matt, 2026-11-25). Review session is the secondary button under it once a session exists. Straight after it comes the analysis card (Matt, 2026-11-25): the 30-day stat strip, then one card with the mat as a flat grid (a row per tee, a column per distance, each spot a `surface-2` square with its score in red, amber or bright green), one sentence naming the strongest and weakest spot, and a secondary Full analysis button. Every Player sees the card; the Club gate is on the page behind it. PQS and the rest follow.
 - **Profile has no main button.** Editing is a pencil icon button on the corner of the avatar. Switch profile is a secondary button.
 - Always "Players" and "Coaches".
-- Play's sub-tabs keep their one-sentence introduction (Matt, 2026-11-22). No other tab opens with a paragraph explaining itself.
+- No tab opens with a paragraph explaining itself. Play's sub-tabs lost their one-sentence introductions, and the one-time "first look" strips tried in their place were removed the same day (Matt, 2026-11-25): they added little to what was already on screen. A tab explains itself by its content.
 
 ## Building it
 

@@ -299,7 +299,7 @@ namespace PuttrApp
             foreach (object row in rows)
             {
                 object c = J.Get(row, "challenge");
-                bool joined = J.Get(c, "userJoined") != null;
+                bool joined = Cards.IsJoined(c);
                 List<object> levels = J.List(J.Get(row, "challengeLevels"));
                 double score = J.Num(row, "userResults");
                 DateTime? start = ProfileMath.Date(c, "startDate"), end = ProfileMath.Date(c, "endDate");
@@ -336,22 +336,45 @@ namespace PuttrApp
             StyleSheet sheet = Resources.Load<StyleSheet>("PuttrApp/Profile");
             if (sheet != null) Root.styleSheets.Add(sheet);
             body.Add(Page.Loading());
-            App.Run(Api.Get("/profile/achievements/recent", data =>
+            // Every achievement there is, by kind (GET /profile/achievements/: each with created_at once it is earned):
+            // the ones earned in their kind's colour, the rest muted, so the page shows what is still to be had
+            // (Matt, 2026-11-26: it listed only the ones earned).
+            App.Run(Api.Get("/profile/achievements/", data =>
             {
                 body.Clear();
-                List<object> all = J.List(data);
+                var all = new List<object>();
+                foreach (object row in J.List(data))
+                {
+                    // By kind: {category, achievements}. A plain list of achievements is taken as it is, all earned.
+                    if (J.Get(row, "achievements") != null) all.AddRange(J.List(J.Get(row, "achievements")));
+                    else { if (J.Obj(row) != null && J.Get(row, "created_at") == null) J.Obj(row)["created_at"] = "earned"; all.Add(row); }
+                }
                 foreach (var kind in Kinds)
                 {
                     var mine = all.FindAll(a => J.Str(a, "aType") == kind.type || (kind.type == "QUESTS" && J.Str(a, "aType") == "QUEST_STARS"));
                     mine.Sort((a, b) => J.Num(a, "number").CompareTo(J.Num(b, "number")));
-                    // The Profile's coin shelf, one per kind, the coins wrapping onto as many rows as they need.
-                    body.Add(Ui.Section(kind.name));
-                    VisualElement grid = Ui.Box("pf-coin-grid");
-                    if (mine.Count == 0) grid.Add(Ui.Text("No achievements yet", "body-2 pf-coin-none", Ui.Regular));
+                    // One of each (an achievement saved twice comes back twice), earned if any copy of it is.
+                    var seen = new Dictionary<string, object>();
+                    var each = new List<object>();
                     foreach (object a in mine)
                     {
+                        string key = J.Str(a, "aType") + "|" + J.Str(a, "title") + "|" + J.Str(a, "number");
+                        if (!seen.ContainsKey(key)) { seen[key] = a; each.Add(a); }
+                        else if (J.Str(a, "created_at").Length > 0 && J.Str(seen[key], "created_at").Length == 0) { each[each.IndexOf(seen[key])] = a; seen[key] = a; }
+                    }
+                    mine = each;
+                    if (mine.Count == 0) continue;
+                    int got = mine.FindAll(a => J.Str(a, "created_at").Length > 0).Count;
+                    // The Profile's coin shelf, one per kind, the coins wrapping onto as many rows as they need.
+                    body.Add(Ui.Section(kind.name, got + " of " + mine.Count));
+                    VisualElement grid = Ui.Box("pf-coin-grid");
+                    foreach (object a in mine)
+                    {
+                        bool earned = J.Str(a, "created_at").Length > 0;
                         ProfileScreen.Look(J.Str(a, "aType"), out string icon, out Color tint);
-                        grid.Add(Ui.Box("pf-coin-item", new Coin(icon, tint, 0f), Ui.Text(J.Str(a, "title"), "pf-coin-title", Ui.Bold), Ui.Text(J.Str(a, "description"), "pf-coin-desc", Ui.Regular)));
+                        var coin = new Coin(icon, tint, 0f, earned ? tint : new Color(0.36f, 0.39f, 0.42f));
+                        if (earned) { coin.style.borderTopColor = coin.style.borderBottomColor = coin.style.borderLeftColor = coin.style.borderRightColor = tint; }
+                        grid.Add(Ui.Box(earned ? "pf-coin-item" : "pf-coin-item pf-coin-off", coin, Ui.Text(J.Str(a, "title"), "pf-coin-title", Ui.Bold), Ui.Text(J.Str(a, "description"), "pf-coin-desc", Ui.Regular)));
                     }
                     // Flat crests on the page itself, as the Profile tab draws them: no shelf, no gradient.
                     body.Add(Ui.Box("pad", grid));

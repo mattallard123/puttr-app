@@ -114,13 +114,15 @@ namespace PuttrApp
     /// </summary>
     public sealed class Coin : VisualElement
     {
-        public Coin(string icon, Color tint, float offset)
+        /// <param name="ink">The icon's colour (the All achievements page: its kind's colour once earned, grey until
+        /// then); null for white, as the Profile's shelf draws the ones earned.</param>
+        public Coin(string icon, Color tint, float offset, Color? ink = null)
         {
             AddToClassList("pf-coin");
             // The stroke icon where the set has one (FillTrophy -> Trophy).
             string stroke = icon != null && icon.StartsWith("Fill") ? icon.Substring(4) : icon;
             if (stroke != icon && Resources.Load<Texture2D>("PuttrArcade/Icons/Icon" + stroke) == null) stroke = icon;
-            Add(Ui.Icon(stroke, 28, Color.white));
+            Add(Ui.Icon(stroke, 28, ink ?? Color.white));
         }
     }
 

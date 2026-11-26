@@ -68,8 +68,15 @@ static NSString *Clean(NSString *text) {
 
 - (void)start {
     self.wanted = YES;
-    if (self.central == nil) self.central = [[CBCentralManager alloc] initWithDelegate:self queue:self.queue];
-    else [self scan];
+    if (self.central == nil) { self.central = [[CBCentralManager alloc] initWithDelegate:self queue:self.queue]; return; }
+    // Stopped and started again (the app went to the background and came back, or a system alert came up over it):
+    // the app marked the radio off itself when it stopped, so the state is told again even where it has not
+    // changed. It was only told when it changed, which left the app showing Bluetooth as off, while scanning,
+    // until it was relaunched.
+    int was = self.state;
+    self.state = 0;
+    [self centralManagerDidUpdateState:self.central];
+    if (self.state == 0 && was != 0 && self.active != nil) [self setStateAndTell:was];
 }
 
 - (void)stop {

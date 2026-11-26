@@ -23,7 +23,9 @@ namespace PuttrApp
 {
     public sealed class RoundSaver
     {
-        static readonly Dictionary<string, string> GameIds = new Dictionary<string, string>();
+        // Tracks' games row (1620, puttr-app tracks/catalog.js TRACKS_GAME_ID) is unpublished by design, so the API never
+        // lists it and the saver found no game: no Tracks round or putt was saved (Matt, 2026-11-26). The app has its id.
+        static readonly Dictionary<string, string> GameIds = new Dictionary<string, string> { { "TRACKS", "1620" } };
 
         /// <summary>The user id a guest's putts are saved under: no account, so no stats (the app sends 0).</summary>
         public const string Guest = "0";
@@ -89,6 +91,9 @@ namespace PuttrApp
         System.Action _pendingFinish;
         readonly List<Dictionary<string, object>> _queued = new List<Dictionary<string, object>>();
 
+        /// <summary>A test putt was saved into this round by the tester's switch (Green.SaveTestSwitch): the round is the
+        /// tester's own, and puts no row on the club board other Players see.</summary>
+        public bool HadTestPutt { get; private set; }
         /// <summary>Putts the API took.</summary>
         public int Sent { get; private set; }
         /// <summary>Real putts answered on the device under -app2HoldPlay (Api.Held): not saved anywhere. 0 in normal use.</summary>
@@ -189,6 +194,7 @@ namespace PuttrApp
         public void Begin(int players = 1, string puttData = "[]", bool openNow = false)
         {
             _roundId = null;
+            HadTestPutt = false;
             _pendingFinish = null;
             _queued.Clear();
             _open = true;
@@ -217,6 +223,7 @@ namespace PuttrApp
             };
             if (sensorData != null) row["sensorData"] = sensorData;
             if (rollout.HasValue && !double.IsNaN(rollout.Value) && !double.IsInfinity(rollout.Value)) row["rollout"] = System.Math.Round(rollout.Value, 1);
+            if (!Green.SaveTestFlag && (TestPuttNow || !Green.ConsoleReal)) HadTestPutt = true;   // saved by the tester's switch
             Real++;
             _queued.Add(row);
             Flush();
@@ -397,7 +404,7 @@ namespace PuttrApp
             LastRoundId = round;
             _roundId = null;
             App.Run(Api.Post("/game/over/", new Dictionary<string, object> { { "gameId", round }, { "score", score } },
-                _ => { Perf.Note("game: round " + round + (Api.IsLocal(round) ? " held, not saved, score " : " saved, score ") + score); if (PostsBoard && Boarded(_gameType)) PostBoard(round, score); over?.Invoke(round); },
+                _ => { Perf.Note("game: round " + round + (Api.IsLocal(round) ? " held, not saved, score " : " saved, score ") + score); if (PostsBoard && Boarded(_gameType) && !HadTestPutt) PostBoard(round, score); over?.Invoke(round); },
                 why => Perf.Note("game: score not saved (" + why + ")"), auth: false));
         }
 
@@ -410,7 +417,7 @@ namespace PuttrApp
             _roundId = null;
             body["gameId"] = round;
             App.Run(Api.Post("/game/multiplayer/over", body,
-                _ => { Perf.Note("game: round " + round + (Api.IsLocal(round) ? " held, not saved" : " saved") + ", " + J.List(body["scoreArray"]).Count + " players"); if (PostsBoard && Boarded(_gameType)) PostBoard(round, mine); },
+                _ => { Perf.Note("game: round " + round + (Api.IsLocal(round) ? " held, not saved" : " saved") + ", " + J.List(body["scoreArray"]).Count + " players"); if (PostsBoard && Boarded(_gameType) && !HadTestPutt) PostBoard(round, mine); },
                 why => Perf.Note("game: scores not saved (" + why + ")"), auth: false));
         }
 

@@ -150,8 +150,27 @@ namespace PuttrApp
         int _soundRestarts;
         bool _soundLogged;
 
+        // Something to hear with, always. The only listeners are on the game camera and the Tracks world, both off
+        // outside a game: with none, a sound plays to its end and nothing is heard (the coach's review was silent on
+        // every screen that is not a game: Matt, 2026-11-24). The app's own listens whenever no other one does.
+        AudioListener _ears;
+        float _earsAt;
+
+        void Ears()
+        {
+            float now = Time.realtimeSinceStartup;
+            if (_ears != null && now - _earsAt < 0.25f) return;
+            _earsAt = now;
+            if (_ears == null) { _ears = gameObject.AddComponent<AudioListener>(); _ears.enabled = false; }
+            bool other = false;
+            foreach (AudioListener l in FindObjectsByType<AudioListener>(FindObjectsSortMode.None))
+                if (l != _ears && l.isActiveAndEnabled) { other = true; break; }
+            if (_ears.enabled == other) _ears.enabled = !other;
+        }
+
         void SoundWatch()
         {
+            Ears();
             float now = Time.realtimeSinceStartup;
             if (now - _soundAt < 1f) return;
             double clock = AudioSettings.dspTime;
@@ -234,7 +253,9 @@ namespace PuttrApp
                 // -app2Kit file.json: the worlds dressed in a brand kit from a file (BrandKit.LoadFile), for checking the scenes without the API.
                 if (args[i] == "-app2Kit" && i + 1 < args.Count && !BrandKit.LoadFile(args[i + 1])) Debug.LogWarning("Puttr 2: could not read the kit at " + args[i + 1]);
                 if (args[i] == "-app2NotMember") Fixtures.NotMember = true;
-                if (args[i] == "-app2Connected") Fixtures.Connected = true;
+                if (args[i] == "-app2XpUp") Fixtures.XpUp = true;
+                if (args[i] == "-app2TestPutts") ConnectGate.UseTestPutts();
+                if (args[i] == "-app2Connected") { Fixtures.Connected = true; PuttrArcade.Arcade.EmbeddedConnected = true; }
                 if (args[i] == "-app2FixtureDelay" && i + 1 < args.Count) float.TryParse(args[i + 1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out Fixtures.Delay);
                 if (args[i] == "-app2Tab" && i + 1 < args.Count) _startTab = args[i + 1];
                 if (args[i] == "-app2SignIn") _forceSignIn = true;
@@ -251,7 +272,7 @@ namespace PuttrApp
                 if (args[i] == "-app2TracksAuto") TracksPlayScreen.AutoPlay = true;
                 // -app2AutoPutt 6: a random test putt every that many seconds in whatever game is being played (rule games
                 // take no demo putts; this walks them from a script, as pressing Space would).
-                if (args[i] == "-app2AutoPutt" && i + 1 < args.Count && float.TryParse(args[i + 1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float every)) StartCoroutine(AutoPutt(Mathf.Max(1f, every)));
+                if (args[i] == "-app2AutoPutt" && i + 1 < args.Count && float.TryParse(args[i + 1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float every) && !_autoPutting) { _autoPutting = true; StartCoroutine(AutoPutt(Mathf.Max(1f, every))); }
                 if (args[i] == "-app2Tablet") _forceTablet = true; // lay a desktop window out as a tablet, a unit a pixel
                 // -app2Shot file.png: a screenshot five seconds in, then quit (for checking layout from a script).
                 if (args[i] == "-app2Shot" && i + 1 < args.Count) { _shotPath = args[i + 1]; if (_shotAt <= 0f) _shotAt = 5f; }
@@ -269,6 +290,8 @@ namespace PuttrApp
         string _startTab;
         bool _forceSignIn, _forcePhone;
 
+        // The arguments are read more than once in a run: one auto-putter only, or its putts land on each other.
+        bool _autoPutting;
         IEnumerator AutoPutt(float every)
         {
             yield return new WaitForSecondsRealtime(8f);
@@ -314,7 +337,8 @@ namespace PuttrApp
                 yield break;
             }
             // stage:1-4: a Greenlands stage straight in, whether or not it is open yet.
-            if (page.StartsWith("stage:")) { GreenStage stage = Greenlands.ByCode(page.Substring(6).ToUpperInvariant()); if (stage != null) Games.PlayRule(Greenlands.Row, new StageGame(stage)); yield break; }
+            if (page.StartsWith("stage:")) { GreenStage stage = Greenlands.ByCode(page.Substring(6).ToUpperInvariant()); if (stage != null) { if (!Fixtures.On) yield return GreenProgress.Load(Greenlands.WorldOf(stage), null);   // the API's level ids, so the stars are saved as they are from the map
+                    Games.PlayRule(Greenlands.Row, new StageGame(stage)); } yield break; }
             if (page.StartsWith("play:") || page.StartsWith("start:") || page.StartsWith("vs:"))
             {
                 string type = page.Substring(page.IndexOf(':') + 1).ToUpperInvariant();
@@ -361,6 +385,9 @@ namespace PuttrApp
                 case "find": Push(new FindPlayersScreen(this)); break;
                 case "games": Push(new GamesScreen(this)); break;
                 case "settings": Push(new SettingsScreen(this)); break;
+                case "levels": Push(new LevelsScreen(this)); break;      // XP: the Levels sheet
+                case "levelup": Push(new LevelUpScreen(this, 15)); break;   // an ordinary level
+                case "rankup": Push(new LevelUpScreen(this, 20)); break;    // a new rank (Scratch)
                 case "host": case "hostevent": Host.Open(this, BrandKit.Event); break;   // the Settings rows
                 case "hostvenue": Host.Open(this, BrandKit.Venue); break;
                 case "brandkit": Push(new BrandKitScreen(this)); break;
@@ -420,6 +447,7 @@ namespace PuttrApp
                 case "learn": Push(new LearnScreen(this, "BASICS")); break;
                 case "lesson": Library.Load(() => Push(new LessonScreen(this, Library.In("BASICS")[0]))); break;
                 case "versus": Push(new VersusInboxScreen(this)); break;
+                case "versuspick": Push(new VersusPickerScreen(this)); break;
                 case "versusresult": Push(new VersusResultsScreen(this, "499")); break;
                 case "live": Push(new LiveLobbyScreen(this)); break;
                 case "livesetup": Push(new LiveSetupScreen(this)); break;
@@ -443,6 +471,8 @@ namespace PuttrApp
                 case "wifi": Push(new WifiScreen(this)); break;
                 case "vertex": Push(new VertexScreen(this)); break;
                 case "lab": Push(new LabIntroScreen(this)); break;
+                // labguide: the intro with its setup video already playing (for checking the in-app player from a script).
+                case "labguide": { var intro = new LabIntroScreen(this); Push(intro); intro.Root.schedule.Execute(intro.Guide).StartingIn(800); break; }
                 case "coachedreview": StartCoroutine(Api.Get("/lab/sessions", data => { if (J.List(data).Count > 0) Push(new CoachedReviewScreen(this, J.List(data)[0], null)); })); break;
                 case "labsession": StartCoroutine(Api.Get("/lab/sessions", data => { if (J.List(data).Count > 0) Push(new LabSessionScreen(this, J.List(data)[0])); })); break;
                 case "analysis": Club.Require(this, "Full analysis", () => Push(new AnalysisScreen(this))); break;
@@ -732,7 +762,8 @@ namespace PuttrApp
             _tab = tab;
             _tabBar.RemoveFromClassList("hidden");
             // A TV has no Home to read the profile: read it here (the Play tab's account button and the Players need it).
-            if (Tv.On && Profile == null) Run(Api.Get("/profile/", data => { Profile = J.First(data); TvProfileRead?.Invoke(); }));
+            // As it was last time at once (so the Play tab is built for this profile from the start), then as it is now.
+            if (Tv.On && Profile == null) Run(Api.Kept("/profile/", data => { Profile = J.First(data) ?? Profile; TvProfileRead?.Invoke(); }));
             // Once signed in: an enabled Vertex sensor is looked for, and the inbox read. Not on every tab tap (each
             // used to restart the sensor scan and fetch every message): the sensor once per sign-in, the inbox at most
             // once a minute here (a push and coming back to the front read it too).
@@ -913,6 +944,13 @@ namespace PuttrApp
 
         /// <summary>The game page's backdrop: the stage goes see-through, so the arcade's set shows behind the app.</summary>
         public void SetBackdrop(bool on) => _stage.EnableInClassList("stage-clear", on);
+
+        /// <summary>A challenge was joined or left: Home and Profile read their challenge cards again when next shown.</summary>
+        public void ChallengesChanged()
+        {
+            HomeStale();
+            if (_screens.TryGetValue("profile", out AppScreen profile) && profile is ProfileScreen p) p.Stale();
+        }
 
         void HomeStale() { if (_screens.TryGetValue("home", out AppScreen home) && home is HomeScreen h) h.Stale = true; }
 

@@ -53,11 +53,38 @@ namespace PuttrApp
 
         static string Device() { string id = DeviceId() ?? ""; return id.Length > 64 ? id.Substring(0, 64) : id; }
 
-        /// <summary>Once signed in (and on every launch, as the app's UserNav mount does): permission, token, register.</summary>
-        public static void Register(App app)
+        const string PrefLater = "app2.pushLater";
+
+        /// <summary>The Player said "Not now" on the onboarding guide's notifications page: this phone is not asked
+        /// again on its own. Opening Settings > Notifications asks (Register with chosen).</summary>
+        public static bool Later
+        {
+            get => PlayerPrefs.GetInt(PrefLater, 0) == 1;
+            set { PlayerPrefs.SetInt(PrefLater, value ? 1 : 0); PlayerPrefs.Save(); }
+        }
+
+        /// <summary>Whether registering may put the system's permission question up (so it is worth a page of its own
+        /// first). An iPhone is taken to: it only asks once, and a new Player has rarely answered already.</summary>
+        public static bool Asks
+        {
+            get
+            {
+#if UNITY_ANDROID && !UNITY_EDITOR
+                return Puttr.AndroidPermissions.AndroidVersion() >= 33 && !UnityEngine.Android.Permission.HasUserAuthorizedPermission("android.permission.POST_NOTIFICATIONS");
+#else
+                return Supported;
+#endif
+            }
+        }
+
+        /// <summary>Once signed in (and on every launch, as the app's UserNav mount does): permission, token, register.
+        /// chosen: the Player asked for it (the guide's button, the notification settings), which also ends "Not now".</summary>
+        public static void Register(App app, bool chosen = false)
         {
             // Sample data (screen checks) asks for nothing: no permission prompt over the screen being checked.
             if (!Supported || Fixtures.On) return;
+            if (chosen) { if (Later) Later = false; }
+            else if (Later) return;
             if (_one == null) { var go = new GameObject(ObjectName); DontDestroyOnLoad(go); _one = go.AddComponent<Push>(); }
             _one._app = app;
             PuttrPush_Register(ObjectName);

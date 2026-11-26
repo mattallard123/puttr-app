@@ -457,7 +457,7 @@ namespace PuttrApp
                 if (access == Capture.CameraAccess.Refused) { CameraNeeded("League games", "game", false); return; }
                 if (access == Capture.CameraAccess.None)
                 {
-                    if (Green.RealPutts) { CameraNeeded("League games", "game", true); return; }
+                    if (Green.RealFor(true)) { CameraNeeded("League games", "game", true); return; }
                     film = false;
                 }
             }
@@ -528,7 +528,7 @@ namespace PuttrApp
                 if (access == Capture.CameraAccess.None)
                 {
                     // No camera on this device (the Simulator): real putts cannot be entered unrecorded; test putts play on.
-                    if (Green.RealPutts) { CameraNeeded(label == "League Night" ? "League games" : "Tournament rounds", label == "League Night" ? "game" : "round", true); return; }
+                    if (Green.RealFor(round.Competition)) { CameraNeeded(label == "League Night" ? "League games" : "Tournament rounds", label == "League Night" ? "game" : "round", true); return; }
                     film = false;
                 }
             }
@@ -565,7 +565,8 @@ namespace PuttrApp
                 Arcade.AppAcceptsPutts = () => _round != null && !_round.Session.Done && (Capture.One.Now == Capture.State.Off || Capture.One.Ready)
                     && (TestPutts.RoundTakes(TestPutts.Available(_app.Profile), _round.What, _round.How) || !TurnsAwayTestPutt());
                 // Each putt's distance and tee is called, in a tournament round as in a League game (Matt, 2026-11-24).
-                if (round.What == CompetitionRound.Kind.League || round.What == CompetitionRound.Kind.Tournament) App.Run(CallFirst(round));
+                // Today's coach session too, with the coach's opening line first and a word on every putt (CoachPutt).
+                if (round.What == CompetitionRound.Kind.League || round.What == CompetitionRound.Kind.Tournament || round.What == CompetitionRound.Kind.Coach) App.Run(CallFirst(round));
                 Play(FreePuttMode.Title);
                 // A catalogue game played as a round speaks as the app's game screen did (Standard.js, Streak.js, CenterCut.js).
                 string voiced = VoicedType(round);
@@ -588,7 +589,8 @@ namespace PuttrApp
         /// </summary>
         bool TurnsAwayTestPutt()
         {
-            if (!Green.RealPutts || Green.SaveTestPutts || !RoundSaver.TestPuttNow) return false;
+            bool competition = _live != null || (_round != null && _round.Competition);
+            if (!Green.RealFor(competition) || Green.SavesTestIn(competition) || !RoundSaver.TestPuttNow) return false;
             _answered = true;   // the reason is said here
             if (Time.realtimeSinceStartup - _testPuttToldAt > 3f)
             {
@@ -678,15 +680,56 @@ namespace PuttrApp
         System.Collections.IEnumerator CallFirst(CompetitionRound round)
         {
             var lines = new List<string>();
-            foreach (TournamentMath.Dealt d in round.Session.Putts) lines.Add(Call(d));
+            foreach (TournamentMath.Dealt d in round.Session.Putts) { string call = Call(d); if (!lines.Contains(call)) lines.Add(call); }
+            bool coach = round.What == CompetitionRound.Kind.Coach;
+            string intro = coach && SessionIntro.TryGetValue(CoachVoice.Persona.Id, out string words) ? words : null;
+            if (intro != null) lines.Add(intro);
             CoachVoice.Warm(lines);
+            if (coach && CoachVoice.On) App.Run(WarmFeedback(round));
             float until = Time.realtimeSinceStartup + 4f;
             bool filming = Capture.One.Now != Capture.State.Off;
             while (filming && !Capture.One.Joined && Time.realtimeSinceStartup < until && _round == round) yield return null;
             yield return new WaitForSecondsRealtime(0.3f);
             if (_round != round || _calledFirst || round.Session.Done) yield break;
             _calledFirst = true;
+            CoachVoice.Say(intro);
             CoachVoice.Say(Call(round.Session.Now));
+        }
+
+        // The coach's line as today's session starts (CoachPersonas.js sessionIntro, the one of each that does not
+        // count the putts: a session is the Player's daily goal long, not five).
+        static readonly Dictionary<string, string> SessionIntro = new Dictionary<string, string>
+        {
+            { "maya", "Quick one today, let's build on what's working." }, { "theo", "Controlled set, watch the pace." },
+            { "riley", "Lock in. I want clean reps." }, { "jax", "We're cooking today, here we go!" },
+        };
+
+        // The make and miss lines, fetched one at a time behind the session (CoachSession.js prewarmCoachLines), so the
+        // coach answers a putt at once. Each is fetched once per coach, ever.
+        System.Collections.IEnumerator WarmFeedback(CompetitionRound round)
+        {
+            string voice = CoachVoice.Persona.VoiceId;
+            foreach (string[] pool in new[] { LabMath.MakeCenter, LabMath.Make, LabMath.MakeEdge, LabMath.Miss })
+                foreach (string line in pool)
+                {
+                    if (_round != round) yield break;
+                    yield return CoachVoice.Clip(voice, line, false, null);
+                }
+        }
+
+        /// <summary>
+        /// A putt in today's coach session (CoachSession.js handlePutt): the coach's word on it, matched to where the ball
+        /// went, then the next putt's distance and tee when it is a different spot. What was still being said is about a
+        /// putt that has gone, so it is cut.
+        /// </summary>
+        void CoachPutt(AppPutt.Verdict v, TournamentMath.Dealt played, RoundSession session)
+        {
+            _calledFirst = true;   // putted through the opening: it is not said late
+            CoachVoice.Hush();
+            if (v != null) CoachVoice.Say(LabMath.Feedback(v));
+            if (session.Done) return;
+            TournamentMath.Dealt next = session.Now;
+            if (next.Feet != played.Feet || next.Tee != played.Tee) CoachVoice.Say(Call(next));
         }
 
         void Deal()
@@ -781,6 +824,58 @@ namespace PuttrApp
             Play(arcadeName, true);
         }
 
+        // An arcade game's putts and final scores, for its game over page, and how to start it again.
+        readonly List<GameOverPutt> _arcadePutts = new List<GameOverPutt>();
+        int[] _endScores;
+        System.Action _arcadeAgain;
+        int _arcadeRun;
+
+        // The arcade's own ending plays for a moment, then the app's game over page takes over (every game ends on
+        // the same page: Matt, 2026-11-24). Not if the Player has already started another game from the arcade's card.
+        System.Collections.IEnumerator LeaveArcadeAfter(int run, float seconds)
+        {
+            float until = Time.realtimeSinceStartup + seconds;
+            while (Time.realtimeSinceStartup < until) yield return null;
+            if (_playing && run == _arcadeRun && _arcade != null && _rule == null && _round == null && _practice == null && _live == null) _arcade.Leave();
+        }
+
+        /// <summary>An arcade game's game over page: the score (or the standings), the best, the putts.</summary>
+        void ShowArcadeOver(string title)
+        {
+            int[] scores = _endScores ?? new[] { _finishedScore ?? 0 };
+            int made = 0, mine = 0;
+            foreach (GameOverPutt p in _arcadePutts) { mine++; if (p.Good) made++; }
+            var spec = new GameOverSpec
+            {
+                Eyebrow = "Final   ·   " + title,
+                GameId = _saver.GameId,
+                ReviewId = _saver.Real > 0 ? _saver.RoundId ?? _saver.LastRoundId : null,
+                RateAs = title,
+                Again = _arcadeAgain,
+                Putts = new List<GameOverPutt>(_arcadePutts),
+                Note = SavedNote(_saver),
+            };
+            if (scores.Length <= 1)
+            {
+                spec.Score = (_finishedScore ?? 0).ToString();
+                spec.ScoreCaption = mine > 0 ? made + " of " + mine + " holed" : null;
+                spec.ScoreValue = _finishedScore ?? 0;
+            }
+            else
+            {
+                string[] names = Arcade.EmbeddedNames;
+                var order = new List<int>();
+                for (int i = 0; i < scores.Length; i++) order.Add(i);
+                order.Sort((a, b) => scores[b].CompareTo(scores[a]));
+                string Name(int i) => names != null && i < names.Length ? names[i] : "Player " + (i + 1);
+                bool tie = order.Count > 1 && scores[order[0]] == scores[order[1]];
+                spec.Outcome = tie ? "All square" : Name(order[0]) + " wins";
+                spec.Standings = new List<(string, string, Color)>();
+                foreach (int i in order) spec.Standings.Add((Name(i), scores[i].ToString(), RulePanel.PlayerColour(i)));
+            }
+            _app.Push(new GameOverScreen(GameOver.Build(_app, spec)));
+        }
+
         /// <summary>For the game about to start, then cleared: the catalogue title it was opened by, and each seat's level.</summary>
         string _title;
         int[] _levels;
@@ -795,6 +890,22 @@ namespace PuttrApp
             _playing = true;
             _finishedScore = null;
             _playingName = arcadeName;
+            // For the game over page: the putts as they are played, and how to play the same game again.
+            _arcadePutts.Clear();
+            _endScores = null;
+            {
+                string[] names = Arcade.EmbeddedNames != null ? (string[])Arcade.EmbeddedNames.Clone() : null;
+                int me = _me, first = Arcade.EmbeddedFirst;
+                bool puttr = Arcade.EmbeddedPuttr;
+                List<string> ids = _userIds;
+                int[] levels = _levels;
+                string title = _title;
+                _arcadeAgain = () => App.Run(Later(() =>
+                {
+                    if (withPlayers && names != null) { Arcade.EmbeddedFirst = first; Arcade.EmbeddedPuttr = puttr; PlayWith(arcadeName, new List<string>(names), me, ids, levels, title); }
+                    else { _title = title; Play(arcadeName); }
+                }));
+            }
             // A round saves itself (CompetitionRound); anything else is saved as the game it is.
             _saver = new RoundSaver(_round != null || _live != null ? null : _rule != null ? _rule.GameType : GameTypeFor(arcadeName));
             // Analytics knows the game by name as well as by type (a round names itself: CompetitionRound.Open).
@@ -836,6 +947,7 @@ namespace PuttrApp
         void OnStarted(GameMode game, int players)
         {
             // A rule game plays on a one-Player arcade mode: its own count of Players is the round's.
+            _arcadeRun++;
             if (_playing) _saver.Begin(_rule != null ? _rule.Players : players);
             // A Versus turn rides on a game played alone: its score goes to the opponent once the round is saved.
             _versusNow = null;
@@ -864,7 +976,7 @@ namespace PuttrApp
                 // A live match writes every putt it scores (/multiplayer/savePutt, the game state): a test putt (no Puttr,
                 // the simulator, the demo, the keyboard or a test button) is not played into it at all. Made-up data
                 // (Fixtures) sends nothing, so its sample match plays on.
-                if (!Fixtures.On && RoundSaver.TestPutt(_arcade != null && _arcade.demo)) { PuttStrip.Say("Test putts are not played in a live match."); return; }
+                if (!Fixtures.On && (RoundSaver.TestPutt(_arcade != null && _arcade.demo) || (!Green.SaveTestFlag && (RoundSaver.TestPuttNow || !Green.ConsoleReal)))) { PuttStrip.Say("Test putts are not played in a live match."); return; }
                 _live.Mine(putt);
                 return;
             }
@@ -927,11 +1039,12 @@ namespace PuttrApp
                 TournamentMath.Dealt dealt = session.Now;
                 // A tester's test putt in a round opened to be saved (AppAcceptsPutts let it in): the round is a test
                 // round from here, so neither this putt nor the score is sent, and the panel and result card say so.
-                if (RoundSaver.TestPuttNow && Green.RealPutts && !Green.SaveTestPutts) _round.MarkTest();
+                if (RoundSaver.TestPuttNow && Green.RealFor(_round.Competition) && !Green.SavesTestIn(_round.Competition)) _round.MarkTest();
                 session.Add(putt);
                 // user_putts.made as the app's screen for this kind of round writes it (CompetitionRound.MadeFlag).
                 _round.Putt(putt, dealt, CompetitionRound.MadeFlag(_round.What, _round.Unlinked, Verdicts.Of(putt, dealt.Feet, dealt.Tee), session.LastScore));
                 Deal();
+                if (_round.What == CompetitionRound.Kind.Coach) CoachPutt(Verdicts.Of(putt, dealt.Feet, dealt.Tee), dealt, session);
                 string voiced = VoicedType(_round);
                 if (voiced != null && GameVoice.RoundPutt(voiced, Verdicts.Of(putt, dealt.Feet, dealt.Tee), dealt.Feet, dealt.Tee, session.Done ? (TournamentMath.Dealt?)null : session.Now) && _arcade != null) _arcade.Audio.Buzzer();
                 _roundPanel.Show();
@@ -954,6 +1067,12 @@ namespace PuttrApp
             bool own = game.Putter == _me && !HostMode.On;
             string hitBy = HostMode.On ? HostMode.SaveAs(_userIds, game.Putter) : own ? null : RoundSaver.SeatUser(_userIds, game.Putter, _me, Auth.Uid);
             if (own || hitBy != null) _saver.Putt(game.PuttFeet, game.PuttTee, verdict.SavedMade, putt, _arcade != null && _arcade.demo, null, hitBy);
+            if (_practice == null)
+            {
+                string[] seats = Arcade.EmbeddedNames;
+                string by = seats != null && seats.Length > 1 && game.Putter >= 0 && game.Putter < seats.Length ? seats[game.Putter] + "   \u00B7   " : "";
+                _arcadePutts.Add(new GameOverPutt { From = by + GameOver.From(game.PuttFeet > 0 ? game.PuttFeet : 6, game.PuttTee > 0 ? game.PuttTee : 2), Call = GameOver.CallOf(verdict), Good = verdict.Made });
+            }
             // Beer Pong's announcer (BeerPong.js): a make or a miss, for whoever putted.
             if (_playingName == "Beer Pong" && _practice == null) { bool cup = game is PuttrArcade.BeerPongMode bp ? bp.Cups(putt) : putt.Made; if (cup) GameVoice.Made(GameVoice.English); else GameVoice.Missed(GameVoice.English); }
             if (game.Putter != _me) return;
@@ -974,6 +1093,8 @@ namespace PuttrApp
             if (!_playing || scores.Length == 0) return;
             int mine = scores[Mathf.Clamp(_me, 0, scores.Length - 1)];
             _finishedScore = mine;
+            _endScores = (int[])scores.Clone();
+            if (!HostMode.On) App.Run(LeaveArcadeAfter(_arcadeRun, 3.5f));
             if (HostMode.On)
             {
                 // Host mode: each seat saves as whoever sat in it (a member, or no one), and the board keeps one row
@@ -1076,6 +1197,8 @@ namespace PuttrApp
             _playing = false;
             // A finished game's last word (who won) is let finish; a game left part way goes quiet at once.
             if ((_rule != null && _rule.Over) || (_round != null && _round.Session.Done)) GameVoice.Leave(); else GameVoice.Hush();
+            // A coach session left part way: the coach stops too (its last word on a finished one plays out).
+            if (_round != null && _round.What == CompetitionRound.Kind.Coach && !_round.Session.Done) CoachVoice.Hush();
             _arcadeObject.SetActive(false);
             if (_live != null)
             {
@@ -1127,7 +1250,7 @@ namespace PuttrApp
                 // A Greenlands stage has its own card: stars and what opened, or out of balls (Greenlands.cs).
                 if (left is StageGame stage) { Greenlands.Finished(_app, stage, _saver.Real > 0); return; }
                 // Play again: the same Players in the same seats, saved as the same people (and Puttr still Puttr).
-                if (left.Over) _app.Push(new RuleFinalScreen(_app, row, left, () => { RuleGame again = RuleCatalog.Make(row); if (again == null) return; again.Names = left.Names; again.UserIds = left.UserIds; again.Bot = left.Bot; again.First = left.First; again.Difficulty = left.Difficulty; again.Levels = left.Levels; App.Run(Later(() => PlayRule(row, again))); }));
+                if (left.Over) _app.Push(new RuleFinalScreen(_app, row, left, () => { RuleGame again = RuleCatalog.Make(row); if (again == null) return; again.Names = left.Names; again.UserIds = left.UserIds; again.Bot = left.Bot; again.First = left.First; again.Difficulty = left.Difficulty; again.Levels = left.Levels; App.Run(Later(() => PlayRule(row, again))); }, _saver.Real > 0 ? _saver.RoundId ?? _saver.LastRoundId : null));
                 if (left.Over) { string note = SavedNote(_saver); if (note != null) _app.Toast(note); }
                 return;
             }
@@ -1174,11 +1297,13 @@ namespace PuttrApp
             _saver.Abandon(); // does nothing if the round was finished
             _app.LeaveGame();
             Perf.Mark("game closed, " + _saver.Sent + " putts sent, " + _saver.Held + " held, " + _saver.Skipped + " test putts skipped");
-            // Exit, finished or not: back to the main screen of the tab the game came from (the game over card was the result).
+            // A finished arcade game ends on the app's game over page, as every game does (the rating is on it). An
+            // event or venue host goes back to its own screen, as before.
+            if (_finishedScore.HasValue && !HostMode.On) { ShowArcadeOver(_title ?? _playingName); return; }
+            // Left part way: back to the main screen of the tab the game came from.
             _app.ExitToTab();
             string saved = SavedNote(_saver);
             if (saved != null) _app.Toast(saved);
-            // An arcade game's game over is its own 3D card: once back in the app from one that finished, rate it.
             if (_finishedScore.HasValue) Feedback.AskGame(_app, _title ?? _playingName);
         }
     }

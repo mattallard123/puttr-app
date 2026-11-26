@@ -167,6 +167,9 @@ namespace PuttrApp
         List<object> _mine, _puttr;
         float _loadedAt = -100f;
 
+        /// <summary>Something the tab shows has changed (a challenge joined or left): read again the next time it is shown.</summary>
+        public void Stale() => _loadedAt = -100f;
+
         public ProfileScreen(App app) : this(app, null, null) { }
 
         /// <summary>Another Player's profile. seed: whatever row was tapped (a name and photo to show at once).</summary>
@@ -324,6 +327,7 @@ namespace PuttrApp
             App.Run(Api.Get("/profile/breaks/90", data => ShowBreaks(J.List(data))));
             App.Run(Api.Get("/challenges/userChallenges", data => ShowChallenges(J.List(data))));
             App.Run(Api.Get("/profile/summary/", ShowSummary));
+            App.Run(Xp.Load(ShowWho));
             Inbox.Load();
         }
 
@@ -332,6 +336,7 @@ namespace PuttrApp
             if (Time.realtimeSinceStartup - _loadedAt < 20f) return;
             _loadedAt = Time.realtimeSinceStartup;
             string id = "/" + _member;
+            Xp.Need(new[] { _member }, ShowWho);
             App.Run(Api.Get("/profile/following/", data => { _following = J.List(data); ShowWho(); }));
             App.Run(Api.Get("/members/profile" + id, data => { object p = J.First(data); if (p != null) _profile = p; ShowWho(); ShowAllTime(); }));
             App.Run(Api.Get("/members/userStats" + id, data => ShowActivity(J.First(data))));
@@ -461,7 +466,10 @@ namespace PuttrApp
                 _face.Add(Ui.Box("pf-edit-hit", Ui.Box("pf-edit", new PencilGlyph())).OnTap(edit));
             }
 
-            VisualElement words = Ui.Box("grow pf-id-words", Ui.Title(name, name.Length > 18 ? "title-20" : "title"));
+            // The name, then the rank badge (Xp.cs) once the Player's level is known.
+            int? level = mine ? (Xp.Mine != null ? Xp.Level(Xp.Mine.Value) : (int?)null) : Xp.LevelOf(_member);
+            VisualElement title = Ui.Title(name, name.Length > 18 ? "title-20" : "title");
+            VisualElement words = Ui.Box("grow pf-id-words", level != null ? Ui.Box("row xp-named", title, Xp.Badge(level.Value, true)) : title);
             var line = new List<string>();
             if (town.Length > 0) line.Add(town);
             DateTime? joined = ProfileMath.Date(_profile, "created_at");
@@ -520,6 +528,14 @@ namespace PuttrApp
                 hero.Add(buttons);
             }
             _who.Add(hero);
+
+            // Your level (Xp.cs): the card, under a header whose "?" opens the Levels sheet. Another Player shows the badge only.
+            if (mine && Xp.Mine != null)
+            {
+                Action levels = () => _app.Push(new LevelsScreen(_app));
+                _who.Add(Ui.Section("Level", "?", levels));
+                _who.Add(Ui.Box("pad", Xp.LevelCard(Xp.Mine.Value, false, levels)));
+            }
 
             // The stat strip: following, followers and the handicap.
             _who.Add(Ui.Box("pad pf-gap", Ui.Box("strip",
@@ -607,7 +623,7 @@ namespace PuttrApp
             {
                 object row = rows[i], challenge = J.Get(row, "challenge");
                 List<object> levels = J.List(J.Get(row, "challengeLevels"));
-                bool joined = J.Get(challenge, "userJoined") != null;
+                bool joined = Cards.IsJoined(challenge);
                 double score = J.Get(row, "userResults") != null ? J.Num(row, "userResults") : J.Num(challenge, "currentScore");
                 int percent = ChallengeMath.Percent(score, levels, out _, out double goal);
 

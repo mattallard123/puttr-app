@@ -1,0 +1,748 @@
+<title>Puttr XP Places</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:ital,wght@0,500;0,700;1,700;1,800&display=swap">
+<style>
+/* Layout: one reading column for the research and the verdicts; each approach is a full-width band holding four phones in the order a new Player meets them. Single dark look by choice: the app is dark only. */
+:root{
+  color-scheme:dark;
+  --bg:#0a0c0d; --panel:#15181b; --panel2:#22262a; --line:#262a2e; --fg:#ffffff; --soft:#c4c9cd; --mut:#8b9399;
+  --brand:#2d8c3c; --bright:#7ad446; --amber:#ffb300; --red:#ff5252; --gold:#ffd24a;
+  --display:"Montserrat","Avenir Next","Segoe UI",sans-serif;
+  --body:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+body{background:var(--bg);color:var(--fg);font:15px/1.6 var(--body)}
+.wrap{max-width:1320px;margin:0 auto;padding-block:44px 88px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.col{max-width:720px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-weight:800;font-style:italic;text-transform:uppercase;font-size:clamp(34px,6vw,56px);line-height:.96}
+h2{font-weight:800;font-style:italic;text-transform:uppercase;font-size:clamp(24px,3.4vw,34px);line-height:1}
+h3{font-weight:700;font-size:16px}
+.kick{font:700 11px/1 var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--bright);margin-bottom:14px}
+.kick::before{content:"/";font-style:italic;margin-right:8px}
+p{margin:12px 0 0;color:var(--soft)}
+.lede{font-size:18px;line-height:1.5;color:var(--fg);margin-top:18px}
+ul{margin:10px 0 0;padding-left:18px;color:var(--soft)}
+li{margin:6px 0}
+b,strong{color:var(--fg);font-weight:600}
+a{color:var(--bright)}
+a:focus-visible{outline:2px solid var(--bright);outline-offset:2px}
+section{margin-top:72px}
+.band{border-top:1px solid var(--line);padding-top:36px}
+.tag{display:inline-block;font:700 11px/1 var(--display);letter-spacing:.16em;text-transform:uppercase;color:#fff;background:var(--brand);padding:7px 12px;margin-bottom:16px;clip-path:polygon(7px 0,100% 0,calc(100% - 7px) 100%,0 100%)}
+
+/* research */
+.finds{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-top:26px}
+.find{background:var(--panel);padding:18px;min-width:0}
+.find .n{font:italic 800 30px/1 var(--display);font-variant-numeric:tabular-nums}
+.find .n small{font:700 10.5px/1.3 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--mut);display:block;margin-top:8px;font-style:normal}
+.find p{font-size:13.5px;line-height:1.5;margin-top:12px}
+.find .so{font-size:13.5px;color:var(--fg);border-top:1px solid var(--line);padding-top:10px;margin-top:12px}
+.find .src{font-size:12px;margin-top:10px;color:var(--mut)}
+.note{font-size:13px;color:var(--mut);margin-top:14px;max-width:720px}
+
+/* where it sits */
+.flow{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.flow div{flex:1 1 150px;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:12px 14px}
+.flow small{display:block;font:700 10px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-bottom:7px}
+.flow b{font:700 14px/1.25 var(--display)}
+.flow span{display:block;font-size:12.5px;color:var(--mut);margin-top:4px;line-height:1.4}
+.flow .new{border-color:var(--bright)}
+.flow .new small{color:var(--bright)}
+
+/* approach text */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:8px 44px;max-width:1040px;margin-top:8px}
+.two h3{margin-top:22px}
+.phones{display:flex;flex-wrap:wrap;gap:30px 20px;margin-top:34px}
+figure{margin:0;flex:0 0 auto;width:304px}
+figcaption{margin-top:12px;font-size:13px;line-height:1.45;color:var(--soft)}
+figcaption b{display:block;font:700 10.5px/1 var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+
+/* compare */
+.tw{overflow-x:auto;margin-top:22px;border:1px solid var(--line);border-radius:4px}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:13.5px}
+th,td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--line);color:var(--soft)}
+th{font:700 10.5px/1.2 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--mut);background:var(--panel)}
+tr:last-child td{border-bottom:0}
+td:first-child{color:var(--mut);white-space:nowrap}
+.pick{background:var(--panel);border:1px solid var(--bright);border-radius:4px;padding:22px 24px;margin-top:24px;max-width:860px}
+.pick ol{margin:12px 0 0;padding-left:20px;color:var(--soft)}
+.pick li{margin:8px 0}
+
+/* ---------- phone mockups: the Broadcast system at about 3/4 scale ---------- */
+.ph{position:relative;box-sizing:content-box;width:290px;height:640px;border-radius:36px;border:7px solid #000;outline:1px solid #2b3034;overflow:hidden;background:var(--bg);color:#fff;font-family:var(--display);font-weight:500;font-size:11.5px;line-height:1.3}
+.ph *{box-sizing:border-box}
+.ph svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.scr{position:absolute;inset:0 0 56px 0;overflow:hidden;padding:12px 13px 0;display:flex;flex-direction:column;gap:10px}
+.scr.full{bottom:0;padding-bottom:14px}
+.hd{display:flex;align-items:center;gap:7px;height:32px;flex:none}
+.hd .t{font:italic 800 20px/1 var(--display);text-transform:uppercase;margin-right:auto}
+.hd .ico{width:32px;height:32px;display:grid;place-items:center;background:var(--panel);border-radius:3px}
+.hd .logo{display:flex;align-items:center;gap:6px;font:700 13px/1 var(--display);letter-spacing:.12em;margin-right:auto}
+.hd .logo i{width:14px;height:14px;border-radius:50%;border:2px solid var(--bright)}
+.hd .logo span{color:var(--mut);font-weight:500;letter-spacing:.2em;font-size:10px;border-left:1px solid var(--line);padding-left:8px;margin-left:2px}
+.eb{font-weight:700;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--bright)}
+.lab{font-weight:700;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.ti{font:italic 800 21px/1 var(--display);text-transform:uppercase}
+.ti.s{font-size:15px}
+.num{font:italic 800 32px/1 var(--display);font-variant-numeric:tabular-nums}
+.bd{font-size:11px;line-height:1.45;color:var(--soft)}
+.bd2{font-size:10px;line-height:1.4;color:var(--mut)}
+.sec{display:flex;justify-content:space-between;align-items:baseline;flex:none}
+.sec b{font-weight:700;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase}
+.sec b::before{content:"/";color:var(--bright);font-style:italic;font-weight:800;margin-right:6px}
+.sec span{font-size:10px;color:var(--mut)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:3px;flex:none}
+.pad{padding:12px;display:flex;flex-direction:column;gap:9px}
+.btn{display:flex;align-items:center;justify-content:center;height:40px;width:100%;font:italic 800 12.5px/1 var(--display);text-transform:uppercase;color:#fff;background:var(--brand);flex:none;clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%)}
+.btn.b2{background:var(--panel2);height:34px;font-size:11px}
+.lnk{font-size:10px;color:var(--mut);text-align:center}
+.av{display:grid;place-items:center;width:30px;height:30px;flex:none;font-weight:700;font-size:13px;color:#fff;background:var(--brand);border-radius:3px}
+.rows{background:var(--panel);border:1px solid var(--line);border-radius:3px;flex:none}
+.row{display:flex;align-items:center;gap:10px;padding:8px 11px;min-height:38px}
+.row+.row{border-top:1px solid var(--line)}
+.row .g{flex:1;min-width:0}
+.row b{display:block;font-weight:700;font-size:11px;color:#fff}
+.row small{display:block;font-size:9.5px;color:var(--mut);margin-top:1px}
+.row .hn{font:italic 800 15px/1 var(--display);width:16px;text-align:center;font-variant-numeric:tabular-nums}
+.row .ok{color:var(--bright)}
+.row .ch{color:var(--mut)}
+.row svg{width:15px;height:15px}
+.row.dn b,.row.dn .hn{color:var(--mut)}
+.strip{display:grid;background:var(--panel);border:1px solid var(--line);border-radius:3px;flex:none;text-align:center}
+.strip div{padding:10px 4px}
+.strip div+div{border-left:1px solid var(--line)}
+.strip b{display:block;font:italic 800 18px/1 var(--display);color:#fff}
+.strip small{display:block;font-weight:700;font-size:7.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-top:5px}
+.prog{display:flex;gap:3px;flex:none}
+.prog i{flex:1;height:4px;background:var(--panel2)}
+.prog i.on{background:var(--brand)}
+.tabs{display:flex;gap:16px;flex:none;border-bottom:1px solid var(--line);font:italic 800 12px/1 var(--display);text-transform:uppercase;color:var(--mut);white-space:nowrap;overflow:hidden}
+.tabs b{padding:5px 0 9px;font-weight:800}
+.tabs b.on{color:#fff;box-shadow:inset 0 -2px 0 var(--bright)}
+.nav{position:absolute;left:0;right:0;bottom:0;height:56px;display:grid;grid-template-columns:repeat(4,1fr);align-items:center;text-align:center;font-weight:700;font-size:8.5px;color:var(--mut);background:#000;border-top:1px solid var(--line)}
+.nav div{display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:center}
+.nav .on{color:var(--bright);box-shadow:inset 0 2px 0 var(--bright)}
+.hl{outline:2px solid var(--bright);outline-offset:3px}
+
+/* 3D stand-ins: a window with a border, never text on it */
+.win{position:relative;overflow:hidden;border-bottom:1px solid var(--line);perspective:300px;perspective-origin:50% 12%;background:#0d1210;flex:none}
+.win .floor{position:absolute;left:-70%;width:240%;bottom:0;height:200%;transform-origin:50% 100%;transform:rotateX(68deg);background-image:linear-gradient(#1c2320 1px,transparent 1px),linear-gradient(90deg,#1c2320 1px,transparent 1px);background-size:30px 30px}
+.win .mat{position:absolute;left:34%;width:32%;bottom:-2%;height:215%;transform-origin:50% 100%;transform:rotateX(68deg);background:repeating-linear-gradient(#2f7f3e 0 24px,#2a7238 24px 48px)}
+.win .hole{position:absolute;left:50%;top:10%;width:22%;aspect-ratio:1;margin-left:-11%;border-radius:50%;background:#050605}
+.win .ball{position:absolute;left:50%;width:9px;height:9px;margin-left:-4px;border-radius:50%;background:#fff}
+.win.course{perspective:none;background:#16321f}
+.win.course::before{content:"";position:absolute;left:-10%;right:-10%;bottom:-40%;height:95%;border-radius:50%;background:#2a7238}
+.win.course::after{content:"";position:absolute;left:58%;bottom:26%;width:2px;height:26px;background:#fff;box-shadow:5px -9px 0 3px var(--red)}
+.world{position:relative;flex:1 1 auto;min-height:0;margin:0 -13px;overflow:hidden;perspective:340px;perspective-origin:50% 10%;background:#070908}
+.world .mat{position:absolute;left:30%;width:40%;bottom:-4%;height:230%;transform-origin:50% 100%;transform:rotateX(66deg);background:repeating-linear-gradient(#2f7f3e 0 30px,#2a7238 30px 60px)}
+.world .hole{position:absolute;left:50%;top:8%;width:20%;aspect-ratio:1;margin-left:-10%;border-radius:50%;background:#030403}
+.world .big{position:absolute;left:0;right:0;bottom:12px;text-align:center}
+.tee{display:flex;align-items:center;justify-content:center;gap:6px;flex:none;font:italic 800 16px/1 var(--display)}
+.tee i{width:11px;height:11px;border-radius:50%;border:2px solid var(--mut)}
+.tee i.on{background:var(--bright);border-color:var(--bright)}
+.tee small{font:700 8.5px/1 var(--display);font-style:normal;color:var(--mut);margin-left:-2px}
+.read{display:grid;grid-template-columns:repeat(3,1fr);background:var(--panel);border:1px solid var(--line);border-radius:3px;flex:none}
+.read div{padding:8px 10px}
+.read div+div{border-left:1px solid var(--line)}
+.read b{display:block;font-weight:700;font-size:11px;margin-top:4px}
+
+/* the tour's own pieces */
+.l3{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:16px 12px 11px;flex:none;margin-top:8px}
+.l3 .tg{position:absolute;left:10px;top:-9px;font:700 8px/1 var(--display);letter-spacing:.16em;text-transform:uppercase;color:#fff;background:var(--brand);padding:5px 10px;clip-path:polygon(5px 0,100% 0,calc(100% - 5px) 100%,0 100%)}
+.l3 p{margin:0;font-size:11px;line-height:1.45;color:#fff;font-weight:500}
+.l3 .ft{display:flex;justify-content:space-between;align-items:center;margin-top:9px;font-size:9.5px;color:var(--mut)}
+.l3 .go{font:italic 800 10.5px/1 var(--display);text-transform:uppercase;color:#fff;background:var(--panel2);padding:8px 14px;clip-path:polygon(5px 0,100% 0,calc(100% - 5px) 100%,0 100%)}
+.l3.dock{position:absolute;left:13px;right:13px;bottom:66px;margin:0}
+.l3.coach{display:flex;gap:10px;padding-top:12px}
+.l3.coach .tg{left:50px}
+.l3.coach .g{flex:1;min-width:0;padding-top:4px}
+.run{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;flex:none}
+.run div{font-weight:700;font-size:7.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);border-top:3px solid var(--panel2);padding-top:5px}
+.run .dn{border-color:var(--brand)}
+.run .on{border-color:var(--bright);color:#fff}
+.holes{display:grid;grid-template-columns:repeat(9,1fr);gap:4px}
+.holes i{font:italic 800 10px/22px var(--display);text-align:center;background:var(--panel2);color:var(--mut);border-radius:2px}
+.holes i.on{background:var(--brand);color:#fff}
+.crest{width:96px;height:96px;display:grid;place-items:center;background:var(--panel);border:1px solid var(--line);border-radius:3px;color:var(--gold);align-self:center;flex:none}
+.crest svg{width:48px;height:48px}
+.ctr{text-align:center}
+.gold{color:var(--gold)}
+/* XP: the panel from the XP plan, at phone scale. Brand green is what the Player had, white is what was just added. */
+.xp{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:11px 12px;display:flex;flex-direction:column;gap:7px;flex:none}
+.xp .top{display:flex;justify-content:space-between;align-items:baseline}
+.xp .top b{font:italic 800 24px/1 var(--display);font-variant-numeric:tabular-nums;color:#fff}
+.xp .ln{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:var(--soft)}
+.xp .ln b{font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.xp .ft{display:flex;justify-content:space-between;font-size:9.5px;color:var(--mut)}
+.bar{display:flex;height:5px;background:var(--panel2);flex:none}
+.bar i{background:var(--brand)}
+.bar u{background:#fff}
+.lv{height:32px;padding:0 9px;background:var(--panel);border-radius:3px;display:flex;flex-direction:column;justify-content:center;gap:5px;font-weight:700;font-size:8.5px;line-height:1;letter-spacing:.14em;text-transform:uppercase;flex:none}
+.lv .bar{width:54px;height:3px}
+.row .xv{font:italic 800 11px/1 var(--display);color:var(--mut);white-space:nowrap;font-variant-numeric:tabular-nums}
+.frame{width:30px;height:30px;flex:none;border:2px solid var(--gold);border-radius:3px;display:grid;place-items:center;color:var(--gold)}
+.awards{min-width:0}
+.awards td:nth-child(2){font:italic 800 15px/1.2 var(--display);color:#fff;white-space:nowrap}
+/* this page's own pieces */
+.xp .ln.new b,.xp .ln.new span{color:#fff}
+.big{font:italic 800 76px/0.9 var(--display);font-variant-numeric:tabular-nums;text-align:center}
+.sw{width:30px;height:30px;flex:none;border-radius:3px;border:1px solid var(--line)}
+.lock{color:var(--mut)}
+.row.off b{color:var(--mut)}
+.row .v{font:italic 800 13px/1 var(--display);color:#fff;white-space:nowrap;font-variant-numeric:tabular-nums}
+.row.me{box-shadow:inset 2px 0 0 var(--bright)}
+.q{width:22px;height:22px;display:grid;place-items:center;font:700 11px/1 var(--display);color:var(--mut);border:1px solid var(--line);border-radius:3px}
+.hero{display:flex;gap:11px;align-items:center;flex:none}
+.hero .av{width:48px;height:48px;font-size:20px}
+.pcard{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:10px;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center}
+.vs{font:italic 800 14px/1 var(--display);color:var(--mut);align-self:center}
+.wide{position:relative;width:100%;max-width:980px;aspect-ratio:16/9;border:7px solid #000;outline:1px solid #2b3034;border-radius:14px;background:var(--bg);overflow:hidden;font-family:var(--display);font-weight:500;font-size:12px;line-height:1.3;color:#fff;margin-top:34px}
+.wide *{box-sizing:border-box}
+.wide .cols{position:absolute;inset:0;display:grid;grid-template-columns:1.05fr .95fr;gap:22px;padding:22px 26px}
+.wide .col2{display:flex;flex-direction:column;gap:11px;min-width:0}
+.wide .btns{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px}
+.wide .btn{height:38px}
+.wide .btn.b2{height:38px}
+.places td:first-child{color:#fff;white-space:normal;font-weight:600}
+.places{min-width:680px}
+.no{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px;margin-top:20px}
+.no div{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:14px 16px;font-size:13.5px;color:var(--soft);line-height:1.5}
+.no b{display:block;font:700 14px/1.25 var(--display);margin-bottom:5px}
+h2+p{margin-top:14px}
+/* rank colours: one per rank, on the badge beside a name and the ring round an avatar */
+.rk{display:inline-grid;place-items:center;min-width:22px;height:17px;padding:0 5px;border-radius:3px;font:italic 800 10px/1 var(--display);font-variant-numeric:tabular-nums;vertical-align:1px;margin-left:5px;flex:none;color:#000}
+.rk.lg{min-width:34px;height:26px;font-size:15px;margin:0}
+.r1{background:#8b9399}.r2{background:#2d8c3c;color:#fff}.r3{background:#5687ff;color:#fff}.r4{background:#a06eff;color:#fff}.r5{background:#ff7a3a}.r6{background:#ffd24a}
+.o1,.o2,.o3,.o4,.o5,.o6{outline:2px solid;outline-offset:2px}
+.o1{outline-color:#8b9399}.o2{outline-color:#2d8c3c}.o3{outline-color:#5687ff}.o4{outline-color:#a06eff}.o5{outline-color:#ff7a3a}.o6{outline-color:#ffd24a}
+.av.n{background:#22262a}
+.ladder{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:22px}
+.ladder div{background:var(--panel);border:1px solid var(--line);border-top:4px solid;border-radius:4px;padding:14px}
+.ladder b{display:block;font:italic 800 20px/1 var(--display);text-transform:uppercase}
+.ladder small{display:block;font-size:12.5px;color:var(--mut);margin-top:7px;line-height:1.45}
+</style>
+
+<div class="wrap">
+
+<header class="col">
+  <div class="kick">Puttr 2 · XP and levels · round two</div>
+  <h1>Every place XP shows up</h1>
+  <p class="lede">Before any XP is built into the app: each screen where a Player will earn it, see it or spend it, drawn in the Broadcast system. The first XP page (22 November) predates Broadcast, so its amber panels, coloured ranks and rounded tiles are replaced here.</p>
+  <p>Nothing on this page is built. The rules and the award values are the XP plan's; anything I added is marked.</p>
+  <p><b>Round three, 25 November:</b> the reward is status in the community (Matt). Each rank now has its own colour, shown wherever a Player's name appears, and there is one Levels sheet that explains the ladder. The unlockable looks are gone.</p>
+</header>
+
+<section class="col">
+  <div class="kick">The rules, unchanged</div>
+  <h2>Level is effort. PQS is skill.</h2>
+  <ul>
+    <li><b>1,000 XP a level, flat.</b> Nine ranks, each reached at a total: Rookie, Dance Floor, Weekender, Scratch, Club Champ, State Am, Tour, Major, Legend.</li>
+    <li><b>The reward is status.</b> A rank is a colour everyone sees beside your name. A level never makes a putt easier or a score higher.</li>
+    <li><b>The API awards XP</b> when a game saves, so every device agrees.</li>
+    <li><b>PQS stays the big number.</b> Level sits under it, never over it.</li>
+    <li><b>One place explains each award:</b> the final screen lists what the game just paid.</li>
+  </ul>
+</section>
+
+<section>
+  <div class="col">
+    <div class="kick">The ladder</div>
+    <h2>Nine ranks, nine colours</h2>
+    <p>A Player's rank is a small badge in the rank's colour with their level on it. It works like the tiers of a loyalty card: anyone can tell a Tour from a Rookie at a glance. Each rank is reached at a total, and the bands widen so that Legend is very hard (Matt, 25 November).</p>
+  </div>
+  <div class="ladder">
+    <div style="border-top-color:#8b9399"><b>Rookie</b><small>Levels 1 to 4<br>Slate · where everyone starts</small></div>
+    <div style="border-top-color:#2d8c3c"><b>Dance Floor</b><small>From level 5<br>Green · 4,000 XP</small></div>
+    <div style="border-top-color:#00a896"><b>Weekender</b><small>From level 10<br>Teal · 9,000 XP</small></div>
+    <div style="border-top-color:#5687ff"><b>Scratch</b><small>From level 20<br>Blue · 19,000 XP</small></div>
+    <div style="border-top-color:#a06eff"><b>Club Champ</b><small>From level 50<br>Purple · 49,000 XP</small></div>
+    <div style="border-top-color:#e85aaa"><b>State Am</b><small>From level 100<br>Pink · 99,000 XP</small></div>
+    <div style="border-top-color:#ff7a3a"><b>Tour</b><small>From level 150<br>Orange · 149,000 XP</small></div>
+    <div style="border-top-color:#ffffff"><b>Major</b><small>From level 250<br>White · 249,000 XP</small></div>
+    <div style="border-top-color:#ffd24a"><b>Legend</b><small>From level 500<br>Gold · 499,000 XP</small></div>
+  </div>
+  <h3 style="margin-top:30px">Who would be where today, roughly</h3>
+  <div class="tw"><table class="awards">
+    <thead><tr><th>Rank</th><th>Every Player</th><th>Active in 30 days</th></tr></thead>
+    <tbody>
+      <tr><td>Rookie</td><td>about 6,670</td><td>about 460</td></tr>
+      <tr><td>Dance Floor</td><td>about 710</td><td>about 120</td></tr>
+      <tr><td>Weekender</td><td>about 400</td><td>about 95</td></tr>
+      <tr><td>Scratch</td><td>about 230</td><td>about 60</td></tr>
+      <tr><td>Club Champ</td><td>about 43</td><td>about 15</td></tr>
+      <tr><td>State Am</td><td>about 12</td><td>about 5</td></tr>
+      <tr><td>Tour</td><td>about 8</td><td>about 6</td></tr>
+      <tr><td>Major</td><td>about 3</td><td>about 2</td></tr>
+      <tr><td>Legend</td><td>1</td><td>1</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Ranks start at round levels: 1, 5, 10, 20, 50, 100, 150, 250, 500 (Matt, 25 November). Counts are approximate: they come from the replica on 25 November 2026 with the example backfill (50 XP a finished solo game, 5 a make), read at 5,000, 10,000, 20,000, 50,000, 100,000, 150,000, 200,000, 300,000 and 500,000 XP, which sit just above each rank's own threshold. No backfill has been run, so today every Player is a Rookie. The phone drawings further down still show the first six-rank names; the app uses this ladder.</p>
+</section>
+
+<section>
+  <div class="col">
+    <div class="kick">The map</div>
+    <h2>Fourteen places</h2>
+  </div>
+  <div class="tw"><table class="places">
+    <thead><tr><th>Place</th><th>What shows</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td>Game over</td><td>The XP panel: total, what made it up, the bar</td><td>Every game the signed-in Player finishes</td></tr>
+      <tr><td>Session done</td><td>The same panel on the end of today's session</td><td>Once a day</td></tr>
+      <tr><td>Quests stage clear</td><td>The same panel, with the stage and star rows</td><td>First clear, and any replay that adds a star</td></tr>
+      <tr><td>Level up</td><td>The new number on the Player's badge</td><td>After game over, when a game carries the Player over</td></tr>
+      <tr><td>Rank up</td><td>The new rank and its colour</td><td>Levels 10, 20, 30, 40, 50</td></tr>
+      <tr><td>Profile</td><td>Badge, ring, level and the bar under the name, with a ? link</td><td>Always</td></tr>
+      <tr><td>The Levels sheet</td><td>Where the Player stands, the six ranks, then every award and its value</td><td>From the ? on Profile, the XP panel and Home's level row</td></tr>
+      <tr><td>Home</td><td>A ring in the rank's colour round the avatar beside the greeting, and the rank's name next to it (Matt, 25 November; the level row was removed)</td><td>Always</td></tr>
+      <tr><td>Another Player's profile</td><td>Their badge and ring</td><td>Always</td></tr>
+      <tr><td>Leaderboards and Player lists</td><td>The badge beside every name</td><td>Tournaments, League, game boards, Find Players</td></tr>
+      <tr><td>Matchup</td><td>Badge and ring on each Player's card</td><td>Before an Online or Versus game</td></tr>
+      <tr><td>The community feed</td><td>The badge on every post, and a post when a Player reaches a new rank</td><td>Levels 10, 20, 30, 40, 50</td></tr>
+      <tr><td>Welcome to levels</td><td>Where a current Player's history starts them</td><td>Once, on the first launch with XP</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ===================== earn ===================== -->
+<section class="band">
+  <span class="tag">Where you earn it</span>
+  <h2>The XP panel</h2>
+  <div class="two">
+    <div>
+      <p>One component, used wherever XP is paid. It sits under PQS and above Play again on the game over page, so the score and PQS still lead.</p>
+      <ul>
+        <li><b>Head:</b> "XP earned" and the total.</li>
+        <li><b>Rows:</b> one for each award this game paid, and only those.</li>
+        <li><b>Bar:</b> 4 px. Brand green is what the Player had, white is what was just added.</li>
+        <li><b>Foot:</b> level and rank on the left, XP to the next level on the right.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Who gets one</h3>
+      <p>The signed-in Player, and each Profile on the account for their own games. A guest, Puttr as the opponent, test putts and host mode get no panel at all, not an empty one.</p>
+      <h3>Local games with two to four Players</h3>
+      <p>Only signed-in Profiles earn. The panel shows the XP of the Player whose phone it is; the standings above it stay as they are.</p>
+    </div>
+  </div>
+
+  <div class="phones">
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="logo"><i></i>PUTTR<span>CENTER CUT</span></div></div>
+        <div><div class="eb">Game over</div><div class="num" style="font-size:44px;margin-top:6px">8 <span class="lab">of 10</span></div></div>
+        <div class="strip" style="grid-template-columns:repeat(3,1fr)"><div><b>4</b><small>Center cuts</small></div><div><b>9 in</b><small>Avg pace</small></div><div><b>81</b><small>PQS</small></div></div>
+        <div class="xp">
+          <div class="top"><span class="eb">XP earned</span><b>+130</b></div>
+          <div class="ln"><span>Finished the game</span><b>50</b></div>
+          <div class="ln"><span>8 makes</span><b>40</b></div>
+          <div class="ln"><span>4 center cuts</span><b>40</b></div>
+          <div class="bar"><i style="width:63%"></i><u style="width:13%"></u></div>
+          <div class="ft"><span>Level 14 · Fairway</span><span>240 to Level 15</span></div>
+        </div>
+        <div class="btn">Play again</div>
+        <div class="btn b2">Review game</div>
+        <div class="btn b2">Exit</div>
+        <div class="rows"><div class="row"><div class="g"><b>See your analysis</b></div><svg class="ch" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div></div>
+      </div></div>
+      <figcaption><b>1 · Game over</b>Score, the game's numbers and PQS first, then the panel, then Play again. Tapping the panel opens the Levels sheet.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="logo"><i></i>PUTTR<span>ON FIRE</span></div></div>
+        <div><div class="eb">Game over · online</div><div class="ti" style="margin-top:6px">You won</div><div class="bd2" style="margin-top:4px">57 feet to 41</div></div>
+        <div class="xp">
+          <div class="top"><span class="eb">XP earned</span><b>+255</b></div>
+          <div class="ln"><span>Finished the game</span><b>50</b></div>
+          <div class="ln"><span>Won</span><b>30</b></div>
+          <div class="ln"><span>9 makes</span><b>45</b></div>
+          <div class="ln"><span>3 center cuts</span><b>30</b></div>
+          <div class="ln"><span>League Night</span><b>100</b></div>
+          <div class="bar"><i style="width:76%"></i><u style="width:24%"></u></div>
+          <div class="ft"><span>Level 14 · Fairway</span><span>Level 15 reached</span></div>
+        </div>
+        <div class="btn">Continue</div>
+        <div class="btn b2">Review game</div>
+      </div></div>
+      <figcaption><b>2 · A game that levels up</b>The bar fills, the foot says so, and the main button becomes Continue. It leads to Level up, then back to this page with Play again.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="logo"><i></i>PUTTR<span>QUESTS</span></div></div>
+        <div><div class="eb">Stage clear · Greenlands 1-4</div><div class="ti" style="margin-top:6px">The Long Meadow</div><div class="bd2 gold" style="margin-top:5px;font-weight:700">3 of 3 stars</div></div>
+        <div class="xp">
+          <div class="top"><span class="eb">XP earned</span><b>+100</b></div>
+          <div class="ln"><span>Stage cleared, first time</span><b>40</b></div>
+          <div class="ln"><span>3 stars</span><b>60</b></div>
+          <div class="bar"><i style="width:22%"></i><u style="width:10%"></u></div>
+          <div class="ft"><span>Level 6 · Rookie</span><span>680 to Level 7</span></div>
+        </div>
+        <div class="btn">Next stage</div>
+        <div class="btn b2">Back to the map</div>
+      </div></div>
+      <figcaption><b>3 · Quests</b>A stage pays 40 the first time and 20 a star. A replay pays only for stars it adds; a replay that adds none shows no panel. A boss pays 150 once.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="logo"><i></i>PUTTR<span>TODAY'S SESSION</span></div></div>
+        <div><div class="eb">Session done</div><div class="ti" style="margin-top:6px">Lock in 6 ft straight</div></div>
+        <div class="strip" style="grid-template-columns:repeat(3,1fr)"><div><b>7/10</b><small>Made</small></div><div><b>84</b><small>PQS</small></div><div><b style="color:var(--amber)">6</b><small>Day streak</small></div></div>
+        <div class="xp">
+          <div class="top"><span class="eb">XP earned</span><b>+175</b></div>
+          <div class="ln"><span>Today's session</span><b>125</b></div>
+          <div class="ln"><span>Finished the whole session</span><b>50</b></div>
+          <div class="bar"><i style="width:40%"></i><u style="width:17.5%"></u></div>
+          <div class="ft"><span>Level 14 · Fairway</span><span>425 to Level 15</span></div>
+        </div>
+        <div class="btn b2">Practice again</div>
+        <div class="btn b2">See your analysis</div>
+      </div></div>
+      <figcaption><b>4 · Session done</b>The plan's "daily putts" (25 a putt for five, 50 for all five) mapped onto today's session: 125 for the session, 50 for finishing. Practice again pays nothing more that day. This mapping is mine; see the decisions.</figcaption>
+    </figure>
+  </div>
+
+  <div class="wide">
+    <div class="cols">
+      <div class="col2">
+        <div class="hd"><div class="logo"><i></i>PUTTR<span>CENTER CUT</span></div></div>
+        <div><div class="eb">Game over</div><div class="num" style="font-size:64px;margin-top:8px">8 <span class="lab">of 10</span></div></div>
+        <div class="strip" style="grid-template-columns:repeat(3,1fr)"><div><b>4</b><small>Center cuts</small></div><div><b>9 in</b><small>Avg pace</small></div><div><b>81</b><small>PQS</small></div></div>
+        <div class="xp">
+          <div class="top"><span class="eb">XP earned</span><b>+130</b></div>
+          <div class="ln"><span>Finished the game</span><b>50</b></div>
+          <div class="ln"><span>8 makes</span><b>40</b></div>
+          <div class="ln"><span>4 center cuts</span><b>40</b></div>
+          <div class="bar"><i style="width:63%"></i><u style="width:13%"></u></div>
+          <div class="ft"><span>Level 14 · Fairway</span><span>240 to Level 15</span></div>
+        </div>
+        <div style="flex:1"></div>
+        <div class="btns"><div class="btn">Play again</div><div class="btn b2">Review game</div><div class="btn b2">Exit</div></div>
+      </div>
+      <div class="col2">
+        <div class="sec"><b>Putts</b><span>10</span></div>
+        <div class="rows" style="flex:1;overflow:hidden">
+          <div class="row"><span class="hn">1</span><div class="g"><b>6 ft · center cut</b><small>Pace 10 in past</small></div><svg class="ok" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div>
+          <div class="row"><span class="hn">2</span><div class="g"><b>6 ft · made</b><small>Pace 14 in past · 0.6 in right</small></div><svg class="ok" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div>
+          <div class="row off"><span class="hn">3</span><div class="g"><b>8 ft · short</b><small>Pace 5 in short</small></div></div>
+          <div class="row"><span class="hn">4</span><div class="g"><b>8 ft · center cut</b><small>Pace 8 in past</small></div><svg class="ok" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div>
+          <div class="row"><span class="hn">5</span><div class="g"><b>10 ft · made</b><small>Pace 11 in past · 0.8 in left</small></div><svg class="ok" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div>
+          <div class="row"><span class="hn">6</span><div class="g"><b>10 ft · made</b><small>Pace 7 in past · 0.4 in right</small></div><svg class="ok" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div>
+          <div class="row off"><span class="hn">7</span><div class="g"><b>12 ft · missed left</b><small>Pace 12 in past</small></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="note">Tablet and TV: the wide game over page never scrolls, so the panel joins the left column between the game's numbers and the buttons. The putts keep the right column. On a TV the panel is not a focus stop.</p>
+</section>
+
+<!-- ===================== level up ===================== -->
+<section class="band">
+  <span class="tag">When the bar fills</span>
+  <h2>Level up</h2>
+  <div class="two">
+    <div>
+      <p>One page, shown between game over and whatever comes next. It is a pushed page like any other, not a modal over the game.</p>
+      <ul>
+        <li><b>It shows the badge,</b> since that is what other Players will see.</li>
+        <li><b>One main button,</b> Continue, and one secondary to the Levels sheet.</li>
+        <li><b>Two levels in one game</b> (possible with a one-time award) show the higher number.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>What changed from the first drawing</h3>
+      <p>The first drawing gave every level an unlock (a console light, a ball trail). Those are gone: the thing a Player earns is the rank and its colour. An ordinary level-up changes the number on the badge; every tenth level changes the colour, and that is the moment the page is built around.</p>
+    </div>
+  </div>
+
+  <div class="phones">
+        <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"></div>
+        <div style="flex:1"></div>
+        <div class="eb ctr">Level up</div>
+        <div class="big">15</div>
+        <div class="ti ctr">Fairway</div>
+        <div class="bd2 ctr">5 levels to Scratch</div>
+        <div class="rows" style="margin-top:14px"><div class="row"><div class="av o2">M</div><div class="g"><b>Matt Allard <span class="rk r2">15</span></b><small>How other Players see you now</small></div></div></div>
+        <div style="flex:1"></div>
+        <div class="btn">Continue</div>
+        <div class="btn b2">See the levels</div>
+      </div></div>
+      <figcaption><b>5 · Level up</b>The number, the rank, how far to the next rank, and the badge with its new number. XP past 1,000 carries into the new level.</figcaption>
+    </figure>
+
+        <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"></div>
+        <div style="flex:1"></div>
+        <div class="eb ctr">New rank · level 20</div>
+        <div class="ti ctr" style="font-size:44px;color:#5687ff">Scratch</div>
+        <div class="bd2 ctr">Rookie · Fairway · <b style="color:#fff;font-weight:700">Scratch</b> · Tour · Major · Legend</div>
+        <div class="rows" style="margin-top:14px"><div class="row"><div class="av o3">M</div><div class="g"><b>Matt Allard <span class="rk r3">20</span></b><small>Blue is Scratch. It is on your name everywhere.</small></div></div></div>
+        <div class="bd2 ctr">Your friends will see it in the feed.</div>
+        <div style="flex:1"></div>
+        <div class="btn">Continue</div>
+        <div class="btn b2">See the levels</div>
+      </div></div>
+      <figcaption><b>6 · Rank up</b>Every tenth level the rank name leads, in its new colour, with the badge and ring as others will see them. This is the one place a rank colour is used on a title.</figcaption>
+    </figure>
+
+    
+  </div>
+</section>
+
+<!-- ===================== see it ===================== -->
+<section class="band">
+  <span class="tag">Where you see it</span>
+  <h2>Profile, the Levels sheet and Home</h2>
+  <div class="two">
+    <div>
+      <h3>Should Profile have a ? for XP</h3>
+      <p><b>Yes.</b> It is the same pattern Improve already uses for Putting Quality Score: a ? as the link on the section header. Here it opens the Levels sheet, the one page that explains the whole scheme: where the Player stands, the six ranks and their colours, then every award and its value.</p>
+      <ul>
+        <li><b>The values are read from the API,</b> the same table that pays them, so the page can never disagree with what a game awards.</li>
+        <li><b>The XP panel and Home's level row open the same sheet,</b> so a Player who wonders about a row is one tap away.</li>
+        <li><b>It is the only explanation of XP.</b> There is no first-run tour or first-look strip, so this sheet is where XP is explained.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Home</h3>
+      <p>The XP plan put a level chip in Home's header. That header already holds its two actions (the Puttr status pill and the bell), and the guidelines allow two. So the level is one list row under today's session, which opens the Levels sheet.</p>
+      <h3>Profile</h3>
+      <p>The avatar carries the rank ring and the name carries the badge, exactly as other Players see them. The level block sits under the name, above the all-time strip. The six attributes from the sports UI spec are still undecided and are left out.</p>
+    </div>
+  </div>
+
+  <div class="phones">
+        <figure>
+      <div class="ph"><div class="scr">
+        <div class="hd"><div class="t">Profile</div><div class="ico"><svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7M10 20h4"/></svg></div><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></div></div>
+        <div class="hero" style="padding:3px"><div class="av o2">M</div><div><div class="ti s">Matt Allard <span class="rk r2">14</span></div><div class="bd2" style="margin-top:4px">Boston · Putting since 2023</div></div></div>
+        <div class="sec hl"><b>Level</b><span class="q">?</span></div>
+        <div class="card" style="border-left:4px solid #2d8c3c"><div class="pad">
+          <div style="display:flex;align-items:baseline;gap:8px"><span class="num">14</span><span class="ti s">Fairway</span><span class="bd2" style="margin-left:auto">760 / 1,000 XP</span></div>
+          <div class="bar" style="height:4px"><i style="width:76%"></i></div>
+          <div style="display:flex;justify-content:space-between" class="bd2"><span>240 to Level 15</span><span>6 levels to Scratch</span></div>
+        </div></div>
+        <div class="sec"><b>All time</b></div>
+        <div class="strip" style="grid-template-columns:repeat(3,1fr)"><div><b>79</b><small>PQS</small></div><div><b>412</b><small>Games</small></div><div><b>61%</b><small>Made</small></div></div>
+        <div class="sec"><b>Achievements</b><span>See all</span></div>
+      </div><div class="nav" data-on="profile"></div></div>
+      <figcaption><b>7 · Profile</b>Ring and badge on the head, then the level card with the bar, the next level and the next rank. The ? on the section header, and the card itself, open the Levels sheet.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="ico"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div><div class="t" style="margin-left:4px">Levels</div></div>
+        <div class="card" style="border-left:4px solid #2d8c3c"><div class="pad">
+          <div style="display:flex;align-items:baseline;gap:8px"><span class="num">14</span><span class="ti s">Fairway</span><span class="bd2" style="margin-left:auto">13,760 XP</span></div>
+          <div class="bar" style="height:4px"><i style="width:76%"></i></div>
+          <div style="display:flex;justify-content:space-between" class="bd2"><span>240 to Level 15</span><span>5,240 to Scratch</span></div>
+        </div></div>
+        <div class="sec"><b>The six ranks</b></div>
+        <div class="rows">
+          <div class="row"><span class="rk lg r1">1</span><div class="g"><b>Rookie</b><small>Levels 1 to 9</small></div><svg class="ok" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div>
+          <div class="row me"><span class="rk lg r2">10</span><div class="g"><b>Fairway</b><small>Levels 10 to 19 · 9,000 XP</small></div><span class="xv" style="color:#fff">You</span></div>
+          <div class="row"><span class="rk lg r3">20</span><div class="g"><b>Scratch</b><small>Levels 20 to 29 · 19,000 XP</small></div></div>
+          <div class="row"><span class="rk lg r4">30</span><div class="g"><b>Tour</b><small>Levels 30 to 39 · 29,000 XP</small></div></div>
+          <div class="row"><span class="rk lg r5">40</span><div class="g"><b>Major</b><small>Levels 40 to 49 · 39,000 XP</small></div></div>
+          <div class="row"><span class="rk lg r6">50</span><div class="g"><b>Legend</b><small>Level 50 and up · 49,000 XP</small></div></div>
+        </div>
+        <div class="sec"><b>What a rank gets you</b></div>
+        <div class="card"><div class="pad"><div class="bd">Your colour, beside your name on every board, in the feed and before every game. Status only: a rank never makes a putt easier and carries no other perk.</div></div></div>
+      </div></div>
+      <figcaption><b>8 · The Levels sheet</b>The one page that explains the scheme. Top: where the Player stands and how far to the next level and the next rank. Then the six ranks in their colours, with the XP each one takes.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="ico"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div><div class="t" style="margin-left:4px">Levels</div></div>
+        <div class="sec"><b>How to earn XP</b></div>
+        <div class="bd">Every game pays XP, and 1,000 XP is a level. Your level shows how much you play. Your PQS shows how well.</div>
+        <div class="sec"><b>Every game</b></div>
+        <div class="rows">
+          <div class="row"><div class="g"><b>Finish a game</b><small>Leaving part way pays nothing</small></div><span class="v">50</span></div>
+          <div class="row"><div class="g"><b>Win</b><small>Against another Player or Puttr</small></div><span class="v">30</span></div>
+          <div class="row"><div class="g"><b>Each make</b></div><span class="v">5</span></div>
+          <div class="row"><div class="g"><b>Each center cut</b><small>On top of the make</small></div><span class="v">10</span></div>
+        </div>
+        <div class="sec"><b>Every day</b></div>
+        <div class="rows">
+          <div class="row"><div class="g"><b>Today's session</b><small>50 more for finishing all of it</small></div><span class="v">125</span></div>
+        </div>
+        <div class="sec"><b>Once each</b></div>
+        <div class="rows">
+          <div class="row"><div class="g"><b>Quests stage</b><small>First clear, plus 20 a star</small></div><span class="v">40</span></div>
+          <div class="row"><div class="g"><b>Quests boss</b></div><span class="v">150</span></div>
+          <div class="row"><div class="g"><b>Tournament round</b></div><span class="v">100</span></div>
+          <div class="row"><div class="g"><b>League Night</b><small>Once a week</small></div><span class="v">100</span></div>
+        </div>
+      </div></div>
+      <figcaption><b>9 · The same sheet, scrolled</b>How to earn XP: every award and its value in three groups, read from the API.</figcaption>
+    </figure>
+
+
+    <figure>
+      <div class="ph"><div class="scr">
+        <div class="hd"><div class="logo"><i></i>PUTTR</div><div class="lv" style="letter-spacing:.1em;flex-direction:row;align-items:center;gap:6px"><i style="width:7px;height:7px;border-radius:50%;background:var(--bright)"></i>Connected</div><div class="ico"><svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7M10 20h4"/></svg></div></div>
+        <div class="card">
+          <div class="win" style="height:84px"><div class="floor"></div><div class="mat"></div><div class="hole"></div><div class="ball" style="bottom:22%"></div></div>
+          <div class="pad"><div class="eb">Today's session · 175 XP</div><div class="ti">Lock in 6 ft straight</div><div class="btn">Start session</div></div>
+        </div>
+        <div class="rows hl"><div class="row"><span class="rk lg r2">14</span><div class="g"><b>Fairway</b><div class="bar" style="height:4px;margin-top:6px"><i style="width:76%"></i></div></div><span class="xv">240 to 15</span></div></div>
+        <div class="sec"><b>Jump back in</b><span>See all</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="card"><div class="win course" style="height:54px"></div><div class="pad" style="padding:8px;gap:3px"><div class="ti s" style="font-size:12px">On Fire</div></div></div>
+          <div class="card"><div class="win course" style="height:54px"></div><div class="pad" style="padding:8px;gap:3px"><div class="ti s" style="font-size:12px">Center Cut</div></div></div>
+        </div>
+      </div><div class="nav" data-on="home"></div></div>
+      <figcaption><b>10 · Home</b>Two additions: what today's session pays, in its eyebrow, and one level row under the card, led by the badge. The row opens the Levels sheet. The header is unchanged.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ===================== others ===================== -->
+<section class="band">
+  <span class="tag">Other Players</span>
+  <h2>Where your level is seen</h2>
+  <div class="two">
+    <div>
+      <p>Everywhere a Player's name appears, the badge is beside it; wherever their avatar is big enough, the ring is round it. That is the whole reward, so it has to be consistent: one badge, one ring, the same six colours, in every list.</p>
+      <ul>
+        <li><b>Boards still sort by score.</b> The badge never changes an order or a pairing.</li>
+        <li><b>Kid profiles</b> have a rank like anyone else.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Rank-ups in the feed</h3>
+      <p>The community feed on Home gets one new kind of post: a Player reaching a new rank. Five in a lifetime, so it never floods. Ordinary level-ups are not posted. Every other post carries the badge beside the name.</p>
+    </div>
+  </div>
+
+  <div class="phones">
+        <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="ico"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div></div>
+        <div class="hero" style="padding:3px"><div class="av o3">D</div><div><div class="ti s">Dana Okafor <span class="rk r3">23</span></div><div class="bd2" style="margin-top:4px">Scratch · Chicago</div></div></div>
+        <div class="btn b2">Challenge</div>
+        <div class="sec"><b>Head to head</b></div>
+        <div class="strip" style="grid-template-columns:repeat(3,1fr)"><div><b>3</b><small>You</small></div><div><b>5</b><small>Dana</small></div><div><b>8</b><small>Games</small></div></div>
+        <div class="sec"><b>All time</b></div>
+        <div class="strip" style="grid-template-columns:repeat(3,1fr)"><div><b>84</b><small>PQS</small></div><div><b>690</b><small>Games</small></div><div><b>66%</b><small>Made</small></div></div>
+        <div class="sec"><b>Achievements</b><span>See all</span></div>
+      </div></div>
+      <figcaption><b>11 · Another Player</b>Ring, badge and the rank's name. No bar and no XP figure: how close someone else is to their next level is not interesting.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="ico"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div><div class="t" style="margin-left:4px">Leaderboard</div></div>
+        <div class="eb">On Fire · this week</div>
+        <div class="rows">
+          <div class="row"><span class="hn">1</span><div class="av o5">S</div><div class="g"><b>Sam Ortiz <span class="rk r5">41</span></b></div><span class="v">132 ft</span></div>
+          <div class="row"><span class="hn">2</span><div class="av n o1">J</div><div class="g"><b>Jo Lindqvist <span class="rk r1">7</span></b></div><span class="v">118 ft</span></div>
+          <div class="row"><span class="hn">3</span><div class="av n o3">D</div><div class="g"><b>Dana Okafor <span class="rk r3">23</span></b></div><span class="v">104 ft</span></div>
+          <div class="row"><span class="hn">4</span><div class="av n o6">K</div><div class="g"><b>Kei Tanaka <span class="rk r6">52</span></b></div><span class="v">97 ft</span></div>
+          <div class="row me"><span class="hn">5</span><div class="av o2">M</div><div class="g"><b>Matt Allard <span class="rk r2">14</span></b></div><span class="v">94 ft</span></div>
+          <div class="row"><span class="hn">6</span><div class="av n o4">R</div><div class="g"><b>Ravi Shah <span class="rk r4">33</span></b></div><span class="v">90 ft</span></div>
+          <div class="row"><span class="hn">7</span><div class="av n o2">L</div><div class="g"><b>Lena Park <span class="rk r2">11</span></b></div><span class="v">88 ft</span></div>
+        </div>
+      </div></div>
+      <figcaption><b>12 · A leaderboard</b>The order is the score. The badge and ring show who has put the time in: here a Rookie is second, above a Legend.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="ico"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div><div class="t" style="margin-left:4px">On Fire</div></div>
+        <div class="eb">Online · first to miss loses</div>
+        <div style="display:flex;gap:8px">
+          <div class="pcard"><div class="av o2" style="width:44px;height:44px;font-size:18px;margin-top:3px">M</div><div class="ti s">Matt <span class="rk r2">14</span></div><div class="lab">Fairway</div><div class="num" style="font-size:26px">79</div><div class="lab">PQS</div></div>
+          <div class="vs">VS</div>
+          <div class="pcard"><div class="av n o3" style="width:44px;height:44px;font-size:18px;margin-top:3px">D</div><div class="ti s">Dana <span class="rk r3">23</span></div><div class="lab">Scratch</div><div class="num" style="font-size:26px">84</div><div class="lab">PQS</div></div>
+        </div>
+        <div class="rows">
+          <div class="row"><div class="g"><b>Starting distance</b></div><span class="v">6 ft</span></div>
+          <div class="row"><div class="g"><b>Head to head</b></div><span class="v">3 – 5</span></div>
+        </div>
+        <div style="flex:1"></div>
+        <div class="btn">Tee off</div>
+      </div></div>
+      <figcaption><b>13 · Matchup</b>Each Player's card carries the ring, the badge and the rank's name above PQS, which stays the big number. A winner earns the 30 whatever the levels are.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="ico"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div><div class="t" style="margin-left:4px">Community</div></div>
+        <div class="rows">
+          <div class="row"><div class="av n o3">D</div><div class="g"><b>Dana Okafor <span class="rk r3">20</span></b><small>Reached Scratch · 2 hours ago</small></div></div>
+          <div class="row"><div class="av n o4">R</div><div class="g"><b>Ravi Shah <span class="rk r4">33</span></b><small>Set a best in On Fire, 94 feet · 3 hours ago</small></div></div>
+          <div class="row"><div class="av n o2">L</div><div class="g"><b>Lena Park <span class="rk r2">11</span></b><small>Won League Night · yesterday</small></div></div>
+        </div>
+      </div></div>
+      <figcaption><b>14 · The feed</b>A new rank is a post like a personal best is. Every post carries the badge and ring of the Player who made it.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="ph"><div class="scr full">
+        <div class="hd"><div class="logo"><i></i>PUTTR</div></div>
+        <div style="flex:1"></div>
+        <div class="eb ctr">New in Puttr · levels</div>
+        <div class="bd ctr">Your 412 games and 3,180 makes start you at</div>
+        <div class="big">37</div>
+        <div class="ti ctr" style="color:#a06eff">Tour</div>
+        <div class="rows"><div class="row"><div class="av o4">M</div><div class="g"><b>Matt Allard <span class="rk r4">37</span></b><small>36,500 XP from your history</small></div></div></div>
+        <div class="bd2 ctr">Every game from here pays XP. Your PQS is unchanged.</div>
+        <div style="flex:1"></div>
+        <div class="btn">Continue</div>
+        <div class="btn b2">See the levels</div>
+      </div></div>
+      <figcaption><b>15 · Welcome to levels</b>Once, for a Player who already has history when XP ships. It uses the plan's example backfill: 50 a finished game and 5 a make. A new Player never sees it.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="kick">On purpose</div>
+    <h2>Where XP does not show</h2>
+  </div>
+  <div class="no">
+    <div><b>During a game</b>No XP ticks up while putting. The HUD is score, tee and the putt read. XP is counted once, on the final page.</div>
+    <div><b>Sorting and pairing</b>Boards rank scores and Online pairs on skill. The badge is shown there but never used to order or match Players.</div>
+    <div><b>Improve</b>The tab is about the stroke and PQS. Sessions filmed there pay XP on their own final page, not on the tab.</div>
+    <div><b>Push notifications</b>Level-ups happen with the app open, on the final page. Nothing is pushed.</div>
+    <div><b>Host mode and venues</b>Guests at an event earn nothing and see no panel.</div>
+    <div><b>The Coach's desk</b>A Coach looking at a Player sees PQS and the stroke. Level is not coaching information.</div>
+  </div>
+</section>
+
+<section class="col">
+  <div class="kick">To decide</div>
+  <h2>Before it is built</h2>
+  <ul>
+    <li><b>The colour of new XP.</b> Drawn white on the bar, with the "XP earned" label in bright green. The bar stays brand green at every rank, so rank colours stay on the badge. The first drawing used amber, which Broadcast keeps for time running out and streaks.</li>
+    <li><b>Today's session.</b> The plan pays "daily putts" (25 each for five, 50 for all). The app has today's session instead. I mapped it to 125 for the session and 50 for finishing, 175 a day. Is that right?</li>
+    <li><b>Home.</b> A level row under the session card, or change the guidelines to allow a third item in the header?</li>
+    <li><b>Backfill.</b> History puts long-time Players in Tour on day one. Keep that, or start everyone at 1?</li>
+    <li><b>A daily cap.</b> Without one, 3 ft makes pay 5 XP each without limit.</li>
+    <li><b>The six rank colours.</b> Slate, green, blue, purple, orange, gold. Orange sits close to the amber used for streaks; white (platinum) is the alternative for Major. Once agreed they go into the guidelines as rank colours, used only on the badge, the ring and the rank-up title.</li>
+    <li><b>One colour a rank, not a level.</b> I read "each level has a colour" as each of the six ranks, with the level number on the badge. Fifty distinct colours would not be recognisable.</li>
+    <li><b>Games without makes.</b> Tracks and the arcade games have no makes or center cuts. Do they pay the 50 for finishing only, or get rows of their own?</li>
+    <li><b>The Front Nine.</b> Left out of this page. If it comes back, its hole awards are more rows in the same panel.</li>
+  </ul>
+</section>
+
+</div>
+
+<script>
+// The tab bar, drawn once for every phone that has one.
+(function(){
+  var tabs=[["home","Home","M4 11l8-7 8 7v9h-5v-6H9v6H4z"],["play","Play","M6 8h12a4 4 0 0 1 0 8H6a4 4 0 0 1 0-8zM8 11v2M7 12h2M16 12h.01"],["improve","Improve","M4 17l5-5 4 3 7-8M4 21h16"],["profile","Profile","M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0"]];
+  document.querySelectorAll(".nav").forEach(function(n){
+    n.innerHTML=tabs.map(function(t){return '<div class="'+(n.dataset.on===t[0]?"on":"")+'"><svg viewBox="0 0 24 24"><path d="'+t[2]+'"/></svg>'+t[1]+'</div>'}).join("");
+  });
+})();
+</script>

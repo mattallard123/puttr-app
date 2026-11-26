@@ -1,0 +1,477 @@
+{
+ "bpm": 140,
+ "seconds": 20,
+ "bed": "audio/dubstep-140-20s.wav",
+ "bed_start": 0.0,
+ "bed_gain": 1.0,
+ "texts": {
+  "logo": {
+   "c": "logo",
+   "size": 16,
+   "portrait_scale": 1.0
+  },
+  "intro": {
+   "h": "Introducing",
+   "size": 7.5,
+   "portrait_scale": 1.5
+  },
+  "allnew": {
+   "h": "The <em><span style=\"white-space:nowrap\">all-new</span></em>",
+   "size": 8.5,
+   "portrait_scale": 1.6
+  },
+  "tv": {
+   "k": "Play on",
+   "h": "<em>TV</em>",
+   "c": "high",
+   "size": 12,
+   "portrait_scale": 1.75
+  },
+  "tablet": {
+   "k": "Play on",
+   "h": "<em>Tablet</em>",
+   "c": "high",
+   "size": 9,
+   "portrait_scale": 1.6
+  },
+  "mobile": {
+   "k": "Play on",
+   "h": "<em>Mobile</em>",
+   "c": "high",
+   "size": 9,
+   "portrait_scale": 1.6
+  },
+  "end": {
+   "c": "end",
+   "h": "The <span style=\"white-space:nowrap\">all-new</span><br><em>Puttr app</em>",
+   "sub": "Mobile \u00b7 Tablet \u00b7 TV",
+   "size": 9.5,
+   "portrait_scale": 1.45
+  },
+  "logoapp": {
+   "c": "logoapp",
+   "h": "<em>APP</em>",
+   "size": 16,
+   "portrait_scale": 1.0
+  },
+  "tracks": {
+   "k": "Tracks",
+   "h": "Play the <em>world's</em> courses",
+   "c": "high",
+   "size": 7.4,
+   "portrait_scale": 1.9
+  }
+ },
+ "cuts": [
+  {
+   "card": "black",
+   "beats": 2,
+   "text": "intro"
+  },
+  {
+   "take": "lanes",
+   "at": 24.6,
+   "beats": 0.5,
+   "pos": "0.5,0.2",
+   "text": "allnew",
+   "dim": 0.12,
+   "push": 1.12
+  },
+  {
+   "take": "derby",
+   "at": 12.0,
+   "beats": 0.5,
+   "pos": "0.5,0.2",
+   "text": "allnew",
+   "dim": 0.12,
+   "hold": true,
+   "push": 1.12
+  },
+  {
+   "take": "cricket",
+   "at": 25.0,
+   "beats": 0.5,
+   "pos": "0.5,0.2",
+   "text": "allnew",
+   "dim": 0.12,
+   "hold": true,
+   "push": 1.12
+  },
+  {
+   "take": "tracks",
+   "at": 31.1,
+   "beats": 0.5,
+   "pos": "0.5,0.2",
+   "text": "allnew",
+   "dim": 0.12,
+   "hold": true,
+   "push": 1.12
+  },
+  {
+   "take": "majorleague",
+   "at": 10.2,
+   "beats": 0.5,
+   "pos": "0.5,0.2",
+   "text": "logoapp",
+   "dim": 0.12,
+   "flash": true,
+   "push": 1.12
+  },
+  {
+   "take": "balloonpop",
+   "at": 8.0,
+   "beats": 0.5,
+   "pos": "0.5,0.2",
+   "text": "logoapp",
+   "dim": 0.12,
+   "hold": true,
+   "push": 1.12
+  },
+  {
+   "take": "windmill",
+   "at": 16.5,
+   "beats": 0.5,
+   "pos": "0.5,0.2",
+   "text": "logoapp",
+   "dim": 0.12,
+   "hold": true,
+   "push": 1.12
+  },
+  {
+   "take": "puttball",
+   "at": 8.4,
+   "beats": 0.5,
+   "pos": "0.5,0.2",
+   "text": "logoapp",
+   "dim": 0.12,
+   "hold": true,
+   "push": 1.12
+  },
+  {
+   "take": "archery",
+   "at": 15.6,
+   "beats": 0.5,
+   "pos": "0.5,0.2",
+   "text": "logoapp",
+   "dim": 0.12,
+   "hold": true,
+   "push": 1.12
+  },
+  {
+   "take": "deadweight",
+   "at": 15.2,
+   "beats": 0.5,
+   "pos": "0.5,0.2",
+   "text": "logoapp",
+   "dim": 0.12,
+   "hold": true,
+   "push": 1.12
+  },
+  {
+   "take": "spotkick",
+   "at": 17.0,
+   "beats": 0.5,
+   "pos": "0.5,0.2",
+   "text": "logoapp",
+   "dim": 0.12,
+   "hold": true,
+   "push": 1.12
+  },
+  {
+   "card": "black",
+   "beats": 0.5
+  },
+  {
+   "take": "majorleague",
+   "at": 15.6,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.16,
+   "flash": true
+  },
+  {
+   "take": "theyips",
+   "at": 14.6,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "lanes",
+   "at": 28.8,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "switchback",
+   "at": 14.6,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "puttstar",
+   "at": 17.6,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "balloonpop",
+   "at": 15.6,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "pure",
+   "at": 14.6,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "derby",
+   "at": 16.5,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "cricket",
+   "at": 15.8,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "clock",
+   "at": 14.6,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "puttball",
+   "at": 18.3,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "onfire",
+   "at": 28.5,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "tracks_clean",
+   "at": 52.8,
+   "beats": 2,
+   "pos": "0.5,0.2",
+   "text": "tracks",
+   "flash": true,
+   "push": 1.08
+  },
+  {
+   "take": "tracks_clean",
+   "at": 46.08,
+   "beats": 2,
+   "pos": "0.5,0.2",
+   "push": 1.04
+  },
+  {
+   "take": "deadweight",
+   "at": 10.6,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "metal",
+   "at": 14.6,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "spotkick",
+   "at": 13.6,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "archery",
+   "at": 30.0,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "lockdown",
+   "at": 14.6,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "windmill",
+   "at": 15.2,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "tourjuice",
+   "at": 14.6,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "doors",
+   "at": 14.6,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "slingshot",
+   "at": 5.6,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "turfwar",
+   "at": 22.0,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "tugofwar",
+   "at": 13.3,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "take": "underthecup",
+   "at": 3.0,
+   "beats": 1,
+   "pos": "0.5,0.2",
+   "push": 1.08
+  },
+  {
+   "layout": {
+    "bg": "studio",
+    "cells": [
+     {
+      "take": "puttstar",
+      "at": 23.2,
+      "device": "phone",
+      "x": 0.2954,
+      "y": 0.28,
+      "w": 0.4093,
+      "h": 0.5
+     }
+    ]
+   },
+   "beats": 2,
+   "text": "mobile",
+   "push": 1.05,
+   "drift": 0.05,
+   "flash": true
+  },
+  {
+   "layout": {
+    "bg": "studio",
+    "cells": [
+     {
+      "take": "ipad_majorleague",
+      "at": 19.0,
+      "device": "tablet",
+      "x": 0.2,
+      "y": 0.28,
+      "w": 0.6,
+      "h": 0.4854
+     }
+    ]
+   },
+   "beats": 2,
+   "text": "tablet",
+   "push": 1.05,
+   "drift": 0.05
+  },
+  {
+   "layout": {
+    "bg": "studio",
+    "cells": [
+     {
+      "take": "tv_derby",
+      "at": 20.0,
+      "device": "tv",
+      "x": 0.06,
+      "y": 0.4,
+      "w": 0.8796,
+      "h": 0.2781
+     }
+    ]
+   },
+   "beats": 2,
+   "text": "tv",
+   "push": 1.05,
+   "drift": 0.05
+  },
+  {
+   "grid": [
+    {
+     "take": "lanes",
+     "at": 28.8
+    },
+    {
+     "take": "majorleague",
+     "at": 15.6
+    },
+    {
+     "take": "derby",
+     "at": 16.5
+    },
+    {
+     "take": "cricket",
+     "at": 20.5
+    },
+    {
+     "take": "puttstar",
+     "at": 13.6
+    },
+    {
+     "take": "windmill",
+     "at": 15.2
+    },
+    {
+     "take": "puttball",
+     "at": 18.3
+    },
+    {
+     "take": "balloonpop",
+     "at": 15.6
+    },
+    {
+     "take": "deadweight",
+     "at": 10.6
+    }
+   ],
+   "cols": 3,
+   "beats": 5,
+   "text": "end",
+   "blur": 18,
+   "dim": 0.35
+  }
+ ],
+ "sfx": []
+}

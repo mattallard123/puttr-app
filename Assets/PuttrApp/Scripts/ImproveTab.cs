@@ -232,14 +232,15 @@ namespace PuttrApp
             Root.EnableInClassList("imp-wide", wide);
             foreach (VisualElement part in new[] { _top, _lessons, _lab, _pqs, _today, _month, _practice, _train, _course, _foot }) part.RemoveFromHierarchy();
             _scroll.Clear();
-            // The header, then the 3D stroke session: it leads the tab and holds its one main button.
+            // The header, then the 3D stroke session: it leads the tab and holds its one main button. The analysis
+            // card comes straight after it (Matt, 2026-11-25: Full analysis front and centre).
             _scroll.Add(_top);
             _scroll.Add(_lab);
             if (!wide)
-                foreach (VisualElement part in new[] { _lessons, _pqs, _today, _month, _practice, _train, _course }) _scroll.Add(part);
+                foreach (VisualElement part in new[] { _month, _lessons, _pqs, _today, _practice, _train, _course }) _scroll.Add(part);
             else
             {
-                _scroll.Add(Ui.Box("imp-pair", Ui.Box("imp-pair-col imp-pair-a", _lessons, _today, _month), Ui.Box("imp-pair-col imp-pair-b", _pqs, _course)));
+                _scroll.Add(Ui.Box("imp-pair", Ui.Box("imp-pair-col imp-pair-a", _month, _lessons, _today), Ui.Box("imp-pair-col imp-pair-b", _pqs, _course)));
                 foreach (VisualElement part in new[] { _practice, _train }) _scroll.Add(part);
             }
             _scroll.Add(_foot);
@@ -273,14 +274,24 @@ namespace PuttrApp
         {
             if (!_needsPick || _app.Top != null || Root.panel == null) return;
             _needsPick = false;   // once per answer: backing out of it shows Improve (the next read asks again)
-            _app.Push(new CoachFirstRunScreen(_app, () =>
+            PickCoach(_app, () => { _loadedAt = -100f; Shown(); });
+            Hold(false);   // under the picker: Improve is there if the Player backs out of it
+        }
+
+        /// <summary>
+        /// The coach first run, from wherever it is asked for (Improve's lead, Home's Choose your coach): every press
+        /// opens it until a coach is chosen. after runs once one is.
+        /// </summary>
+        public static void PickCoach(App app, Action after)
+        {
+            if (app.Top is CoachFirstRunScreen) return;   // a press on the card's button reaches the card too
+            app.Push(new CoachFirstRunScreen(app, () =>
             {
                 _fixturePicked = true;
-                PlayerPrefs.SetInt(CoachKey(_app), 1);
-                _loadedAt = -100f;
-                Shown();
+                PlayerPrefs.SetInt(CoachKey(app), 1);
+                CoachVoice.Changed();   // Home's card and anything else showing the coach reads it again
+                after?.Invoke();
             }));
-            Hold(false);   // under the picker: Improve is there if the Player backs out of it
         }
 
         void CoachAnswered(object data)
@@ -297,10 +308,13 @@ namespace PuttrApp
             if (_labBody != null) _labBody.gameObject.SetActive(true);
             Arrange();
             LeadWithPicker();
-            if (Time.realtimeSinceStartup - _loadedAt < 20f) return;
+            // A session filmed a moment ago: said at once, and its list read whatever was read in the last 20 seconds.
+            bool fresh = Time.realtimeSinceStartup - _loadedAt < 20f;
+            if (fresh && LabPending.Id != null) { Lab(); ReadLab(); }
+            if (fresh) return;
             _loadedAt = Time.realtimeSinceStartup;
             App.Run(Api.Get("/profile/analysis/30", data => { _grid = AnalysisMath.Grid(J.List(data)); Today(); Month(); }));
-            App.Run(Api.Get("/lab/sessions", data => { _sessions = J.List(data); Lab(); }, _ => { _sessions = new List<object>(); Lab(); }));
+            ReadLab();
             App.Run(Api.Get("/coach/settings", data =>
             {
                 _coach = data; CoachVoice.Load(data); Face(); Today(); Month();
@@ -422,7 +436,7 @@ namespace PuttrApp
         {
             if (_grid == null || _coach == null) return;
             _today.Clear();
-            int goal = Mathf.Clamp(J.Int(_coach, "dailyGoal", 10), 3, 30);
+            int goal = Mathf.Clamp(J.Int(_coach, "dailyGoal", 20), 3, 30);
             List<TournamentMath.Dealt> putts = AnalysisMath.Session(_grid, goal, new System.Random(DateTime.Now.DayOfYear), out string title, out string why);
             bool done = J.Str(_coach, "lastPracticeDate").StartsWith(DateTime.Now.ToString("yyyy-MM-dd"));
             int streak = J.Int(_streak, "currentStreak");
@@ -439,23 +453,38 @@ namespace PuttrApp
             _today.Add(Ui.Box("pad", row));
         }
 
-        // ── 3D stroke session: baseline, recheck after a week, or the one in the cloud ──
+        // ── 3D stroke session: record one any day, review the latest ──
 
-        const int RecheckDays = 7;
+        // Recording is always on offer (Matt, 2026-11-25): a Player can film a session every day, so the card never
+        // waits for a recheck date. Record session is the tab's main button; Review session sits under it once there
+        // is a session to open.
+        void ReadLab() => App.Run(Api.Get("/lab/sessions", data => { _sessions = J.List(data); Lab(); }, _ => { if (_sessions == null) _sessions = new List<object>(); Lab(); }));
+
+        UnityEngine.UIElements.IVisualElementScheduledItem _labPoll;
 
         void Lab()
         {
             _lab.Clear();
+            _labPoll?.Pause(); _labPoll = null;
             if (_sessions == null) return;
+            // Just filmed and not in the list yet (LabPending): the card says so, and the list is asked for again
+            // every few seconds while this tab is up, until the new session is in it.
+            bool waiting = LabPending.Waiting(_sessions);
+            if (waiting) _labPoll = _lab.schedule.Execute(ReadLab).StartingIn(5000);
             object latest = _sessions.Count > 0 ? _sessions[0] : null;
             int status = J.Int(latest, "status");
-            int days = latest == null ? 0 : (int)(DateTime.UtcNow - (ProfileMath.Date(latest, "created_at") ?? DateTime.UtcNow)).TotalDays;
-            string kick, title, words, action;
-            Action go;
-            if (latest == null) { kick = "3D STROKE SESSION"; title = "Film your baseline"; words = "Six putts on camera. Your coach builds your stroke in 3D and talks you through it."; action = "Start"; go = () => _app.Push(new LabIntroScreen(_app)); }
-            else if (status < 4) { kick = "3D STROKE SESSION"; title = "Processing in the cloud"; words = "Your session is being built in 3D. It is usually ready in a few minutes."; action = "View"; go = () => _app.Push(new LabSessionScreen(_app, latest)); }
-            else if (days >= RecheckDays) { kick = "3D STROKE SESSION"; title = "Time for a recheck"; words = "It has been " + days + " days. Film six more putts and see what changed."; action = "Start recheck"; go = () => _app.Push(new LabIntroScreen(_app)); }
-            else { kick = "3D STROKE SESSION"; title = "Your latest stroke"; words = "Recheck in " + (RecheckDays - days) + (RecheckDays - days == 1 ? " day." : " days."); action = "Review session"; go = () => _app.Push(new LabSessionScreen(_app, latest)); }
+            int days = latest == null ? 0 : (int)(DateTime.Now.Date - (ProfileMath.Date(latest, "created_at") ?? DateTime.UtcNow).ToLocalTime().Date).TotalDays;
+            const string kick = "3D STROKE SESSION";
+            string title, words, review = null;
+            if (waiting) { title = "Processing in the cloud"; words = "Your session is being built in 3D. It is usually ready in a few minutes."; if (latest != null) review = "Review last session"; }
+            else if (latest == null) { title = "Film your baseline"; words = "Six putts on camera. Your coach builds your stroke in 3D and talks you through it."; }
+            else if (status < 4) { title = "Processing in the cloud"; words = "Your session is being built in 3D. It is usually ready in a few minutes."; review = "View session"; }
+            else
+            {
+                title = "Your latest stroke"; review = "Review session";
+                words = days <= 0 ? "Recorded today. Film another any time: a session a day shows what is changing."
+                    : (days == 1 ? "Recorded yesterday." : "Recorded " + days + " days ago.") + " Film six more putts and see what changed.";
+            }
             // The Player's own latest stroke once its pose file is in (Follow loads it, and watches a session the cloud
             // is still building); until then, and with no session, a representative stroke on a loop.
             Follow(latest);
@@ -467,7 +496,8 @@ namespace PuttrApp
             // The session card: the picture in its window, then the words and the tab's one main button on a solid bar.
             VisualElement eyebrow = Ui.Box("row", Ui.Caps(kick, "caps caps-green grow"));
             if (_sessions.Count > 1) eyebrow.Add(Ui.Text("All sessions", "sec-link", Ui.Medium).OnTap(() => _app.Push(new LabSessionsScreen(_app))));
-            VisualElement bar = Ui.Box("imp-bar imp-bar-16", eyebrow, Ui.Title(title, "title imp-gap-8"), Ui.Text(words, "body-2 imp-gap-8", Ui.Medium), Ui.Button(action, go));
+            VisualElement bar = Ui.Box("imp-bar imp-bar-16", eyebrow, Ui.Title(title, "title imp-gap-8"), Ui.Text(words, "body-2 imp-gap-8", Ui.Medium), Ui.Button("Record session", () => _app.Push(new LabIntroScreen(_app))));
+            if (review != null) bar.Add(Ui.Button(review, () => _app.Push(new LabSessionScreen(_app, latest)), "btn btn-ghost imp-lab-second"));
             _lab.Add(Ui.Box("pad imp-m16", Ui.Box("window imp-win-top imp-lab-win", view), bar));
         }
 
@@ -540,9 +570,38 @@ namespace PuttrApp
             // The app reads user_stats; with no row yet, the grid's own count.
             int putts = J.Get(_stats, "total_putts_last_30") != null ? J.Int(_stats, "total_putts_last_30") : AnalysisMath.Putts(_grid);
             int best = J.Int(_coach, "longestStreak");
-            // Just the numbers (Matt: the 3D columns told the Player nothing). Full analysis has the spot-by-spot picture.
-            _month.Add(Ui.Section("Your putting · last 30 days", "Full analysis", () => Club.Require(_app, "Full analysis", () => _app.Push(new AnalysisScreen(_app)))));
+            // The analysis card (Matt, 2026-11-25: Full analysis front and centre): the 30 days in numbers, every spot
+            // of the mat with its score, one sentence on the best and worst, and the way in to Full analysis. Every
+            // Player sees the card; the Club gate is on the page behind it.
+            Action open = () => AnalysisScreen.Open(_app);
+            _month.Add(Ui.Section("Your putting · last 30 days"));
             _month.Add(Ui.Box("pad", Ui.StatStrip((percent < 0 ? "–" : percent + "%", "Make %"), (ProfileMath.Number(putts), "Putts"), (best.ToString(), "Best streak"))));
+            // The mat lying on its side: a row per tee, a column per distance, the hole off to the left.
+            VisualElement map = Ui.Box("imp-map");
+            for (int tee = 1; tee <= 3; tee++)
+            {
+                VisualElement row = Ui.Box("row", Ui.Caps(AnalysisMath.TeeNames[tee - 1].Substring(0, 1), "caps imp-map-side"));
+                for (int feet = 3; feet <= 11; feet++)
+                {
+                    AnalysisMath.Cell cell = _grid[(feet - 3) * 3 + tee - 1];
+                    Label value = Ui.Text(cell.Total > 0 ? cell.Weighted.ToString() : "–", "imp-map-value", Ui.Bold);
+                    value.style.color = cell.Total > 0 ? AnalysisPage.Heat(cell.Weighted) : Ui.Faint;
+                    row.Add(Ui.Box("imp-map-cell", value));
+                }
+                map.Add(row);
+            }
+            VisualElement feetRow = Ui.Box("row", Ui.Box("imp-map-side"));
+            for (int feet = 3; feet <= 11; feet++) feetRow.Add(Ui.Caps(feet + (feet == 11 ? " ft" : ""), "caps imp-map-feet"));
+            map.Add(feetRow);
+            AnalysisMath.Extremes(_grid, out AnalysisMath.Cell top, out AnalysisMath.Cell low);
+            string words = top == null ? "Putt a few and every spot on the mat gets its score here."
+                : top == low ? "Putt from more spots to see where you are strongest and weakest."
+                : "Strongest from " + top.Name + " (" + top.Weighted + "). Weakest from " + low.Name + " (" + low.Weighted + ").";  // the grid's own scores, not make %
+            _month.Add(Ui.Box("pad imp-m12", Ui.Box("imp-card imp-pad",
+                map,
+                Ui.Text(words, "body imp-m12", Ui.Bold),
+                Ui.Text("Each spot against the PGA Tour's make % from there: 100 is Tour level.", "body-2 imp-gap-4", Ui.Medium),
+                Ui.Secondary("Full analysis", open))));
         }
 
         // ── PQS ──────────────────────────────────────────────────────────────
@@ -680,6 +739,9 @@ namespace PuttrApp
         /// <summary>BuildInto with the Player's handedness (RIGHTY or LEFTY), which orients pushes and pulls for another Player.</summary>
         public static void BuildInto(App app, VisualElement host, string userId, string handedness) => new AnalysisPage(app, host, userId, handedness);
 
+        /// <summary>The way in from anywhere (Improve's card, a game over page, Home's finished session): members only.</summary>
+        public static void Open(App app) => Club.Require(app, "Full analysis", () => app.Push(new AnalysisScreen(app)));
+
         public AnalysisScreen(App app)
         {
             ScrollView scroll = Ui.Scroll();
@@ -707,7 +769,9 @@ namespace PuttrApp
         public override void Shown() => _refreshBar?.Invoke();
     }
 
-    /// <summary>Holed putts by where they came in: a half circle of five arcs, left side to right side, the busiest solid green.</summary>
+    /// <summary>Holed putts by where they came in: a half circle of five arcs, left side to right side, the busiest solid
+    /// green. It is the front of the hole, the half nearest the ball, so it is the lower half with the ball under it
+    /// (Matt, 2026-11-26: it was drawn as the upper half, the back of the hole, over a ball at the bottom).</summary>
     public sealed class EntryArc : VisualElement
     {
         readonly int[] _bands;
@@ -722,17 +786,21 @@ namespace PuttrApp
 
         int Front { get { int n = 0; foreach (int b in _bands) n += b; return n; } }
 
+        // The hole's centre is at the top of the box; under the arc go its numbers, then the ball's label.
+        const float Top = 8f;
+        static float Radius(float w, float h) => Mathf.Min(w * 0.5f - 34f, h - Top - 50f);
+
         void Labels()
         {
             Clear();
             float w = contentRect.width, h = contentRect.height;
             if (w <= 0 || Front == 0) return;
-            Vector2 centre = new Vector2(w * 0.5f, h - 18f);
-            float radius = Mathf.Min(w * 0.5f - 34f, h - 30f);
+            Vector2 centre = new Vector2(w * 0.5f, Top);
+            float radius = Radius(w, h);
             for (int i = 0; i < 5; i++)
             {
                 float angle = Mathf.Deg2Rad * (180f - (i + 0.5f) * 36f);
-                Vector2 at = centre + new Vector2(Mathf.Cos(angle), -Mathf.Sin(angle)) * (radius + 22f);
+                Vector2 at = centre + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * (radius + 18f);
                 Label value = Ui.Text(Mathf.RoundToInt(100f * _bands[i] / Front) + "%", "chart-label entry-value", Ui.Bold);
                 value.style.left = at.x - 22f; value.style.top = at.y - 8f; value.style.width = 44f;
                 value.style.unityTextAlign = TextAnchor.MiddleCenter;
@@ -749,21 +817,22 @@ namespace PuttrApp
             if (w <= 0 || h <= 0) return;
             int front = Front, most = 1;
             foreach (int b in _bands) most = Mathf.Max(most, b);
-            Vector2 centre = new Vector2(w * 0.5f, h - 18f);
-            float radius = Mathf.Min(w * 0.5f - 34f, h - 30f), width = radius * 0.32f;
+            Vector2 centre = new Vector2(w * 0.5f, Top);
+            float radius = Radius(w, h), width = radius * 0.32f;
             Painter2D p = context.painter2D;
             p.lineWidth = width;
             p.lineCap = LineCap.Butt;
             for (int i = 0; i < 5; i++)
             {
-                // Left side is drawn on the left: arcs run from 180 degrees (left) to 0 (right), the screen's y down.
-                float from = 180f + i * 36f + 1.5f, to = 180f + (i + 1) * 36f - 1.5f;
+                // Left side is drawn on the left, round the bottom of the hole: from 180 degrees (left) through 90
+                // (straight down, the middle of the front) to 0 (right), the screen's y down.
+                float from = 180f - (i + 1) * 36f + 1.5f, to = 180f - i * 36f - 1.5f;
                 float share = front > 0 ? _bands[i] / (float)most : 0f;
                 p.strokeColor = _bands[i] == 0 ? Ui.Surface2 : _bands[i] == most ? Ui.Green : Color.Lerp(Ui.Surface2, Ui.Green, 0.25f + 0.55f * share);
                 p.BeginPath(); p.Arc(centre, radius - width * 0.5f, Angle.Degrees(from), Angle.Degrees(to)); p.Stroke();
             }
             p.fillColor = Ui.Base;
-            p.BeginPath(); p.Arc(centre, radius * 0.22f, Angle.Degrees(180), Angle.Degrees(360)); p.Fill();
+            p.BeginPath(); p.Arc(centre, radius * 0.22f, Angle.Degrees(0), Angle.Degrees(180)); p.Fill();
         }
     }
 }

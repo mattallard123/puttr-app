@@ -29,7 +29,7 @@ namespace PuttrApp
         {
             UnityEngine.UIElements.VisualElement a = Ui.Avatar(p.Name, null, big);
             Texture2D face = Resources.Load<Texture2D>("PuttrApp/Coaches/" + p.Name);
-            if (face != null) { a.style.backgroundImage = new UnityEngine.UIElements.StyleBackground(face); a.Clear(); }
+            if (face != null) { a.style.backgroundImage = new UnityEngine.UIElements.StyleBackground(face); a.style.backgroundColor = Ui.Surface2; a.Clear(); }
             return a;
         }
 
@@ -80,9 +80,11 @@ namespace PuttrApp
         public static void Changed() => SettingsChanged?.Invoke();
 
         /// <summary>Says a line after whatever is being said now.</summary>
-        public static void Say(string text)
+        /// <summary>always: said even with the voice setting off (the coached review, as puttr-app's CoachedReview.js,
+        /// which speaks whenever there is a voice to speak with).</summary>
+        public static void Say(string text, bool always = false)
         {
-            if (!On || string.IsNullOrEmpty(text)) return;
+            if ((!On && !always) || string.IsNullOrEmpty(text)) return;
             Perf.Note("coach: " + text);
             One._lines.Enqueue(text);
             if (!One._speaking) One.StartCoroutine(One.Speak());
@@ -91,9 +93,9 @@ namespace PuttrApp
         public static bool Speaking => _one != null && (_one._speaking || _one._lines.Count > 0);
 
         /// <summary>Fetches lines ahead of time, so they play at once when wanted.</summary>
-        public static void Warm(IEnumerable<string> lines)
+        public static void Warm(IEnumerable<string> lines, bool always = false)
         {
-            if (!On) return;
+            if (!On && !always) return;
             foreach (string line in lines) One.StartCoroutine(One.Fetch(line, null));
         }
 
@@ -104,6 +106,8 @@ namespace PuttrApp
             _one._lines.Clear();
             _one._source.Stop();
         }
+
+        static readonly float[] Heard = new float[256];
 
         int _said;   // goes up on every Hush, so a line still being fetched is dropped rather than spoken over what follows
 
@@ -140,7 +144,19 @@ namespace PuttrApp
                 // By the wall clock too: with the phone's sound clock stopped a clip never ends, and whatever waits
                 // for the coach (the review's next moment, the video) would wait for ever.
                 float until = Time.realtimeSinceStartup + clip.length + 0.75f;
-                while (_source.isPlaying && Time.realtimeSinceStartup < until) yield return null;
+                // What actually comes out, noted once a line: a clip can play to its end with nothing heard.
+                float peak = 0f, listenFrom = Time.realtimeSinceStartup;
+                bool noted = false;
+                while (_source.isPlaying && Time.realtimeSinceStartup < until)
+                {
+                    if (!noted)
+                    {
+                        AudioListener.GetOutputData(Heard, 0);
+                        foreach (float v in Heard) peak = Mathf.Max(peak, Mathf.Abs(v));
+                        if (Time.realtimeSinceStartup - listenFrom > 1.5f) { noted = true; Perf.Note(peak > 0.001f ? "coach: heard (peak " + peak.ToString("0.00") + ")" : "coach: playing but nothing is coming out"); }
+                    }
+                    yield return null;
+                }
                 if (_source.isPlaying) { _source.Stop(); Perf.Note("coach: that line did not finish playing (the sound clock is stopped)"); }
             }
             _speaking = false;

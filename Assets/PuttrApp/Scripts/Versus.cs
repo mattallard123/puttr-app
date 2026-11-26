@@ -302,12 +302,12 @@ namespace PuttrApp
                 list.Clear();
                 List<object> games = VersusMath.Games(J.List(data));
                 if (games.Count == 0) { list.Add(Ui.Text("No Versus games are in this build yet.", "sub", Ui.Regular)); return; }
-                // One bordered block of rows, not a card for each game.
-                VisualElement block = Ui.Box("card vs-list");
-                for (int i = 0; i < games.Count; i++)
+                // The game cards Home and Play use (Matt, 2026-11-24), in a grid.
+                VisualElement block = Ui.Box("vs-grid");
+                foreach (object each in games)
                 {
-                    object game = games[i];
-                    block.Add(Ui.Box(i == 0 ? "vs-row vs-row-first" : "vs-row", Ui.Box("vs-words", Ui.Text(J.Str(game, "title"), "vs-name", Ui.Bold), Ui.Text(GameTags.Skill(game) + " · " + GameTags.Length(game), "body-2", Ui.Regular)), Ui.Icon("CaretRight", 16, Ui.Faint))
+                    object game = each;
+                    block.Add(GameCards.Make(game, GameTags.Skill(game) + " · " + GameTags.Length(game), false, false)
                         .OnTap(() => app.Push(new VersusSetupScreen(app, game, friendId, friend))));
                 }
                 list.Add(block.Margin(12));

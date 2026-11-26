@@ -650,7 +650,8 @@ namespace PuttrApp
                     Ui.Box("grow", Ui.Text(g.Title.ToUpperInvariant(), "kick", Ui.Bold), Ui.Text(turn, "g-name", Ui.Bold).Margin(4)),
                     Ui.Box("btn-small", Ui.Text("Results", "btn-text", Ui.Bold)).OnTap(_leave)));
             // With no Puttr and no test putts the strip says "Puttr not connected": "test putts" would promise a way to putt.
-            if (!_offline && (Fixtures.On || Green.RealPutts == false)) _scroll.Add(Ui.Text("Test putts: nothing is saved.", "sheet-note", Ui.Bold));
+            // A store capture (-app2Connected) plays as a connected Puttr would: no test note.
+            if (!_offline && !Fixtures.Connected && (Fixtures.On || Green.RealPutts == false)) _scroll.Add(Ui.Text("Test putts: nothing is saved.", "sheet-note", Ui.Bold));
             else if (Api.HoldsPlay) _scroll.Add(Ui.Text(Api.NotSaved + ".", "sheet-note", Ui.Bold));
 
             if (last != null && last != _splashed && g.Splash(last, out string bigText, out string smallText)) ShowSplash(last, bigText, smallText);
@@ -736,61 +737,43 @@ namespace PuttrApp
 
     public sealed class RuleFinalScreen : AppScreen
     {
-        public RuleFinalScreen(App app, object game, RuleGame g, Action again)
+        /// <param name="reviewId">The saved game's id (Review game), or null when nothing was saved.</param>
+        public RuleFinalScreen(App app, object game, RuleGame g, Action again, string reviewId = null)
         {
-            ScrollView scroll = Ui.Scroll();
-            scroll.Add(Ui.Header("", app.ExitToTab));
             int made = g.Shots.Count(s => s.Player == 0 && s.V != null && s.V.Made), mine = g.Shots.Count(s => s.Player == 0);
-            VisualElement top = Ui.Box("pad", Ui.Text("FINAL   ·   " + g.Title.ToUpperInvariant(), "kick center", Ui.Bold));
+            var spec = new GameOverSpec
+            {
+                Eyebrow = "Final   ·   " + g.Title,
+                GameId = J.Str(game, "id"),
+                LowerIsBetter = g.LowerIsBetter,
+                ReviewId = reviewId,
+                RateAs = g.Title,
+                Again = again,
+                Putts = new List<GameOverPutt>(),
+                PqsPutts = new List<AnalysisMath.Putt>(),
+            };
             if (g.Players == 1)
             {
-                top.Add(Ui.Num(g.ScoreText(0), "num-44 center"));
-                top.Add(Ui.Text(g.Words.ToLowerInvariant() + "   ·   " + made + " of " + mine + " holed", "sub center", Ui.Regular));
+                spec.Score = g.ScoreText(0);
+                spec.ScoreCaption = g.Words + "   ·   " + made + " of " + mine + " holed";
+                spec.ScoreValue = g.Saved;
             }
             else
             {
-                top.Add(Ui.Title(g.Outcome(), "title center wrap"));
-                VisualElement table = Ui.Box("glass");
+                spec.Outcome = g.Outcome();
+                spec.Standings = new List<(string, string, Color)>();
                 foreach (int i in Enumerable.Range(0, g.Players).OrderBy(i => g.LowerIsBetter ? g.Score[i] : -g.Score[i]))
-                {
-                    VisualElement row = Ui.Box("board-row", Ui.Box("rule-swatch"), Ui.Box("grow", Ui.Text(g.Names[i], "g-name", Ui.Bold)), Ui.Num(g.ScoreText(i), "g-score"));
-                    row.Q(className: "rule-swatch").style.backgroundColor = RulePanel.PlayerColour(i);
-                    table.Add(row);
-                }
-                top.Add(table.Margin(16));
+                    spec.Standings.Add((g.Names[i], g.ScoreText(i), RulePanel.PlayerColour(i)));
             }
-            VisualElement list = Ui.Box("glass");
-            list.Add(Ui.Text("PUTTS", "kick", Ui.Bold));
             int n = 0;
             foreach (Shot s in g.Shots)
             {
                 n++;
                 // The game's call for the putt and, for a game whose call doesn't already say it, the points it earned.
-                Label value = Ui.Text(g.FinalCall(s), "g-score", Ui.Bold);
-                value.style.color = s.Good ? (Color)Ui.Bright : Ui.Faint;
-                VisualElement right = value;
-                string points = g.FinalPoints(s);
-                if (!string.IsNullOrEmpty(points))
-                {
-                    Label earned = Ui.Text(points, "sub", Ui.Medium);
-                    earned.style.marginLeft = 12;
-                    earned.style.unityTextAlign = TextAnchor.MiddleRight;
-                    right = Ui.Box("", value, earned);
-                    right.style.alignItems = Align.FlexEnd;
-                }
-                list.Add(Ui.Box("board-row", Ui.Text(n.ToString(), "board-place", Ui.Bold),
-                    Ui.Box("grow", Ui.Text((g.Players > 1 ? g.Names[s.Player] + "   ·   " : "") + s.Feet + " ft   ·   " + PracticeSession.TeeName(s.Tee) + " tee", "g-name", Ui.Medium)), right));
+                spec.Putts.Add(new GameOverPutt { Number = n.ToString(), From = (g.Players > 1 ? g.Names[s.Player] + "   ·   " : "") + GameOver.From(s.Feet, s.Tee), Call = g.FinalCall(s), Points = g.FinalPoints(s), Good = s.Good });
+                if (s.Player == 0 && s.V != null && reviewId != null) spec.PqsPutts.Add(GameOver.PqsPutt(s.Feet, s.Tee, s.V));
             }
-            top.Add(list.Margin(16));
-            scroll.Add(top);
-            // Rate this game: five stars, and a box to say why when it is under five (Feedback.GameCard).
-            VisualElement rateGame = Feedback.GameCard(app, g.Title);
-            if (rateGame != null) scroll.Add(Ui.Box("pad", rateGame));
-            VisualElement buttons = Ui.Box("pad");
-            if (again != null) buttons.Add(Ui.Button("Play again", () => { app.Pop(); again(); }));
-            buttons.Add(Ui.Button("Exit", app.ExitToTab, again != null ? "btn btn-ghost" : "btn"));
-            scroll.Add(buttons);
-            Root = scroll;
+            Root = GameOver.Build(app, spec);
         }
     }
 }

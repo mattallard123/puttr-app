@@ -18,7 +18,7 @@
   "name": "03-lanes",
   "take": "lanes",
   "t": 26.4,
-  "k": "Lanes",
+  "k": "Ten Pin",
   "h": "Your putter is the <em>controller</em>",
   "c": "tv top"
  },
@@ -41,7 +41,7 @@
  {
   "name": "06-puttstar",
   "take": "puttstar",
-  "t": 20.3,
+  "t": 29.5,
   "k": "Putt Star",
   "h": "Play to the <em>crowd</em>",
   "a": "#ff4fd8",

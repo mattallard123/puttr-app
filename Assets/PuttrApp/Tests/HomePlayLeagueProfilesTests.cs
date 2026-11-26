@@ -38,7 +38,7 @@ namespace PuttrApp.Tests
             Assert.AreEqual(improveTitle, title);
             Assert.IsTrue(TodaysSession.DoneToday(coach, now));
             Assert.IsFalse(TodaysSession.DoneToday(coach, now.AddDays(1)));
-            Assert.AreEqual(10, TodaysSession.Count(J.Parse("{}")));
+            Assert.AreEqual(20, TodaysSession.Count(J.Parse("{}")));
             Assert.AreEqual(30, TodaysSession.Count(J.Parse("{\"dailyGoal\":80}")));
             Assert.AreEqual(3, TodaysSession.Count(J.Parse("{\"dailyGoal\":1}")));
         }

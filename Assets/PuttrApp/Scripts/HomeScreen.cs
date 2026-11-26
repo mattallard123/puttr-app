@@ -3,6 +3,7 @@
 // Players you follow (or the community) have been playing (FriendActivity).
 //
 // The lead card is the coach's TODAY'S SESSION, drawn as the guidelines' session card: the coach, today's focus,
+// the session in 3D in a window (the mat, a ball on each spot, the count beside it: Arena.Today),
 // today's putts and the streak on one row, this week as seven bars, and Start session (Home's one main button), which opens the session brief (CoachSession's brief stage) and then plays the same
 // session the Improve tab starts. Today's putts against the daily goal and the streak live inside that card, once.
 // A Kid profile has no AI coach (legacy hides CoachCallout), so a Kid's card is the plain daily goal with Free putt.
@@ -49,7 +50,9 @@ namespace PuttrApp
             // The console is made the first time it is asked for: ask soon after launch, so the app looks for the
             // Puttr from the start (as the legacy app) and not only once the connect card is opened. Not in this
             // frame: starting the radio is kept out of the app's first frames.
-            if (Application.isPlaying && !Fixtures.On) top.schedule.Execute(() => { _ = Green.Console; }).StartingIn(700);
+            // A new Player is the exception: the onboarding guide's connect step starts it, so Bluetooth is asked
+            // for when they tap Connect and not over the guide's first page (StartConsole).
+            if (Application.isPlaying && !Fixtures.On) top.schedule.Execute(StartConsole).Every(500).StartingIn(700).Until(() => Green.Peek != null);
 
             _greeting = Ui.Title(Greeting(DateTime.Now.Hour, null), "title-20 home-greet");
             // The lead card: drawn by Lead() whenever one of its answers arrives (streak, week, coach, analysis).
@@ -65,7 +68,7 @@ namespace PuttrApp
             _recent = new VisualElement();
             _recentSection = Ui.Box("hidden", Ui.Section("Jump back in", "See all", () => _app.ShowTabs("play")), _recent);
             _picks = new VisualElement();
-            _picksSection = Ui.Box("hidden", Ui.Section("You might like"), _picks);
+            _picksSection = Ui.Box("hidden", Ui.Section("You might like", "See all", () => _app.ShowTabs("play")), _picks);
             _feed = Ui.Box("card home-feed");
             _feedHead = new VisualElement();
             _feedSection = Ui.Box("hidden", _feedHead, Ui.Box("pad", _feed));
@@ -121,6 +124,33 @@ namespace PuttrApp
             return space > 0 ? display.Substring(0, space) : display;
         }
 
+        /// <summary>The session title's size beside the Coach's face: the largest of 20, 15 and 13 that keeps it on one line of a phone.</summary>
+        public static string HeadlineClass(string headline)
+        {
+            int n = (headline ?? "").Length;
+            return n <= 16 ? "title-20 home-lead-headline" : n <= 22 ? "title-20 home-lead-headline home-lead-headline-15" : "title-20 home-lead-headline home-lead-headline-13";
+        }
+
+        /// <summary>
+        /// Who is putting, beside the greeting: the profile switch (Matt, 2026-11-25). The avatar has a ring in the
+        /// Player's rank colour, "Switch" beside it, and the rank's name in small muted text under that: Home's only
+        /// sign of XP. A press always opens the "Who's putting?" sheet, never the Levels sheet (Profile has that).
+        /// </summary>
+        void ShowWho()
+        {
+            while (_greetRow.childCount > 1) _greetRow.RemoveAt(1);
+            if (_app.Profile == null) return;
+            int? level = Xp.Mine != null && !HostMode.On ? Xp.Level(Xp.Mine.Value) : (int?)null;
+            if (!Profiles.HasSwitch(_app.Profile) && level == null) return;
+            VisualElement face = Profiles.Face(_app.Profile, 32);
+            if (level != null) Xp.Ring(face, level.Value);
+            VisualElement words = Ui.Box("home-who-words", Ui.Text("Switch", "home-who-switch", Ui.Medium));
+            if (level != null) words.Add(Ui.Caps(Xp.RankName(level.Value), "caps home-who-rank"));
+            VisualElement chip = Ui.Box("player-switch", face, words);
+            chip.OnTap(() => Profiles.Sheet(_app, chip));
+            _greetRow.Add(chip);
+        }
+
         /// <summary>Set when a game was just played: Home fetches again in place (no reload look), the last data on screen meanwhile.</summary>
         public bool Stale;
 
@@ -128,6 +158,7 @@ namespace PuttrApp
         {
             // A new Player sets up their profile first, whenever Home comes to the front.
             OnboardingScreen.Lead(_app);
+            App.Run(Xp.Load(ShowWho));   // the rank on the avatar: read again whenever Home comes to the front
             if (!Stale) return;
             Stale = false;
             Data();
@@ -176,15 +207,14 @@ namespace PuttrApp
             if (!_profileSetUp)
             {
                 _profileSetUp = true;
-                Push.Register(_app);
+                // A new Player is asked for notifications by the onboarding guide's own page, not over its first one.
+                if (!ProfileSetup.NeedsOnboarding(profile)) Push.Register(_app);
                 Iap.Login(profile);
                 DeepLinks.Ready();
                 Push.Flush(_app);
             }
             _greeting.text = Greeting(DateTime.Now.Hour, FirstName(_app.Profile)).ToUpperInvariant();
-            // Profiles: who is putting, beside the greeting, when there is anyone to switch to.
-            while (_greetRow.childCount > 1) _greetRow.RemoveAt(1);
-            if (Profiles.HasSwitch(_app.Profile)) _greetRow.Add(Profiles.Switcher(_app));
+            ShowWho();
             LiveCard.Fill(_app, _live);
             VersusCard.Fill(_app, _versus);
             // A Kid profile: no coach on the lead card, and no League Night or prize tournaments on Home.
@@ -276,7 +306,7 @@ namespace PuttrApp
             _lead.Clear();
             _lead.OnTapOnce(null);   // only the coach states open Improve from the card body
 
-            int current = J.Int(_streak, "currentStreak"), today = J.Int(_streak, "puttsToday"), goal = Mathf.Max(1, J.Int(_streak, "dailyGoal", 25));
+            int current = J.Int(_streak, "currentStreak"), today = J.Int(_streak, "puttsToday"), goal = Mathf.Max(1, J.Int(_streak, "dailyGoal", 20));
             // One row: today's putts against the goal (said here and nowhere else), and the streak in amber, no fill.
             VisualElement streak = current > 0 ? Ui.Box("home-streak", Ui.Icon("FillFire", 16, Ui.Amber), Ui.Caps(current + " day streak", "caps home-streak-t")) : null;
             VisualElement stats = Ui.Box("home-lead-stats", Ui.Box("home-lead-progress", Ui.Num(today.ToString()), Ui.Caps("of " + goal + " putts", "caps home-lead-cap")), streak);
@@ -298,14 +328,15 @@ namespace PuttrApp
             // Still reading the coach: the card's shape, no flash of the wrong state.
             if (_coach == null || _grid == null)
             {
-                _lead.Add(Ui.Box("home-lead-head", Ui.Box("sk-bar lead-face"), Ui.Box("home-lead-eyebrow grow", Skeleton.Bar(0.4f, 12f))));
+                _lead.Add(Ui.Box("home-lead-head", Skeleton.Shimmer(Ui.Box("sk-bar lead-face")), Ui.Box("home-lead-eyebrow grow", Skeleton.Bar(0.4f, 12f))));
                 _lead.Add(Skeleton.Bar(0.7f, 24f).Margin(12));
                 _lead.Add(stats);
                 _lead.Add(week);
                 return;
             }
 
-            // No coach picked yet: "Meet your AI coach" and Choose your coach (opens Improve, where the picker leads).
+            // No coach picked yet: "Meet your AI coach" and Choose your coach, which opens the coach first run on every press until one is chosen
+            // (it used to open Improve, whose picker leads only once: a second press landed on the bare tab).
             if (J.Get(_coach, "exists") != null && !J.Flag(_coach, "exists"))
             {
                 VisualElement faces = Ui.Box("lead-faces");
@@ -314,8 +345,8 @@ namespace PuttrApp
                 _lead.Add(faces.Margin(12));
                 _lead.Add(stats);
                 _lead.Add(week);
-                _lead.Add(Ui.Button("Choose your coach", () => _app.ShowTabs("improve"), "btn home-lead-btn"));
-                _lead.OnTapOnce(() => _app.ShowTabs("improve"));
+                _lead.Add(Ui.Button("Choose your coach", () => ImproveScreen.PickCoach(_app, null), "btn home-lead-btn"));
+                _lead.OnTap(() => ImproveScreen.PickCoach(_app, null));
                 return;
             }
 
@@ -324,13 +355,31 @@ namespace PuttrApp
             bool done = TodaysSession.DoneToday(_coach, DateTime.Now);
             VisualElement face = Coaches.Avatar(persona);
             face.AddToClassList("lead-face");
-            _lead.Add(Ui.Box("home-lead-head", face, Ui.Caps(done ? "Done for today" : "Today's session", "caps caps-green home-lead-eyebrow")));
-            _lead.Add(Ui.Title(done ? "Nice work today" : focus).Margin(12));
+            // The head: the Coach's face, and beside it the eyebrow with the session's title under it, on one line
+            // (Matt, 2026-11-25: the title moved up beside the face on a phone, at a size that does not wrap).
+            string headline = done ? "Nice work today" : focus;
+            VisualElement headTitle = Ui.Title(headline, HeadlineClass(headline));
+            _lead.Add(Ui.Box("home-lead-head", face, Ui.Box("grow home-lead-eyebrow", Ui.Caps(done ? "Done for today" : "Today's session", "caps caps-green"), headTitle)));
+            // The session itself, in 3D in its own window: the mat, a ball on every spot it is putted from, and how
+            // many from each (Matt, 2026-11-24). On a phone the words stay on the card, outside the window. On a tablet
+            // the title lies over the window's bottom left corner and the rest of the card moves up (Matt, 2026-11-25):
+            // both labels are made, and Home.uss shows the one for the screen.
+            if (putts != null && putts.Count > 0)
+            {
+                var mat = new Live3D(Arena.Today(putts, Arena.Frame.Window)) { Name = "home mat", Fps = 24 };
+                mat.AddToClassList("home-mat-view");
+                Label over = Ui.Title(headline, "title home-mat-title");
+                over.pickingMode = PickingMode.Ignore;
+                headTitle.AddToClassList("home-lead-title");
+                _lead.Add(Ui.Box("window home-mat", mat, over));
+            }
             _lead.Add(stats);
             _lead.Add(week);
             Action start = () => _app.Push(new SessionBriefScreen(_app, persona, putts, focus, why));
             // Home's one main button; once today's session is done it steps down to the secondary.
             _lead.Add(Ui.Button(done ? "Practice again" : "Start session", start, done ? "btn btn-ghost home-lead-btn" : "btn home-lead-btn"));
+            // With today's session done, the next thing worth a look is what it showed (Matt, 2026-11-25).
+            if (done) _lead.Add(Ui.Button("See your analysis", () => AnalysisScreen.Open(_app), "btn btn-ghost home-lead-btn home-lead-second"));
             // The card body opens the coach home (Improve); the button is the express lane into the session.
             _lead.OnTapOnce(() => _app.ShowTabs("improve"));
         }
@@ -368,6 +417,14 @@ namespace PuttrApp
             return active;
         }
 
+        // Starts looking for the Puttr once the profile is known and set up. No profile to be had (offline): as before.
+        void StartConsole()
+        {
+            if (Green.Peek != null) return;
+            bool wait = _app.Profile == null ? Auth.SignedIn && !_profileCounted : ProfileSetup.NeedsOnboarding(_app.Profile);
+            if (!wait) _ = Green.Console;
+        }
+
         void ShowConnection()
         {
             // Wi-Fi only is a tester switch: a non-tester on this phone goes back to Bluetooth.
@@ -392,6 +449,10 @@ namespace PuttrApp
                 if (seen.Add(key)) games.Add(row);
                 if (games.Count == 6) break;
             }
+            // How many different games this Player has finished (a Tracks course is one game, whichever the course).
+            var kinds = new HashSet<string>();
+            foreach (object game in games) kinds.Add(J.Str(game, "id"));
+            _played = kinds.Count;
             // The app's row ends with Practice. Free putt keeps no score, so it never says "Last score".
             bool hasFreePutt = false;
             foreach (object game in games) if (J.Str(game, "gameType").ToUpperInvariant() == FreePuttScreen.GameType) hasFreePutt = true;
@@ -402,6 +463,23 @@ namespace PuttrApp
                 double score = J.Num(game, "lastScore", double.NaN);
                 return GameTile(_app, game, double.IsNaN(score) ? null : "Last score " + score.ToString("0.#"));
             });
+            _recentAny = true;
+            Place();
+        }
+
+        // A Player who has finished fewer than three different games has little to jump back into (a new Player's
+        // row was Free putt alone): You might like takes that place, under today's session, and Jump back in is not
+        // shown. From three games on, Jump back in is there and You might like is back under the challenges.
+        const int FewGames = 3;
+        int _played;
+        bool _recentAny, _picksAny;
+
+        void Place()
+        {
+            if (!_recentAny) return;
+            bool few = _played < FewGames && _picksAny;
+            if (few) { _recentSection.AddToClassList("hidden"); _picksSection.PlaceBehind(_recentSection); }
+            else { _recentSection.EnableInClassList("hidden", _recent.childCount == 0); _picksSection.PlaceInFront(_challenges); }
         }
 
         void ShowPicks(List<object> rows)
@@ -409,6 +487,8 @@ namespace PuttrApp
             rows = rows.FindAll(g => !GameBridge.Retired(g));   // the Puttr streak and standard games stay in the legacy app
             if (rows.Count > 8) rows = rows.GetRange(0, 8);
             Fill(_picksSection, _picks, rows, "gcard-first", Pick);
+            _picksAny = rows.Count > 0;
+            Place();
         }
 
         // A suggestion is a game tile, the same as Jump back in (Matt, 2026-11-24), with why it was picked as its line.
@@ -483,7 +563,7 @@ namespace PuttrApp
             }
 
             _feed.Clear();
-            if (rows == null) { for (int i = 0; i < FeedShown; i++) _feed.Add(Ui.Box(i < FeedShown - 1 ? "feed-line" : "feed-line feed-line-last", Ui.Box("sk-bar home-feed-sk"), Ui.Box("grow feed-words", Skeleton.Bar(0.7f, 12f), Skeleton.Bar(0.4f, 8f).Margin(8)))); }
+            if (rows == null) { for (int i = 0; i < FeedShown; i++) _feed.Add(Ui.Box(i < FeedShown - 1 ? "feed-line" : "feed-line feed-line-last", Skeleton.Shimmer(Ui.Box("sk-bar home-feed-sk")), Ui.Box("grow feed-words", Skeleton.Bar(0.7f, 12f), Skeleton.Bar(0.4f, 8f).Margin(8)))); }
             else
             {
                 int shown = Mathf.Min(rows.Count, FeedShown);
@@ -561,12 +641,12 @@ namespace PuttrApp
 
     /// <summary>
     /// Today's coach session, built exactly as the Improve tab builds it (ImproveScreen.Today): the coach's daily goal
-    /// (3 to 30, default 10) putts dealt by AnalysisMath.Session from the last 30 days, seeded by the day of the year,
+    /// (3 to 30, default 20) putts dealt by AnalysisMath.Session from the last 30 days, seeded by the day of the year,
     /// so Home and Improve start the same putts on the same day.
     /// </summary>
     public static class TodaysSession
     {
-        public static int Count(object coach) => Mathf.Clamp(J.Int(coach, "dailyGoal", 10), 3, 30);
+        public static int Count(object coach) => Mathf.Clamp(J.Int(coach, "dailyGoal", 20), 3, 30);
 
         public static List<TournamentMath.Dealt> Build(List<AnalysisMath.Cell> grid, object coach, DateTime now, out string title, out string why) =>
             AnalysisMath.Session(grid, Count(coach), new System.Random(now.DayOfYear), out title, out why);

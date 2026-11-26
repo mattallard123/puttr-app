@@ -7,7 +7,8 @@
 #   Tools/app-build.sh macstore   Builds/macOS (Mac App Store Xcode project, scheme PuttrCo: co.puttr.ios)
 #   Tools/app-build.sh ios        Builds/iOS (Xcode project: open, pick your iPhone, Run)
 #   Tools/app-build.sh iossim     Builds/iOS-Simulator (Xcode project for the iPhone Simulator only)
-#   Tools/app-build.sh android    Builds/Android/Puttr.apk (also the Google TV / Android TV app)
+#   Tools/app-build.sh android    Builds/Android/Puttr.apk (also the Google TV / Android TV app; test build, debug key)
+#   Tools/app-build.sh androidplay Builds/AndroidPlay/Puttr.aab (Google Play: app bundle, puttr-app's upload key)
 #   Tools/app-build.sh tvos       Builds/tvOS (Apple TV Xcode project, scheme PuttrCo)
 #   Tools/app-build.sh tvossim    Builds/tvOS-Simulator (Xcode project for the Apple TV simulator only)
 #   Tools/app-build.sh tracksart  import the Tracks scans again (after Tools/tracks-art/bake.sh)
@@ -31,6 +32,7 @@ case "$1" in
   ios)     unity iOS BuildIos ios ;;
   iossim)  unity iOS BuildIosSimulator iossim ;;
   android) unity Android BuildAndroid android ;;
+  androidplay) unity Android BuildAndroidPlay androidplay ;;
   tvos)    unity tvOS TvBuilds.BuildTvos tvos ;;
   tvossim) unity tvOS TvBuilds.BuildTvosSimulator tvossim ;;
   webtv)
@@ -54,5 +56,5 @@ case "$1" in
     grep -o '<test-run [^>]*' "$P/Logs/tests.xml" | grep -o 'total="[0-9]*"\|passed="[0-9]*"\|failed="[0-9]*"' | tr '\n' ' '; echo
     grep -o '<test-case [^>]*result="Failed"[^>]*' "$P/Logs/tests.xml" | grep -o 'fullname="[^"]*"'
     exit $code ;;
-  *) sed -n 2,14p "$0"; exit 1 ;;
+  *) sed -n 2,15p "$0"; exit 1 ;;
 esac

@@ -102,6 +102,62 @@ namespace PuttrApp.EditorTools
             Build(BuildTarget.Android, "Builds/Android/Puttr.apk");
         }
 
+        /// <summary>
+        /// The Google Play build: an app bundle (Builds/AndroidPlay/Puttr.aab) signed with puttr-app's upload key, the
+        /// key the live co.puttr.android is uploaded with. The key's file and passwords are read from puttr-app's
+        /// android/gradle.properties (MYAPP_UPLOAD_*) at build time and never written into this project: the settings
+        /// go back to the debug key and an .apk afterwards, so the test build (BuildAndroid) is unchanged.
+        /// One package for phones, tablets and TVs: Play sends it to TVs only once the Android TV form factor is
+        /// added in Play Console, so a phone release does not reach TVs.
+        /// </summary>
+        [MenuItem("Puttr 2/Build for Google Play")]
+        public static void BuildAndroidPlay()
+        {
+            const string gradle = "../puttr-app/android/gradle.properties";
+            var props = new System.Collections.Generic.Dictionary<string, string>();
+            if (File.Exists(gradle))
+                foreach (string line in File.ReadAllLines(gradle))
+                {
+                    int eq = line.IndexOf('=');
+                    if (eq > 0 && !line.TrimStart().StartsWith("#")) props[line.Substring(0, eq).Trim()] = line.Substring(eq + 1).Trim();
+                }
+            props.TryGetValue("MYAPP_UPLOAD_STORE_FILE", out string store);
+            string storePath = store == null ? null : Path.GetFullPath(Path.Combine("../puttr-app/android/app", store));
+            if (storePath == null || !File.Exists(storePath) || !props.ContainsKey("MYAPP_UPLOAD_STORE_PASSWORD") || !props.ContainsKey("MYAPP_UPLOAD_KEY_ALIAS") || !props.ContainsKey("MYAPP_UPLOAD_KEY_PASSWORD"))
+            {
+                Debug.LogError("Puttr 2 Google Play build: the upload key was not found (puttr-app/android/gradle.properties MYAPP_UPLOAD_*).");
+                if (Application.isBatchMode) EditorApplication.Exit(1);
+                return;
+            }
+            bool bundle = EditorUserBuildSettings.buildAppBundle;
+            var symbols = EditorUserBuildSettings.androidCreateSymbols;
+            string name = PlayerSettings.Android.keystoreName, alias = PlayerSettings.Android.keyaliasName;
+            try
+            {
+                EditorUserBuildSettings.buildAppBundle = true;
+                // Native debug symbols (function names and lines, no code) zipped next to the bundle, for Play
+                // Console's crash and ANR reports: upload it under the release's App bundle explorer.
+                EditorUserBuildSettings.androidCreateSymbols = AndroidCreateSymbols.Public;
+                PlayerSettings.Android.useCustomKeystore = true;
+                PlayerSettings.Android.keystoreName = storePath;
+                PlayerSettings.Android.keystorePass = props["MYAPP_UPLOAD_STORE_PASSWORD"];
+                PlayerSettings.Android.keyaliasName = props["MYAPP_UPLOAD_KEY_ALIAS"];
+                PlayerSettings.Android.keyaliasPass = props["MYAPP_UPLOAD_KEY_PASSWORD"];
+                Build(BuildTarget.Android, "Builds/AndroidPlay/Puttr.aab", false);
+            }
+            finally
+            {
+                // Back to the test build's settings: no upload key or password is left in ProjectSettings.
+                EditorUserBuildSettings.buildAppBundle = bundle;
+                EditorUserBuildSettings.androidCreateSymbols = symbols;
+                PlayerSettings.Android.keystoreName = name;
+                PlayerSettings.Android.keyaliasName = alias;
+                PlayerSettings.Android.keystorePass = "android";
+                PlayerSettings.Android.keyaliasPass = "android";
+                AssetDatabase.SaveAssets();
+            }
+        }
+
         /// <summary>For the other build files here (MacBuilds): builds, and leaves a failure to the caller.</summary>
         internal static bool BuildTo(BuildTarget target, string path) => Build(target, path, false);
 

@@ -38,7 +38,6 @@ namespace PuttrApp
 
     public sealed class TracksCoursesScreen : AppScreen
     {
-        const string Intro = "Play the world's great courses on your mat. Every putt is a shot: the putt's length picks the club, line and pace send it.";
         readonly App _app;
         readonly VisualElement _body, _tabs, _list;
         readonly TextField _search;
@@ -50,7 +49,6 @@ namespace PuttrApp
         {
             _app = app;
             Root = Page.Make(app, "Tracks", out _body);
-            _body.Add(Ui.Box("pad", Ui.Text(Intro, "body-2", Ui.Regular)));
             _tabs = Ui.Box("pad");
             _body.Add(_tabs);
             // Search the tracks (both tabs), with Add a track beside it.
@@ -165,7 +163,8 @@ namespace PuttrApp
             name => { _search.value = name ?? ""; }));
 
         /// <summary>A box the shape of the still (2:1), the still faded in when it is painted, the hole numbers over it.</summary>
-        public static VisualElement CourseStill(object meta)
+        /// <summary>The course from overhead, painted w by h (the card's 2:1 unless asked: Home's tablet card is a square).</summary>
+        public static VisualElement CourseStill(object meta, int w = TracksArt.CardW, int h = TracksArt.CardH)
         {
             VisualElement art = Ui.Box("tracks-art");
             var pic = new Image { scaleMode = ScaleMode.StretchToFill };
@@ -174,10 +173,10 @@ namespace PuttrApp
             art.Add(pic);
             art.RegisterCallback<GeometryChangedEvent>(e =>
             {
-                float h = Mathf.Round(e.newRect.width * TracksArt.CardH / TracksArt.CardW);
-                if (h > 0 && Mathf.Abs(e.newRect.height - h) > 1f) art.style.height = h;
+                float tall = Mathf.Round(e.newRect.width * h / w);
+                if (tall > 0 && Mathf.Abs(e.newRect.height - tall) > 1f) art.style.height = tall;
             });
-            TracksArt.Show(art, meta, TracksArt.CardW, TracksArt.CardH, still =>
+            TracksArt.Show(art, meta, w, h, still =>
             {
                 pic.image = still.Tex;
                 TracksArt.Numbers(pic, still);
@@ -220,29 +219,79 @@ namespace PuttrApp
             _fly.AddToClassList("tracks-fly");
             _fly.pickingMode = PickingMode.Ignore;
             _flyBox = Ui.Box("tracks-fly-box", _fly);
-            ScrollView page = Draw();
-            page.AddToClassList("tracks-setup-page");
+            Draw();
             // Tee off stays at the foot of the screen, under the page: the setup scrolls above it, so it can always be pressed.
             VisualElement bar = Ui.Box("tracks-teebar", Ui.Button("Tee off", Start));
-            Root = Ui.Box("tracks-setup", Ui.Header("Tracks", _app.Pop), page, bar);
+            _pageSlot = Ui.Box("tracks-setup-page");
+            Root = Ui.Box("tracks-setup", Ui.Header("Tracks", _app.Pop), _pageSlot, bar);
+            Root.RegisterCallback<GeometryChangedEvent>(_ => Arrange());
+            Root.RegisterCallback<AttachToPanelEvent>(_ => Root.schedule.Execute(Arrange));
             _flyBox.RegisterCallback<GeometryChangedEvent>(_ => Size());
             Root.RegisterCallback<DetachFromPanelEvent>(_ => Land());
         }
 
         static string Pref(string key, string fallback) { try { return PlayerPrefs.GetString(key, fallback); } catch (Exception) { return fallback; } }
 
-        ScrollView Draw()
+        VisualElement _pageSlot, _courseCard, _courseBar, _form, _left;
+        bool? _two;
+
+        /// <summary>
+        /// One column, or on a wide screen on its side two (Matt, 2026-11-26): the fly-over in a square window with the
+        /// course under it on the left, and the round's settings on the right, where they fit without scrolling.
+        /// </summary>
+        void Arrange()
+        {
+            float w = Root.resolvedStyle.width, h = Root.resolvedStyle.height;
+            if (float.IsNaN(w) || w <= 0f) return;
+            bool two = w >= 900f && w > h;
+            if (_two != two)
+            {
+                _two = two;
+                _pageSlot.Clear();
+                _flyBox.style.height = StyleKeyword.Null;
+                if (two)
+                {
+                    _left = Ui.Box("tracks-setup-left", _courseCard);
+                    _left.RegisterCallback<GeometryChangedEvent>(_ => Square());
+                    ScrollView right = Ui.Scroll();
+                    right.AddToClassList("tracks-setup-right");
+                    right.Add(Ui.Box("pad", _form));
+                    _pageSlot.Add(Ui.Box("tracks-setup-cols", _left, right));
+                }
+                else
+                {
+                    _left = null;
+                    ScrollView page = Ui.Scroll();
+                    page.AddToClassList("tracks-setup-one");
+                    page.Add(Ui.Box("pad", _courseCard));
+                    page.Add(Ui.Box("pad", _form));
+                    page.Add(FreePuttScreen.Space(24));
+                    _pageSlot.Add(page);
+                }
+            }
+            if (two) Square();
+        }
+
+        // The fly-over's window is as tall as it is wide, or as tall as the column leaves it above the course's bar.
+        void Square()
+        {
+            if (_left == null) return;
+            float w = _courseCard.resolvedStyle.width, room = _left.resolvedStyle.height - _courseBar.resolvedStyle.height - 34f;
+            if (float.IsNaN(w) || float.IsNaN(room) || w < 10f || room < 10f) return;
+            float side = Mathf.Floor(Mathf.Min(w, room));
+            if (Mathf.Abs(_flyBox.resolvedStyle.height - side) > 1f) _flyBox.style.height = side;
+        }
+
+        void Draw()
         {
             // The header is the page's own (Ui.Header). The fly-over's window, then the course on a solid bar under it:
             // "Inspired by" and its name, the place, par and yards, with the "?" (how it plays) at the right.
-            ScrollView page = Ui.Scroll();
-            VisualElement body = new VisualElement();
-            page.Add(body);
             VisualElement bar = Ui.Box("tracks-ccard-body",
                 Ui.Box("row tracks-setup-name", Ui.Box("grow tracks-setup-words", TrackLabels.Inspired(J.Str(_meta, "name"), "title"), TrackLabels.Where(J.Str(_meta, "location"), "body-2")),
                     Ui.IconSquare("Question", HowItPlays)),
                 Ui.Box("chips", Ui.Text("Par " + J.Int(_meta, "par"), "chip"), Ui.Text(J.Int(_meta, "yds").ToString("#,0") + " yds", "chip")));
-            body.Add(Ui.Box("pad", Ui.Box("tracks-ccard", _flyBox, bar)));
+            _courseBar = bar;
+            _courseCard = Ui.Box("tracks-ccard", _flyBox, bar);
             VisualElement p = Ui.Box("tracks-setup-form");
             // Players first, as the app's setup has its Players card before the round's settings.
             if (_picker != null) p.Add(Ui.Box("tracks-players", _picker.Root));
@@ -265,9 +314,7 @@ namespace PuttrApp
                 Rows.Row("ListNumbers", "Leaderboard", () => _app.Push(new TracksLeaderboardScreen(_app, slug, name))));
             TracksResultScreen.LastRow(rows);
             p.Add(rows.Margin(16));
-            body.Add(Ui.Box("pad", p));
-            body.Add(FreePuttScreen.Space(24));
-            return page;
+            _form = p;
         }
 
         /// <summary>"How it plays", from the "?" at the top of the panel.</summary>
@@ -352,6 +399,7 @@ namespace PuttrApp
         void Start()
         {
             if (_loading != null) return;   // already teeing off
+            if (!ConnectGate.Clear(_app)) return;   // no Puttr, no round: the card comes up before anything loads
             RenderTexture still = Freeze();
             if (still != null) { _fly.image = still; _world.Pause(true); }
             _loading = TracksLoading.Cover(still, J.Str(_meta, "name"));
@@ -377,7 +425,7 @@ namespace PuttrApp
                 List<string> names = _picker != null ? _picker.Names : new List<string> { PlayerPicker.Short(_app.Profile) };
                 List<string> ids = _picker != null ? _picker.UserIds : new List<string> { Auth.Uid };
                 // The round's screen takes the frozen still (and releases it) for its own cover; this screen's goes when it is hidden.
-                if (!ConnectGate.Clear(_app)) return;   // no Puttr, no round
+                if (!ConnectGate.Clear(_app)) { Unfreeze(); return; }   // the Puttr dropped while the course loaded
                 _app.Push(new TracksPlayScreen(_app, course, _set, _level, names, ids, _picker != null ? _picker.First : 0, still));
                 _loading?.RemoveFromHierarchy(); _loading = null;
             }));
@@ -402,7 +450,15 @@ namespace PuttrApp
         RenderTexture _loadingStill;
         readonly VisualElement _hud, _shotBar, _card, _camBar, _simRow, _entryBox, _clubs, _center, _doneSlot;
         readonly Label _caption, _captionSub, _holeNum, _holeName, _holeMeta, _entryTop, _entryBottom;
-        readonly TracksEntryView _entry;
+        // The entry to make it: the games' own ideal putt picture (PuttrArcade.AimView, on a ramp of its own: AimStage),
+        // the rim lit where a make counts and turned with the tee, then the putt rolled again and where it went in
+        // (Matt, 2026-11-26: it was a flat drawing of the mat).
+        sealed class EntryPutt { public Vector2[] Path; public bool Made, Lip, Green; public double? EntryDeg; }
+        readonly PuttrArcade.AimStage _aim;
+        EntryPutt _entryLast, _entryShown;
+        double _entryWindow = 180, _entryTee;
+        int _entryFt, _entryTeeNo;
+        float _aimAt;
         bool _camsOpen, _wide;
         float _w, _h;   // the screen in panel units, for the type that is sized to it
         /// <summary>The suggested club for this shot, so a club the Player changed to can say what the pick was.</summary>
@@ -451,8 +507,15 @@ namespace PuttrApp
         // -app2TracksHole 7: start on that hole of the set; -app2TracksCam plan|follow|green: that camera from the start;
         // -app2TracksNoHud: the picture alone (all for photographing the course from a script).
         static readonly string DevHole = ArgAfter("-app2TracksHole"), DevCam = ArgAfter("-app2TracksCam");
-        static readonly bool DevNoHud = Array.IndexOf(Environment.GetCommandLineArgs(), "-app2TracksNoHud") >= 0;
-        static string ArgAfter(string flag) { string[] a = Environment.GetCommandLineArgs(); int i = Array.IndexOf(a, flag); return i >= 0 && i + 1 < a.Length ? a[i + 1] : null; }
+        static readonly bool DevNoHud = Array.IndexOf(DevArgs(), "-app2TracksNoHud") >= 0;
+        // The launch arguments and PUTTR_ARGS: on a simulator the arguments only arrive in the environment (App.ReadArguments).
+        static string[] DevArgs()
+        {
+            string extra = Environment.GetEnvironmentVariable("PUTTR_ARGS");
+            string[] a = Environment.GetCommandLineArgs();
+            return string.IsNullOrEmpty(extra) ? a : a.Concat(extra.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)).ToArray();
+        }
+        static string ArgAfter(string flag) { string[] a = DevArgs(); int i = Array.IndexOf(a, flag); return i >= 0 && i + 1 < a.Length ? a[i + 1] : null; }
 
         /// <param name="names">Who plays, in the order picked (the signed-in Player first).</param>
         /// <param name="userIds">Who each saves as (PlayerPicker.UserIds): the signed-in Player, a profile's id, or RoundSaver.Guest.</param>
@@ -479,9 +542,17 @@ namespace PuttrApp
             _hud.Add(Ui.Box("tracks-top", Ui.Text("\u2039", "tracks-back", Ui.Medium).OnTap(Leave), Ui.Box("tracks-holecard", Ui.Box("tracks-numbox", _holeNum), Ui.Box("tracks-metabox", _holeName, _holeMeta)), Ui.Box("grow")));
             // The entry to make it (puttr-app tracks/PuttReadout.js): the mat around the cup, the window to come in
             // through drawn on the cup and turned with the tee, and after the putt its path and where it went in.
-            _entry = new TracksEntryView();
+            _aim = new PuttrArcade.AimStage();
+            // The course's sun stays off the ramp: its picture is lit by the console's hood alone, as in the games.
+            foreach (Light sun in _world.GetComponentsInChildren<Light>(true)) sun.cullingMask &= ~(1 << PuttrArcade.AimStage.Layer);
+            var entryPic = new Image { image = _aim.View.Texture, scaleMode = ScaleMode.ScaleAndCrop };
+            entryPic.AddToClassList("tracks-entry-view");
+            entryPic.pickingMode = PickingMode.Ignore;
             _entryTop = Ui.Text("", "tracks-entry-k", Ui.Bold); _entryBottom = Ui.Text("", "tracks-entry-v", Ui.Bold);
-            _entryBox = Ui.Box("tracks-entry hidden", Ui.Text("ENTRY", "tracks-k", Ui.Bold), Ui.Box("tracks-entry-mat", _entry, _entryTop, _entryBottom));
+            _entryBox = Ui.Box("tracks-entry hidden", Ui.Text("ENTRY", "tracks-k", Ui.Bold), Ui.Box("tracks-entry-mat", entryPic), _entryTop, _entryBottom);   // the words under the picture, not over the cup
+            // The putt rolled again in the picture: drawn each frame while it runs.
+            _aimAt = Time.realtimeSinceStartup;
+            _hud.schedule.Execute(() => { float now = Time.realtimeSinceStartup; _aim.View.Tick(Mathf.Min(0.1f, now - _aimAt)); _aimAt = now; }).Every(16);
             _entryBox.pickingMode = PickingMode.Ignore;
             _hud.Add(_entryBox);
             // The clubs, always there on a screen on its side. Added before the camera so the camera's list opens over it.
@@ -580,7 +651,7 @@ namespace PuttrApp
             _holeNum.text = Hole.N.ToString(); _holeName.text = Hole.Name.Length > 0 ? Hole.Name : "Hole " + Hole.N; _holeMeta.text = "Par " + Hole.Par + " · " + Hole.Yds + " yds";
             DrawCard();
             _center.Clear(); _doneSlot.Clear();   // the last hole's cards
-            _entry.Last = null; DrawEntry();
+            _entryLast = null; DrawEntry();
             TracksVoice.NewHole();   // what the booth still owed about the last hole is late now (audio.js dropPendingLines)
             if (i == 0) Booth("round_start");   // Tracks.js startGame
             Say("Hole " + Hole.N, Hole.Name + (Hole.Name.Length > 0 ? " · " : "") + "Par " + Hole.Par + ", " + Hole.Yds + " yards");
@@ -636,7 +707,7 @@ namespace PuttrApp
             _club = _onGreen ? TracksEngine.GreenPutt(LeaveFt) : TracksEngine.Suggest(DistYds, _lie);
             _suggestedId = _club.Id;
             _tee = TeeFor();
-            _entry.Last = null;
+            _entryLast = null;
             DrawShot();
             DrawEntry();
             DrawCard();   // the scorecard marks whose turn it is
@@ -739,7 +810,7 @@ namespace PuttrApp
             // A putt with no path (the test putt) rolls in straight to where it finished, as the app draws it.
             Vector2 end = matMade ? Vector2.zero : new Vector2((float)lineIn, (float)(rollout ?? TracksEngine.PaceTargetIn));
             if (path == null || path.Count < 2) path = new List<Vector2> { new Vector2(end.x * 0.25f, -19f), end };
-            _entry.Last = new TracksEntryView.Putt { Path = path.ToArray(), Made = matMade, EntryDeg = entryDeg, Green = _onGreen };
+            _entryLast = new EntryPutt { Path = path.ToArray(), Made = matMade, EntryDeg = entryDeg, Green = _onGreen };
             DrawEntry();
             _shotBar.AddToClassList("hidden"); _simRow.AddToClassList("hidden");
             _strokes[_idx]++;
@@ -831,7 +902,7 @@ namespace PuttrApp
                 if (Math.Abs(deg) <= 90 && Math.Abs(deg - teeDeg) <= half) made = true;
                 else { made = false; lip = true; double k = club.Lag ? Math.Max(1, club.Ratio / 2) : 1; xin = Math.Sign(deg - teeDeg) * 6 * k; yin = 18 * k; }
             }
-            if (_entry.Last != null) { _entry.Last.Made = made; _entry.Last.Lip = lip; DrawEntry(); }
+            if (_entryLast != null) { _entryLast.Made = made; _entryLast.Lip = lip; DrawEntry(); }
             Vector2 toHole = (Hole.Pin - _ball).normalized, side = new Vector2(toHole.y, -toHole.x);
             Vector2 end = made ? Hole.Pin : Hole.Pin + toHole * (float)(yin / 36) + side * (float)(xin / 36);
             Say(club.Name, TracksEngine.DescribePutt(lineIn, rollout));
@@ -1006,7 +1077,7 @@ namespace PuttrApp
             string gameId = _saver.GameId;
             userGameId = userGameId ?? _saver.LastRoundId;
             // The board row goes with a game that real putts opened (the app's postLeaderboard after gameOver).
-            if (gameId != null && userGameId != null && !_testRound)
+            if (gameId != null && userGameId != null && !_testRound && !_saver.HadTestPutt)
                 App.Run(Api.Post("/club/leaderboard/add", new Dictionary<string, object> { { "clubId", "PUTTR" }, { "gameId", gameId }, { "userGameId", userGameId }, { "userId", Auth.Uid },
                     { "userName", Kid.PublicPlayer(_app.Profile) },
                     { "score", toPar }, { "distance", TracksEngine.LeaderboardCode(_set, _level) } }, null, null));
@@ -1035,6 +1106,7 @@ namespace PuttrApp
             Green.Console.Putt -= OnPutt;
             DropLoadingStill();
             _world.Close();
+            _aim.Close();
             _app.LeavePractice();
         }
 
@@ -1187,26 +1259,42 @@ namespace PuttrApp
         // The entry panel: the window to make it from this tee, and the last putt's path and entry after it.
         void DrawEntry()
         {
-            bool show = _club != null && !_club.Tap || _entry.Last != null;
+            bool show = _club != null && !_club.Tap || _entryLast != null;
             _entryBox.EnableInClassList("hidden", !show);
             if (!show) return;
             if (_club != null)
             {
-                _entry.WindowDeg = _club.Lag ? 2 * TracksEngine.LagTolerance(_level, LeaveFt) : TracksEngine.LevelOf(_level).Entry;
-                _entry.TeeDeg = AppPutt.TeeEntry(_club.Ft, _tee);
+                _entryWindow = _club.Lag ? 2 * TracksEngine.LagTolerance(_level, LeaveFt) : TracksEngine.LevelOf(_level).Entry;
+                _entryTee = AppPutt.TeeEntry(_club.Ft, _tee);
+                _entryFt = (int)Math.Round((double)_club.Ft); _entryTeeNo = _tee;
             }
-            _entryTop.text = _entry.WindowDeg >= 180 ? "FRONT DOOR" : "WINDOW " + Math.Round(_entry.WindowDeg) + "°";
-            TracksEntryView.Putt last = _entry.Last;
+            _entryTop.text = _entryWindow >= 180 ? "FRONT DOOR" : "WINDOW " + Math.Round(_entryWindow) + "°";
+            EntryPutt last = _entryLast;
             string verdict = "";
             if (last != null && last.Green && (last.Made || last.Lip))
             {
                 verdict = last.Made ? "IN" : "LIP OUT";
-                if (last.EntryDeg != null) { double off = last.EntryDeg.Value - _entry.TeeDeg; verdict += " · " + Math.Abs(Math.Round(off)) + "° " + (off < 0 ? "L" : "R"); }
+                if (last.EntryDeg != null) { double off = last.EntryDeg.Value - _entryTee; verdict += " · " + Math.Abs(Math.Round(off)) + "° " + (off < 0 ? "L" : "R"); }
             }
             else if (last == null && _club != null) verdict = _tee == 1 ? "BREAKS L TO R" : _tee == 3 ? "BREAKS R TO L" : "STRAIGHT";
             _entryBottom.text = verdict;
             _entryBottom.EnableInClassList("tracks-entry-miss", last != null && last.Lip);
-            _entry.MarkDirtyRepaint();
+            // The picture. A new putt (or none): the window laid out afresh, then the putt rolled again. The same putt
+            // with its verdict in: only the dot where it went in, so the roll is not started over.
+            double half = Math.Min(90, _entryWindow / 2);
+            bool entered = last != null && last.Green && last.EntryDeg != null && (last.Made || last.Lip);
+            bool ok = entered && Math.Abs(last.EntryDeg.Value) <= 90 && Math.Abs(last.EntryDeg.Value - _entryTee) <= half;
+            float? dot = entered ? (float?)last.EntryDeg.Value : null;
+            if (last != null && last == _entryShown) { _aim.View.Entry(dot, ok); return; }
+            _entryShown = last;
+            _aim.View.ShowWindow(Mathf.Max(3, _entryFt), _entryTeeNo < 1 ? 2 : _entryTeeNo, (float)half, dot, ok, (float)_entryTee);
+            if (last != null && last.Path != null && last.Path.Length > 1)
+            {
+                // AimView's path runs toward the Player as y grows; this one runs past the hole.
+                var path = new Vector2[last.Path.Length];
+                for (int i = 0; i < path.Length; i++) path[i] = new Vector2(last.Path[i].x, -last.Path[i].y);
+                _aim.View.Replay(path, last.Made);
+            }
         }
 
         // ── The shot interface (Tracks.js renderCaddie, renderDistanceBig, renderClubList), on solid plates over the course ──
@@ -1445,102 +1533,6 @@ namespace PuttrApp
         }
     }
 
-    /// <summary>
-    /// The entry to make it (puttr-app tracks/PuttReadout.js): the mat around the cup, 8 in either side, 11 in
-    /// short of it to 5 in past, drawn to scale. The window to come in through is a pie on the cup, centred on the
-    /// tee's entry so it turns with the break, with the line in from the tee. After a putt: its path, and on the
-    /// green a dashed line through the cup where it went in, green inside the window and red outside it.
-    /// </summary>
-    public sealed class TracksEntryView : VisualElement
-    {
-        public sealed class Putt { public Vector2[] Path; public bool Made, Lip, Green; public double? EntryDeg; }
-        const float XIn = 8f, YMin = -11f, YMax = 5f, CupR = 2.125f;   // zoomed in from the app's 24 in square so the window reads on a phone
-        public double WindowDeg = 180, TeeDeg;
-        public Putt Last;
-
-        public TracksEntryView()
-        {
-            AddToClassList("tracks-entry-view");
-            pickingMode = PickingMode.Ignore;
-            generateVisualContent += Draw;
-        }
-
-        void Draw(MeshGenerationContext ctx)
-        {
-            float size = contentRect.width;
-            if (size <= 0f) return;
-            float s = size / (XIn * 2);
-            Vector2 Px(Vector2 p) => new Vector2((Mathf.Clamp(p.x, -XIn, XIn) + XIn) * s, (YMax - Mathf.Clamp(p.y, YMin, YMax)) * size / (YMax - YMin));
-            Vector2 hole = Px(Vector2.zero);
-            float cupR = CupR * s;
-            // degrees on the rim: 0 is the front door (toward the bottom), left negative
-            Vector2 Rim(double deg, float r) { float a = (float)(deg * Math.PI / 180); return hole + new Vector2(Mathf.Sin(a) * r, Mathf.Cos(a) * r); }
-            Painter2D p = ctx.painter2D;
-            p.lineJoin = LineJoin.Round; p.lineCap = LineCap.Round;
-
-            // faint grid and the centre line
-            p.strokeColor = new Color(1, 1, 1, 0.05f); p.lineWidth = 1;
-            for (int i = 1; i < 4; i++) { Seg(p, new Vector2(0, size * i / 4f), new Vector2(size, size * i / 4f)); Seg(p, new Vector2(size * i / 4f, 0), new Vector2(size * i / 4f, size)); }
-
-            Color green = Ui.Bright, red = Ui.Red;
-            double centre = TeeDeg, half = Math.Min(90, WindowDeg / 2);
-            bool entered = Last != null && Last.Green && Last.EntryDeg != null && (Last.Made || Last.Lip);
-            bool entryOk = entered && Math.Abs(Last.EntryDeg.Value) <= 90 && Math.Abs(Last.EntryDeg.Value - centre) <= half;
-
-            // the line in from the tee: through the middle of the window and out the bottom of the mat
-            if (Last == null)
-            {
-                p.strokeColor = new Color(green.r, green.g, green.b, 0.55f); p.lineWidth = 1.5f;
-                Vector2 from = Rim(centre, cupR + 3), dir = (from - hole).normalized;
-                float len = (size - from.y) / Mathf.Max(0.2f, dir.y);
-                Dashed(p, from, from + dir * len, 4, 3);
-            }
-
-            // the cup, its ring, and the window as a pie on it
-            p.strokeColor = new Color(1, 1, 1, 0.12f); p.lineWidth = 1;
-            p.BeginPath(); p.Arc(hole, cupR + 3, Angle.Degrees(0), Angle.Degrees(360)); p.Stroke();
-            p.fillColor = new Color(0, 0, 0, 0.75f); p.strokeColor = new Color(1, 1, 1, 0.35f); p.lineWidth = 1.5f;
-            p.BeginPath(); p.Arc(hole, cupR, Angle.Degrees(0), Angle.Degrees(360)); p.ClosePath(); p.Fill(); p.Stroke();
-            Color pie = entered ? (entryOk ? new Color(green.r, green.g, green.b, 0.45f) : new Color(red.r, red.g, red.b, 0.35f)) : new Color(green.r, green.g, green.b, 0.4f);
-            p.fillColor = pie; p.strokeColor = new Color(green.r, green.g, green.b, 0.95f); p.lineWidth = 1.2f;
-            p.BeginPath(); p.MoveTo(hole);
-            int steps = Mathf.Max(6, (int)(half / 4));
-            for (int i = 0; i <= steps; i++) p.LineTo(Rim(centre - half + 2 * half * i / steps, cupR));
-            p.ClosePath(); p.Fill(); p.Stroke();
-
-            if (Last == null || Last.Path == null || Last.Path.Length < 2) return;
-            // the putt's path
-            p.strokeColor = new Color(1, 1, 1, 0.85f); p.lineWidth = 2;
-            p.BeginPath(); p.MoveTo(Px(Last.Path[0]));
-            for (int i = 1; i < Last.Path.Length; i++) p.LineTo(Px(Last.Path[i]));
-            p.Stroke();
-            if (entered)
-            {
-                Color tone = entryOk ? green : red;
-                Vector2 e = Rim(Last.EntryDeg.Value, cupR);
-                p.strokeColor = tone; p.lineWidth = 1.5f;
-                Dashed(p, hole - (e - hole) * 1.6f, e + (e - hole) * 1.6f, 3, 2);
-                p.fillColor = tone; p.strokeColor = Color.black; p.lineWidth = 1;
-                p.BeginPath(); p.Arc(e, 4.5f, Angle.Degrees(0), Angle.Degrees(360)); p.ClosePath(); p.Fill(); p.Stroke();
-            }
-            else if (!Last.Made)
-            {
-                p.fillColor = Color.white; p.strokeColor = Last.Green ? red : Color.black; p.lineWidth = 1.5f;
-                p.BeginPath(); p.Arc(Px(Last.Path[Last.Path.Length - 1]), 5, Angle.Degrees(0), Angle.Degrees(360)); p.ClosePath(); p.Fill(); p.Stroke();
-            }
-        }
-
-        static void Seg(Painter2D p, Vector2 a, Vector2 b) { p.BeginPath(); p.MoveTo(a); p.LineTo(b); p.Stroke(); }
-
-        static void Dashed(Painter2D p, Vector2 a, Vector2 b, float on, float off)
-        {
-            float len = Vector2.Distance(a, b);
-            if (len < 0.5f) return;
-            Vector2 d = (b - a) / len;
-            for (float t = 0; t < len; t += on + off) Seg(p, a + d * t, a + d * Mathf.Min(len, t + on));
-        }
-    }
-
     /// <summary>A small chevron, down (closed) or up (open), for the camera pill.</summary>
     public sealed class TracksChevron : VisualElement
     {
@@ -1590,19 +1582,25 @@ namespace PuttrApp
             VisualElement chips = Ui.Box("chips", Ui.Text("Par " + J.Int(t, "par"), "chip"), Ui.Text(J.Int(t, "yds").ToString("#,0") + " yds", "chip"));
             if (record != null) chips.Add(Ui.Text(record, "chip chip-green"));
             if (week > 0) chips.Add(Ui.Text(week + (week == 1 ? " round" : " rounds") + " this week", "chip"));
-            VisualElement kick = Ui.Box("row totw-kick", Ui.Caps("Track of the week", "caps caps-green"), fresh ? Ui.Text("New", "chip chip-green totw-new") : null);
+            // The title is the section header above the card, as Jump back in and League Night have theirs (Matt,
+            // 2026-11-25); a track not yet played says New as the first chip.
+            if (fresh) chips.Insert(0, Ui.Text("New", "chip chip-green"));
             void Play() { if (free) app.Push(new TracksSetupScreen(app, t)); else Club.Require(app, "Every Tracks course", () => app.Push(new TracksSetupScreen(app, t))); }
             // A flat card, the game tile's shape (GameCards.Make): the course from overhead in a window on top (painted
             // once and kept: TracksArt), then a solid bar with everything said about it. Nothing is written over the picture.
             VisualElement bar = Ui.Box("tracks-ccard-body",
-                kick, TrackLabels.Inspired(J.Str(t, "name"), "title-20"), TrackLabels.Where(J.Str(t, "location"), "body-2"),
+                TrackLabels.Inspired(J.Str(t, "name"), "title-20"), TrackLabels.Where(J.Str(t, "location"), "body-2"),
                 chips,
                 Ui.Box("row totw-actions", Page.Swallow(Ui.Button("All courses", () => app.Push(new TracksCoursesScreen(app)), "btn btn-ghost grow totw-btn")),
                     Page.Swallow(Ui.Button(locked ? "Puttr Club" : "Play", Play, "btn btn-ghost grow totw-btn tracks-btn-2"))));
-            VisualElement card = Ui.Box("tracks-ccard totw", TracksCoursesScreen.CourseStill(t), bar);
+            // A tablet has the width to spare and not the height (Matt, 2026-11-24): the course is a square on the
+            // left and everything said about it is a column beside it. A phone keeps the picture on top.
+            bool side = App.Tablet;
+            VisualElement card = Ui.Box(side ? "tracks-ccard totw totw-side" : "tracks-ccard totw", side ? TracksCoursesScreen.CourseStill(t, 768, 768) : TracksCoursesScreen.CourseStill(t), bar);
             // Anywhere on the card plays the track; the buttons keep their own taps.
             card.OnTap(Play);
-            into.Add(Ui.Box("pad", card).Margin(24));
+            into.Add(Ui.Section("Track of the week"));
+            into.Add(Ui.Box("pad", card));
         }
     }
 
@@ -1621,44 +1619,43 @@ namespace PuttrApp
         public TracksResultScreen(App app, TracksCourse course, List<TracksCourse.Hole> holes, TracksRound round, string level)
         {
             _holes = holes; _round = round;
-            Root = Page.Make(app, course.Name, out VisualElement body);
             int par = holes.Sum(h => h.Par);
-            string kick = TracksEngine.LevelOf(level).Name.ToUpperInvariant() + " · " + holes.Count + " HOLES";
+            // The shared game over page: the score to par (or who won), then the board and Exit and the rating, with
+            // the stats and the scorecard as the second column.
+            var spec = new GameOverSpec
+            {
+                Eyebrow = course.Name + "   ·   " + TracksEngine.LevelOf(level).Name + "   ·   " + holes.Count + " holes",
+                RateAs = "Tracks: " + course.Name,
+                XpUnpaid = true,   // the round's own game was just saved: the XP panel asks what it paid (nothing for test putts)
+            };
             if (!round.Multi)
             {
                 TracksPlayer me = round.Players[0];
-                body.Add(Ui.Box("pad center-box", Ui.Caps(kick, "caps caps-green"),
-                    Ui.Num(TracksEngine.ToPar(me.Total - par), "num-44 tracks-final"), Ui.Text(me.Total + " strokes on a par " + par, "body-2", Ui.Regular)));
+                spec.Score = TracksEngine.ToPar(me.Total - par);
+                spec.ScoreCaption = me.Total + " strokes on a par " + par;
             }
             else
             {
-                body.Add(Ui.Box("pad center-box", Ui.Caps(kick, "caps caps-green"), Ui.Title(round.Outcome(), "title center tracks-final")));
-                // Everyone, lowest first: the place (shared on a tie), their colour, name, strokes and score to par.
-                VisualElement table = Ui.Box("card tb-card");
-                foreach (TracksPlayer q in round.Ranking())
-                {
-                    VisualElement swatch = Ui.Box("rule-swatch");
-                    swatch.style.backgroundColor = q.Colour;
-                    int toPar = q.Total - par;
-                    Label score = Ui.Num(TracksEngine.ToPar(toPar), "num-20");
-                    if (toPar <= 0) score.AddToClassList("tracks-tone-good");
-                    table.Add(Ui.Box("set-row", Ui.Text(round.Place(q).ToString(), "board-place", Ui.Bold), swatch,
-                        Ui.Box("grow", Ui.Text(q.Name, "body", Ui.Bold), Ui.Text(q.Total + " strokes" + (q.Guest && q.Seat != 0 ? " · guest" : ""), "body-2", Ui.Regular)), score));
-                }
-                LastRow(table);
-                body.Add(Ui.Box("pad", table).Margin(16));
+                spec.Outcome = round.Outcome();
+                // Everyone, lowest first: their colour, name and score to par.
+                spec.Standings = new List<(string, string, Color)>();
+                foreach (TracksPlayer q in round.Ranking()) spec.Standings.Add((q.Name + (q.Guest && q.Seat != 0 ? " · guest" : ""), TracksEngine.ToPar(q.Total - par) + "  (" + q.Total + ")", q.Colour));
             }
-            _chips = Ui.Box("pad row tracks-result-chips");
+            _chips = Ui.Box("row tracks-result-chips");
             _detail = Ui.Box("");
-            if (round.Multi) body.Add(_chips);
-            body.Add(_detail);
+            VisualElement second = Ui.Box("");
+            if (round.Multi) second.Add(_chips);
+            second.Add(_detail);
             Show(0);
+            spec.Detail = second;
             // Where the round stands: the track's board (the round is on it once saved).
             string slug = course.Slug, name = course.Name;
-            // Rate this round: five stars, and a box to say why when it is under five (Feedback.GameCard).
-            VisualElement rateGame = Feedback.GameCard(app, "Tracks: " + course.Name);
-            if (rateGame != null) body.Add(Ui.Box("pad", rateGame));
-            body.Add(Form.Bottom(Ui.Box("row", Ui.Button("Leaderboard", () => app.Push(new TracksLeaderboardScreen(app, slug, name)), "btn btn-ghost grow"), Ui.Button("Exit", app.ExitToTab, "btn grow tracks-btn-2"))));
+            spec.Actions = new List<(string, Action, bool)>
+            {
+                ("Exit", app.ExitToTab, true),
+                ("Leaderboard", () => app.Push(new TracksLeaderboardScreen(app, slug, name)), false),
+            };
+            Root = GameOver.Build(app, spec);
         }
 
         /// <summary>One Player's stats and scorecard (Tracks.js setStatsFor); the chips pick whose.</summary>
@@ -1680,14 +1677,14 @@ namespace PuttrApp
             _detail.Clear();
             TracksPlayer p = _round.Players[_show];
             int fwTried = p.Fairways.Count(f => f != null), fwHit = p.Fairways.Count(f => f == true);
-            _detail.Add(Ui.Box("pad", Ui.StatStrip((fwTried > 0 ? fwHit + "/" + fwTried : "–", "Fairways"), (p.Gir.Count(g => g) + "/" + _holes.Count, "Greens"), (p.Putts.Sum().ToString(), "Putts"))).Margin(16));
+            _detail.Add(Ui.StatStrip((fwTried > 0 ? fwHit + "/" + fwTried : "–", "Fairways"), (p.Gir.Count(g => g) + "/" + _holes.Count, "Greens"), (p.Putts.Sum().ToString(), "Putts")).Margin(16));
             VisualElement card = Ui.Box("card tb-card");
             for (int i = 0; i < _holes.Count; i++)
                 card.Add(Ui.Box("set-row", Ui.Text(_holes[i].N.ToString(), "board-place", Ui.Bold), Ui.Box("grow", Ui.Text(_holes[i].Name.Length > 0 ? _holes[i].Name : "Hole " + _holes[i].N, "body", Ui.Bold), Ui.Text("Par " + _holes[i].Par + " · " + p.Putts[i] + (p.Putts[i] == 1 ? " putt" : " putts"), "body-2", Ui.Regular)),
                     Ui.Text(p.Strokes[i] + "  " + TracksEngine.ScoreName(p.Strokes[i], _holes[i].Par), "body tracks-row-v", Ui.Bold)));
             LastRow(card);
             _detail.Add(Ui.Section(_round.Multi ? p.Name + "'s scorecard" : "Scorecard"));
-            _detail.Add(Ui.Box("pad", card));
+            _detail.Add(card);
         }
 
         /// <summary>The last row of a bordered block has no divider under it.</summary>
@@ -1714,7 +1711,12 @@ namespace PuttrApp
                 picture.pickingMode = PickingMode.Ignore;
                 cover.Add(picture);
             }
-            VisualElement words = Ui.Box("tracks-loading-box", Spinner.Big(), Ui.Text("Loading course", "tracks-loading-t", Ui.Bold));
+            // Its own mark, turning where it sits: the shared spinner turns at the middle of the screen, which is where
+            // these words are.
+            Image mark = Spinner.Mark(46f, Ui.Bright);
+            float began = Time.realtimeSinceStartup;
+            mark.schedule.Execute(() => { mark.style.rotate = new Rotate((Time.realtimeSinceStartup - began) * 300f % 360f); Perf.Wake(0.2f); }).Every(16);
+            VisualElement words = Ui.Box("tracks-loading-box", mark, Ui.Text("Loading course", "tracks-loading-t", Ui.Bold));
             if (!string.IsNullOrEmpty(courseName)) words.Add(Ui.Text(courseName, "tracks-loading-s", Ui.Medium));
             words.pickingMode = PickingMode.Ignore;
             cover.Add(words);

@@ -27,11 +27,19 @@
 .imp-bar-16 { padding: 16px; }
 .imp-bar-12 { padding: 12px; }
 .imp-bar .btn { margin-top: 16px; }
+.imp-bar .btn.imp-lab-second { margin-top: 8px; }
 .imp-lab-win { height: 240px; }
 
 /* Cards and list rows. */
 .imp-card { background-color: rgb(21, 24, 27); border-width: 1px; border-color: rgb(38, 42, 46); border-radius: 4px; overflow: hidden; }
 .imp-pad { padding: 16px; }
+/* The analysis card's mat: a row per tee, a column per distance, each spot a flat square with its score. */
+.imp .imp-m12 { margin-top: 12px; }
+.imp-map-side { width: 16px; flex-shrink: 0; }
+.imp-map-cell { flex-grow: 1; flex-basis: 0; height: 32px; margin: 2px; border-radius: 4px; background-color: rgb(34, 38, 42); align-items: center; justify-content: center; }
+.imp-map-value { font-size: 13px; margin: 0; padding: 0; -unity-text-align: middle-center; }
+.imp .imp-map-feet { flex-grow: 1; flex-basis: 0; margin: 4px 2px 0 2px; -unity-text-align: middle-center; }
+.imp-card .btn { margin-top: 16px; }
 .imp-row { flex-direction: row; align-items: center; min-height: 44px; padding: 16px; }
 .imp-row:active { background-color: rgb(34, 38, 42); }
 .imp-row-words { margin-right: 12px; }

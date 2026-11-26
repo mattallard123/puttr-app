@@ -107,17 +107,6 @@ namespace PuttrApp
         public static string OpenAt;
         static readonly string[] Tabs = { "Local", "Online", "Tracks", "Quests", "Tournaments", "League" };   // Custom games live in Improve, Practice
         static readonly string[] Chips = { "All", "Solo", "Together", "Line", "Pace", "Sensor" };
-        /// <summary>One sentence on what each way to play is, under its tab (Matt, 2026-11-22: as Tracks has). Tracks
-        /// says its own on its page (TracksCoursesScreen.Intro).</summary>
-        public static readonly Dictionary<string, string> Intros = new Dictionary<string, string>
-        {
-            { "Local", "Every game for the Players at your Puttr, from a quick round on your own to a four Player match." },
-            { "Online", "Play another Player wherever they are: take turns in Versus, or putt at the same time on a Live call." },
-            { "Quests", "Greenlands: eight worlds of stages to beat. Balls are lives, and a boss guards the way to each new world." },
-            { "Tournaments", "Play the same round as every other Player this month and see where your score puts you." },
-            { "League", "League Night: play your team's game each week and move it up the table." },
-        };
-        static VisualElement Intro(string tab) => Intros.TryGetValue(tab, out string words) ? Ui.Box("pad play-intro", Ui.Text(words, "sub wrap", Ui.Regular)) : null;
         static int _tab;   // kept while the app runs
 
         readonly App _app;
@@ -142,7 +131,6 @@ namespace PuttrApp
             _list.RegisterCallback<GeometryChangedEvent>(_ => Tiles(false));
             ScrollView local = Ui.Scroll();
             local.AddToClassList("grow");
-            local.Add(Intro("Local"));
             local.Add(Ui.Box("pad", _chips));
             local.Add(Ui.Box("pad", _list));
             var foot = new VisualElement();
@@ -165,10 +153,19 @@ namespace PuttrApp
             if (OpenAt != null) { _tab = System.Math.Max(0, System.Array.IndexOf(Tabs, OpenAt)); OpenAt = null; }
             if (!Shows(_tab)) _tab = 0;
             ShowTab(_tab);
+            if (Tv.On)
+            {
+                // The profile arrived (or changed): the tabs are drawn for it.
+                System.Action read = () => { if (!Shows(_tab)) ShowTab(0); else DrawTabs(); };
+                Root.RegisterCallback<AttachToPanelEvent>(_ => { app.TvProfileRead -= read; app.TvProfileRead += read; read(); });
+                Root.RegisterCallback<DetachFromPanelEvent>(_ => app.TvProfileRead -= read);
+            }
         }
 
         // Kids play the games, Tracks, Quests and Tournaments; Online and League are not for a Kid profile.
-        bool Shows(int tab) => !Kid.IsKid(_app.Profile) || (Tabs[tab] != "Online" && Tabs[tab] != "League");
+        // A TV reads the profile itself, a moment after this screen is up (App.ShowTabs): until it is known those two
+        // are left out, so a Kid's TV never shows Online and then takes it away (Matt, 2026-11-26).
+        bool Shows(int tab) => !(Kid.IsKid(_app.Profile) || (Tv.On && _app.Profile == null)) || (Tabs[tab] != "Online" && Tabs[tab] != "League");
 
         /// <summary>Back on a TV remote with nothing on top: from another tab back to Local.</summary>
         public void TvBack() { if (_tab != 0) ShowTab(0); }
@@ -200,10 +197,11 @@ namespace PuttrApp
         {
             string shown = "";
             for (int i = 0; i < Tabs.Length; i++) if (Shows(i)) shown += i;
-            if (!Tv.On && _tabScroll != null && shown == _tabsShown)
+            // (A TV keeps its row too: the remote's focus stays on the tab it is on while the page under it changes.)
+            if ((Tv.On ? _tabCells.Count > 0 && _tabRow.childCount > 0 : _tabScroll != null) && shown == _tabsShown)
             {
                 foreach (KeyValuePair<int, VisualElement> cell in _tabCells) cell.Value.EnableInClassList("play-tab-on", cell.Key == _tab);
-                RevealTab();
+                if (!Tv.On) RevealTab();
                 return;
             }
             // On a TV, a tab that had the remote's focus keeps it through the redraw.
@@ -220,6 +218,9 @@ namespace PuttrApp
                 row.Add(tab);
                 _tabCells[i] = tab;
                 if (focused && i == _tab) tab.schedule.Execute(() => Tv.FocusOn(tab));
+                // As an Apple TV's tab bar: the page follows the focus along the tabs (a moment after it stops, so
+                // sliding across four tabs does not build four pages); OK is not needed.
+                Tv.OnArrive(tab, () => tab.schedule.Execute(() => { if (_tab != index && Tv.Focused == tab) ShowTab(index); }).StartingIn(220));
             }
             if (!Tv.On)
             {
@@ -229,6 +230,7 @@ namespace PuttrApp
                 RevealTab();
                 return;
             }
+            _tabsShown = shown;
             // A TV: the Puttr logo, the tabs, then the green's status and who is signed in (the TV has no other tabs).
             row.AddToClassList("grow");
             var logo = new Image { image = Resources.Load<Texture2D>("PuttrArcade/LogoHeader"), scaleMode = ScaleMode.ScaleToFit };
@@ -255,8 +257,6 @@ namespace PuttrApp
                 Embed(screen);
                 _screens[tab] = screen;
             }
-            VisualElement intro = Intro(Tabs[tab]);
-            if (intro != null) { intro.AddToClassList("play-intro-in"); _body.Add(intro); }   // in line with the section's own column
             _body.Add(screen.Root);
             screen.Shown();
         }
@@ -272,9 +272,6 @@ namespace PuttrApp
                 Embed(_online);
             }
             _body.Clear();
-            VisualElement about = Intro("Online");
-            about.AddToClassList("play-intro-in");
-            _body.Add(about);
             if (modes != null) _body.Add(Ui.Box("pad play-online", modes));
             _body.Add(_online.Root);
             _online.Shown();
@@ -316,11 +313,22 @@ namespace PuttrApp
             }
         }
 
+        // The chip row is kept between picks: building a new one put its scroll back to the first chip (and on a TV
+        // dropped the focus), so a pick only moves the white fill.
+        ScrollView _chipRow;
+
         void DrawChips()
         {
+            if (!_searching && _chipRow != null && _chipRow.parent == _chips)
+            {
+                foreach (VisualElement c in _chipRow.Children()) c.EnableInClassList("scope-on", c.userData is int n && n == _chip);
+                return;
+            }
             _chips.Clear();
+            _chipRow = null;
             if (_searching) { _chips.Add(SearchBar()); return; }
             ScrollView row = Ui.Scroll(true);
+            _chipRow = row;
             // On a TV a rail is padded for the focus ring and pulled out by as much (App.uss, .tv .hscroll): 10 each way.
             row.style.marginTop = Tv.On ? 0 : 10;
             row.style.marginBottom = Tv.On ? 2 : 12;
@@ -328,7 +336,9 @@ namespace PuttrApp
             {
                 if (Tv.On && Chips[i] == "Sensor") continue;   // the Vertex sensor pairs over Bluetooth: not on a TV
                 int index = i;
-                row.Add(Ui.Box(i == _chip ? "scope scope-on" : "scope", Ui.Text(Chips[i].ToUpperInvariant(), "scope-text", Ui.Bold)).OnTap(() => { _chip = index; DrawChips(); Draw(); }));
+                VisualElement chip = Ui.Box(i == _chip ? "scope scope-on" : "scope", Ui.Text(Chips[i].ToUpperInvariant(), "scope-text", Ui.Bold)).OnTap(() => { _chip = index; DrawChips(); Draw(); });
+                chip.userData = index;
+                row.Add(chip);
             }
             _chips.Add(row);
         }

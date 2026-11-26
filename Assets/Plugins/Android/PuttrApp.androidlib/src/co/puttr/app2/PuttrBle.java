@@ -113,6 +113,9 @@ public final class PuttrBle {
     public static void stop() {
         main.post(() -> {
             wanted = false;
+            // The app marks the radio off itself when it stops, so the next start must tell the state again even where
+            // it has not changed (it left the app showing Bluetooth as off, while scanning, until it was relaunched).
+            state = 0;
             stopScan();
             if (gatt != null) { gatt.disconnect(); gatt.close(); gatt = null; }
         });

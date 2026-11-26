@@ -43,8 +43,9 @@ namespace PuttrApp
             Coaches.Persona before = CoachVoice.Persona;
             string persona = J.Str(settings, "personaId", before != null ? before.Id : "maya");
             bool voice = J.Get(settings, "voiceOn") == null || J.Flag(settings, "voiceOn");
-            int goal = J.Int(settings, "dailyGoal", 10);
-            if (goal <= 0) goal = 10;
+            // 20 where none is set: the goal a new Player's Home already shows (the API's streak default).
+            int goal = J.Int(settings, "dailyGoal", 20);
+            if (goal <= 0) goal = 20;
             CoachSettingsMath.ParseTime(J.Str(settings, "reminderTime"), out int hour, out int minute);
             bool picking = false;
 
